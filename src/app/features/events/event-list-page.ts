@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   EVENT_CATEGORY_LABELS,
   EVENT_STATUS_CATALOG,
@@ -20,13 +22,20 @@ import {
 } from '@domain/index';
 import { EVENT_REPOSITORY } from '@domain/index';
 import { debouncedTerm } from '@shared/state/debounced';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import { Icon } from '@shared/ui/icon/icon';
 
 import { EVENTS_COPY } from './events.copy';
+
+/**
+ * The events, and each row's registered count, which the API counts from the registrations: a
+ * resident signing up moves "12 / 40" and can make an event full (`DL-222`).
+ */
+export const EVENT_LIST_TOPICS: readonly LiveTopic[] = ['events', 'event-registrations'];
 
 /**
  * The events list.
@@ -50,6 +59,7 @@ import { EVENTS_COPY } from './events.copy';
 export class EventListPage {
   private readonly repository = inject(EVENT_REPOSITORY);
   private readonly permissions = inject(PermissionService);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = EVENTS_COPY.list;
   protected readonly statusCatalog = EVENT_STATUS_CATALOG;
@@ -77,14 +87,24 @@ export class EventListPage {
 
   protected readonly state = toSignal(
     toObservable(this.query).pipe(
-      switchMap((query) => toViewState(this.repository.list(query.view, query.filter))),
+      switchMap((query) =>
+        liveViewState(
+          () => this.repository.list(query.view, query.filter),
+          this.live.changes(EVENT_LIST_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<readonly LguEvent[]> },
   );
 
   protected readonly events = computed<readonly LguEvent[]>(() => valueOf(this.state()) ?? []);
   protected readonly hasFilters = computed(
-    () => this.search().length > 0 || this.category() !== null || this.from() !== '' || this.to() !== '',
+    () =>
+      this.search().length > 0 ||
+      this.category() !== null ||
+      this.from() !== '' ||
+      this.to() !== '',
   );
 
   /*

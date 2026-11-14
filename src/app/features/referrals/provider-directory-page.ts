@@ -3,6 +3,8 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   REFERRAL_CHANNEL_LABELS,
   REFERRAL_DESTINATION_LABELS,
@@ -14,12 +16,16 @@ import {
   type ServiceProviderStatus,
 } from '@domain/index';
 import { debouncedTerm } from '@shared/state/debounced';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { Icon } from '@shared/ui/icon/icon';
 
 import { REFERRALS_COPY } from './referrals.copy';
+
+/** The API announces a provider's change under `referrals` (`DL-222`). */
+export const PROVIDER_DIRECTORY_TOPICS: readonly LiveTopic[] = ['referrals'];
 
 /**
  * The directory of offices this one refers people to.
@@ -38,6 +44,7 @@ import { REFERRALS_COPY } from './referrals.copy';
 })
 export class ProviderDirectoryPage {
   private readonly repository = inject(REFERRAL_REPOSITORY);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = REFERRALS_COPY.directory;
   protected readonly statuses = Object.keys(
@@ -68,11 +75,14 @@ export class ProviderDirectoryPage {
       })),
     ).pipe(
       switchMap((query) =>
-        toViewState(
-          this.repository.listProviders({
-            ...(query.search ? { search: query.search } : {}),
-            ...(query.status ? { status: query.status } : {}),
-          }),
+        liveViewState(
+          () =>
+            this.repository.listProviders({
+              ...(query.search ? { search: query.search } : {}),
+              ...(query.status ? { status: query.status } : {}),
+            }),
+          this.live.changes(PROVIDER_DIRECTORY_TOPICS),
+          this.live,
         ),
       ),
     ),

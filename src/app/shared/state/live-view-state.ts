@@ -90,6 +90,62 @@ export function liveViewState<TValue>(
 }
 
 /**
+ * A side panel's read, kept fresh beside the record it sits on (`DL-222`), for a panel that shapes
+ * its own answer and its own refusal.
+ *
+ * - **The first read is the panel's own**: its answer, or its error — which the panel catches and
+ *   says in its place, as it did before it was live. A panel whose first read was refused is not
+ *   asked again; the record's own "Try again" is the way back.
+ * - **Each refresh reads again quietly**: a success replaces what the panel shows, and a failure
+ *   keeps it and tells the report. A panel reports only failures, so it never vouches for a record
+ *   whose own re-read failed.
+ * - One re-read at a time (`exhaustMap`), and none before the first answer.
+ *
+ * ```ts
+ * switchMap((id) => panelRead(liveRead(() => this.visits.forResident(id), this.live.changes(['visits']), this.live)))
+ * ```
+ */
+export function liveRead<TValue>(
+  load: () => Observable<TValue>,
+  refreshes: Observable<unknown>,
+  report?: RefreshReport,
+): Observable<TValue> {
+  return new Observable<TValue>((subscriber) => {
+    let answered = false;
+    const first: Subscription = defer(load).subscribe({
+      next: (value) => {
+        answered = true;
+        subscriber.next(value);
+      },
+      error: (failure: unknown) => subscriber.error(failure),
+    });
+
+    const again: Subscription = refreshes
+      .pipe(
+        filter(() => answered),
+        exhaustMap(() =>
+          defer(load).pipe(
+            map((value): { readonly value: TValue } | null => ({ value })),
+            catchError(() => of(null)),
+          ),
+        ),
+      )
+      .subscribe((answer) => {
+        if (answer === null) {
+          report?.noteRefreshFailed();
+          return;
+        }
+        subscriber.next(answer.value);
+      });
+
+    return () => {
+      first.unsubscribe();
+      again.unsubscribe();
+    };
+  });
+}
+
+/**
  * For a list that can load further pages: the refreshes that may re-read it, and a note of those
  * that may not (`DL-222`).
  *

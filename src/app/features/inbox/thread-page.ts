@@ -12,9 +12,11 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { filter, switchMap, tap, type Observable } from 'rxjs';
+import { filter, scan, switchMap, tap, type Observable } from 'rxjs';
 
 import { SessionStore } from '@core/auth/session.store';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   asId,
   authorOf,
@@ -36,14 +38,8 @@ import {
 import { ObjectUrls } from '@shared/media/object-urls';
 import { officeDirectory } from '@shared/offices/office-directory';
 import { failureReason } from '@shared/state/failure-reason';
-import {
-  failed,
-  LOADING,
-  ready,
-  toViewState,
-  valueOf,
-  type ViewState,
-} from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { failed, LOADING, ready, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -54,9 +50,31 @@ import { INBOX_COPY } from './inbox.copy';
 /** Messages a page; the API's own default. */
 const PAGE_SIZE = 20;
 
+/** A conversation and its messages both feed `threads` (`DL-222`). */
+export const THREAD_TOPICS: readonly LiveTopic[] = ['threads'];
+
 /** A re-read that keeps the last answer on screen until the next arrives, rather than a skeleton. */
 function quietly<T>(source: Observable<ViewState<T>>, quiet: boolean): Observable<ViewState<T>> {
   return quiet ? source.pipe(filter((state) => state.kind !== 'loading')) : source;
+}
+
+/**
+ * A live re-read of the newest page **adds to** what the reader has, never takes away (`DL-222`).
+ * New messages push the oldest of the newest page out of it, and the page that held them is not
+ * among the earlier pages the reader loaded; replacing the page would make those messages vanish
+ * from the middle of the conversation. Messages are appended, never edited or removed, so keeping
+ * every one this read has shown is the conversation as it stands.
+ */
+function keepShown(
+  shown: ViewState<CursorPage<ThreadMessage>>,
+  next: ViewState<CursorPage<ThreadMessage>>,
+): ViewState<CursorPage<ThreadMessage>> {
+  if (shown.kind !== 'ready' || next.kind !== 'ready') {
+    return next;
+  }
+  const fresh = new Set(next.value.items.map((message) => message.id));
+  const kept = shown.value.items.filter((message) => !fresh.has(message.id));
+  return ready({ ...next.value, items: [...next.value.items, ...kept] });
 }
 
 /** The image a reader asked to see, held while the warning is open. */
@@ -98,6 +116,7 @@ export class ThreadPage {
   private readonly repository = inject(OFFICE_INBOX_REPOSITORY);
   private readonly session = inject(SessionStore);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
   private readonly objectUrls = new ObjectUrls();
 
   /** The `:threadId` route parameter. */
@@ -126,9 +145,23 @@ export class ThreadPage {
     quiet: this.quietFor() === this.id(),
   }));
 
+  /**
+   * The conversation and its newest messages are read again quietly when the server says threads
+   * changed (`DL-222`). A re-read is a read: nothing here marks the conversation read — that stays
+   * the reader's own act, from its button below the effect it states (`THREAD_READ_EFFECT`).
+   */
   protected readonly thread = toSignal(
     toObservable(this.query).pipe(
-      switchMap(({ id, quiet }) => quietly(toViewState(this.repository.thread(id)), quiet)),
+      switchMap(({ id, quiet }) =>
+        quietly(
+          liveViewState(
+            () => this.repository.thread(id),
+            this.live.changes(THREAD_TOPICS),
+            this.live,
+          ),
+          quiet,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<OfficeThread> },
   );
@@ -147,9 +180,13 @@ export class ThreadPage {
       }),
       switchMap(({ id, quiet }) =>
         quietly(
-          toViewState(this.repository.messages(id, { limit: PAGE_SIZE, cursor: null })),
+          liveViewState(
+            () => this.repository.messages(id, { limit: PAGE_SIZE, cursor: null }),
+            this.live.changes(THREAD_TOPICS),
+            this.live,
+          ),
           quiet,
-        ),
+        ).pipe(scan(keepShown, LOADING as ViewState<CursorPage<ThreadMessage>>)),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<ThreadMessage>> },
@@ -167,12 +204,25 @@ export class ThreadPage {
     return thread === null ? '' : this.directory.name(thread.officeId, thread.officeSlug);
   });
 
-  /** Oldest first — a conversation is read in the order it was written. */
-  protected readonly messages = computed<readonly ThreadMessage[]>(() =>
-    [...(valueOf(this.newest())?.items ?? []), ...this.earlierPages().flatMap((page) => page.items)]
-      .slice()
-      .sort((a, b) => a.sentAt.localeCompare(b.sentAt) || a.id.localeCompare(b.id)),
-  );
+  /**
+   * Oldest first — a conversation is read in the order it was written. Each message once: after a
+   * live re-read the cursor the earlier pages follow has moved, so a page may repeat a message the
+   * newest page already holds. New messages arrive at the end, below the reader's place, so a
+   * reader further up the conversation is not moved (the browser's scroll anchoring holds the
+   * reply box where it was).
+   */
+  protected readonly messages = computed<readonly ThreadMessage[]>(() => {
+    const byId = new Map<string, ThreadMessage>();
+    for (const message of [
+      ...(valueOf(this.newest())?.items ?? []),
+      ...this.earlierPages().flatMap((page) => page.items),
+    ]) {
+      if (!byId.has(message.id)) byId.set(message.id, message);
+    }
+    return [...byId.values()].sort(
+      (a, b) => a.sentAt.localeCompare(b.sentAt) || a.id.localeCompare(b.id),
+    );
+  });
 
   private readonly oldestPage = computed(
     () => this.earlierPages().at(-1) ?? valueOf(this.newest()) ?? null,

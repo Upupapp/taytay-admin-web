@@ -16,6 +16,8 @@ import { NotConnected } from '@core/access/not-connected';
 import { PermissionService } from '@core/access/permission.service';
 import { ServedPorts } from '@core/access/served-ports';
 import { SessionStore } from '@core/auth/session.store';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   ASSISTANCE_REQUEST_REPOSITORY,
@@ -62,6 +64,7 @@ import { StatusTransition, type StatusTransitionRequest } from '@shared/cases/st
 import { VulnerabilitySnapshotPanel } from '@shared/households/vulnerability-snapshot';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
+import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, toViewState, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
@@ -72,6 +75,18 @@ import { CASES_COPY } from './cases.copy';
 
 /** The most of a person's filed requests offered at once — the API's largest page. */
 const REQUEST_CHOICES = 50;
+
+/**
+ * What the workspace assembles: the case with its notes, tasks and timeline, the requests it names,
+ * the person, and the household and families read beside it (`DL-222`).
+ */
+export const CASE_WORKSPACE_TOPICS: readonly LiveTopic[] = [
+  'cases',
+  'assistance-requests',
+  'residents',
+  'households',
+  'families',
+];
 
 /** One choice of who owes a task, worded for the reader. */
 interface OwerChoice {
@@ -128,6 +143,7 @@ export class CaseWorkspacePage {
   private readonly permissions = inject(PermissionService);
   private readonly session = inject(SessionStore);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   readonly id = input.required<string>();
 
@@ -158,9 +174,20 @@ export class CaseWorkspacePage {
     this.reloads.update((value) => value + 1);
   }
 
+  /**
+   * The record re-reads quietly on a hint (`DL-222`). Every draft, reason, open dialog and chosen
+   * task below is its own signal, set only by the person or by their own act, so a re-read changes
+   * what the record says and never what somebody is writing.
+   */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
-      switchMap((query) => toViewState(this.repository.getById(asId<CaseId>(query.id)))),
+      switchMap((query) =>
+        liveViewState(
+          () => this.repository.getById(asId<CaseId>(query.id)),
+          this.live.changes(CASE_WORKSPACE_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<CaseWorkspace | null> },
   );

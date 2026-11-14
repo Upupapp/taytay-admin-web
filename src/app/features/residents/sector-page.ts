@@ -16,6 +16,8 @@ import { map, switchMap, tap } from 'rxjs';
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { NotConnected } from '@core/access/not-connected';
 import { SessionStore } from '@core/auth/session.store';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   RESIDENT_REPOSITORY,
@@ -30,10 +32,12 @@ import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { PersonPicker } from '@shared/residents/person-picker';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { failureReason } from '@shared/state/failure-reason';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { Icon } from '@shared/ui/icon/icon';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
@@ -47,6 +51,9 @@ import {
 } from './residents.copy';
 
 const PAGE_SIZE = 20;
+
+/** A sector's members are the registry narrowed: residents and nothing else (`DL-222`). */
+export const SECTOR_LIST_TOPICS: readonly LiveTopic[] = ['residents'];
 
 /** What the dialog is doing: adding somebody to the sector, or ending one person's membership. */
 type SectorAct = { readonly kind: 'add' } | { readonly kind: 'end'; readonly view: ResidentView };
@@ -76,6 +83,7 @@ type SectorAct = { readonly kind: 'add' } | { readonly kind: 'end'; readonly vie
     HasPermissionDirective,
     Icon,
     InitialsPipe,
+    ListChangedNotice,
     Modal,
     NotConnected,
     PageHeader,
@@ -92,6 +100,7 @@ export class SectorPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   /** From the route's data: each of the three pages is its own literal route. */
   readonly sector = input.required<SectorPageSector>();
@@ -137,7 +146,13 @@ export class SectorPage {
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
   private readonly generation = signal(0);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * A hint re-reads the first page quietly, unless somebody has loaded more of it (`DL-222`). The
+   * add and end dialog keeps its own signals, so a re-read never touches a reason being written.
+   */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ filter: this.filter(), generation: this.generation() }))).pipe(
       tap(({ filter }) => {
@@ -145,9 +160,18 @@ export class SectorPage {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
       switchMap(({ filter }) =>
-        toViewState(this.repository.list(filter, { limit: PAGE_SIZE, cursor: null })),
+        liveViewState(
+          () => this.repository.list(filter, { limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(SECTOR_LIST_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<ResidentView>> },

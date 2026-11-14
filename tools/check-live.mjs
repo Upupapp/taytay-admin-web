@@ -27,6 +27,13 @@
  *   7. **Idle stops the talking, and nothing in `core/live` renews a credential** (`DL-166`): the
  *      30-minute idle limit stands, activity is read from passive listeners, and `core/live` names
  *      neither the token holder nor the session refresher.
+ *   8. **Every page that reads is live, or says why not.** A routed page — or a section a page is
+ *      made of (`*-section.ts`) — that injects a repository re-reads through `liveViewState`,
+ *      `liveRead` or `LiveUpdates.changes`, or through a feature helper that does (`cursorList`),
+ *      or it is named in `NOT_LIVE` below with its kind (a form, a search, a report run, static)
+ *      and why. An entry for a page that is live, gone, or reads nothing fails, so the list never
+ *      outlives its reasons. No re-read asks for nothing (`changes([])`), and none marks, touches
+ *      or acknowledges anything: a re-read is a read (`DL-118`).
  *
  * Each rule was validated against a planted regression before being trusted.
  */
@@ -376,6 +383,197 @@ for (const file of walk(LIVE_DIR)) {
   }
 }
 
+/* ── 8. every page that reads is live, or says why not ───────────────────── */
+
+/**
+ * The pages that read a repository and are deliberately not live, each with its kind and why. Not
+ * an allow-list to grow: a new page that reads is live unless it is one of these four kinds.
+ */
+const NOT_LIVE = {
+  'residents/resident-form-page': [
+    'form',
+    'registers or corrects a resident; a re-read would overwrite what is typed',
+  ],
+  'households/household-form-page': [
+    'form',
+    'records a household; its fields are the person’s until saved',
+  ],
+  'families/family-form-page': [
+    'form',
+    'records a family; its fields are the person’s until saved',
+  ],
+  'cases/case-open-page': [
+    'form',
+    'opens a case; the person and requests it reads are choices in the form',
+  ],
+  'requests/intake-page': [
+    'form',
+    'the four-step intake; every read seeds what the encoder is filling in',
+  ],
+  'programs/program-form-page': [
+    'form',
+    'creates or revises a programme; a re-read would overwrite the draft',
+  ],
+  'releases/release-prepare-page': [
+    'form',
+    'prepares a release; the request it reads is what the form is about',
+  ],
+  'visits/visit-schedule-page': [
+    'form',
+    'schedules a visit; the case it reads seeds the address being edited',
+  ],
+  'events/event-composer-page': [
+    'form',
+    'composes or corrects an event; a re-read would overwrite the draft',
+  ],
+  'app-settings/app-settings-page': [
+    'form',
+    'the app settings editor; a re-read would overwrite a pending change',
+  ],
+  'home-screen/banners-section': ['form', 'part of the home-screen editor, which is a form'],
+  'home-screen/links-section': ['form', 'part of the home-screen editor, which is a form'],
+  'home-screen/preview-section': ['form', 'previews the home-screen editor’s own draft'],
+  'search/search-page': ['search', 'runs when somebody searches, never by itself'],
+  'reports/report-view-page': [
+    'report run',
+    'a report is run deliberately, and its export says when it was',
+  ],
+  'reports/report-hub-page': ['static', 'the report catalogue is data shipped with the console'],
+};
+const NOT_LIVE_KINDS = new Set(['form', 'search', 'report run', 'static']);
+
+/** Feature helpers that make a page that calls them, with its topics, live. */
+const LIVE_HELPERS = { cursorList: join(APP, 'features', 'directory', 'cursor-list.ts') };
+
+const FEATURES = join(APP, 'features');
+const routedPages = [
+  ...new Set(
+    [...source(join(APP, 'app.routes.ts')).matchAll(/import\(\s*'@features\/([^']+)'\s*\)/g)].map(
+      (match) => match[1],
+    ),
+  ),
+];
+const sections = walk(FEATURES)
+  .filter((path) => path.endsWith('-section.ts'))
+  .map((path) => relative(FEATURES, path).split(sep).join('/').replace(/\.ts$/, ''));
+const pages = [...new Set([...routedPages, ...sections])];
+
+if (routedPages.length < 40) {
+  failures.push(
+    `app.routes.ts yielded ${routedPages.length} routed pages, so this check cannot see the routes ` +
+      'and no page was checked for being live.',
+  );
+}
+
+const READS = /\binject\(\s*[A-Z][A-Z0-9_]*_REPOSITORY\b/;
+const HOLDS_LIVE = /\binject\(\s*LiveUpdates\s*\)/;
+const CHANGES = /\.\s*changes\s*\(/;
+
+/**
+ * Live means a read is re-run by hints: a `liveViewState` or `liveRead` handed
+ * `LiveUpdates.changes(...)`, or `changes(...)` subscribed to directly. A `changes` call left
+ * lying about, or a `liveViewState` with no hints, re-reads nothing.
+ */
+function isLive(text) {
+  if (!HOLDS_LIVE.test(text)) return false;
+  // A call may name its type: `liveViewState<CursorPage<FieldVisit>>(…)`.
+  for (const call of text.matchAll(/\b(?:liveViewState|liveRead)\s*(?:<[^()]*?>)?\s*\(/g)) {
+    const args = argumentsAt(text, call.index + call[0].length - 1);
+    if (args !== null && CHANGES.test(args)) return true;
+  }
+  for (const call of text.matchAll(/\.\s*changes\s*\(/g)) {
+    const open = call.index + call[0].length - 1;
+    const args = argumentsAt(text, open);
+    if (args === null) continue;
+    const after = text.slice(open + args.length + 2);
+    if (/^\s*\.\s*(?:pipe|subscribe)\s*\(/.test(after)) return true;
+  }
+  return false;
+}
+
+const liveHelpers = new Set();
+for (const [name, file] of Object.entries(LIVE_HELPERS)) {
+  if (existsSync(file) && isLive(source(file))) liveHelpers.add(name);
+  else {
+    failures.push(
+      `${shown(file)} (${name}) no longer re-reads through LiveUpdates, so no page that uses it is ` +
+        'live (DL-222).',
+    );
+  }
+}
+
+/** A call to a live helper that hands it topics, its second argument. */
+function usesLiveHelper(text) {
+  for (const name of liveHelpers) {
+    for (const call of text.matchAll(new RegExp(`(?<![.\\w])${name}\\s*\\(`, 'g'))) {
+      const args = argumentsAt(text, call.index + call[0].length - 1);
+      if (args !== null && topLevelCommas(args) > 0) return true;
+    }
+  }
+  return false;
+}
+
+for (const page of pages) {
+  const file = join(FEATURES, `${page}.ts`);
+  if (!existsSync(file)) {
+    failures.push(`${page} is routed, but ${shown(file)} is missing, so it was not checked.`);
+    continue;
+  }
+  const text = source(file);
+  if (!READS.test(text)) continue;
+  const live = isLive(text) || usesLiveHelper(text);
+  if (NOT_LIVE[page] !== undefined) {
+    if (live) {
+      failures.push(
+        `${page} is live but still listed in NOT_LIVE. Remove the entry, so the list says only ` +
+          'what is true (DL-222).',
+      );
+    }
+  } else if (!live) {
+    failures.push(
+      `${shown(file)} reads a repository and is not live. Read through liveViewState (liveRead for ` +
+        'a side panel) with LiveUpdates.changes([...the topics it shows]); or, if it is a form, a ' +
+        'search, a report run or static, name it in NOT_LIVE with why (DL-222).',
+    );
+  }
+}
+
+for (const [page, [kind, why]] of Object.entries(NOT_LIVE)) {
+  if (!NOT_LIVE_KINDS.has(kind) || typeof why !== 'string' || why.trim() === '') {
+    failures.push(
+      `NOT_LIVE['${page}'] is "${kind}". A page is left un-live only as a form, a search, a report ` +
+        'run or static, and says why (DL-222).',
+    );
+  }
+  const file = join(FEATURES, `${page}.ts`);
+  if (!pages.includes(page) || !existsSync(file)) {
+    failures.push(`NOT_LIVE names ${page}, which is no routed page or section. Remove the entry.`);
+  } else if (!READS.test(source(file))) {
+    failures.push(`NOT_LIVE names ${page}, which reads no repository. Remove the entry.`);
+  }
+}
+
+const MARKS = /\b(?:mark|touch|acknowledge)\w*\s*\(/;
+for (const { path, text } of files) {
+  if (!path.startsWith(FEATURES + sep)) continue;
+  if (/\.\s*changes\s*\(\s*\[\s*\]\s*\)/.test(text)) {
+    failures.push(
+      `${shown(path)} asks LiveUpdates.changes([]). A re-read names the topics its read counts.`,
+    );
+  }
+  for (const call of text.matchAll(
+    /\b(liveViewState|liveRead|unlessPaged)\s*(?:<[^()]*?>)?\s*\(/g,
+  )) {
+    const args = argumentsAt(text, call.index + call[0].length - 1);
+    if (args !== null && MARKS.test(args)) {
+      failures.push(
+        `${shown(path)} marks, touches or acknowledges something inside ${call[1]}(). A re-read is ` +
+          'a read: it never writes, and marking read stays the person’s own act (DL-118, DL-222).',
+      );
+    }
+  }
+}
+
 report();
 
 function report() {
@@ -387,6 +585,7 @@ function report() {
   }
   console.log(
     'Live updates check passed (one transport, one scheduler, topic names only, one stream caller, ' +
-      'http set only, nothing announced, idle stops it and nothing renews).',
+      'http set only, nothing announced, idle stops it and nothing renews, every page that reads ' +
+      'is live or says why not).',
   );
 }

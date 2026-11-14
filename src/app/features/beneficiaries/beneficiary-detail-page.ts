@@ -3,6 +3,8 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   BENEFICIARY_REPOSITORY,
   BENEFICIARY_ROLE_DESCRIPTIONS,
@@ -20,12 +22,28 @@ import {
 } from '@domain/index';
 import { AssistanceHistoryTimeline } from '@shared/beneficiaries/assistance-history-timeline';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { BENEFICIARIES_COPY } from './beneficiaries.copy';
+
+/**
+ * What the record assembles: the person, their household and families, the requests, payouts and
+ * referrals of their history, the programmes it names, and the duplicate flag (`DL-222`).
+ */
+export const BENEFICIARY_DETAIL_TOPICS: readonly LiveTopic[] = [
+  'beneficiaries',
+  'residents',
+  'households',
+  'families',
+  'assistance-requests',
+  'releases',
+  'referrals',
+  'programs',
+];
 
 /**
  * One person's whole record with this office.
@@ -40,19 +58,13 @@ import { BENEFICIARIES_COPY } from './beneficiaries.copy';
 @Component({
   selector: 'app-beneficiary-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    AssistanceHistoryTimeline,
-    AsyncContent,
-    PageHeader,
-    PesoPipe,
-    RouterLink,
-    StatusBadge,
-  ],
+  imports: [AssistanceHistoryTimeline, AsyncContent, PageHeader, PesoPipe, RouterLink, StatusBadge],
   templateUrl: './beneficiary-detail-page.html',
   styleUrl: './beneficiary-detail-page.scss',
 })
 export class BeneficiaryDetailPage {
   private readonly repository = inject(BENEFICIARY_REPOSITORY);
+  private readonly live = inject(LiveUpdates);
 
   /** Bound from the route by `withComponentInputBinding()`. */
   readonly id = input.required<string>();
@@ -63,7 +75,13 @@ export class BeneficiaryDetailPage {
 
   protected readonly state = toSignal(
     toObservable(computed(() => asId<ResidentId>(this.id()))).pipe(
-      switchMap((id) => toViewState(this.repository.getByResidentId(id))),
+      switchMap((id) =>
+        liveViewState(
+          () => this.repository.getByResidentId(id),
+          this.live.changes(BENEFICIARY_DETAIL_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<BeneficiaryDetail | null> },
   );
@@ -90,9 +108,7 @@ export class BeneficiaryDetailPage {
   }
 
   protected exitReasonLabel(enrollment: ProgramEnrollment): string | null {
-    return enrollment.exit === null
-      ? null
-      : ENROLLMENT_EXIT_REASON_LABELS[enrollment.exit.reason];
+    return enrollment.exit === null ? null : ENROLLMENT_EXIT_REASON_LABELS[enrollment.exit.reason];
   }
 
   protected barangayLabel(record: BeneficiaryDetail): string {

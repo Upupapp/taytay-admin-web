@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
+import type { LiveTopic } from '@core/live/change-feed';
 import {
   listingOf,
   OFFICE_REPOSITORY,
@@ -25,12 +26,16 @@ import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { Icon } from '@shared/ui/icon/icon';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Modal } from '@shared/ui/modal/modal';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { cursorList } from './cursor-list';
 import { DIRECTORY_COPY } from './directory.copy';
 import { ServiceForm } from './service-form';
+
+/** The app's Tulong pages (`DL-222`). */
+export const DIRECTORY_SERVICES_TOPICS: readonly LiveTopic[] = ['services'];
 
 /**
  * Tulong pages (`DL-170`): the app's catalogue a page at a time, and one page by its address.
@@ -42,7 +47,7 @@ import { ServiceForm } from './service-form';
 @Component({
   selector: 'app-services-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, Icon, Modal, ServiceForm, StatusBadge],
+  imports: [AsyncContent, DataTable, Icon, ListChangedNotice, Modal, ServiceForm, StatusBadge],
   templateUrl: './services-section.html',
   styleUrl: './directory-section.scss',
 })
@@ -57,7 +62,11 @@ export class ServicesSection {
   protected readonly listingOf = listingOf;
   protected readonly offices = officeDirectory(inject(OFFICE_REPOSITORY).list());
 
-  protected readonly list = cursorList((page) => this.repository.list(page));
+  /** Live (`DL-222`); the drawer, the delete dialog and the address box keep their own state. */
+  protected readonly list = cursorList(
+    (page) => this.repository.list(page),
+    DIRECTORY_SERVICES_TOPICS,
+  );
 
   private readonly nameCell =
     viewChild.required<TemplateRef<{ $implicit: TulongService }>>('nameCell');

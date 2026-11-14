@@ -11,6 +11,8 @@ import {
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap, tap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   asId,
   BALITA_OFFICE_RULES,
@@ -24,11 +26,13 @@ import {
 import { readText } from '@shared/forms/form-values';
 import { officeDirectory } from '@shared/offices/office-directory';
 import { failureReason } from '@shared/state/failure-reason';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { Drawer } from '@shared/ui/drawer/drawer';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { Icon } from '@shared/ui/icon/icon';
 
@@ -37,6 +41,9 @@ import { BALITA_COPY } from './balita.copy';
 
 /** One page at a time from the server; the API's own default. */
 const PAGE_SIZE = 20;
+
+/** The published articles residents read (`DL-222`). */
+export const BALITA_TOPICS: readonly LiveTopic[] = ['news'];
 
 /**
  * Balita (`news.write`, `DL-171`): the news residents read in the Taytay app, written and kept here.
@@ -52,18 +59,20 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-balita-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, BalitaEditor, DataTable, Drawer, Icon, PageHeader],
+  imports: [AsyncContent, BalitaEditor, DataTable, Drawer, Icon, ListChangedNotice, PageHeader],
   templateUrl: './balita-page.html',
   styleUrl: './balita.scss',
 })
 export class BalitaPage {
   private readonly repository = inject(BALITA_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = BALITA_COPY;
   protected readonly rules = BALITA_OFFICE_RULES;
   protected readonly directory = officeDirectory(inject(OFFICE_REPOSITORY).list());
 
+  /** Read once: the editor chooses from these, and an open editor's choices never move under it. */
   protected readonly categories = toSignal(toViewState(this.repository.categories()), {
     initialValue: LOADING as ViewState<readonly BalitaCategory[]>,
   });
@@ -78,15 +87,32 @@ export class BalitaPage {
   private readonly further = signal<readonly CursorPage<BalitaArticle>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * Read again quietly when news changes (`DL-222`). The editor holds the article it was opened
+   * with (`editing`), and a draft lives there, so a re-read of the list never closes or refills it.
+   */
   protected readonly first = toSignal(
     toObservable(this.generation).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
-      switchMap(() => toViewState(this.repository.list({ limit: PAGE_SIZE, cursor: null }))),
+      switchMap(() =>
+        liveViewState(
+          () => this.repository.list({ limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(BALITA_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<BalitaArticle>> },
   );

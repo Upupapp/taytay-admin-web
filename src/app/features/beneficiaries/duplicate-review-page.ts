@@ -11,6 +11,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom, switchMap, tap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   BENEFICIARY_REPOSITORY,
@@ -27,15 +29,20 @@ import {
   type ResidentId,
 } from '@domain/index';
 import { IdentityComparison } from '@shared/beneficiaries/identity-comparison';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Drawer } from '@shared/ui/drawer/drawer';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { BENEFICIARIES_COPY } from './beneficiaries.copy';
 
 /** One cursor page of pairs at a time; "Show more" follows the cursor (`DL-161`). */
 const PAGE_SIZE = 20;
+
+/** The pairs, the findings that answer them, and the names each pair is shown by (`DL-222`). */
+export const DUPLICATE_QUEUE_TOPICS: readonly LiveTopic[] = ['beneficiaries', 'residents'];
 
 /**
  * The duplicate-review queue.
@@ -56,7 +63,15 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-duplicate-review-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, Drawer, FormsModule, IdentityComparison, PageHeader, RouterLink],
+  imports: [
+    AsyncContent,
+    Drawer,
+    FormsModule,
+    IdentityComparison,
+    ListChangedNotice,
+    PageHeader,
+    RouterLink,
+  ],
   templateUrl: './duplicate-review-page.html',
   styleUrl: './duplicate-review-page.scss',
 })
@@ -64,6 +79,7 @@ export class DuplicateReviewPage {
   private readonly repository = inject(BENEFICIARY_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = BENEFICIARIES_COPY.duplicates;
   protected readonly strengthLabels = DUPLICATE_STRENGTH_LABELS;
@@ -76,16 +92,32 @@ export class DuplicateReviewPage {
   private readonly further = signal<readonly CursorPage<DuplicateCandidate>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * A colleague's finding or a detection run re-reads the first page quietly, unless more is loaded
+   * (`DL-222`). The open review keeps its own pair, verdict and reason, so a re-read never touches a
+   * finding being written.
+   */
   protected readonly state = toSignal(
     toObservable(this.reloadToken).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
       switchMap(() =>
-        toViewState(this.repository.duplicateQueue({ limit: PAGE_SIZE, cursor: null })),
+        liveViewState(
+          () => this.repository.duplicateQueue({ limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(DUPLICATE_QUEUE_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<DuplicateCandidate>> },
@@ -102,6 +134,11 @@ export class DuplicateReviewPage {
     const last = this.lastPage();
     return last !== null && last.hasMore && last.nextCursor !== null;
   });
+
+  /** The person's reload after a held hint: the queue from its first page. */
+  protected reloadList(): void {
+    this.reloadToken.update((token) => token + 1);
+  }
 
   /** Follows the cursor one page further, for the reading the first page began. */
   protected showMore(): void {
@@ -210,9 +247,7 @@ export class DuplicateReviewPage {
     // Naming a survivor while declaring two people unrelated is incoherent, and
     // the domain refuses it. Clearing it here keeps the form from carrying a
     // value it would then be rejected for.
-    this.canonicalId.set(
-      verdict === 'same-person' ? (candidate?.residentId ?? null) : null,
-    );
+    this.canonicalId.set(verdict === 'same-person' ? (candidate?.residentId ?? null) : null);
     if (candidate !== null && verdict === 'same-person') {
       void this.refreshPreview(candidate);
     }

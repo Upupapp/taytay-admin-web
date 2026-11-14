@@ -10,11 +10,22 @@ import {
 } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, map, of, throwError, type Observable } from 'rxjs';
+import {
+  filter,
+  firstValueFrom,
+  map,
+  of,
+  Subject,
+  switchMap,
+  take,
+  throwError,
+  type Observable,
+} from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { LiveUpdates } from '@core/live/live-updates';
 import { httpErrorInterceptor } from '@core/http/api.interceptors';
 import { NotificationStore } from '@core/notifications/notification.store';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
@@ -45,6 +56,8 @@ import {
   type ResidentProfile,
   type Resident,
   type ResidentRepository,
+  type ResidentFilter,
+  type CursorRequest,
   type StaffRepository,
   type StaffRole,
   type StaffUser,
@@ -54,10 +67,15 @@ import {
   FIELD_VISIT_REPOSITORY,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
+import { LIST_CHANGED_COPY } from '@shared/ui/list-changed-notice/list-changed-notice';
 
-import { ResidentDetailPage } from './resident-detail-page';
+import {
+  RESIDENT_DETAIL_TOPICS,
+  RESIDENT_VISIT_PANEL_TOPICS,
+  ResidentDetailPage,
+} from './resident-detail-page';
 import { ResidentFormPage } from './resident-form-page';
-import { ResidentListPage } from './resident-list-page';
+import { RESIDENT_LIST_TOPICS, ResidentListPage } from './resident-list-page';
 import { readResidentFilter, readResidentQuery, residentFilterParams } from './resident-query';
 import { RESIDENTS_COPY } from './residents.copy';
 
@@ -808,5 +826,200 @@ describe('registering and correcting a record', () => {
   it('lets a cleared role edit that same record', async () => {
     const element = html(await openForm('mswdo-head', 'res-0005'));
     expect(element.querySelector('form')).not.toBeNull();
+  });
+});
+
+/* ── live updates (DL-222) ───────────────────────────────────────────────── */
+
+/** Stands in for `LiveUpdates`: `hint([...])` is the server saying those topics changed. */
+class FakeLive {
+  private readonly hints = new Subject<readonly string[]>();
+  readonly asked: (readonly string[])[] = [];
+  readonly noteRefreshed = vi.fn();
+  readonly noteRefreshFailed = vi.fn();
+
+  changes(topics: readonly string[]): Observable<void> {
+    this.asked.push(topics);
+    return this.hints.pipe(
+      filter((changed) => changed.some((topic) => topics.includes(topic))),
+      map((): void => undefined),
+    );
+  }
+
+  hint(topics: readonly string[]): void {
+    this.hints.next(topics);
+  }
+}
+
+const reads = { list: 0, profile: 0, visits: 0 };
+/** While set, a read waits for it: a re-read still in flight, so the screen can be looked at. */
+let held: Subject<void> | null = null;
+
+function heldUntilReleased<T>(answer: Observable<T>): Observable<T> {
+  return held === null
+    ? answer
+    : held.pipe(
+        take(1),
+        switchMap(() => answer),
+      );
+}
+
+@Injectable()
+class CountingResidentRepository extends MockResidentRepository {
+  override list(
+    filter: ResidentFilter,
+    page: CursorRequest,
+  ): ReturnType<ResidentRepository['list']> {
+    reads.list += 1;
+    return heldUntilReleased(super.list(filter, page));
+  }
+
+  override getProfile(id: ResidentId): Observable<ResidentProfile | null> {
+    reads.profile += 1;
+    return heldUntilReleased(super.getProfile(id));
+  }
+}
+
+@Injectable()
+class CountingVisitRepository extends MockFieldVisitRepository {
+  override forResident(id: ResidentId): ReturnType<MockFieldVisitRepository['forResident']> {
+    reads.visits += 1;
+    return super.forResident(id);
+  }
+}
+
+async function openLive<T>(
+  component: Type<T>,
+  url: string,
+  live: FakeLive,
+  id?: string,
+): Promise<ComponentFixture<T>> {
+  reads.list = 0;
+  reads.profile = 0;
+  reads.visits = 0;
+  held = null;
+  await configure('mswdo-head', null, [], CountingResidentRepository, [
+    { provide: LiveUpdates, useValue: live },
+    { provide: FIELD_VISIT_REPOSITORY, useClass: CountingVisitRepository },
+  ]);
+  await TestBed.inject(Router).navigateByUrl(url);
+  const fixture = TestBed.createComponent(component);
+  if (id !== undefined) fixture.componentRef.setInput('id', id);
+  await fixture.whenStable();
+  fixture.detectChanges();
+  return fixture;
+}
+
+const buttonCalled = (root: ParentNode, name: string): HTMLButtonElement | undefined =>
+  Array.from(root.querySelectorAll<HTMLButtonElement>('button')).find(
+    (button) => button.textContent?.trim() === name,
+  );
+
+describe('the resident list keeps itself current (DL-222)', () => {
+  it('reads its first page again quietly on a residents hint: the rows stay while it reads', async () => {
+    const live = new FakeLive();
+    const fixture = await openLive(ResidentListPage, '/residents', live);
+    const element = html(fixture);
+    expect(live.asked).toContainEqual(RESIDENT_LIST_TOPICS);
+    expect(reads.list).toBe(1);
+    const shown = element.querySelectorAll('tbody tr').length;
+    expect(shown).toBeGreaterThan(0);
+
+    held = new Subject<void>();
+    const reread = held;
+    live.hint(['residents']);
+    fixture.detectChanges();
+    expect(reads.list).toBe(2);
+    // Still reading, and nothing flashed: the same rows, no skeleton, not busy.
+    expect(element.querySelector('app-skeleton')).toBeNull();
+    expect(element.querySelector('.table-wrap')?.getAttribute('aria-busy')).toBeNull();
+    expect(element.querySelectorAll('tbody tr').length).toBe(shown);
+
+    held = null;
+    reread.next();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(element.querySelectorAll('tbody tr').length).toBe(shown);
+    expect(live.noteRefreshed).toHaveBeenCalledTimes(2);
+  });
+
+  it('ignores a topic it does not show', async () => {
+    const live = new FakeLive();
+    await openLive(ResidentListPage, '/residents', live);
+    live.hint(['events', 'news']);
+    expect(reads.list).toBe(1);
+  });
+
+  it('holds a hint once more pages are loaded, and offers the reload instead', async () => {
+    const live = new FakeLive();
+    const fixture = await openLive(ResidentListPage, '/residents', live);
+    const element = html(fixture);
+    buttonCalled(element, 'Show more')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const loaded = element.querySelectorAll('tbody tr').length;
+    expect(reads.list).toBe(2);
+
+    live.hint(['residents']);
+    fixture.detectChanges();
+    // Nothing read, nothing reshuffled under the reader: the notice says so instead.
+    expect(reads.list).toBe(2);
+    expect(element.querySelectorAll('tbody tr').length).toBe(loaded);
+    expect(element.textContent).toContain(LIST_CHANGED_COPY.message);
+
+    buttonCalled(element, LIST_CHANGED_COPY.reload)?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(reads.list).toBe(3);
+    expect(element.textContent).not.toContain(LIST_CHANGED_COPY.message);
+    expect(element.querySelectorAll('tbody tr').length).toBeLessThan(loaded);
+  });
+});
+
+describe('a resident record keeps itself current (DL-222)', () => {
+  it('reads the profile again quietly, keeping an open dialog and what is typed in it', async () => {
+    const live = new FakeLive();
+    const fixture = await openLive(ResidentDetailPage, '/residents/res-0001', live, 'res-0001');
+    const element = html(fixture);
+    expect(live.asked).toContainEqual(RESIDENT_DETAIL_TOPICS);
+    expect(reads.profile).toBe(1);
+    const title = element.querySelector('h1')?.textContent;
+    expect(title).toBeTruthy();
+
+    buttonCalled(element, RESIDENTS_COPY.detail.retire)?.click();
+    fixture.detectChanges();
+    const reason = document.querySelector<HTMLTextAreaElement>('#resident-retire-reason');
+    expect(reason).not.toBeNull();
+    if (reason === null) return;
+    reason.value = 'Moved out of Taytay';
+    reason.dispatchEvent(new Event('input'));
+
+    held = new Subject<void>();
+    const reread = held;
+    live.hint(['assistance-requests']);
+    fixture.detectChanges();
+    expect(reads.profile).toBe(2);
+    expect(element.querySelector('app-skeleton')).toBeNull();
+    expect(element.querySelector('h1')?.textContent).toBe(title);
+
+    held = null;
+    reread.next();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(element.querySelector('h1')?.textContent).toBe(title);
+    const still = document.querySelector<HTMLTextAreaElement>('#resident-retire-reason');
+    expect(still?.value).toBe('Moved out of Taytay');
+  });
+
+  it('reads a side panel again on its own topic, and the record not at all', async () => {
+    const live = new FakeLive();
+    await openLive(ResidentDetailPage, '/residents/res-0001', live, 'res-0001');
+    expect(live.asked).toContainEqual(RESIDENT_VISIT_PANEL_TOPICS);
+    const visits = reads.visits;
+    expect(visits).toBe(1);
+
+    live.hint(['visits']);
+    expect(reads.visits).toBe(visits + 1);
+    expect(reads.profile).toBe(1);
   });
 });

@@ -13,6 +13,8 @@ import { ActivatedRoute, Router, RouterLink, type ParamMap } from '@angular/rout
 import { map, switchMap, tap, type Observable } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   asId,
   describeIssuanceWait,
@@ -36,10 +38,12 @@ import {
   type IssuanceTypeId,
 } from '@domain/index';
 import { readText } from '@shared/forms/form-values';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import { Icon } from '@shared/ui/icon/icon';
@@ -49,6 +53,9 @@ import { ISSUANCE_COPY } from './issuance.copy';
 /** One page at a time for an ended status; the API's default. */
 const PAGE_SIZE = 20;
 
+/** Requests, and the catalogue whose standards stand beside them, feed one topic (`DL-222`). */
+export const ISSUANCE_QUEUE_TOPICS: readonly LiveTopic[] = ['issuance-requests'];
+
 /**
  * What the queue holds: every open request read whole (`page: null`), or the first page of an
  * ended status, with its cursor.
@@ -56,6 +63,8 @@ const PAGE_SIZE = 20;
 interface QueueAnswer {
   readonly rows: readonly IssuanceRequestSummary[];
   readonly page: CursorPage<IssuanceRequestSummary> | null;
+  /** When the answer was read: a live queue left open overnight still counts its waits from now. */
+  readonly readAt: Date;
 }
 
 /**
@@ -125,7 +134,16 @@ function pagedFilter(query: IssuanceQueueQuery): IssuanceListFilter | null {
 @Component({
   selector: 'app-issuance-queue-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, HasPermissionDirective, Icon, PageHeader, RouterLink, StatusBadge],
+  imports: [
+    AsyncContent,
+    DataTable,
+    HasPermissionDirective,
+    Icon,
+    ListChangedNotice,
+    PageHeader,
+    RouterLink,
+    StatusBadge,
+  ],
   templateUrl: './issuance-queue-page.html',
   styleUrl: './issuance-queue-page.scss',
 })
@@ -134,6 +152,7 @@ export class IssuanceQueuePage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = ISSUANCE_COPY.queue;
   protected readonly boundaries = ISSUANCE_BOUNDARIES;
@@ -141,8 +160,9 @@ export class IssuanceQueuePage {
   protected readonly openStatuses = ISSUANCE_OPEN_STATUSES;
   protected readonly endedStatuses = ISSUANCE_TERMINAL_STATUSES;
 
-  /** Read once: the waiting times on screen are as of when the page opened. */
-  private readonly now = new Date();
+  /** The waiting times on screen are as of the queue's last read, never a running clock. */
+  private readonly opened = new Date();
+  private readonly now = computed(() => valueOf(this.first())?.readAt ?? this.opened);
 
   private readonly referenceCell =
     viewChild.required<TemplateRef<{ $implicit: IssuanceRequestSummary }>>('referenceCell');
@@ -172,9 +192,14 @@ export class IssuanceQueuePage {
   });
 
   /** The catalogue residents choose from — every office's active types — for the type filter. */
-  protected readonly types = toSignal(toViewState(this.repository.catalogue()), {
-    initialValue: LOADING as ViewState<readonly IssuanceType[]>,
-  });
+  protected readonly types = toSignal(
+    liveViewState(
+      () => this.repository.catalogue(),
+      this.live.changes(ISSUANCE_QUEUE_TOPICS),
+      this.live,
+    ),
+    { initialValue: LOADING as ViewState<readonly IssuanceType[]> },
+  );
   protected readonly typeOptions = computed(() => valueOf(this.types()) ?? []);
   private readonly standards = computed(
     () => new Map(this.typeOptions().map((type) => [type.id, type.processingDays])),
@@ -187,7 +212,13 @@ export class IssuanceQueuePage {
   private readonly further = signal<readonly CursorPage<IssuanceRequestSummary>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * Read again quietly when a request moves (`DL-222`). The reference box is its own signal, set
+   * only by a new question, so a re-read never touches a number somebody is typing.
+   */
   protected readonly first = toSignal(
     toObservable(computed(() => ({ query: this.query(), generation: this.generation() }))).pipe(
       tap(({ query }) => {
@@ -195,8 +226,19 @@ export class IssuanceQueuePage {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
-      switchMap(({ query }) => toViewState(this.read(query))),
+      switchMap(({ query }) =>
+        liveViewState(
+          () => this.read(query),
+          unlessPaged(
+            this.live.changes(ISSUANCE_QUEUE_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<QueueAnswer> },
   );
@@ -243,7 +285,7 @@ export class IssuanceQueuePage {
     {
       key: 'waiting',
       header: this.copy.columnWaiting,
-      value: (request) => describeIssuanceWait(request, this.now),
+      value: (request) => describeIssuanceWait(request, this.now()),
     },
     {
       key: 'standard',
@@ -341,11 +383,11 @@ export class IssuanceQueuePage {
     if (paged !== null) {
       return this.repository
         .list(paged, { limit: PAGE_SIZE, cursor: null })
-        .pipe(map((page) => ({ rows: page.items, page })));
+        .pipe(map((page) => ({ rows: page.items, page, readAt: new Date() })));
     }
     return this.repository
       .waiting(query.filter)
-      .pipe(map((rows) => ({ rows: oldestWaitingFirst(rows), page: null })));
+      .pipe(map((rows) => ({ rows: oldestWaitingFirst(rows), page: null, readAt: new Date() })));
   }
 
   private navigate(queryParams: Record<string, string | null>): void {

@@ -3,6 +3,8 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   WORK_PRIORITY_CATALOG,
   WORK_REPOSITORY,
@@ -14,13 +16,17 @@ import {
   type WorkItem,
 } from '@domain/index';
 import { InitialsPipe } from '@shared/pipes/initials.pipe';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { WORK_COPY } from './work.copy';
+
+/** Everybody's queue is the same work view as one's own (`DL-222`). */
+export const TEAM_QUEUE_TOPICS: readonly LiveTopic[] = ['work'];
 
 /**
  * Who is carrying what, and where it is late.
@@ -43,6 +49,7 @@ import { WORK_COPY } from './work.copy';
 })
 export class TeamQueuePage {
   private readonly work = inject(WORK_REPOSITORY);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = WORK_COPY.team;
   protected readonly queueCopy = WORK_COPY.queue;
@@ -52,7 +59,15 @@ export class TeamQueuePage {
   private readonly reloads = signal(0);
 
   protected readonly state = toSignal(
-    toObservable(this.reloads).pipe(switchMap(() => toViewState(this.work.teamQueue(this.today)))),
+    toObservable(this.reloads).pipe(
+      switchMap(() =>
+        liveViewState(
+          () => this.work.teamQueue(this.today),
+          this.live.changes(TEAM_QUEUE_TOPICS),
+          this.live,
+        ),
+      ),
+    ),
     { initialValue: LOADING as ViewState<TeamQueue> },
   );
 

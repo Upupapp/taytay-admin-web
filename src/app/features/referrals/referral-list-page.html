@@ -231,6 +231,10 @@
     <p class="status-line referrals__hint" role="note">{{ copy.notNarrowed(notNarrowed()) }}</p>
   }
 
+  @if (listChanged()) {
+    <app-list-changed-notice (reload)="reloadList()" />
+  }
+
   <app-data-table
     [caption]="copy.caption"
     [columns]="columns()"

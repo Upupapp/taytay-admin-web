@@ -6,6 +6,8 @@ import { firstValueFrom, switchMap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
 import { SessionStore } from '@core/auth/session.store';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   GOVERNANCE_REPOSITORY,
@@ -16,12 +18,16 @@ import {
 } from '@domain/index';
 import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { debouncedTerm } from '@shared/state/debounced';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { ADMIN_COPY } from './administration.copy';
+
+/** The staff directory is the office's accounts and nothing else (`DL-222`). */
+export const STAFF_TOPICS: readonly LiveTopic[] = ['users'];
 
 /**
  * The staff directory.
@@ -47,6 +53,7 @@ export class StaffPage {
   private readonly permissions = inject(PermissionService);
   private readonly notifications = inject(NotificationStore);
   private readonly session = inject(SessionStore);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = ADMIN_COPY.staff;
   protected readonly provisioningNotice = PROVISIONING_IS_NOT_BUILT;
@@ -70,8 +77,16 @@ export class StaffPage {
   protected readonly canSeeAudit = computed(() => this.permissions.has('audit.view'));
   protected readonly canSeeGovernance = computed(() => this.permissions.has('settings.manage'));
 
+  /**
+   * Read again quietly when accounts change (`DL-222`). The open switch and its reason are their
+   * own signals, so a re-read leaves an administrator's half-written reason where it was.
+   */
   protected readonly state = toSignal(
-    toObservable(this.reloads).pipe(switchMap(() => toViewState(this.repository.accounts()))),
+    toObservable(this.reloads).pipe(
+      switchMap(() =>
+        liveViewState(() => this.repository.accounts(), this.live.changes(STAFF_TOPICS), this.live),
+      ),
+    ),
     { initialValue: LOADING as ViewState<readonly StaffAccount[]> },
   );
 

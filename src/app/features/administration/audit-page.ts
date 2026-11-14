@@ -12,6 +12,8 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom, switchMap, tap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   AUDIT_ACTION_LABELS,
   AUDIT_FIELDS_NOT_RECORDED,
@@ -29,9 +31,11 @@ import {
   type CursorPage,
 } from '@domain/index';
 import { debouncedTerm } from '@shared/state/debounced';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Icon } from '@shared/ui/icon/icon';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { ADMIN_COPY } from './administration.copy';
@@ -54,10 +58,13 @@ import { ADMIN_COPY } from './administration.copy';
 /** The API's own ceiling on a page. */
 const PAGE_SIZE = 50;
 
+/** The office's audit trail; every recorded act lands in `audit` (`DL-222`). */
+export const AUDIT_TOPICS: readonly LiveTopic[] = ['audit'];
+
 @Component({
   selector: 'app-audit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, Icon, PageHeader, RouterLink],
+  imports: [AsyncContent, DatePipe, Icon, ListChangedNotice, PageHeader, RouterLink],
   templateUrl: './audit-page.html',
   styleUrl: './audit-page.scss',
 })
@@ -65,6 +72,7 @@ export class AuditPage {
   private readonly repository = inject(GOVERNANCE_REPOSITORY);
   private readonly permissions = inject(PermissionService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = ADMIN_COPY.audit;
   protected readonly fieldsNotRecorded = AUDIT_FIELDS_NOT_RECORDED;
@@ -95,16 +103,34 @@ export class AuditPage {
   private readonly further = signal<readonly CursorPage<AuditRow>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** Bumped by the reload a held hint offers, to read the same filter from its first page. */
+  private readonly generation = signal(0);
+  /** A hint arrived while older entries were on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * New entries arrive at the top, so the first page is read again quietly on an `audit` hint
+   * (`DL-222`); once older entries are loaded the hint is held and the notice offers the reload.
+   * An open entry's values are their own signals and stay open.
+   */
   protected readonly state = toSignal(
-    toObservable(this.filter).pipe(
+    toObservable(computed(() => ({ filter: this.filter(), generation: this.generation() }))).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
-      switchMap((filter) =>
-        toViewState(this.repository.auditRows(filter, { limit: PAGE_SIZE, cursor: null })),
+      switchMap(({ filter }) =>
+        liveViewState(
+          () => this.repository.auditRows(filter, { limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(AUDIT_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<AuditRow>> },
@@ -156,6 +182,11 @@ export class AuditPage {
     this.search.set('');
     this.action.set(null);
     this.sensitiveOnly.set(false);
+  }
+
+  /** The person's reload after a held hint: the same filter, from its first page. */
+  protected reloadList(): void {
+    this.generation.update((n) => n + 1);
   }
 
   protected showMore(): void {

@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   CLASSIFICATION_BASIS,
   CLASSIFICATION_CATALOG,
@@ -17,12 +19,19 @@ import {
   type DataClassification,
   type RetentionRule,
 } from '@domain/index';
+import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { ADMIN_COPY } from './administration.copy';
+
+/**
+ * Only the correction requests change while the page is open (`DL-222`); classification and
+ * retention are the office's standing policy and are read once.
+ */
+export const GOVERNANCE_CORRECTION_TOPICS: readonly LiveTopic[] = ['governance'];
 
 /**
  * Data governance.
@@ -51,6 +60,7 @@ import { ADMIN_COPY } from './administration.copy';
 })
 export class GovernancePage {
   private readonly repository = inject(GOVERNANCE_REPOSITORY);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = ADMIN_COPY.governance;
   protected readonly classificationCatalog = CLASSIFICATION_CATALOG;
@@ -69,9 +79,14 @@ export class GovernancePage {
     initialValue: LOADING as ViewState<readonly RetentionRule[]>,
   });
 
-  protected readonly correctionState = toSignal(toViewState(this.repository.corrections()), {
-    initialValue: LOADING as ViewState<readonly CorrectionRequest[]>,
-  });
+  protected readonly correctionState = toSignal(
+    liveViewState(
+      () => this.repository.corrections(),
+      this.live.changes(GOVERNANCE_CORRECTION_TOPICS),
+      this.live,
+    ),
+    { initialValue: LOADING as ViewState<readonly CorrectionRequest[]> },
+  );
 
   protected readonly classifications = computed<readonly ClassifiedRecordType[]>(
     () => valueOf(this.classificationState()) ?? [],

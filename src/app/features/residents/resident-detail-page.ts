@@ -8,6 +8,8 @@ import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { NotConnected } from '@core/access/not-connected';
 import { PermissionService } from '@core/access/permission.service';
 import { ServedPorts } from '@core/access/served-ports';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   ageInYears,
@@ -35,7 +37,8 @@ import {
   membersOf,
 } from '@domain/index';
 import { failureReason } from '@shared/state/failure-reason';
-import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
+import { liveRead, liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
 import { Icon } from '@shared/ui/icon/icon';
@@ -59,6 +62,20 @@ type PanelRead<TItem> =
   | { readonly kind: 'refused'; readonly reason: string };
 
 const NOTHING_READ_YET = { kind: 'read', items: [] } as const;
+
+/**
+ * What the profile assembles: the person, their household and members, and the requests, payouts
+ * and referrals of their history (`DL-222`). The panels beside it name their own.
+ */
+export const RESIDENT_DETAIL_TOPICS: readonly LiveTopic[] = [
+  'residents',
+  'households',
+  'assistance-requests',
+  'releases',
+  'referrals',
+];
+export const RESIDENT_FAMILY_PANEL_TOPICS: readonly LiveTopic[] = ['families'];
+export const RESIDENT_VISIT_PANEL_TOPICS: readonly LiveTopic[] = ['visits'];
 
 function panelRead<TItem>(source: Observable<readonly TItem[]>): Observable<PanelRead<TItem>> {
   return source.pipe(
@@ -113,6 +130,7 @@ export class ResidentDetailPage {
   private readonly notifications = inject(NotificationStore);
   private readonly served = inject(ServedPorts);
   private readonly permissions = inject(PermissionService);
+  private readonly live = inject(LiveUpdates);
 
   /**
    * The record's primary port is the resident registry; families and home visits are panels on it
@@ -157,7 +175,13 @@ export class ResidentDetailPage {
     toObservable(computed(() => ({ id: this.id(), opens: this.opensFamilies() }))).pipe(
       switchMap(({ id, opens }) =>
         this.servesFamilies && opens
-          ? panelRead(this.families.familiesOf(asId<ResidentId>(id)))
+          ? panelRead(
+              liveRead(
+                () => this.families.familiesOf(asId<ResidentId>(id)),
+                this.live.changes(RESIDENT_FAMILY_PANEL_TOPICS),
+                this.live,
+              ),
+            )
           : EMPTY,
       ),
     ),
@@ -175,7 +199,13 @@ export class ResidentDetailPage {
     toObservable(computed(() => ({ id: this.id(), opens: this.opensFamilies() }))).pipe(
       switchMap(({ id, opens }) =>
         this.servesFamilies && opens
-          ? panelRead(this.families.historyForResident(asId<ResidentId>(id)))
+          ? panelRead(
+              liveRead(
+                () => this.families.historyForResident(asId<ResidentId>(id)),
+                this.live.changes(RESIDENT_FAMILY_PANEL_TOPICS),
+                this.live,
+              ),
+            )
           : EMPTY,
       ),
     ),
@@ -193,7 +223,13 @@ export class ResidentDetailPage {
     toObservable(computed(() => ({ id: this.id(), opens: this.opensVisits() }))).pipe(
       switchMap(({ id, opens }) =>
         this.servesVisits && opens
-          ? panelRead(this.visits.forResident(asId<ResidentId>(id)))
+          ? panelRead(
+              liveRead(
+                () => this.visits.forResident(asId<ResidentId>(id)),
+                this.live.changes(RESIDENT_VISIT_PANEL_TOPICS),
+                this.live,
+              ),
+            )
           : EMPTY,
       ),
     ),
@@ -208,7 +244,13 @@ export class ResidentDetailPage {
 
   protected readonly state = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
-      switchMap((query) => toViewState(this.repository.getProfile(asId<ResidentId>(query.id)))),
+      switchMap((query) =>
+        liveViewState(
+          () => this.repository.getProfile(asId<ResidentId>(query.id)),
+          this.live.changes(RESIDENT_DETAIL_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<ResidentProfile | null> },
   );

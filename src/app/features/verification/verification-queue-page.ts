@@ -14,6 +14,8 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { ActivatedRoute, Router, type ParamMap } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   DEFAULT_VERIFICATION_FILTER,
   ID_DOCUMENT_TYPE_LABELS,
@@ -24,11 +26,13 @@ import {
   type VerificationFilter,
   type VerificationRequest,
 } from '@domain/index';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { Icon } from '@shared/ui/icon/icon';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
@@ -38,6 +42,9 @@ import { VERIFICATION_COPY } from './verification.copy';
 
 /** One request at a time from the server; the API's own default, and well under its ceiling. */
 const PAGE_SIZE = 20;
+
+/** The queue is verification requests and nothing else (`DL-222`). */
+export const VERIFICATION_QUEUE_TOPICS: readonly LiveTopic[] = ['verification'];
 
 /** `?status=` absent is the waiting queue; `all` is every status. Anything else reads as absent. */
 function readFilter(params: ParamMap): VerificationFilter {
@@ -72,6 +79,7 @@ function readFilter(params: ParamMap): VerificationFilter {
     DataTable,
     DatePipe,
     Icon,
+    ListChangedNotice,
     Modal,
     PageHeader,
     StatusBadge,
@@ -86,6 +94,7 @@ export class VerificationQueuePage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly locale = inject(LOCALE_ID);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = VERIFICATION_COPY.queue;
   protected readonly catalog = VERIFICATION_STATUS_CATALOG;
@@ -114,16 +123,32 @@ export class VerificationQueuePage {
   private readonly further = signal<readonly CursorPage<VerificationRequest>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * Read again quietly when a resident submits or a colleague decides (`DL-222`). An open review
+   * holds the request it was opened with (`selected`), so a re-read of the queue beneath it never
+   * moves, closes or refills the dialog.
+   */
   protected readonly first = toSignal(
     toObservable(computed(() => ({ filter: this.filter(), generation: this.generation() }))).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
       switchMap(({ filter }) =>
-        toViewState(this.repository.list(filter, { limit: PAGE_SIZE, cursor: null })),
+        liveViewState(
+          () => this.repository.list(filter, { limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(VERIFICATION_QUEUE_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<VerificationRequest>> },

@@ -744,6 +744,11 @@ protected readonly state = toSignal(
   "This list has changed. Reload list", a `.callout` with a small secondary button. Reloading starts
   from the first page and clears the flag.
 - **Form:** re-read nothing the person is editing; input, scroll position and selection are theirs.
+- **Detail with side panels:** the record re-reads with `liveViewState`; a panel that shapes its own
+  answer wraps its read in `liveRead(() => …, this.live.changes([...]), this.live)`, which keeps
+  what it shows when a re-read fails. Drafts, reasons and open dialogs are their own signals.
+- **Conversation:** a re-read adds the messages it brings, drops none already shown, and never
+  marks the conversation read.
 - **Topics** are `LiveTopic` (`@core/live/change-feed`), named for what the read counts. A screen
   whose topic never arrives still refreshes on reconnect, resync and when the tab is looked at again.
 - **The topbar control** (`app-live-indicator`, mounted once): a glass pill like the inbox button

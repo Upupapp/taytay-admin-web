@@ -14,6 +14,8 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom, switchMap, type Observable } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   ATTENDANCE_CATALOG,
@@ -49,7 +51,8 @@ import {
 } from '@domain/index';
 import { ObjectUrls } from '@shared/media/object-urls';
 import { debouncedTerm } from '@shared/state/debounced';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -57,6 +60,16 @@ import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { EventCheckIn } from './event-check-in';
 import { EVENTS_COPY } from './events.copy';
+
+/**
+ * The event and its capacity: both carry the count the API takes from the registrations, so a
+ * resident signing up moves them as much as an edit does (`DL-222`).
+ */
+export const EVENT_DETAIL_TOPICS: readonly LiveTopic[] = ['events', 'event-registrations'];
+/** Who signed up, and how each was marked. */
+export const EVENT_REGISTRANT_TOPICS: readonly LiveTopic[] = ['event-registrations'];
+/** The office's acts on the event, a registrant's included, are kept with the event. */
+export const EVENT_HISTORY_TOPICS: readonly LiveTopic[] = ['events'];
 
 /**
  * One event: the resident-facing preview, what the office did, and who signed
@@ -90,6 +103,7 @@ export class EventDetailPage {
   private readonly repository = inject(EVENT_REPOSITORY);
   private readonly permissions = inject(PermissionService);
   private readonly notifications = inject(NotificationStore);
+  private readonly live = inject(LiveUpdates);
 
   readonly id = input.required<string>();
 
@@ -150,23 +164,46 @@ export class EventDetailPage {
   private readonly marks = signal(0);
   private readonly countKey = computed(() => ({ ...this.key(), marks: this.marks() }));
 
+  /**
+   * Each read below is re-read quietly on its topics (`DL-222`) and never shows the skeleton for
+   * it, so the check-in panel, the cover, the cancel dialog and the reason being typed all stay as
+   * they are: they hang on the event's id and on signals of their own, never on the read.
+   */
   protected readonly state = toSignal(
     toObservable(this.key).pipe(
-      switchMap((query) => toViewState(this.repository.getById(asId<LguEventId>(query.id)))),
+      switchMap((query) =>
+        liveViewState(
+          () => this.repository.getById(asId<LguEventId>(query.id)),
+          this.live.changes(EVENT_DETAIL_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<LguEvent | null> },
   );
 
   protected readonly capacityState = toSignal(
     toObservable(this.countKey).pipe(
-      switchMap((query) => toViewState(this.repository.capacity(asId<LguEventId>(query.id)))),
+      switchMap((query) =>
+        liveViewState(
+          () => this.repository.capacity(asId<LguEventId>(query.id)),
+          this.live.changes(EVENT_DETAIL_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<EventCapacitySummary> },
   );
 
   protected readonly historyState = toSignal(
     toObservable(this.countKey).pipe(
-      switchMap((query) => toViewState(this.repository.history(asId<LguEventId>(query.id)))),
+      switchMap((query) =>
+        liveViewState(
+          () => this.repository.history(asId<LguEventId>(query.id)),
+          this.live.changes(EVENT_HISTORY_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<readonly AuditRow[]> },
   );
@@ -194,7 +231,11 @@ export class EventDetailPage {
   protected readonly registrantState = toSignal(
     toObservable(this.registrantQuery).pipe(
       switchMap((query) =>
-        toViewState(this.repository.registrants(asId<LguEventId>(query.id), query.filter)),
+        liveViewState(
+          () => this.repository.registrants(asId<LguEventId>(query.id), query.filter),
+          this.live.changes(EVENT_REGISTRANT_TOPICS),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<readonly RegistrantView[]> },

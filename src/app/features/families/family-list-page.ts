@@ -13,6 +13,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   barangayName,
   FAMILY_REPOSITORY,
@@ -23,17 +25,22 @@ import {
   type FamilySummary,
 } from '@domain/index';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
-import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { Icon } from '@shared/ui/icon/icon';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 
 import { FAMILIES_COPY } from './families.copy';
 import { readFamilyQuery } from './family-query';
 
 /** One page at a time from the server; the API's own default, and well under its ceiling. */
 const PAGE_SIZE = 20;
+
+/** A row is a family, its size and where it lives, and its head's name (`DL-222`). */
+export const FAMILY_LIST_TOPICS: readonly LiveTopic[] = ['families', 'residents'];
 
 /**
  * The family registry.
@@ -52,7 +59,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-family-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, HasPermissionDirective, Icon, PageHeader, RouterLink],
+  imports: [DataTable, HasPermissionDirective, Icon, ListChangedNotice, PageHeader, RouterLink],
   templateUrl: './family-list-page.html',
   styleUrl: './family-list-page.scss',
 })
@@ -61,6 +68,7 @@ export class FamilyListPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = FAMILIES_COPY.list;
   protected readonly barangays = TAYTAY_BARANGAYS;
@@ -83,7 +91,10 @@ export class FamilyListPage {
   protected readonly moreFailed = signal(false);
   /** Bumped by "Try again" to read the same filter again from its first page. */
   private readonly generation = signal(0);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /** A hint re-reads the first page quietly, unless somebody has loaded more of it (`DL-222`). */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ query: this.query(), generation: this.generation() }))).pipe(
       tap(({ query }) => {
@@ -91,9 +102,18 @@ export class FamilyListPage {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
       switchMap(({ query }) =>
-        toViewState(this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null })),
+        liveViewState(
+          () => this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(FAMILY_LIST_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<FamilySummary>> },

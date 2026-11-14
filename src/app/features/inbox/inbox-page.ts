@@ -13,6 +13,8 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { RouterLink } from '@angular/router';
 import { switchMap, tap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   OFFICE_INBOX_REPOSITORY,
   OFFICE_REPOSITORY,
@@ -22,7 +24,9 @@ import {
   type OfficeThread,
 } from '@domain/index';
 import { officeDirectory } from '@shared/offices/office-directory';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
@@ -34,6 +38,9 @@ import { INBOX_COPY } from './inbox.copy';
 
 /** One page at a time from the server; the API's own default, and well under its ceiling. */
 const PAGE_SIZE = 20;
+
+/** Conversations and their messages; both feed `threads` (`DL-222`). */
+export const INBOX_TOPICS: readonly LiveTopic[] = ['threads'];
 
 /**
  * The office inbox (`DL-168`): residents' conversations with an office, newest activity first.
@@ -53,7 +60,16 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-inbox-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, DatePipe, Icon, PageHeader, RouterLink, StatusBadge],
+  imports: [
+    AsyncContent,
+    DataTable,
+    DatePipe,
+    Icon,
+    ListChangedNotice,
+    PageHeader,
+    RouterLink,
+    StatusBadge,
+  ],
   templateUrl: './inbox-page.html',
   styleUrl: './inbox-page.scss',
 })
@@ -61,6 +77,7 @@ export class InboxPage {
   private readonly repository = inject(OFFICE_INBOX_REPOSITORY);
   private readonly offices = inject(OFFICE_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = INBOX_COPY.list;
   protected readonly noOffice = INBOX_COPY.noOffice;
@@ -82,15 +99,33 @@ export class InboxPage {
   private readonly further = signal<readonly CursorPage<OfficeThread>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * A new message re-orders the inbox and moves its unread counts, so the first page is read again
+   * quietly on a `threads` hint — a read, never a mark (`DL-222`). Once more pages are loaded the
+   * hint is held and the notice offers the reload instead.
+   */
   protected readonly first = toSignal(
     toObservable(this.generation).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
-      switchMap(() => toViewState(this.repository.list({ limit: PAGE_SIZE, cursor: null }))),
+      switchMap(() =>
+        liveViewState(
+          () => this.repository.list({ limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(INBOX_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<InboxListing> },
   );

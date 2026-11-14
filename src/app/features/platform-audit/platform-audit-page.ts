@@ -12,6 +12,8 @@ import {
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap, tap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   describeAuditAction,
   PLATFORM_AUDIT_LIMITS,
@@ -19,17 +21,22 @@ import {
   type CursorPage,
   type PlatformAuditEntry,
 } from '@domain/index';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { Icon } from '@shared/ui/icon/icon';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { PLATFORM_AUDIT_COPY } from './platform-audit.copy';
 
 /** The largest page the API serves. */
 const PAGE_SIZE = 50;
+
+/** The API's audit log is the one table this page reads (`DL-222`). */
+export const PLATFORM_AUDIT_TOPICS: readonly LiveTopic[] = ['audit'];
 
 /**
  * The Node API's audit trail (`audit.view`, `DL-171`): who did what to which record, and when.
@@ -46,13 +53,14 @@ const PAGE_SIZE = 50;
 @Component({
   selector: 'app-platform-audit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, DatePipe, Icon, PageHeader],
+  imports: [AsyncContent, DataTable, DatePipe, Icon, ListChangedNotice, PageHeader],
   templateUrl: './platform-audit-page.html',
   styleUrl: './platform-audit-page.scss',
 })
 export class PlatformAuditPage {
   private readonly repository = inject(PLATFORM_AUDIT_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = PLATFORM_AUDIT_COPY;
   protected readonly limits = PLATFORM_AUDIT_LIMITS;
@@ -71,15 +79,29 @@ export class PlatformAuditPage {
   private readonly further = signal<readonly CursorPage<PlatformAuditEntry>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** A hint arrived while older entries were on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /** New entries arrive at the top: the first page is read again quietly on an `audit` hint. */
   protected readonly first = toSignal(
     toObservable(this.generation).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
-      switchMap(() => toViewState(this.repository.list({ limit: PAGE_SIZE, cursor: null }))),
+      switchMap(() =>
+        liveViewState(
+          () => this.repository.list({ limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(PLATFORM_AUDIT_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<PlatformAuditEntry>> },
   );

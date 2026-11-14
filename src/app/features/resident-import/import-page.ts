@@ -13,6 +13,8 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { switchMap, tap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   asId,
   commitBlockers,
@@ -28,7 +30,8 @@ import {
   type ResidentImportId,
 } from '@domain/index';
 import { failureReason } from '@shared/state/failure-reason';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
@@ -39,6 +42,12 @@ import { RESIDENT_IMPORT_COPY } from './resident-import.copy';
 
 const STEP_NUMBER: Readonly<Record<ImportStep, number>> = { map: 2, check: 3, confirm: 4, done: 5 };
 const OUTCOMES: readonly ImportOutcomeKind[] = ['created', 'attached', 'skipped', 'error'];
+
+/**
+ * The import and its rows, and the registry records its matches are read against: a resident added
+ * since the check is a new match (`DL-222`).
+ */
+export const IMPORT_TOPICS: readonly LiveTopic[] = ['imports', 'residents'];
 
 /**
  * Import citizens, steps 2 to 5 (`DL-214`): match the columns, check the rows, confirm, done. One
@@ -62,6 +71,7 @@ export class ImportPage {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly locale = inject(LOCALE_ID);
+  private readonly live = inject(LiveUpdates);
 
   /** Bound from the route (`withComponentInputBinding`). */
   readonly importId = input.required<string>();
@@ -74,11 +84,35 @@ export class ImportPage {
   private readonly generation = signal(0);
   /** The server's latest answer to an act on this import; cleared when the import is read again. */
   private readonly latest = signal<ResidentImport | null>(null);
+  /**
+   * Answers to acts so far, and how many there were when the last read was asked: a re-read asked
+   * before an act's answer is older than it and must not replace it (`DL-222`).
+   */
+  private answers = 0;
+  private askedAfter = 0;
 
+  /**
+   * A hint reads the import again quietly. A re-read is a read: it resolves, maps and commits
+   * nothing, and the mapping form and each row's finding keep what the person has chosen and typed
+   * (`DL-222`).
+   */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ id: this.importId(), generation: this.generation() }))).pipe(
       tap(() => this.latest.set(null)),
-      switchMap(({ id }) => toViewState(this.repository.get(asId<ResidentImportId>(id)))),
+      switchMap(({ id }) =>
+        liveViewState(
+          () => {
+            this.askedAfter = this.answers;
+            return this.repository.get(asId<ResidentImportId>(id));
+          },
+          this.live.changes(IMPORT_TOPICS),
+          this.live,
+        ).pipe(
+          tap((state) => {
+            if (state.kind === 'ready' && this.askedAfter === this.answers) this.latest.set(null);
+          }),
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<ResidentImport | null> },
   );
@@ -134,7 +168,7 @@ export class ImportPage {
 
   /** The mapping form saved: its answer is the import read again under the new mapping. */
   protected mapped(record: ResidentImport): void {
-    this.latest.set(record);
+    this.answer(record);
   }
 
   protected resolve(row: ImportRow, resolution: ImportResolution): void {
@@ -144,10 +178,15 @@ export class ImportPage {
       .resolve(record.id, row.row, resolution)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (answer) => this.latest.set(answer),
+        next: (answer) => this.answer(answer),
         error: (failure: unknown) =>
           this.problem.set(this.copy.finding.refused(failureReason(failure) ?? this.copy.noAnswer)),
       });
+  }
+
+  private answer(record: ResidentImport): void {
+    this.answers += 1;
+    this.latest.set(record);
   }
 
   protected commit(): void {

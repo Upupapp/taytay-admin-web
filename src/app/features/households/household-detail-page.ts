@@ -14,6 +14,8 @@ import { switchMap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   asId,
@@ -28,7 +30,8 @@ import {
   type HouseholdMemberView,
   type VulnerabilityFactorCode,
 } from '@domain/index';
-import { LOADING, toViewState, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, type ViewState } from '@shared/state/view-state';
 import {
   VulnerabilitySnapshotPanel,
   type FactorCorrectionRequest,
@@ -42,6 +45,12 @@ import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
 
 import { HOUSEHOLDS_COPY } from './households.copy';
 import { HouseholdMemberEditor, type MembershipSubmission } from './household-member-editor';
+
+/**
+ * The household, its trail, and the members its composition and indicators are read from
+ * (`DL-222`).
+ */
+export const HOUSEHOLD_DETAIL_TOPICS: readonly LiveTopic[] = ['households', 'residents'];
 
 /**
  * One household: who is in it, what the indicators say, and what anybody has
@@ -75,6 +84,7 @@ export class HouseholdDetailPage {
   private readonly repository = inject(HOUSEHOLD_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
   private readonly permissions = inject(PermissionService);
+  private readonly live = inject(LiveUpdates);
 
   readonly id = input.required<string>();
 
@@ -89,9 +99,19 @@ export class HouseholdDetailPage {
 
   private readonly reloads = signal(0);
 
+  /**
+   * A hint reads the household again quietly (`DL-222`). The member editor and the correction
+   * dialogue keep their own signals, so a re-read never touches a change or a reason being written.
+   */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
-      switchMap((query) => toViewState(this.repository.getById(asId<HouseholdId>(query.id)))),
+      switchMap((query) =>
+        liveViewState(
+          () => this.repository.getById(asId<HouseholdId>(query.id)),
+          this.live.changes(HOUSEHOLD_DETAIL_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<HouseholdDetail | null> },
   );

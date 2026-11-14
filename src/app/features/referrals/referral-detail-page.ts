@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom, of, switchMap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   DISCLOSURE_BASIS_LABELS,
@@ -32,13 +34,17 @@ import {
   type SharedField,
   referralWordsWithheld,
 } from '@domain/index';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveRead, liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { failureDetail, saidByTheHttpLayer } from './referral-failure';
 import { REFERRALS_COPY } from './referrals.copy';
+
+/** The referral and the sheet composed from it are one record's reads (`DL-222`). */
+export const REFERRAL_DETAIL_TOPICS: readonly LiveTopic[] = ['referrals'];
 
 /**
  * One referral, and the sheet the receiving office will see.
@@ -59,6 +65,7 @@ export class ReferralDetailPage {
   private readonly repository = inject(REFERRAL_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
   private readonly permissions = inject(PermissionService);
+  private readonly live = inject(LiveUpdates);
 
   readonly id = input.required<string>();
 
@@ -73,9 +80,19 @@ export class ReferralDetailPage {
   }
   protected readonly saving = signal(false);
 
+  /**
+   * Re-read quietly when referrals change (`DL-222`). The basis, the shared field, the outcome and
+   * the note being composed are signals of their own, so a re-read never touches them.
+   */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
-      switchMap((query) => toViewState(this.repository.getById(asId<ReferralId>(query.id)))),
+      switchMap((query) =>
+        liveViewState(
+          () => this.repository.getById(asId<ReferralId>(query.id)),
+          this.live.changes(REFERRAL_DETAIL_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<Referral | null> },
   );
@@ -85,7 +102,13 @@ export class ReferralDetailPage {
   /** Composed by the data layer from the recorded plan, never by this screen. */
   protected readonly summary = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
-      switchMap((query) => this.repository.summaryFor(asId<ReferralId>(query.id))),
+      switchMap((query) =>
+        liveRead(
+          () => this.repository.summaryFor(asId<ReferralId>(query.id)),
+          this.live.changes(REFERRAL_DETAIL_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: null as ReferralSummarySheet | null },
   );
@@ -166,9 +189,21 @@ export class ReferralDetailPage {
     this.rescheduleReason.set((event.target as HTMLInputElement).value);
   }
 
-  protected readonly canRecordOutcome = computed(
-    () => this.outcomeText().trim().length > 0 && this.outcomeStatus() !== null && !this.saving(),
-  );
+  /**
+   * The chosen outcome must still be one the referral can move to: a re-read that moved it keeps
+   * the choice the worker made, but no longer offers to send it (`DL-222`).
+   */
+  protected readonly canRecordOutcome = computed(() => {
+    const status = this.outcomeStatus();
+    const referral = this.referral();
+    return (
+      this.outcomeText().trim().length > 0 &&
+      status !== null &&
+      referral !== null &&
+      this.outcomeStatuses(referral).includes(status) &&
+      !this.saving()
+    );
+  });
   protected readonly canAddNote = computed(
     () => this.noteText().trim().length > 0 && !this.saving(),
   );

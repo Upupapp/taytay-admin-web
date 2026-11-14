@@ -1,10 +1,11 @@
-import { signal } from '@angular/core';
+import { signal, type Provider } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, throwError, type Observable } from 'rxjs';
+import { filter, map, of, Subject, throwError, type Observable } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SessionStore } from '@core/auth/session.store';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   asId,
   asIsoDateTime,
@@ -26,10 +27,11 @@ import {
   type ThreadMessageId,
   type WriteIntent,
 } from '@domain/index';
+import { LIST_CHANGED_COPY } from '@shared/ui/list-changed-notice/list-changed-notice';
 
-import { InboxPage } from './inbox-page';
+import { INBOX_TOPICS, InboxPage } from './inbox-page';
 import { INBOX_COPY } from './inbox.copy';
-import { ThreadPage } from './thread-page';
+import { THREAD_TOPICS, ThreadPage } from './thread-page';
 
 const MSWDO = asId<OfficeId>('office-mswdo');
 const RESIDENT = asId<AppAccountId>('resident-1');
@@ -73,9 +75,19 @@ class RecordingInbox implements OfficeInboxRepository {
   answer: 'threads' | 'no-office' | 'empty' = 'threads';
   current: OfficeThread = thread(1);
   failWith: unknown = null;
+  /** Reads of the conversation and of its newest page, so a test can count re-reads. */
+  threadReads = 0;
+  newestReads = 0;
+  /** When set, the next first-page read of the list waits for this answer. */
+  pendingList: Subject<InboxListing> | null = null;
+  /** When set, the newest page the server now holds — a message arrived since the last read. */
+  newest: CursorPage<ThreadMessage> | null = null;
 
   list(page: CursorRequest): Observable<InboxListing> {
     this.listed.push(page);
+    if (this.pendingList !== null && page.cursor === null) {
+      return this.pendingList;
+    }
     if (this.answer === 'no-office') {
       return of({ kind: 'no-office' });
     }
@@ -91,10 +103,15 @@ class RecordingInbox implements OfficeInboxRepository {
   }
 
   thread(): Observable<OfficeThread> {
+    this.threadReads += 1;
     return of(this.current);
   }
 
   messages(_id: OfficeThreadId, page: CursorRequest): Observable<CursorPage<ThreadMessage>> {
+    if (!page.cursor) {
+      this.newestReads += 1;
+      if (this.newest !== null) return of(this.newest);
+    }
     // Newest first, as the server sends them.
     return of(
       page.cursor
@@ -135,7 +152,12 @@ class RecordingInbox implements OfficeInboxRepository {
 }
 
 const OFFICES: readonly Office[] = [
-  { id: MSWDO, name: 'Municipal Social Welfare and Development Office', slug: 'mswdo', shortName: 'MSWDO' },
+  {
+    id: MSWDO,
+    name: 'Municipal Social Welfare and Development Office',
+    slug: 'mswdo',
+    shortName: 'MSWDO',
+  },
 ];
 
 const created: string[] = [];
@@ -166,7 +188,10 @@ afterEach(() => {
   Reflect.deleteProperty(URL, 'revokeObjectURL');
 });
 
-function configure(directory: Observable<readonly Office[]> = of(OFFICES)): RecordingInbox {
+function configure(
+  directory: Observable<readonly Office[]> = of(OFFICES),
+  extra: readonly Provider[] = [],
+): RecordingInbox {
   const inbox = new RecordingInbox();
   const offices: OfficeRepository = { list: () => directory };
   TestBed.resetTestingModule();
@@ -176,6 +201,7 @@ function configure(directory: Observable<readonly Office[]> = of(OFFICES)): Reco
       { provide: OFFICE_INBOX_REPOSITORY, useValue: inbox },
       { provide: OFFICE_REPOSITORY, useValue: offices },
       { provide: SessionStore, useValue: { user: signal({ id: READER }) } },
+      ...extra,
     ],
   });
   return inbox;
@@ -228,7 +254,9 @@ describe('InboxPage (DL-168)', () => {
     const link = element.querySelector<HTMLAnchorElement>('tbody a');
     expect(link?.getAttribute('href')).toBe('/inbox/thread-1');
     expect(link?.textContent?.trim()).toBe('Subject 1');
-    expect(element.textContent).toContain('Municipal Social Welfare and Development Office (MSWDO)');
+    expect(element.textContent).toContain(
+      'Municipal Social Welfare and Development Office (MSWDO)',
+    );
     expect(element.textContent).toContain('2 unread');
   });
 
@@ -263,12 +291,15 @@ describe('InboxPage (DL-168)', () => {
 
 /* ── one conversation ────────────────────────────────────────────────────── */
 
-async function openThread(inbox?: (repository: RecordingInbox) => void): Promise<{
+async function openThread(
+  inbox?: (repository: RecordingInbox) => void,
+  extra: readonly Provider[] = [],
+): Promise<{
   fixture: ComponentFixture<ThreadPage>;
   element: HTMLElement;
   repository: RecordingInbox;
 }> {
-  const repository = configure();
+  const repository = configure(of(OFFICES), extra);
   inbox?.(repository);
   const fixture = TestBed.createComponent(ThreadPage);
   fixture.componentRef.setInput('threadId', 'thread-1');
@@ -326,7 +357,9 @@ describe('ThreadPage (DL-168)', () => {
 
     expect(repository.opened).toEqual(['media-b']);
     expect(element.querySelector('img')?.getAttribute('src')).toBe('blob:test/1');
-    expect(element.querySelector('img')?.getAttribute('alt')).toBe('Image 2 attached to this message');
+    expect(element.querySelector('img')?.getAttribute('alt')).toBe(
+      'Image 2 attached to this message',
+    );
 
     buttonNamed(element, 'Hide image 2')?.click();
     await settle(fixture);
@@ -448,5 +481,154 @@ describe('ThreadPage (DL-168)', () => {
     expect(element.textContent).toContain(INBOX_COPY.thread.closedNote);
     expect(element.querySelector('#thread-reply-body')).toBeNull();
     expect(buttonNamed(element, INBOX_COPY.thread.closeOpen)).toBeNull();
+  });
+});
+
+/* ── live updates (DL-222) ───────────────────────────────────────────────── */
+
+/** Stands in for `LiveUpdates`: `hint([...])` is the server saying those topics changed. */
+class FakeLive {
+  private readonly hints = new Subject<readonly string[]>();
+  readonly asked: (readonly string[])[] = [];
+  readonly noteRefreshed = vi.fn();
+  readonly noteRefreshFailed = vi.fn();
+
+  changes(topics: readonly string[]): Observable<void> {
+    this.asked.push(topics);
+    return this.hints.pipe(
+      filter((changed) => changed.some((topic) => topics.includes(topic))),
+      map((): void => undefined),
+    );
+  }
+
+  hint(topics: readonly string[]): void {
+    this.hints.next(topics);
+  }
+}
+
+describe('the inbox keeps itself current (DL-222)', () => {
+  it('reads its first page again quietly on a threads hint, and marks nothing', async () => {
+    const live = new FakeLive();
+    const inbox = configure(of(OFFICES), [{ provide: LiveUpdates, useValue: live }]);
+    const fixture = TestBed.createComponent(InboxPage);
+    const element = await settle(fixture);
+    expect(live.asked).toContainEqual(INBOX_TOPICS);
+    expect(inbox.listed).toHaveLength(1);
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(2);
+
+    const answer = new Subject<InboxListing>();
+    inbox.pendingList = answer;
+    live.hint(['threads']);
+    fixture.detectChanges();
+    // Asked again, from the first page; the rows stay on screen while it reads.
+    expect(inbox.listed).toHaveLength(2);
+    expect(inbox.listed[1]?.cursor).toBeNull();
+    expect(element.querySelector('app-skeleton')).toBeNull();
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(2);
+
+    answer.next({
+      kind: 'threads',
+      page: { items: [thread(4), thread(1), thread(2)], hasMore: true, nextCursor: 'cursor-2' },
+    });
+    answer.complete();
+    await settle(fixture);
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(3);
+    expect(inbox.acts).toEqual([]);
+  });
+
+  it('holds the hint once more pages are loaded, and offers the reload instead', async () => {
+    const live = new FakeLive();
+    const inbox = configure(of(OFFICES), [{ provide: LiveUpdates, useValue: live }]);
+    const fixture = TestBed.createComponent(InboxPage);
+    const element = await settle(fixture);
+    buttonNamed(element, INBOX_COPY.list.showMore)?.click();
+    await settle(fixture);
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(3);
+    expect(inbox.listed).toHaveLength(2);
+
+    live.hint(['threads']);
+    await settle(fixture);
+    expect(inbox.listed).toHaveLength(2);
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(3);
+    expect(element.textContent).toContain(LIST_CHANGED_COPY.message);
+
+    buttonNamed(element, LIST_CHANGED_COPY.reload)?.click();
+    await settle(fixture);
+    expect(inbox.listed).toHaveLength(3);
+    expect(inbox.listed[2]?.cursor).toBeNull();
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(2);
+    expect(element.textContent).not.toContain(LIST_CHANGED_COPY.message);
+  });
+});
+
+describe('a conversation keeps itself current (DL-222)', () => {
+  const live = (): { fake: FakeLive; providers: readonly Provider[] } => {
+    const fake = new FakeLive();
+    return { fake, providers: [{ provide: LiveUpdates, useValue: fake }] };
+  };
+
+  const shownMessages = (element: HTMLElement): (string | undefined)[] =>
+    [...element.querySelectorAll('.thread__body')].map((body) => body.textContent?.trim());
+
+  it('reads again with no new message and does not mark the conversation read', async () => {
+    const { fake, providers } = live();
+    const { fixture, element, repository } = await openThread((inbox) => {
+      inbox.current = thread(1, { unreadCount: 2 });
+    }, providers);
+    expect(fake.asked).toContainEqual(THREAD_TOPICS);
+    expect(repository.threadReads).toBe(1);
+    expect(repository.newestReads).toBe(1);
+
+    // Somebody is half-way through a reply.
+    const reply = element.querySelector<HTMLTextAreaElement>('#thread-reply-body');
+    expect(reply).not.toBeNull();
+    if (reply === null) return;
+    reply.value = 'We will call you on Tuesday';
+    reply.dispatchEvent(new Event('input'));
+
+    fake.hint(['threads']);
+    await settle(fixture);
+    fake.hint(['threads']);
+    await settle(fixture);
+
+    expect(repository.threadReads).toBe(3);
+    expect(repository.newestReads).toBe(3);
+    // A re-read is a read: still unread for the office, and the mark is the reader's own act.
+    expect(repository.acts).toEqual([]);
+    expect(buttonNamed(element, INBOX_COPY.thread.markRead)).not.toBeNull();
+    expect(element.querySelector('app-skeleton')).toBeNull();
+    expect(element.querySelector<HTMLTextAreaElement>('#thread-reply-body')?.value).toBe(
+      'We will call you on Tuesday',
+    );
+  });
+
+  it('adds a new message at the end, keeps every message already shown, and marks nothing', async () => {
+    const { fake, providers } = live();
+    const { fixture, element, repository } = await openThread(undefined, providers);
+    buttonNamed(element, INBOX_COPY.thread.earlier)?.click();
+    await settle(fixture);
+    expect(shownMessages(element)).toEqual([
+      'Words of message 1',
+      'Words of message 2',
+      'Words of message 3',
+    ]);
+
+    // A resident wrote again: the newest page now starts at 4, and 2 has slipped out of it.
+    repository.newest = {
+      items: [message(4, 'resident-1'), message(3, READER)],
+      hasMore: true,
+      nextCursor: 'older-2',
+    };
+    repository.current = thread(1, { unreadCount: 1 });
+    fake.hint(['threads']);
+    await settle(fixture);
+
+    expect(shownMessages(element)).toEqual([
+      'Words of message 1',
+      'Words of message 2',
+      'Words of message 3',
+      'Words of message 4',
+    ]);
+    expect(repository.acts).toEqual([]);
   });
 });

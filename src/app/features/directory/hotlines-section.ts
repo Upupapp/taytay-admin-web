@@ -11,6 +11,8 @@ import {
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   activeCommandCenter,
   APP_VISIBILITY_CATALOG,
@@ -25,7 +27,8 @@ import {
   type HotlineListing,
 } from '@domain/index';
 import { failureReason } from '@shared/state/failure-reason';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
@@ -35,6 +38,9 @@ import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { DIRECTORY_COPY } from './directory.copy';
 import { HotlineForm } from './hotline-form';
+
+/** The app's hotlines, read whole (`DL-222`). */
+export const DIRECTORY_HOTLINES_TOPICS: readonly LiveTopic[] = ['hotlines'];
 
 /**
  * Hotlines (`DL-170`): every line, shown and hidden, in the order the app lists them. The API answers
@@ -55,6 +61,7 @@ import { HotlineForm } from './hotline-form';
 export class HotlinesSection {
   private readonly repository = inject(HOTLINE_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = DIRECTORY_COPY.hotlines;
   protected readonly listCopy = DIRECTORY_COPY.list;
@@ -63,8 +70,20 @@ export class HotlinesSection {
   protected readonly cap = HOTLINE_LIST_CAP;
 
   private readonly generation = signal(0);
+  /**
+   * Read again quietly when a line changes (`DL-222`). The drawer and the delete dialog hold the
+   * line they were opened with, so a re-read never closes them or refills a form.
+   */
   protected readonly listing = toSignal(
-    toObservable(this.generation).pipe(switchMap(() => toViewState(this.repository.list()))),
+    toObservable(this.generation).pipe(
+      switchMap(() =>
+        liveViewState(
+          () => this.repository.list(),
+          this.live.changes(DIRECTORY_HOTLINES_TOPICS),
+          this.live,
+        ),
+      ),
+    ),
     { initialValue: LOADING as ViewState<HotlineListing> },
   );
   protected readonly rows = computed(() => valueOf(this.listing())?.hotlines ?? []);

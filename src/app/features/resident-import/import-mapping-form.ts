@@ -8,6 +8,7 @@ import {
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -18,6 +19,7 @@ import {
   type ImportField,
   type ImportMapping,
   type ResidentImport,
+  type ResidentImportId,
 } from '@domain/index';
 import { failureReason } from '@shared/state/failure-reason';
 
@@ -50,6 +52,9 @@ export class ImportMappingForm {
   protected readonly saving = signal(false);
   protected readonly problem = signal('');
   protected readonly outcome = signal('');
+  /** Nothing chosen since the form was last seeded, so the server's mapping may seed it again. */
+  private readonly pristine = signal(true);
+  private seededFor: ResidentImportId | null = null;
 
   protected readonly locked = computed(() => !canRemap(this.record()));
   protected readonly missing = computed(() =>
@@ -59,8 +64,16 @@ export class ImportMappingForm {
   );
 
   constructor() {
-    // The server's mapping seeds the form, and its answer after a save re-seeds it.
-    effect(() => this.draft.set(this.record().mapping));
+    // The server's mapping seeds the form, and its answer after a save re-seeds it. A live re-read
+    // of the same import re-seeds it only while nothing is chosen and unsaved (`DL-222`).
+    effect(() => {
+      const record = this.record();
+      if (record.id !== this.seededFor || untracked(this.pristine)) {
+        this.seededFor = record.id;
+        this.pristine.set(true);
+        this.draft.set(record.mapping);
+      }
+    });
   }
 
   protected labelOf(field: ImportField): string {
@@ -91,6 +104,7 @@ export class ImportMappingForm {
       return;
     }
     this.problem.set('');
+    this.pristine.set(false);
     this.draft.update((mapping) => ({ ...mapping, [field]: column }));
   }
 
@@ -106,6 +120,7 @@ export class ImportMappingForm {
         next: (answer) => {
           this.saving.set(false);
           this.outcome.set(this.copy.saved);
+          this.pristine.set(true);
           this.saved.emit(answer);
         },
         error: (failure: unknown) => {

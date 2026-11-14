@@ -16,6 +16,8 @@ import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { NotConnected } from '@core/access/not-connected';
 import { ServedPorts } from '@core/access/served-ports';
 import { SessionStore } from '@core/auth/session.store';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   isResidentFilterActive,
   isSensitiveSector,
@@ -36,8 +38,10 @@ import {
 } from '@domain/index';
 import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
-import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { SavedViewsBar } from '@shared/ui/saved-views/saved-views-bar';
@@ -49,6 +53,9 @@ import { readResidentQuery, residentFilterParams } from './resident-query';
 
 /** One page at a time from the server; the API's own default, and well under its ceiling. */
 const PAGE_SIZE = 20;
+
+/** The registry's rows are residents and nothing else (`DL-222`). */
+export const RESIDENT_LIST_TOPICS: readonly LiveTopic[] = ['residents'];
 
 /**
  * The registry list, and the reference implementation for list screens.
@@ -76,6 +83,7 @@ const PAGE_SIZE = 20;
     HasPermissionDirective,
     Icon,
     InitialsPipe,
+    ListChangedNotice,
     NotConnected,
     PageHeader,
     RouterLink,
@@ -90,6 +98,7 @@ export class ResidentListPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   /**
    * The saved views are a secondary panel: the registry is the screen, and a row of named filters
@@ -139,6 +148,8 @@ export class ResidentListPage {
   protected readonly moreFailed = signal(false);
   /** Bumped by "Try again" to read the same filter again from its first page. */
   private readonly generation = signal(0);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
   protected readonly state = toSignal(
     toObservable(computed(() => ({ query: this.query(), generation: this.generation() }))).pipe(
@@ -149,11 +160,21 @@ export class ResidentListPage {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
       // Each keystroke's request supersedes the last, so a fast typist over a
-      // large registry never waits on an answer they have moved past.
+      // large registry never waits on an answer they have moved past. A hint
+      // re-reads the first page quietly, unless somebody has loaded more of it.
       switchMap(({ query }) =>
-        toViewState(this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null })),
+        liveViewState(
+          () => this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(RESIDENT_LIST_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<ResidentView>> },
@@ -259,6 +280,11 @@ export class ResidentListPage {
   }
 
   protected retry(): void {
+    this.generation.update((n) => n + 1);
+  }
+
+  /** The person's reload after a held hint: the same filter, from its first page. */
+  protected reloadList(): void {
     this.generation.update((n) => n + 1);
   }
 

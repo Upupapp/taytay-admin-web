@@ -6,6 +6,8 @@ import { firstValueFrom, switchMap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
 import { SessionStore } from '@core/auth/session.store';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   ACKNOWLEDGEMENT_KIND_LABELS,
@@ -30,12 +32,16 @@ import {
 } from '@domain/index';
 import { StatusTransition, type StatusTransitionRequest } from '@shared/cases/status-transition';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveRead, liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { RELEASES_COPY } from './releases.copy';
+
+/** The release and the approver recorded on it are one record (`DL-222`). */
+export const RELEASE_DETAIL_TOPICS: readonly LiveTopic[] = ['releases'];
 
 /**
  * One release, and the acts that can be recorded against it.
@@ -53,7 +59,15 @@ import { RELEASES_COPY } from './releases.copy';
 @Component({
   selector: 'app-release-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, PageHeader, PesoPipe, RouterLink, StatusBadge, StatusTransition],
+  imports: [
+    AsyncContent,
+    DatePipe,
+    PageHeader,
+    PesoPipe,
+    RouterLink,
+    StatusBadge,
+    StatusTransition,
+  ],
   templateUrl: './release-detail-page.html',
   styleUrl: './release-detail-page.scss',
 })
@@ -62,6 +76,7 @@ export class ReleaseDetailPage {
   private readonly notifications = inject(NotificationStore);
   private readonly permissions = inject(PermissionService);
   private readonly session = inject(SessionStore);
+  private readonly live = inject(LiveUpdates);
 
   readonly id = input.required<string>();
 
@@ -70,9 +85,7 @@ export class ReleaseDetailPage {
   protected readonly transitions = RELEASE_STATUS_TRANSITIONS;
   protected readonly selfReleaseWarning = SELF_RELEASE_WARNING;
 
-  protected readonly deferralReasons = Object.keys(
-    DEFERRAL_REASON_LABELS,
-  ) as DeferralReason[];
+  protected readonly deferralReasons = Object.keys(DEFERRAL_REASON_LABELS) as DeferralReason[];
   protected readonly acknowledgementKinds = Object.keys(
     ACKNOWLEDGEMENT_KIND_LABELS,
   ) as AcknowledgementKind[];
@@ -85,9 +98,19 @@ export class ReleaseDetailPage {
   }
   protected readonly saving = signal(false);
 
+  /**
+   * Re-read quietly when releases change (`DL-222`). The acts below hold their inputs in their own
+   * signals, so a re-read moves the status and the offered acts, never what an officer has typed.
+   */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
-      switchMap((query) => toViewState(this.repository.getById(asId<ReleaseId>(query.id)))),
+      switchMap((query) =>
+        liveViewState(
+          () => this.repository.getById(asId<ReleaseId>(query.id)),
+          this.live.changes(RELEASE_DETAIL_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<Release | null> },
   );
@@ -97,7 +120,13 @@ export class ReleaseDetailPage {
   /** Who approved the request behind this release. Read, never assumed. */
   protected readonly approver = toSignal(
     toObservable(computed(() => this.id())).pipe(
-      switchMap((id) => this.repository.approverFor(asId<ReleaseId>(id))),
+      switchMap((id) =>
+        liveRead(
+          () => this.repository.approverFor(asId<ReleaseId>(id)),
+          this.live.changes(RELEASE_DETAIL_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: null as StaffUserId | null },
   );

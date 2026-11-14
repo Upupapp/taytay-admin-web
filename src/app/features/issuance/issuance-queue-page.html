@@ -126,6 +126,10 @@
     (retryRequested)="reload()"
   >
     <ng-template #queueContent>
+      @if (listChanged()) {
+        <app-list-changed-notice (reload)="reload()" />
+      }
+
       <app-data-table
         [columns]="columns()"
         [rows]="rows()"

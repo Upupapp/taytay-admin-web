@@ -14,6 +14,8 @@ import { map, switchMap, tap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { SessionStore } from '@core/auth/session.store';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   BENEFICIARY_REPOSITORY,
   BENEFICIARY_ROLE_LABELS,
@@ -31,7 +33,8 @@ import {
   type CursorPage,
 } from '@domain/index';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
 import { DataTable } from '@shared/ui/data-table/data-table';
@@ -39,12 +42,25 @@ import { PageHeader } from '@shared/ui/page-header/page-header';
 import { SavedViewsBar } from '@shared/ui/saved-views/saved-views-bar';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { Icon } from '@shared/ui/icon/icon';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 
 import { BENEFICIARIES_COPY } from './beneficiaries.copy';
 import { beneficiaryFilterParams, readBeneficiaryQuery } from './beneficiary-query';
 
 /** One page at a time from the server, as on the resident registry. */
 const PAGE_SIZE = 20;
+
+/**
+ * A row is a projection: the person, their requests and payouts, the programmes they were helped
+ * under, and the duplicate flag (`DL-222`).
+ */
+export const BENEFICIARY_LIST_TOPICS: readonly LiveTopic[] = [
+  'beneficiaries',
+  'residents',
+  'assistance-requests',
+  'releases',
+  'programs',
+];
 
 /**
  * The beneficiary registry list.
@@ -72,6 +88,7 @@ const PAGE_SIZE = 20;
     DataTable,
     HasPermissionDirective,
     Icon,
+    ListChangedNotice,
     PageHeader,
     PesoPipe,
     RelativeTimePipe,
@@ -88,6 +105,7 @@ export class BeneficiaryListPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = BENEFICIARIES_COPY.list;
   protected readonly barangays = TAYTAY_BARANGAYS;
@@ -115,17 +133,31 @@ export class BeneficiaryListPage {
   private readonly further = signal<readonly CursorPage<BeneficiarySummary>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** Bumped by the list-changed notice to read the same filter again from its first page. */
+  private readonly generation = signal(0);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /** A hint re-reads the first page quietly, unless somebody has loaded more of it (`DL-222`). */
   protected readonly state = toSignal(
-    toObservable(this.query).pipe(
-      tap((query) => {
+    toObservable(computed(() => ({ query: this.query(), generation: this.generation() }))).pipe(
+      tap(({ query }) => {
         this.searchText.set(query.filter.search ?? '');
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
-      switchMap((query) =>
-        toViewState(this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null })),
+      switchMap(({ query }) =>
+        liveViewState(
+          () => this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(BENEFICIARY_LIST_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<BeneficiarySummary>> },
@@ -244,6 +276,11 @@ export class BeneficiaryListPage {
   protected clearFilters(): void {
     this.searchText.set('');
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+  }
+
+  /** The person's reload after a held hint: the same filter, from its first page. */
+  protected reloadList(): void {
+    this.generation.update((n) => n + 1);
   }
 
   /** Follows the cursor one page further, for the filter the first page was read with. */

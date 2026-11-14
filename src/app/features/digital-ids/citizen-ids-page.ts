@@ -15,6 +15,8 @@ import { ActivatedRoute, Router, RouterLink, type ParamMap } from '@angular/rout
 import { EMPTY, map, switchMap, tap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   DIGITAL_ID_LIST_STATUSES,
   DIGITAL_ID_REPOSITORY,
@@ -29,10 +31,12 @@ import {
 } from '@domain/index';
 import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import { Drawer } from '@shared/ui/drawer/drawer';
 import { Icon } from '@shared/ui/icon/icon';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
@@ -43,6 +47,12 @@ import { CardPanel } from './card-panel';
 import { CITIZEN_IDS_COPY } from './citizen-ids.copy';
 
 const PAGE_SIZE = 20;
+
+/**
+ * The cards and the strip counted beside them, and the holders' names, which are their app
+ * accounts' and change with `users` — a corrected name shows without waiting for a card (`DL-222`).
+ */
+export const CITIZEN_IDS_TOPICS: readonly LiveTopic[] = ['digital-ids', 'users'];
 
 /** The account a row's card belongs to, as much of it as the card record needs. */
 type CardHolderRef = Pick<AppAccount, 'id' | 'name' | 'email'>;
@@ -68,6 +78,7 @@ type CardHolderRef = Pick<AppAccount, 'id' | 'name' | 'email'>;
     Drawer,
     Icon,
     InitialsPipe,
+    ListChangedNotice,
     Modal,
     PageHeader,
     RouterLink,
@@ -82,6 +93,7 @@ export class CitizenIdsPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly permissions = inject(PermissionService);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = CITIZEN_IDS_COPY;
   protected readonly catalog = DIGITAL_ID_STATUS_CATALOG;
@@ -106,7 +118,13 @@ export class CitizenIdsPage {
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
   private readonly generation = signal(0);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * Read again quietly, counts and all, when a card changes (`DL-222`). An open card record holds
+   * its own holder (`selected`), so a re-read beneath it leaves the drawer as it was.
+   */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ filter: this.filter(), generation: this.generation() }))).pipe(
       tap(({ filter }) => {
@@ -114,11 +132,20 @@ export class CitizenIdsPage {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
       // Nobody without the grant is shown the list, so nobody without it asks for the cards.
       switchMap(({ filter }) =>
         this.canManage()
-          ? toViewState(this.repository.list({ limit: PAGE_SIZE, cursor: null }, filter))
+          ? liveViewState(
+              () => this.repository.list({ limit: PAGE_SIZE, cursor: null }, filter),
+              unlessPaged(
+                this.live.changes(CITIZEN_IDS_TOPICS),
+                () => this.further().length > 0 || this.loadingMore(),
+                () => this.listChanged.set(true),
+              ),
+              this.live,
+            )
           : EMPTY,
       ),
     ),

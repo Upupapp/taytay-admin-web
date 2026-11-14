@@ -162,7 +162,9 @@ token's own value in `styles.scss` or `_brand-tokens.scss` (`DL-203`);
 no `EventSource` or `WebSocket`, no `setInterval`, rxjs polling or visibility watching
 outside `core/live`, topic names and nothing else off the change feed, one caller of
 `ApiClient.stream`, the feed bound only in the http set, nothing announced, and an
-idle console that stops talking to the API (`DL-222`).
+idle console that stops talking to the API — and holds every routed page or section that reads a
+repository to being live, unless it is named with its kind (form, search, report run, static) and
+why, and every re-read to writing nothing (`DL-222`).
 Each enforces a rule a comment could not, and each was validated against planted
 regressions. Do not weaken one to make a change pass.
 
@@ -958,7 +960,10 @@ this.listChanged.set(true))` and show `<app-list-changed-notice (reload)="…">`
 `listChanged()`: the person reloads from the first page. Topics are `LiveTopic`
 (`@core/live/change-feed`); name every topic the read counts, and nothing that
 merely shares a word. Never overwrite form input, the scroll position or a
-selection: a form page re-reads nothing it is editing. The topbar's Live toggle
+selection: a form page re-reads nothing it is editing. A side panel that shapes its
+own answer re-reads with `liveRead`, which keeps what it shows when a re-read fails. A
+re-read writes nothing — no mark, no touch — and `check:live` holds every page that
+reads to being live or named with why not. The topbar's Live toggle
 (`aria-pressed`, never announced) pauses everything for the page (WCAG 2.2.2).
 
 ### Notifications

@@ -94,6 +94,10 @@
       </div>
     }
 
+    @if (listChanged()) {
+      <app-list-changed-notice (reload)="retry()" />
+    }
+
     <app-data-table
       [caption]="page().listHeading"
       [columns]="columns()"

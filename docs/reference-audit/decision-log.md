@@ -10532,6 +10532,21 @@ a change reaches an open screen in about a second.
    `check:query-params`, `check:wire-adoption` and `check:mapper-adoption` were taught `stream` on
    purpose; `check:response-shape` reads a `200` whose every content type is `text/event-stream` as
    the `event-stream` envelope, the only one `stream` accepts.
+9. **Every other page, and the ones left alone.** Every routed list, record and inbox page, and the
+   app directory's sections, now re-read on the topics their reads count (each page exports its
+   `…_TOPICS`); a side panel re-reads on its own with `liveRead`, which keeps what it shows when a
+   re-read fails. A conversation's re-read **adds** the messages it brings and never drops one
+   already shown, and **never marks the conversation read**: that stays the reader's own act, from
+   its button below what it does for the whole office (`DL-168`). Sixteen pages that read are left
+   alone, each named in `check:live` with its kind, which now fails the build on any other page
+   that reads and is not live, on an entry for a page that is live or gone, on `changes([])`, and
+   on a mark, touch or acknowledgement inside a re-read: the **forms** — registering a resident,
+   recording a household or a family, opening a case, intake, a programme, preparing a release,
+   scheduling a visit, composing an event, App settings and the home-screen editor's three
+   sections — because a re-read would overwrite what somebody is typing; **search**, which runs
+   when asked; **a report run**, which is a deliberate act whose export says when it was made; and
+   the **report catalogue**, which is static. Option lists inside forms and dialogs (a picker's
+   people, a compose form's providers) are read once when opened, for the same reason.
 
 ### What it supersedes, amends and keeps
 

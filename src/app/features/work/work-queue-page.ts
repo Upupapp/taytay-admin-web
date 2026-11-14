@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom, switchMap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   ALERT_SEVERITY_CATALOG,
@@ -27,13 +29,21 @@ import {
   type WorkItem,
   type WorkQueue,
 } from '@domain/index';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { WORK_COPY } from './work.copy';
+
+/**
+ * The queue and the office alerts are both read from the work view, which the API announces as
+ * `work` whenever a case, request, visit, referral, release, resident or duplicate changes
+ * (`DL-222`). The task acts here write to cases; they read nothing.
+ */
+export const WORK_QUEUE_TOPICS: readonly LiveTopic[] = ['work'];
 
 /**
  * What the signed-in user owes.
@@ -65,6 +75,7 @@ export class WorkQueuePage {
   private readonly cases = inject(CASE_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
   private readonly permissions = inject(PermissionService);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = WORK_COPY.queue;
   protected readonly alertCopy = WORK_COPY.alerts;
@@ -79,15 +90,30 @@ export class WorkQueuePage {
 
   protected readonly canSeeTeam = computed(() => this.permissions.has('staff.view'));
 
+  /**
+   * Re-read quietly on a hint (`DL-222`). The task panel a person has open is held by the item's
+   * id, with its outcome, date and reason in their own signals, so a re-read leaves it open and
+   * filled; it goes only if the task itself has left this person's queue.
+   */
   protected readonly state = toSignal(
     toObservable(this.reloads).pipe(
-      switchMap(() => toViewState(this.work.myQueue(this.today))),
+      switchMap(() =>
+        liveViewState(
+          () => this.work.myQueue(this.today),
+          this.live.changes(WORK_QUEUE_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<WorkQueue> },
   );
 
   protected readonly alertState = toSignal(
-    toObservable(this.reloads).pipe(switchMap(() => toViewState(this.work.alerts()))),
+    toObservable(this.reloads).pipe(
+      switchMap(() =>
+        liveViewState(() => this.work.alerts(), this.live.changes(WORK_QUEUE_TOPICS), this.live),
+      ),
+    ),
     { initialValue: LOADING as ViewState<readonly OfficeAlert[]> },
   );
 
@@ -96,7 +122,9 @@ export class WorkQueuePage {
     this.reloads.update((value) => value + 1);
   }
 
-  protected readonly items = computed<readonly WorkItem[]>(() => valueOf(this.state())?.items ?? []);
+  protected readonly items = computed<readonly WorkItem[]>(
+    () => valueOf(this.state())?.items ?? [],
+  );
   protected readonly buckets = computed(() => bucketWork(this.items(), this.today));
   protected readonly summary = computed(() => describeQueue(this.buckets()));
   protected readonly total = computed(() => totalWork(this.buckets()));

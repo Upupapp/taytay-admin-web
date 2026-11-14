@@ -87,6 +87,10 @@
           </p>
         </div>
       } @else {
+        @if (listChanged()) {
+          <app-list-changed-notice (reload)="retry()" />
+        }
+
         <!-- Overdue first. The heading says the office is late, not the family. -->
         @if (overdue().length > 0) {
           <section class="bucket bucket--overdue" aria-labelledby="overdue-heading">

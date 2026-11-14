@@ -114,6 +114,10 @@
     </p>
   }
 
+  @if (listChanged()) {
+    <app-list-changed-notice (reload)="reloadList()" />
+  }
+
   <app-data-table
     [caption]="copy.caption"
     [columns]="columns()"

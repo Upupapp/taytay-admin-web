@@ -13,6 +13,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   CASE_CATEGORIES,
   CASE_QUEUE_IDS,
@@ -31,8 +33,10 @@ import {
 } from '@domain/index';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { CASE_COPY } from '@shared/cases/case.copy';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
@@ -42,6 +46,9 @@ import { CASES_COPY } from './cases.copy';
 import { readCaseQuery } from './case-query';
 
 const PAGE_SIZE = 20;
+
+/** The rows and the queue counts are cases, and their next action is a case task (`DL-222`). */
+export const CASE_LIST_TOPICS: readonly LiveTopic[] = ['cases'];
 
 /**
  * The case list, read as a set of work queues.
@@ -60,7 +67,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-case-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, Icon, PageHeader, RouterLink, StatusBadge],
+  imports: [DataTable, Icon, ListChangedNotice, PageHeader, RouterLink, StatusBadge],
   templateUrl: './case-list-page.html',
   styleUrl: './case-list-page.scss',
 })
@@ -70,6 +77,7 @@ export class CaseListPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly permissions = inject(PermissionService);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = CASES_COPY.list;
 
@@ -114,25 +122,55 @@ export class CaseListPage {
   private readonly further = signal<readonly CursorPage<CaseSummary>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** Bumped by the reload after a held hint, to read the same filter again from its first page. */
+  private readonly generation = signal(0);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  private readonly reading = computed(() => ({
+    query: this.query(),
+    generation: this.generation(),
+  }));
+
+  /** A hint re-reads the first page quietly, unless somebody has loaded more of it (`DL-222`). */
   protected readonly state = toSignal(
-    toObservable(this.query).pipe(
-      tap((query) => {
+    toObservable(this.reading).pipe(
+      tap(({ query }) => {
         this.searchText.set(query.filter.search ?? '');
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
-      switchMap((query) =>
-        toViewState(this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null })),
+      switchMap(({ query }) =>
+        liveViewState(
+          () => this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(CASE_LIST_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<CaseSummary>> },
   );
 
+  /** Held with the list, so a badge and the page it opens still agree (`DL-222`). */
   protected readonly counts = toSignal(
-    toObservable(this.query).pipe(
-      switchMap((query) => toViewState(this.repository.queueCounts(query.filter))),
+    toObservable(this.reading).pipe(
+      switchMap(({ query }) =>
+        liveViewState(
+          () => this.repository.queueCounts(query.filter),
+          unlessPaged(
+            this.live.changes(CASE_LIST_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<readonly { queue: CaseQueueId; count: number }[]> },
   );
@@ -209,8 +247,10 @@ export class CaseListPage {
     if (summary.nextAction === null) {
       return null;
     }
-    return summary.nextAction.title ??
-      (isCaseFieldWithheld(summary.record, 'taskWords') ? this.copy.withheld : null);
+    return (
+      summary.nextAction.title ??
+      (isCaseFieldWithheld(summary.record, 'taskWords') ? this.copy.withheld : null)
+    );
   }
 
   protected isOverdue(summary: CaseSummary): boolean {
@@ -261,6 +301,11 @@ export class CaseListPage {
   protected clearFilters(): void {
     this.searchText.set('');
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+  }
+
+  /** The person's reload after a held hint: the same filter, from its first page. */
+  protected reloadList(): void {
+    this.generation.update((n) => n + 1);
   }
 
   /** Follows the cursor one page further, for the filter the first page was read with. */

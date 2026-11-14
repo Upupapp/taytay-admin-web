@@ -11,6 +11,8 @@ import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   FIELD_VISIT_REPOSITORY,
   VISIT_PURPOSE_LABELS,
@@ -28,8 +30,10 @@ import {
   type VisitStatus,
 } from '@domain/index';
 import { debouncedTerm } from '@shared/state/debounced';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import { Icon } from '@shared/ui/icon/icon';
@@ -44,6 +48,9 @@ import { VISITS_COPY } from './visits.copy';
  */
 const PAGE_SIZE = 50;
 
+/** The list's rows are field visits and nothing else (`DL-222`). */
+export const VISIT_LIST_TOPICS: readonly LiveTopic[] = ['visits'];
+
 /**
  * The visit list, grouped by day.
  *
@@ -57,13 +64,22 @@ const PAGE_SIZE = 50;
 @Component({
   selector: 'app-visit-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, Icon, NgTemplateOutlet, PageHeader, RouterLink, StatusBadge],
+  imports: [
+    AsyncContent,
+    Icon,
+    ListChangedNotice,
+    NgTemplateOutlet,
+    PageHeader,
+    RouterLink,
+    StatusBadge,
+  ],
   templateUrl: './visit-list-page.html',
   styleUrl: './visit-list-page.scss',
 })
 export class VisitListPage {
   private readonly repository = inject(FIELD_VISIT_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = VISITS_COPY.list;
   protected readonly statusCatalog = VISIT_STATUS_CATALOG;
@@ -85,15 +101,17 @@ export class VisitListPage {
   protected readonly purpose = signal<VisitPurpose | null>(null);
   protected readonly overdueOnly = signal(false);
 
-  private readonly query = computed<{ readonly mine: boolean; readonly filter: FieldVisitFilter }>(() => ({
-    mine: this.onlyMine(),
-    filter: {
-      ...(this.settledSearch() ? { search: this.settledSearch() } : {}),
-      ...(this.status() ? { status: this.status() as VisitStatus } : {}),
-      ...(this.purpose() ? { purpose: this.purpose() as VisitPurpose } : {}),
-      ...(this.overdueOnly() ? { overdueOnly: true } : {}),
-    },
-  }));
+  private readonly query = computed<{ readonly mine: boolean; readonly filter: FieldVisitFilter }>(
+    () => ({
+      mine: this.onlyMine(),
+      filter: {
+        ...(this.settledSearch() ? { search: this.settledSearch() } : {}),
+        ...(this.status() ? { status: this.status() as VisitStatus } : {}),
+        ...(this.purpose() ? { purpose: this.purpose() as VisitPurpose } : {}),
+        ...(this.overdueOnly() ? { overdueOnly: true } : {}),
+      },
+    }),
+  );
 
   /**
    * Both sources are normalised to a plain list before they reach the view.
@@ -109,21 +127,35 @@ export class VisitListPage {
 
   /** Bumped by "Try again", to ask the same question again. */
   private readonly reloads = signal(0);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * A hint re-reads quietly — "my visits" whole, the office's list from its first page — unless
+   * somebody has loaded more of it (`DL-222`).
+   */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ query: this.query(), nonce: this.reloads() }))).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
       switchMap(({ query }) =>
-        toViewState<CursorPage<FieldVisit>>(
-          query.mine
-            ? this.repository
-                .mine(query.filter)
-                .pipe(map((items) => ({ items, hasMore: false, nextCursor: null })))
-            : this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null }),
+        liveViewState<CursorPage<FieldVisit>>(
+          () =>
+            query.mine
+              ? this.repository
+                  .mine(query.filter)
+                  .pipe(map((items) => ({ items, hasMore: false, nextCursor: null })))
+              : this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(VISIT_LIST_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
         ),
       ),
     ),

@@ -13,6 +13,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { combineLatest, map, switchMap, tap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   PROGRAM_CATEGORY_LABELS,
   PROGRAM_REPOSITORY,
@@ -26,8 +28,10 @@ import {
   type ProgramUtilizationSummary,
 } from '@domain/index';
 import { PROGRAM_COPY } from '@shared/programs/program.copy';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
@@ -52,6 +56,9 @@ const STATUSES: readonly ProgramStatus[] = ['draft', 'active', 'suspended', 'clo
 const CATEGORIES = Object.keys(PROGRAM_CATEGORY_LABELS) as readonly ProgramCategory[];
 const PAGE_SIZE = 20;
 
+/** The catalogue is programmes, and its utilization counts their releases (`DL-222`). */
+export const PROGRAM_LIST_TOPICS: readonly LiveTopic[] = ['programs', 'releases'];
+
 /**
  * The programme catalog.
  *
@@ -74,7 +81,16 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-program-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, HasPermissionDirective, Icon, PageHeader, PesoPipe, RouterLink, StatusBadge],
+  imports: [
+    DataTable,
+    HasPermissionDirective,
+    Icon,
+    ListChangedNotice,
+    PageHeader,
+    PesoPipe,
+    RouterLink,
+    StatusBadge,
+  ],
   templateUrl: './program-list-page.html',
   styleUrl: './program-list-page.scss',
 })
@@ -83,6 +99,7 @@ export class ProgramListPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = PROGRAMS_COPY.list;
   protected readonly shared = PROGRAM_COPY;
@@ -109,20 +126,36 @@ export class ProgramListPage {
   private readonly further = signal<readonly CursorPage<AssistanceProgram>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** Bumped by the reload after a held hint, to read the same filter again from its first page. */
+  private readonly generation = signal(0);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * The first page and the utilization beside it re-read together on a hint, so the two columns
+   * cannot disagree with the rows; held instead once somebody has loaded more (`DL-222`).
+   */
   protected readonly state = toSignal(
-    toObservable(this.query).pipe(
+    toObservable(computed(() => ({ query: this.query(), generation: this.generation() }))).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
-      switchMap((query) =>
-        toViewState(
-          combineLatest([
-            this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null }),
-            this.repository.utilizationSummary(),
-          ]).pipe(map(([page, usage]): CatalogReading => ({ page, usage }))),
+      switchMap(({ query }) =>
+        liveViewState(
+          () =>
+            combineLatest([
+              this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null }),
+              this.repository.utilizationSummary(),
+            ]).pipe(map(([page, usage]): CatalogReading => ({ page, usage }))),
+          unlessPaged(
+            this.live.changes(PROGRAM_LIST_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
         ),
       ),
     ),
@@ -231,6 +264,11 @@ export class ProgramListPage {
   protected clearFilters(): void {
     this.searchText.set('');
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+  }
+
+  /** The person's reload after a held hint: the same filter, from its first page. */
+  protected reloadList(): void {
+    this.generation.update((n) => n + 1);
   }
 
   /** Follows the cursor one page further, for the filter the first page was read with. */

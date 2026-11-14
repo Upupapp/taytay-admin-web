@@ -12,12 +12,16 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { EMPTY, switchMap, tap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { APP_ACCOUNT_REPOSITORY, type AppAccount, type CursorPage } from '@domain/index';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { Drawer } from '@shared/ui/drawer/drawer';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { CardCheck } from './card-check';
@@ -26,6 +30,12 @@ import { DIGITAL_IDS_COPY } from './digital-ids.copy';
 
 /** The largest page the API serves: the verified residents are a fraction of the accounts read. */
 const PAGE_SIZE = 50;
+
+/**
+ * The section reads app accounts, not cards: a row is an account and what it shows of it
+ * (`DL-222`). A card's own changes reach the drawer, which reads the card when it opens.
+ */
+export const DIGITAL_IDS_TOPICS: readonly LiveTopic[] = ['users'];
 
 /**
  * Residents' digital IDs (`DL-171`): checking the card a resident shows, and keeping the cards.
@@ -42,7 +52,7 @@ const PAGE_SIZE = 50;
 @Component({
   selector: 'app-digital-ids-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, CardCheck, CardPanel, DataTable, Drawer, PageHeader],
+  imports: [AsyncContent, CardCheck, CardPanel, DataTable, Drawer, ListChangedNotice, PageHeader],
   templateUrl: './digital-ids-page.html',
   styleUrl: './digital-ids.scss',
 })
@@ -50,6 +60,7 @@ export class DigitalIdsPage {
   private readonly accounts = inject(APP_ACCOUNT_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
   private readonly permissions = inject(PermissionService);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = DIGITAL_IDS_COPY;
   protected readonly canCheck = this.permissions.can('digital-id.verify');
@@ -63,18 +74,30 @@ export class DigitalIdsPage {
   private readonly further = signal<readonly CursorPage<AppAccount>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /** Read again quietly when accounts change; an open card drawer holds its own account. */
   protected readonly first = toSignal(
     toObservable(this.generation).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
       // Nobody without the grant is shown the section, so nobody without it asks for the accounts.
       switchMap(() =>
         this.canManage()
-          ? toViewState(this.accounts.list({ limit: PAGE_SIZE, cursor: null }))
+          ? liveViewState(
+              () => this.accounts.list({ limit: PAGE_SIZE, cursor: null }),
+              unlessPaged(
+                this.live.changes(DIGITAL_IDS_TOPICS),
+                () => this.further().length > 0 || this.loadingMore(),
+                () => this.listChanged.set(true),
+              ),
+              this.live,
+            )
           : EMPTY,
       ),
     ),

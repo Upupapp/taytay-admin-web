@@ -10,17 +10,22 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
+import type { LiveTopic } from '@core/live/change-feed';
 import { DIRECTORY_OFFICE_REPOSITORY, OFFICE_EFFECTS, type DirectoryOffice } from '@domain/index';
 import { failureReason } from '@shared/state/failure-reason';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { Icon } from '@shared/ui/icon/icon';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Modal } from '@shared/ui/modal/modal';
 
 import { cursorList } from './cursor-list';
 import { DIRECTORY_COPY } from './directory.copy';
 import { OfficeForm } from './office-form';
+
+/** The app directory's offices (`DL-222`). */
+export const DIRECTORY_OFFICES_TOPICS: readonly LiveTopic[] = ['offices'];
 
 /**
  * The offices of the residents' app directory (`DL-170`): a page at a time, added and changed in a
@@ -30,7 +35,7 @@ import { OfficeForm } from './office-form';
 @Component({
   selector: 'app-offices-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, Icon, Modal, OfficeForm],
+  imports: [AsyncContent, DataTable, Icon, ListChangedNotice, Modal, OfficeForm],
   templateUrl: './offices-section.html',
   styleUrl: './directory-section.scss',
 })
@@ -42,7 +47,11 @@ export class OfficesSection {
   protected readonly listCopy = DIRECTORY_COPY.list;
   protected readonly removeEffects = OFFICE_EFFECTS.remove;
 
-  protected readonly list = cursorList((page) => this.repository.list(page));
+  /** Live (`DL-222`); the drawer and the delete dialog hold their own office through a re-read. */
+  protected readonly list = cursorList(
+    (page) => this.repository.list(page),
+    DIRECTORY_OFFICES_TOPICS,
+  );
 
   private readonly nameCell =
     viewChild.required<TemplateRef<{ $implicit: DirectoryOffice }>>('nameCell');

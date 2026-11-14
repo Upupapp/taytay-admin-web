@@ -6,6 +6,8 @@ import { firstValueFrom, switchMap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   asId,
@@ -24,7 +26,8 @@ import {
   type ResidentId,
   type ResidentView,
 } from '@domain/index';
-import { LOADING, toViewState, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, type ViewState } from '@shared/state/view-state';
 import {
   RelationshipGraph,
   type EndRelationshipRequest,
@@ -36,6 +39,12 @@ import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { FAMILIES_COPY } from './families.copy';
+
+/**
+ * The family, its relationships and history, its members, and the household it lives in with the
+ * other families there (`DL-222`).
+ */
+export const FAMILY_DETAIL_TOPICS: readonly LiveTopic[] = ['families', 'residents', 'households'];
 
 /**
  * One family: who is in it, who they are to each other, and everything anybody
@@ -67,6 +76,7 @@ export class FamilyDetailPage {
   private readonly repository = inject(FAMILY_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
   private readonly permissions = inject(PermissionService);
+  private readonly live = inject(LiveUpdates);
 
   readonly id = input.required<string>();
 
@@ -79,9 +89,19 @@ export class FamilyDetailPage {
 
   private readonly reloads = signal(0);
 
+  /**
+   * A hint reads the family again quietly (`DL-222`). Every dialogue keeps its own choices and
+   * reason in signals of its own, so a re-read never touches a move or a relationship being written.
+   */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
-      switchMap((query) => toViewState(this.repository.getById(asId<FamilyId>(query.id)))),
+      switchMap((query) =>
+        liveViewState(
+          () => this.repository.getById(asId<FamilyId>(query.id)),
+          this.live.changes(FAMILY_DETAIL_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<FamilyDetail | null> },
   );

@@ -18,6 +18,8 @@ import { NotConnected } from '@core/access/not-connected';
 import { PermissionService } from '@core/access/permission.service';
 import { ServedPorts } from '@core/access/served-ports';
 import { describeFailure, isApiFailure } from '@core/http/api-failure';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   CONDITIONAL_APPLICABILITY_LABELS,
@@ -100,6 +102,7 @@ import { AdvisoryPanel } from '@shared/intake/advisory-panel';
 import { INTAKE_COPY } from '@shared/intake/intake.copy';
 import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
 import { StatusTransition, type StatusTransitionRequest } from '@shared/cases/status-transition';
+import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
@@ -117,6 +120,23 @@ const ENDED_UNDER_PAYOUT: readonly AssistanceRequestStatus[] = ['cancelled', 'ex
 
 /** The same floor `StatusTransition` holds every other move to. */
 const APPROVAL_REASON_MIN_LENGTH = 8;
+
+/**
+ * The request's record and its own lists — notes and what the applicant was asked to bring — all
+ * feed `assistance-requests` (`DL-222`). The panels beside it name their own.
+ */
+export const ASSESSMENT_TOPICS: readonly LiveTopic[] = ['assistance-requests'];
+/** The applicant panel shows the person and their household's reference. */
+export const ASSESSMENT_APPLICANT_TOPICS: readonly LiveTopic[] = ['residents', 'households'];
+/** The duplicate and previous-assistance check reads requests, handed-over releases and cases. */
+export const ASSESSMENT_ADVISORY_TOPICS: readonly LiveTopic[] = [
+  'assistance-requests',
+  'releases',
+  'cases',
+  'residents',
+];
+export const ASSESSMENT_RELEASE_TOPICS: readonly LiveTopic[] = ['releases'];
+export const ASSESSMENT_PROGRAM_TOPICS: readonly LiveTopic[] = ['programs'];
 
 /**
  * The assessment workspace.
@@ -169,6 +189,7 @@ export class AssessmentPage {
   private readonly notifications = inject(NotificationStore);
   private readonly permissions = inject(PermissionService);
   private readonly releases = inject(RELEASE_REPOSITORY);
+  private readonly live = inject(LiveUpdates);
 
   readonly id = input.required<string>();
 
@@ -186,9 +207,20 @@ export class AssessmentPage {
   }
   protected readonly submitting = signal(false);
 
+  /**
+   * The record re-reads quietly on a hint (`DL-222`). What the worker is writing — the case study,
+   * the answers, the approval, every reason — is held in its own signals, seeded once at most
+   * (`hydrated`), so a re-read changes what the record says and never what is being written.
+   */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
-      switchMap((query) => toViewState(this.requests.getById(asId<AssistanceRequestId>(query.id)))),
+      switchMap((query) =>
+        liveViewState(
+          () => this.requests.getById(asId<AssistanceRequestId>(query.id)),
+          this.live.changes(ASSESSMENT_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<AssistanceRequest | null> },
   );
@@ -211,14 +243,26 @@ export class AssessmentPage {
    */
   protected readonly linksRegistry = computed(() => this.permissions.scope() !== 'assigned-cases');
 
+  /**
+   * Keyed on the person, not the record: a re-read of the request is a new object with the same
+   * applicant, and must not ask for them again with a skeleton (`DL-222`). The panel keeps itself
+   * current on its own topics.
+   */
   private readonly profileState = toSignal(
     toObservable(
-      computed(() => ({ residentId: this.request()?.residentId ?? null, reads: this.readsRegistry() })),
+      computed(
+        () => ({ residentId: this.request()?.residentId ?? null, reads: this.readsRegistry() }),
+        { equal: (a, b) => a.residentId === b.residentId && a.reads === b.reads },
+      ),
     ).pipe(
       switchMap(({ residentId, reads }) =>
         residentId === null || !reads
           ? of(ready(null))
-          : toViewState(this.residents.getProfile(residentId)),
+          : liveViewState(
+              () => this.residents.getProfile(residentId),
+              this.live.changes(ASSESSMENT_APPLICANT_TOPICS),
+              this.live,
+            ),
       ),
     ),
     { initialValue: ready(null) as ViewState<ResidentProfile | null> },
@@ -242,13 +286,21 @@ export class AssessmentPage {
   /** Held as a view state, so a check that could not be read is said in place, never as "nothing found". */
   private readonly advisoryState = toSignal(
     toObservable(
-      computed(() => ({ request: this.request(), reads: this.readsAdvisory() })),
+      // Keyed on the request's id, so a quiet re-read of the record does not read the check again
+      // with a skeleton; the check keeps itself current on its own topics (`DL-222`).
+      computed(() => ({ id: this.request()?.id ?? null, reads: this.readsAdvisory() }), {
+        equal: (a, b) => a.id === b.id && a.reads === b.reads,
+      }),
     ).pipe(
-      switchMap(({ request, reads }) =>
-        request === null || !reads
+      switchMap(({ id, reads }) =>
+        id === null || !reads
           ? of(ready(EMPTY_ADVISORY))
           : // The request exists here, so the check is read for it, not counting it against itself.
-            toViewState(this.requests.advisoryForCase(request.id)),
+            liveViewState(
+              () => this.requests.advisoryForCase(id),
+              this.live.changes(ASSESSMENT_ADVISORY_TOPICS),
+              this.live,
+            ),
       ),
     ),
     { initialValue: ready(EMPTY_ADVISORY) as ViewState<IntakeAdvisory> },
@@ -389,7 +441,13 @@ export class AssessmentPage {
   private readonly noteReloads = signal(0);
   private readonly noteState = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.noteReloads() }))).pipe(
-      switchMap(({ id }) => toViewState(this.requests.listNotes(asId<AssistanceRequestId>(id)))),
+      switchMap(({ id }) =>
+        liveViewState(
+          () => this.requests.listNotes(asId<AssistanceRequestId>(id)),
+          this.live.changes(ASSESSMENT_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<readonly RequestNote[]> },
   );
@@ -430,7 +488,6 @@ export class AssessmentPage {
     );
   }
 
-
   /**
    * Approving is its own act, with what was approved (`DL-183`), and is not among these. Cancelling
    * and expiring are not offered while the request's release stands: the release is voided first.
@@ -458,19 +515,41 @@ export class AssessmentPage {
     () => this.servesReleases && this.permissions.has('release.view'),
   );
 
+  /**
+   * Keyed on the request's id and whether it is payable, so a quiet re-read of the record does not
+   * read its payouts again with a skeleton; they keep themselves current on `releases` (`DL-222`).
+   */
   private readonly releaseState = toSignal(
-    toObservable(computed(() => ({ request: this.request(), reads: this.readsReleases() }))).pipe(
-      switchMap(({ request, reads }) =>
-        request === null || !reads || !PAYABLE.includes(request.status)
+    toObservable(
+      computed(
+        () => {
+          const request = this.request();
+          return {
+            id: request?.id ?? null,
+            payable: request !== null && PAYABLE.includes(request.status),
+            reads: this.readsReleases(),
+          };
+        },
+        { equal: (a, b) => a.id === b.id && a.payable === b.payable && a.reads === b.reads },
+      ),
+    ).pipe(
+      switchMap(({ id, payable, reads }) =>
+        id === null || !reads || !payable
           ? of(ready([] as readonly Release[]))
-          : toViewState(this.releases.listForRequest(request.id)),
+          : liveViewState(
+              () => this.releases.listForRequest(id),
+              this.live.changes(ASSESSMENT_RELEASE_TOPICS),
+              this.live,
+            ),
       ),
     ),
     { initialValue: ready([] as readonly Release[]) as ViewState<readonly Release[]> },
   );
 
   protected readonly openRelease = computed(
-    () => (valueOf(this.releaseState()) ?? []).find((release) => holdsRequestOpen(release.status)) ?? null,
+    () =>
+      (valueOf(this.releaseState()) ?? []).find((release) => holdsRequestOpen(release.status)) ??
+      null,
   );
 
   /** Whether this reader could know of an open release: it reads payouts, and the read succeeded. */
@@ -641,8 +720,9 @@ export class AssessmentPage {
 
   protected readonly template = computed(
     () =>
-      this.templates().find((candidate) => candidate.code === this.openAssessment()?.templateCode) ??
-      null,
+      this.templates().find(
+        (candidate) => candidate.code === this.openAssessment()?.templateCode,
+      ) ?? null,
   );
 
   /**
@@ -748,14 +828,20 @@ export class AssessmentPage {
     });
   }
 
-  private readonly programState = toSignal(toViewState(this.programs.listActive()), {
-    initialValue: LOADING as ViewState<readonly AssistanceProgram[]>,
-  });
+  private readonly programState = toSignal(
+    liveViewState(
+      () => this.programs.listActive(),
+      this.live.changes(ASSESSMENT_PROGRAM_TOPICS),
+      this.live,
+    ),
+    { initialValue: LOADING as ViewState<readonly AssistanceProgram[]> },
+  );
 
   protected programmeName(request: AssistanceRequest): string {
     const programs = valueOf(this.programState()) ?? [];
     return (
-      programs.find((program) => program.id === request.programId)?.name ?? this.copy.unknownProgramme
+      programs.find((program) => program.id === request.programId)?.name ??
+      this.copy.unknownProgramme
     );
   }
 
@@ -856,7 +942,11 @@ export class AssessmentPage {
   private readonly documentState = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
       switchMap(({ id }) =>
-        toViewState(this.requests.listDocumentRequests(asId<AssistanceRequestId>(id))),
+        liveViewState(
+          () => this.requests.listDocumentRequests(asId<AssistanceRequestId>(id)),
+          this.live.changes(ASSESSMENT_TOPICS),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<readonly DocumentRequest[]> },
@@ -974,9 +1064,10 @@ export class AssessmentPage {
   }
 
   /** Where the applicant must be told why, a review carries words — as the server requires. */
-  protected readonly reviewProblem = signal<{ readonly requirementId: string; readonly message: string } | null>(
-    null,
-  );
+  protected readonly reviewProblem = signal<{
+    readonly requirementId: string;
+    readonly message: string;
+  } | null>(null);
 
   protected review(requirementId: RequirementId, status: RequirementStatus): void {
     const remarks = this.remarksValue(requirementId).trim();

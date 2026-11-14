@@ -25,6 +25,10 @@
         (retryRequested)="reload()"
       >
         <ng-template #accountsContent>
+          @if (listChanged()) {
+            <app-list-changed-notice (reload)="reload()" />
+          }
+
           <app-data-table
             [columns]="columns()"
             [rows]="rows()"

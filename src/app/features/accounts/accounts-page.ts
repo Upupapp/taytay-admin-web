@@ -13,6 +13,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs';
 
 import { SessionStore } from '@core/auth/session.store';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   ACCOUNT_ROLE_CATALOG,
   ACCOUNT_VERIFICATION_STATUSES,
@@ -27,10 +29,12 @@ import {
 } from '@domain/index';
 import { officeDirectory } from '@shared/offices/office-directory';
 import { InitialsPipe } from '@shared/pipes/initials.pipe';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
@@ -40,6 +44,9 @@ import { ACCOUNTS_COPY } from './accounts.copy';
 
 /** One page at a time from the server; the API's own default, and well under its ceiling. */
 const PAGE_SIZE = 20;
+
+/** App accounts: their role, office and verification all live on the account (`DL-222`). */
+export const ACCOUNTS_TOPICS: readonly LiveTopic[] = ['users'];
 
 /**
  * Users and roles (`DL-168`): every residents' app account, and the administrator deciding who is
@@ -57,7 +64,16 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-accounts-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AccountPanel, AsyncContent, DataTable, InitialsPipe, Modal, PageHeader, StatusBadge],
+  imports: [
+    AccountPanel,
+    AsyncContent,
+    DataTable,
+    InitialsPipe,
+    ListChangedNotice,
+    Modal,
+    PageHeader,
+    StatusBadge,
+  ],
   templateUrl: './accounts-page.html',
   styleUrl: './accounts-page.scss',
 })
@@ -67,6 +83,7 @@ export class AccountsPage {
   private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = ACCOUNTS_COPY.list;
   protected readonly verificationStatuses = ACCOUNT_VERIFICATION_STATUSES;
@@ -99,16 +116,32 @@ export class AccountsPage {
   private readonly further = signal<readonly CursorPage<AppAccount>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * Read again quietly when accounts change (`DL-222`). The open account's dialog holds the account
+   * it was opened with (`selected`), so a re-read of the list beneath it never closes it or resets
+   * what the administrator is choosing in it.
+   */
   protected readonly first = toSignal(
     toObservable(computed(() => ({ generation: this.generation(), filter: this.filter() }))).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
       switchMap(({ filter }) =>
-        toViewState(this.repository.list({ limit: PAGE_SIZE, cursor: null }, filter)),
+        liveViewState(
+          () => this.repository.list({ limit: PAGE_SIZE, cursor: null }, filter),
+          unlessPaged(
+            this.live.changes(ACCOUNTS_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<AppAccount>> },

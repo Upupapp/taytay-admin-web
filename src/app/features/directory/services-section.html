@@ -42,6 +42,10 @@
     (retryRequested)="list.reload()"
   >
     <ng-template #servicesContent>
+      @if (list.listChanged()) {
+        <app-list-changed-notice (reload)="list.reload()" />
+      }
+
       <app-data-table
         [columns]="columns()"
         [rows]="list.rows()"

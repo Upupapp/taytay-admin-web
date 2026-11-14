@@ -1,7 +1,10 @@
+import type { Provider } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, type Observable } from 'rxjs';
-import { describe, expect, it } from 'vitest';
+import { of, Subject, type Observable } from 'rxjs';
+import { describe, expect, it, vi } from 'vitest';
+
+import { LiveUpdates } from '@core/live/live-updates';
 
 import {
   asId,
@@ -17,7 +20,7 @@ import {
   type ResidentImportSummary,
 } from '@domain/index';
 
-import { ImportPage } from './import-page';
+import { IMPORT_TOPICS, ImportPage } from './import-page';
 import { ImportStartPage } from './import-start-page';
 import { RESIDENT_IMPORT_COPY } from './resident-import.copy';
 
@@ -120,16 +123,23 @@ class Imports implements ResidentImportRepository {
   }
 }
 
-function configure(): Imports {
+function configure(extra: readonly Provider[] = []): Imports {
   const imports = new Imports();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
-    providers: [provideRouter([]), { provide: RESIDENT_IMPORT_REPOSITORY, useValue: imports }],
+    providers: [
+      provideRouter([]),
+      { provide: RESIDENT_IMPORT_REPOSITORY, useValue: imports },
+      ...extra,
+    ],
   });
   return imports;
 }
 
-async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }): Promise<void> {
+async function settle(fixture: {
+  detectChanges(): void;
+  whenStable(): Promise<unknown>;
+}): Promise<void> {
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
@@ -168,12 +178,14 @@ describe('Import citizens (DL-214)', () => {
     await settle(fixture);
     const root = fixture.nativeElement as HTMLElement;
 
-    expect(text(root)).toContain(`${RESIDENT_IMPORT_COPY.finding.actions['same-person']} Reyes, Ana`);
+    expect(text(root)).toContain(
+      `${RESIDENT_IMPORT_COPY.finding.actions['same-person']} Reyes, Ana`,
+    );
     const radios = [...root.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
     radios[1]?.click();
-    root.querySelector<HTMLFormElement>('app-import-row-finding form')?.dispatchEvent(
-      new Event('submit'),
-    );
+    root
+      .querySelector<HTMLFormElement>('app-import-row-finding form')
+      ?.dispatchEvent(new Event('submit'));
     await settle(fixture);
     expect(text(root)).toContain(RESIDENT_IMPORT_COPY.finding.reasonMissing);
     expect(imports.calls.some((call) => call.startsWith('resolve'))).toBe(false);
@@ -183,9 +195,9 @@ describe('Import citizens (DL-214)', () => {
       reason.value = 'Same birth date and mother on file.';
       reason.dispatchEvent(new Event('input'));
     }
-    root.querySelector<HTMLFormElement>('app-import-row-finding form')?.dispatchEvent(
-      new Event('submit'),
-    );
+    root
+      .querySelector<HTMLFormElement>('app-import-row-finding form')
+      ?.dispatchEvent(new Event('submit'));
     await settle(fixture);
     expect(imports.calls).toContain(
       'resolve:import-1:2:same-person:Same birth date and mother on file.',
@@ -207,5 +219,106 @@ describe('Import citizens (DL-214)', () => {
     expect(submit?.disabled).toBe(true);
     submit?.click();
     expect(imports.calls).not.toContain('commit');
+  });
+});
+
+describe('an import keeps itself current (DL-222)', () => {
+  /** A hint source, and an import read afresh each time so a re-read is a new record. */
+  function live(): {
+    readonly imports: Imports;
+    readonly hint: () => void;
+    readonly asked: unknown[];
+  } {
+    const changes = new Subject<void>();
+    const asked: unknown[] = [];
+    const imports = configure([
+      {
+        provide: LiveUpdates,
+        useValue: {
+          changes: (topics: readonly string[]) => {
+            asked.push(topics);
+            return changes.asObservable();
+          },
+          noteRefreshed: vi.fn(),
+          noteRefreshFailed: vi.fn(),
+        },
+      },
+    ]);
+    imports.get = () => {
+      imports.calls.push('get');
+      return of(structuredClone(RECORD));
+    };
+    return { imports, hint: () => changes.next(), asked };
+  }
+
+  it('reads the import again on a hint, writes nothing, and keeps a finding being written', async () => {
+    const { imports, hint, asked } = live();
+    // The re-read brings a colleague's finding on the very row being decided.
+    const decided: ResidentImport = {
+      ...RECORD,
+      groups: {
+        ...RECORD.groups,
+        match: RECORD.groups.match.map((row) => ({
+          ...row,
+          resolution: {
+            action: 'create',
+            residentId: null,
+            reason: 'Checked with the barangay.',
+            by: 'A colleague',
+            at: asIsoDateTime('2026-11-12T02:00:00.000Z'),
+          },
+        })),
+      },
+    };
+    imports.get = () => {
+      imports.calls.push('get');
+      return of(imports.calls.length === 1 ? structuredClone(RECORD) : decided);
+    };
+    const fixture = TestBed.createComponent(ImportPage);
+    fixture.componentRef.setInput('importId', 'import-1');
+    fixture.componentRef.setInput('step', 'check');
+    await settle(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+    expect(asked).toEqual([IMPORT_TOPICS]);
+
+    root.querySelectorAll<HTMLInputElement>('input[type="radio"]')[1]?.click();
+    const reason = root.querySelector<HTMLTextAreaElement>('app-import-row-finding textarea');
+    if (reason !== null) {
+      reason.value = 'Same birth date.';
+      reason.dispatchEvent(new Event('input'));
+    }
+    await settle(fixture);
+
+    hint();
+    await settle(fixture);
+
+    expect(imports.calls).toEqual(['get', 'get']);
+    expect(text(root)).toContain('Checked with the barangay.');
+    expect(root.querySelectorAll<HTMLInputElement>('input[type="radio"]')[1]?.checked).toBe(true);
+    expect(root.querySelector<HTMLTextAreaElement>('app-import-row-finding textarea')?.value).toBe(
+      'Same birth date.',
+    );
+  });
+
+  it('keeps a column choice not yet saved when the import is read again', async () => {
+    const { imports, hint } = live();
+    const fixture = TestBed.createComponent(ImportPage);
+    fixture.componentRef.setInput('importId', 'import-1');
+    fixture.componentRef.setInput('step', 'map');
+    await settle(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+
+    const select = root.querySelector<HTMLSelectElement>('app-import-mapping-form select');
+    if (select !== null) {
+      select.value = '';
+      select.dispatchEvent(new Event('change'));
+    }
+    await settle(fixture);
+
+    hint();
+    await settle(fixture);
+
+    expect(imports.calls).toEqual(['get', 'get']);
+    expect(root.querySelector<HTMLSelectElement>('app-import-mapping-form select')?.value).toBe('');
   });
 });

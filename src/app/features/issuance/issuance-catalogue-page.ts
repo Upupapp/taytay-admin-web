@@ -13,6 +13,8 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   catalogueReasonProblem,
   describeProcessingStandard,
@@ -26,7 +28,8 @@ import {
 import { officeDirectory } from '@shared/offices/office-directory';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { failureReason } from '@shared/state/failure-reason';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
@@ -40,6 +43,9 @@ import { ISSUANCE_COPY } from './issuance.copy';
 
 /** What the drawer holds: a new type, or the one being changed. */
 type Editing = { readonly kind: 'new' } | { readonly kind: 'edit'; readonly type: IssuanceType };
+
+/** The catalogue's types and their changes feed the issuance topic (`DL-222`). */
+export const ISSUANCE_CATALOGUE_TOPICS: readonly LiveTopic[] = ['issuance-requests'];
 
 /**
  * The office's catalogue of documents it issues to residents (`DL-184`).
@@ -74,6 +80,7 @@ type Editing = { readonly kind: 'new' } | { readonly kind: 'edit'; readonly type
 export class IssuanceCataloguePage {
   private readonly repository = inject(ISSUANCE_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = ISSUANCE_COPY.catalogue;
   protected readonly boundaries = ISSUANCE_BOUNDARIES;
@@ -95,8 +102,20 @@ export class IssuanceCataloguePage {
   /** Bumped to read the catalogue again — after every act, and on "Try again". */
   private readonly generation = signal(0);
 
+  /**
+   * Read again quietly when the catalogue changes (`DL-222`). The drawer and the retire dialog hold
+   * the type they were opened with, so a re-read never refills an editor or a reason mid-sentence.
+   */
   protected readonly types = toSignal(
-    toObservable(this.generation).pipe(switchMap(() => toViewState(this.repository.officeTypes()))),
+    toObservable(this.generation).pipe(
+      switchMap(() =>
+        liveViewState(
+          () => this.repository.officeTypes(),
+          this.live.changes(ISSUANCE_CATALOGUE_TOPICS),
+          this.live,
+        ),
+      ),
+    ),
     { initialValue: LOADING as ViewState<readonly IssuanceType[]> },
   );
 

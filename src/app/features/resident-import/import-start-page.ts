@@ -14,6 +14,8 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { Router, RouterLink } from '@angular/router';
 import { switchMap, tap } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   IMPORT_FILE_LIMITS,
   RESIDENT_IMPORT_REPOSITORY,
@@ -22,8 +24,10 @@ import {
 } from '@domain/index';
 import { DataFileField } from '@shared/media/data-file-field';
 import { failureReason } from '@shared/state/failure-reason';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 
@@ -31,6 +35,9 @@ import { ImportSteps } from './import-steps';
 import { RESIDENT_IMPORT_COPY } from './resident-import.copy';
 
 const PAGE_SIZE = 20;
+
+/** The earlier imports, and what became of each once committed (`DL-222`). */
+export const IMPORT_LIST_TOPICS: readonly LiveTopic[] = ['imports'];
 
 /**
  * Import citizens, step 1 (`DL-214`): choose a file, upload it for checking, and the imports
@@ -43,7 +50,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-import-start-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataFileField, DataTable, ImportSteps, PageHeader, RouterLink],
+  imports: [DataFileField, DataTable, ImportSteps, ListChangedNotice, PageHeader, RouterLink],
   templateUrl: './import-start-page.html',
   styleUrl: './resident-import.scss',
 })
@@ -52,6 +59,7 @@ export class ImportStartPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly locale = inject(LOCALE_ID);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = RESIDENT_IMPORT_COPY;
   protected readonly limits = IMPORT_FILE_LIMITS;
@@ -66,11 +74,30 @@ export class ImportStartPage {
   private readonly generation = signal(0);
   private readonly further = signal<readonly CursorPage<ResidentImportSummary>[]>([]);
   protected readonly loadingMore = signal(false);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * Only the list of earlier imports is live (`DL-222`): a hint re-reads its first page quietly,
+   * unless more is loaded. The upload form above it keeps its own signals and re-reads nothing.
+   */
   protected readonly state = toSignal(
     toObservable(this.generation).pipe(
-      tap(() => this.further.set([])),
-      switchMap(() => toViewState(this.repository.list({ limit: PAGE_SIZE, cursor: null }))),
+      tap(() => {
+        this.further.set([]);
+        this.listChanged.set(false);
+      }),
+      switchMap(() =>
+        liveViewState(
+          () => this.repository.list({ limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(IMPORT_LIST_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<ResidentImportSummary>> },
   );
@@ -170,9 +197,7 @@ export class ImportStartPage {
         },
         error: (error: unknown) => {
           this.sending.set(false);
-          this.problem.set(
-            this.copy.upload.refused(failureReason(error) ?? this.copy.noAnswer),
-          );
+          this.problem.set(this.copy.upload.refused(failureReason(error) ?? this.copy.noAnswer));
         },
       });
   }

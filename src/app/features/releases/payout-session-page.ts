@@ -20,13 +20,19 @@ import {
 } from '@domain/index';
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { SessionStore } from '@core/auth/session.store';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveRead, liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { RELEASES_COPY } from './releases.copy';
+
+/** A session's counts and its payout list are both counted from its releases (`DL-222`). */
+export const PAYOUT_SESSION_TOPICS: readonly LiveTopic[] = ['releases'];
 
 /**
  * Payout sessions and the list carried to the table.
@@ -50,6 +56,7 @@ export class PayoutSessionPage {
   private readonly repository = inject(RELEASE_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
   private readonly session = inject(SessionStore);
+  private readonly live = inject(LiveUpdates);
 
   /** Bumped after a session opens, so the list re-reads rather than guessing what changed. */
   private readonly reloads = signal(0);
@@ -61,8 +68,17 @@ export class PayoutSessionPage {
 
   protected readonly copy = RELEASES_COPY.batches;
 
+  /** Each session's counts move as its members are paid or deferred; re-read quietly (`DL-222`). */
   protected readonly state = toSignal(
-    toObservable(this.reloads).pipe(switchMap(() => toViewState(this.repository.listBatches()))),
+    toObservable(this.reloads).pipe(
+      switchMap(() =>
+        liveViewState(
+          () => this.repository.listBatches(),
+          this.live.changes(PAYOUT_SESSION_TOPICS),
+          this.live,
+        ),
+      ),
+    ),
     { initialValue: LOADING as ViewState<readonly ReleaseBatch[]> },
   );
 
@@ -74,7 +90,13 @@ export class PayoutSessionPage {
   protected readonly manifest = toSignal(
     toObservable(this.openBatchId).pipe(
       switchMap((id) =>
-        id === null ? [null] : this.repository.manifestFor(id),
+        id === null
+          ? [null]
+          : liveRead(
+              () => this.repository.manifestFor(id),
+              this.live.changes(PAYOUT_SESSION_TOPICS),
+              this.live,
+            ),
       ),
     ),
     { initialValue: null as ReleaseManifest | null },
@@ -83,7 +105,8 @@ export class PayoutSessionPage {
   /**
    * The open releases, whole, to choose a session's members from (`DL-161`): a picker missing a
    * release is one an officer concludes is not waiting. Read again after a session opens, because
-   * its members have moved.
+   * its members have moved. Not live (`DL-222`): it is the option list of the form below, and a
+   * re-read could take away a release somebody has already ticked.
    */
   private readonly releases = toSignal(
     toObservable(this.reloads).pipe(switchMap(() => this.repository.queue({}))),
@@ -198,9 +221,7 @@ export class PayoutSessionPage {
       this.intent = new WriteIntent();
       this.reloads.update((n) => n + 1);
     } catch (failure: unknown) {
-      this.notifications.error(
-        failure instanceof Error ? failure.message : this.copy.notOpened,
-      );
+      this.notifications.error(failure instanceof Error ? failure.message : this.copy.notOpened);
     } finally {
       this.opening.set(false);
     }

@@ -1,7 +1,7 @@
 import { of, Subject, throwError, type Observable } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 
-import { liveViewState, unlessPaged, type RefreshReport } from './live-view-state';
+import { liveRead, liveViewState, unlessPaged, type RefreshReport } from './live-view-state';
 import type { ViewState } from './view-state';
 
 /** A read the test answers by hand, one request at a time. */
@@ -166,5 +166,61 @@ describe('unlessPaged (DL-222)', () => {
     refreshes.next();
     expect(passed).toBe(1);
     expect(held).toBe(2);
+  });
+});
+
+describe('liveRead (DL-222)', () => {
+  it("gives the panel its first answer, then each re-read's, never stacking them", () => {
+    const read = scriptedRead();
+    const refreshes = new Subject<void>();
+    const values: number[] = [];
+    liveRead(read.load, refreshes).subscribe((value) => values.push(value));
+
+    refreshes.next();
+    expect(read.requests).toHaveLength(1);
+    read.answer(1);
+
+    refreshes.next();
+    refreshes.next();
+    expect(read.requests).toHaveLength(2);
+    read.answer(2);
+    expect(values).toEqual([1, 2]);
+  });
+
+  it('keeps what the panel shows when a re-read fails, and reports only the failure', () => {
+    const read = scriptedRead();
+    const refreshes = new Subject<void>();
+    const report = reporter();
+    const values: number[] = [];
+    let failure: unknown = null;
+    liveRead(read.load, refreshes, report).subscribe({
+      next: (value) => values.push(value),
+      error: (error: unknown) => (failure = error),
+    });
+    read.answer(1);
+
+    refreshes.next();
+    read.fail();
+    expect(values).toEqual([1]);
+    expect(failure).toBeNull();
+    expect(report.failed).toBe(1);
+    // A panel never vouches for the record beside it.
+    expect(report.refreshed).toBe(0);
+
+    refreshes.next();
+    read.answer(3);
+    expect(values).toEqual([1, 3]);
+  });
+
+  it("hands a failed first read to the panel's own handling, and asks no more", () => {
+    const read = scriptedRead();
+    const refreshes = new Subject<void>();
+    let failure: unknown = null;
+    liveRead(read.load, refreshes).subscribe({ error: (error: unknown) => (failure = error) });
+    read.fail();
+
+    expect(failure).toBeInstanceOf(Error);
+    refreshes.next();
+    expect(read.requests).toHaveLength(1);
   });
 });

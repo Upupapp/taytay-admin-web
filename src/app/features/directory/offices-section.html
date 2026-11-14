@@ -16,6 +16,10 @@
     (retryRequested)="list.reload()"
   >
     <ng-template #officesContent>
+      @if (list.listChanged()) {
+        <app-list-changed-notice (reload)="list.reload()" />
+      }
+
       <app-data-table
         [columns]="columns()"
         [rows]="list.rows()"

@@ -5,6 +5,8 @@ import { Router, RouterLink } from '@angular/router';
 import { combineLatest, of, switchMap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   REQUIREMENT_OBLIGATION_LABELS,
   DEFAULT_REVIEW_WINDOW,
@@ -25,7 +27,8 @@ import {
 } from '@domain/index';
 import { PROGRAM_COPY } from '@shared/programs/program.copy';
 import { ResponsibilityNotice } from '@shared/programs/responsibility-notice';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
@@ -40,6 +43,9 @@ export interface ProgramView {
   /** Or why it could not be read: never a zero standing in for an answer (`DL-176`). */
   readonly utilization: ProgramUtilizationReading;
 }
+
+/** The programme, its requirement templates, and its utilization, which counts releases (`DL-222`). */
+export const PROGRAM_DETAIL_TOPICS: readonly LiveTopic[] = ['programs', 'releases'];
 
 /**
  * One programme: what it asks for, who runs it, and how much it is used.
@@ -75,6 +81,7 @@ export class ProgramDetailPage {
   private readonly repository = inject(PROGRAM_REPOSITORY);
   private readonly permissions = inject(PermissionService);
   private readonly router = inject(Router);
+  private readonly live = inject(LiveUpdates);
 
   readonly id = input.required<string>();
 
@@ -84,26 +91,30 @@ export class ProgramDetailPage {
 
   private readonly reloads = signal(0);
 
+  /** The three parts re-read together on a hint, so they still cannot disagree (`DL-222`). */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
       switchMap((query) =>
-        toViewState(
-          this.repository
-            .getById(asId<ProgramId>(query.id))
-            .pipe(
-              switchMap((program) =>
-                program === null
-                  ? of(null)
-                  : combineLatest([
-                      this.repository.listRequirementTemplates(program.id),
-                      this.repository.utilizationFor(program.id),
-                    ]).pipe(
-                      switchMap(([templates, utilization]) =>
-                        of<ProgramView>({ program, templates, utilization }),
+        liveViewState(
+          () =>
+            this.repository
+              .getById(asId<ProgramId>(query.id))
+              .pipe(
+                switchMap((program) =>
+                  program === null
+                    ? of(null)
+                    : combineLatest([
+                        this.repository.listRequirementTemplates(program.id),
+                        this.repository.utilizationFor(program.id),
+                      ]).pipe(
+                        switchMap(([templates, utilization]) =>
+                          of<ProgramView>({ program, templates, utilization }),
+                        ),
                       ),
-                    ),
+                ),
               ),
-            ),
+          this.live.changes(PROGRAM_DETAIL_TOPICS),
+          this.live,
         ),
       ),
     ),

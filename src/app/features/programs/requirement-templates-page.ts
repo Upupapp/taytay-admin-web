@@ -12,6 +12,8 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { switchMap, type Observable } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   CATALOGUE_CODE_PATTERN,
@@ -29,7 +31,8 @@ import {
   type RequirementTemplate,
   type RequirementTemplateDraft,
 } from '@domain/index';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -51,6 +54,9 @@ type EditorMode =
   | { readonly kind: 'retire'; readonly template: RequirementTemplate };
 
 const CLOSED: EditorMode = { kind: 'closed' };
+
+/** Templates, and the count of programmes naming each, are the programme catalogue (`DL-222`). */
+export const REQUIREMENT_TEMPLATES_TOPICS: readonly LiveTopic[] = ['programs'];
 
 function emptyTemplateDraft(): RequirementTemplateDraft {
   return { code: '', name: '', description: '', requirements: [] };
@@ -80,6 +86,7 @@ function emptyTemplateDraft(): RequirementTemplateDraft {
 export class RequirementTemplatesPage {
   private readonly repository = inject(PROGRAM_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = PROGRAMS_COPY.templates;
   protected readonly reasonCopy = PROGRAMS_COPY.reason;
@@ -95,8 +102,20 @@ export class RequirementTemplatesPage {
     viewChild.required<TemplateRef<{ $implicit: RequirementTemplate }>>('actionsCell');
 
   private readonly reloads = signal(0);
+  /**
+   * The list re-reads quietly on a hint (`DL-222`). The editor beside it edits its own draft, taken
+   * from the template when it was opened, so a re-read never rewrites what is being changed.
+   */
   protected readonly state = toSignal(
-    toObservable(this.reloads).pipe(switchMap(() => toViewState(this.repository.listTemplates()))),
+    toObservable(this.reloads).pipe(
+      switchMap(() =>
+        liveViewState(
+          () => this.repository.listTemplates(),
+          this.live.changes(REQUIREMENT_TEMPLATES_TOPICS),
+          this.live,
+        ),
+      ),
+    ),
     { initialValue: LOADING as ViewState<readonly RequirementTemplate[]> },
   );
   protected readonly templates = computed(() => valueOf(this.state()) ?? []);

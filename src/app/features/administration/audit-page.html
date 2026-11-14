@@ -48,6 +48,10 @@
         {{ summary() }}
       </p>
 
+      @if (listChanged()) {
+        <app-list-changed-notice (reload)="reloadList()" />
+      }
+
       @if (rows().length === 0) {
         <div class="card card--padded audit__empty">
           <h2 class="audit__empty-heading">{{ copy.emptyHeading }}</h2>

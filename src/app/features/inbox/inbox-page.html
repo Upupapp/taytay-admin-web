@@ -27,6 +27,10 @@
           <p class="status-line" role="status">{{ copy.officesUnnamed }}</p>
         }
 
+        @if (listChanged()) {
+          <app-list-changed-notice (reload)="reload()" />
+        }
+
         <app-data-table
           [columns]="columns()"
           [rows]="rows()"

@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom, switchMap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   FIELD_VISIT_REPOSITORY,
@@ -25,12 +27,16 @@ import {
   type VisitStatus,
   visitWordsWithheld,
 } from '@domain/index';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { VISITS_COPY } from './visits.copy';
+
+/** The visit, its observations and its checklist are one record (`DL-222`). */
+export const VISIT_DETAIL_TOPICS: readonly LiveTopic[] = ['visits'];
 
 /**
  * One visit, and the record of what was found there.
@@ -51,6 +57,7 @@ export class VisitDetailPage {
   private readonly repository = inject(FIELD_VISIT_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
   private readonly permissions = inject(PermissionService);
+  private readonly live = inject(LiveUpdates);
 
   readonly id = input.required<string>();
 
@@ -66,9 +73,20 @@ export class VisitDetailPage {
   }
   protected readonly saving = signal(false);
 
+  /**
+   * Re-read quietly when visits change (`DL-222`): a colleague's observation appears in the list.
+   * The observation being written, the closing outcome and any unsaved ticks are signals of their
+   * own, so a re-read never touches a draft.
+   */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
-      switchMap((query) => toViewState(this.repository.getById(asId<FieldVisitId>(query.id)))),
+      switchMap((query) =>
+        liveViewState(
+          () => this.repository.getById(asId<FieldVisitId>(query.id)),
+          this.live.changes(VISIT_DETAIL_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<FieldVisit | null> },
   );

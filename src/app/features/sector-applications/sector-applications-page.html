@@ -24,6 +24,10 @@
     (retryRequested)="reload()"
   >
     <ng-template #listContent>
+      @if (listChanged()) {
+        <app-list-changed-notice (reload)="reload()" />
+      }
+
       <app-data-table
         [caption]="copy.caption"
         [columns]="columns()"
@@ -57,7 +61,12 @@
 </ng-template>
 
 <ng-template #actionCell let-row>
-  <button type="button" class="btn btn--small" [attr.aria-label]="reviewLabel(row)" (click)="open(row)">
+  <button
+    type="button"
+    class="btn btn--small"
+    [attr.aria-label]="reviewLabel(row)"
+    (click)="open(row)"
+  >
     {{ copy.reviewAction }}
   </button>
 </ng-template>

@@ -14,6 +14,8 @@ import { map, of, switchMap, tap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   ASSISTANCE_REQUEST_REPOSITORY,
   ASSISTANCE_STATUS_CATALOG,
@@ -31,8 +33,10 @@ import {
   type StaffUserId,
 } from '@domain/index';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
@@ -67,6 +71,9 @@ const PAGE_SIZE = 20;
 /** The most drafts read at once — the API's largest page. More is said in words, never hidden. */
 const DRAFT_LIMIT = 50;
 
+/** Filed requests and unfinished intakes are both assistance requests (`DL-222`). */
+export const REQUEST_LIST_TOPICS: readonly LiveTopic[] = ['assistance-requests'];
+
 /**
  * The request list, with unfinished intakes held apart from it.
  *
@@ -85,7 +92,16 @@ const DRAFT_LIMIT = 50;
 @Component({
   selector: 'app-request-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, HasPermissionDirective, Icon, PageHeader, PesoPipe, RouterLink, StatusBadge],
+  imports: [
+    DataTable,
+    HasPermissionDirective,
+    Icon,
+    ListChangedNotice,
+    PageHeader,
+    PesoPipe,
+    RouterLink,
+    StatusBadge,
+  ],
   templateUrl: './request-list-page.html',
   styleUrl: './request-list-page.scss',
 })
@@ -95,6 +111,7 @@ export class RequestListPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly permissions = inject(PermissionService);
+  private readonly live = inject(LiveUpdates);
 
   /**
    * A caseload (`assigned-cases`) reads the requests assigned to it and nothing else, whatever it
@@ -166,7 +183,10 @@ export class RequestListPage {
   protected readonly moreFailed = signal(false);
   /** Bumped by "Try again" to read the same filter again from its first page. */
   private readonly generation = signal(0);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /** A hint re-reads the first page quietly, unless somebody has loaded more of it (`DL-222`). */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ query: this.query(), generation: this.generation() }))).pipe(
       tap(({ query }) => {
@@ -174,9 +194,18 @@ export class RequestListPage {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
       switchMap(({ query }) =>
-        toViewState(this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null })),
+        liveViewState(
+          () => this.repository.list(query.filter, { limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(REQUEST_LIST_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<AssistanceRequest>> },
@@ -185,14 +214,21 @@ export class RequestListPage {
   /**
    * Unfinished intakes, read as their own question rather than filtered out of the table. Held as
    * a view state, so a refusal is said where the drafts would be rather than breaking the screen.
+   * One page with no "show more", so it re-reads quietly on every hint (`DL-222`).
    */
   protected readonly draftState = toSignal(
-    toObservable(computed(() => ({ generation: this.generation(), caseload: this.isCaseload() }))).pipe(
+    toObservable(
+      computed(() => ({ generation: this.generation(), caseload: this.isCaseload() })),
+    ).pipe(
       switchMap(({ caseload }) =>
         caseload
-          ? of(ready<CursorPage<AssistanceRequest>>({ items: [], hasMore: false, nextCursor: null }))
-          : toViewState(
-              this.repository.list({ status: 'draft' }, { limit: DRAFT_LIMIT, cursor: null }),
+          ? of(
+              ready<CursorPage<AssistanceRequest>>({ items: [], hasMore: false, nextCursor: null }),
+            )
+          : liveViewState(
+              () => this.repository.list({ status: 'draft' }, { limit: DRAFT_LIMIT, cursor: null }),
+              this.live.changes(REQUEST_LIST_TOPICS),
+              this.live,
             ),
       ),
     ),

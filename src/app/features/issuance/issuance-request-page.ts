@@ -16,6 +16,8 @@ import { RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 
 import { SessionStore } from '@core/auth/session.store';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   asId,
   attachmentsFor,
@@ -48,15 +50,8 @@ import {
 import { ObjectUrls } from '@shared/media/object-urls';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { failureReason } from '@shared/state/failure-reason';
-import {
-  failed,
-  IDLE,
-  LOADING,
-  ready,
-  toViewState,
-  valueOf,
-  type ViewState,
-} from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { failed, IDLE, LOADING, ready, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -64,6 +59,9 @@ import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import { Icon } from '@shared/ui/icon/icon';
 
 import { ISSUANCE_COPY } from './issuance.copy';
+
+/** The request, its history and its files all feed the issuance topic (`DL-222`). */
+export const ISSUANCE_REQUEST_TOPICS: readonly LiveTopic[] = ['issuance-requests'];
 
 /** A grant the reader has been shown, with what it is a grant for. */
 interface PendingFile {
@@ -152,6 +150,7 @@ export class IssuanceRequestPage {
   private readonly repository = inject(ISSUANCE_REPOSITORY);
   private readonly session = inject(SessionStore);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
   private readonly objectUrls = new ObjectUrls();
 
   /** The `:requestId` route parameter. */
@@ -173,16 +172,39 @@ export class IssuanceRequestPage {
   /** The request as the server answered a move, shown until the next read. */
   private readonly answered = signal<IssuanceRequest | null>(null);
 
+  /**
+   * Read again quietly when the resident sends a file or a colleague moves the request (`DL-222`).
+   * The move's reason and claim details live in `StatusTransition`'s own signals, and an open file
+   * in this page's, so a re-read leaves both where they were.
+   */
   private readonly read = toSignal(
     toObservable(computed(() => ({ id: this.id(), generation: this.generation() }))).pipe(
-      switchMap(({ id }) => toViewState(this.repository.request(id))),
+      switchMap(({ id }) =>
+        liveViewState(
+          () => this.repository.request(id),
+          this.live.changes(ISSUANCE_REQUEST_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<IssuanceRequest> },
   );
 
+  /**
+   * The answer to a move until a read has caught up with it. History is only ever appended, so a
+   * read holding at least as many lines as the answer has seen the move; one that left before the
+   * move landed holds fewer, and would put the request back in the status it just left.
+   */
   protected readonly state = computed<ViewState<IssuanceRequest>>(() => {
     const answered = this.answered();
-    return answered !== null && answered.id === this.id() ? ready(answered) : this.read();
+    const read = this.read();
+    if (answered === null || answered.id !== this.id()) {
+      return read;
+    }
+    const fresh = valueOf(read);
+    return fresh !== null && fresh.history.length >= answered.history.length
+      ? read
+      : ready(answered);
   });
   protected readonly current = computed(() => valueOf(this.state()));
 

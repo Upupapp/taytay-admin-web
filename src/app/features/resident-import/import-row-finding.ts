@@ -44,7 +44,17 @@ export class ImportRowFinding {
   protected readonly reason = signal('');
   protected readonly problem = signal('');
 
-  protected readonly open = computed(() => this.row().resolution === null || this.editing());
+  /**
+   * A live re-read that brings somebody else's finding on this row does not close a finding this
+   * person has started: their choice and reason stay in front of them (`DL-222`).
+   */
+  protected readonly open = computed(
+    () =>
+      this.row().resolution === null ||
+      this.editing() ||
+      this.action() !== null ||
+      this.reason() !== '',
+  );
   protected readonly cells = computed(() =>
     Object.entries(this.row().values ?? {}).map(([field, value]) => ({
       field,

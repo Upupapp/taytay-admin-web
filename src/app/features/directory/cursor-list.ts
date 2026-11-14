@@ -2,8 +2,11 @@ import { computed, DestroyRef, inject, signal, type Signal } from '@angular/core
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap, tap, type Observable } from 'rxjs';
 
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import type { CursorPage, CursorRequest } from '@domain/index';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 
 /** One page at a time from the server; the API's own default, and well under its ceiling. */
 export const PAGE_SIZE = 20;
@@ -16,6 +19,8 @@ export interface CursorList<T> {
   readonly hasMore: Signal<boolean>;
   readonly loadingMore: Signal<boolean>;
   readonly moreFailed: Signal<boolean>;
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  readonly listChanged: Signal<boolean>;
   /** Reads the list again from its first page — after a change, or on "Try again". */
   reload(): void;
   /** Follows the cursor one page further. */
@@ -29,15 +34,21 @@ export interface CursorList<T> {
  * The same shape the ID review and users and roles hold inline; here two lists of one feature share
  * it. After a change the list is read again from the server rather than patched, so what is shown is
  * what the server holds.
+ *
+ * Live (`DL-222`): a hint on `topics` re-reads the first page quietly, unless more pages are on
+ * screen — then the hint is held and `listChanged` offers the reload instead.
  */
 export function cursorList<T>(
   load: (page: CursorRequest) => Observable<CursorPage<T>>,
+  topics: readonly LiveTopic[],
 ): CursorList<T> {
   const destroyRef = inject(DestroyRef);
+  const live = inject(LiveUpdates);
   const generation = signal(0);
   const further = signal<readonly CursorPage<T>[]>([]);
   const loadingMore = signal(false);
   const moreFailed = signal(false);
+  const listChanged = signal(false);
 
   const first = toSignal(
     toObservable(generation).pipe(
@@ -45,8 +56,19 @@ export function cursorList<T>(
         further.set([]);
         moreFailed.set(false);
         loadingMore.set(false);
+        listChanged.set(false);
       }),
-      switchMap(() => toViewState(load({ limit: PAGE_SIZE, cursor: null }))),
+      switchMap(() =>
+        liveViewState(
+          () => load({ limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            live.changes(topics),
+            () => further().length > 0 || loadingMore(),
+            () => listChanged.set(true),
+          ),
+          live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<T>> },
   );
@@ -67,6 +89,7 @@ export function cursorList<T>(
     hasMore,
     loadingMore: loadingMore.asReadonly(),
     moreFailed: moreFailed.asReadonly(),
+    listChanged: listChanged.asReadonly(),
     reload: () => generation.update((n) => n + 1),
     showMore: () => {
       const cursor = lastPage()?.nextCursor ?? null;

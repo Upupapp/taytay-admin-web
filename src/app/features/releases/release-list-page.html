@@ -122,6 +122,10 @@
           </p>
         </div>
       } @else {
+        @if (listChanged()) {
+          <app-list-changed-notice (reload)="retry()" />
+        }
+
         <!-- What the office got wrong comes first. A queue sorted by status
              hides these among everything else. -->
         @if (needsOffice().length > 0) {

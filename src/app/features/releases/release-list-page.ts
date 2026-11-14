@@ -12,6 +12,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   asId,
   DASHBOARD_PERIODS,
@@ -36,8 +38,10 @@ import {
 } from '@domain/index';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import { Icon } from '@shared/ui/icon/icon';
@@ -56,6 +60,9 @@ const PROGRAM_CATEGORIES = Object.keys(PROGRAM_CATEGORY_LABELS) as readonly Prog
 /** The status box's value for the handed-over group; no status is spelt like it. */
 const HANDED_OVER_OPTION = 'group:handed-over';
 
+/** The queue's rows are releases and nothing else (`DL-222`). */
+export const RELEASE_LIST_TOPICS: readonly LiveTopic[] = ['releases'];
+
 /**
  * The release queue.
  *
@@ -68,7 +75,16 @@ const HANDED_OVER_OPTION = 'group:handed-over';
 @Component({
   selector: 'app-release-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, Icon, NgTemplateOutlet, PageHeader, PesoPipe, RouterLink, StatusBadge],
+  imports: [
+    AsyncContent,
+    Icon,
+    ListChangedNotice,
+    NgTemplateOutlet,
+    PageHeader,
+    PesoPipe,
+    RouterLink,
+    StatusBadge,
+  ],
   templateUrl: './release-list-page.html',
   styleUrl: './release-list-page.scss',
 })
@@ -78,6 +94,7 @@ export class ReleaseListPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly permissions = inject(PermissionService);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = RELEASES_COPY.list;
   protected readonly statusCatalog = RELEASE_STATUS_CATALOG;
@@ -119,7 +136,13 @@ export class ReleaseListPage {
   private readonly further = signal<readonly CursorPage<Release>[]>([]);
   protected readonly loadingMore = signal(false);
   protected readonly moreFailed = signal(false);
+  /** A hint arrived while more than the first page was on screen (`DL-222`). */
+  protected readonly listChanged = signal(false);
 
+  /**
+   * A hint re-reads the first page quietly, unless somebody has loaded more of it; the search box
+   * is seeded only on a new filter, never by a re-read (`DL-222`).
+   */
   protected readonly state = toSignal(
     toObservable(computed(() => ({ filter: this.filter(), nonce: this.reloads() }))).pipe(
       tap(({ filter }) => {
@@ -127,9 +150,18 @@ export class ReleaseListPage {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
+        this.listChanged.set(false);
       }),
       switchMap(({ filter }) =>
-        toViewState(this.repository.list(filter, { limit: PAGE_SIZE, cursor: null })),
+        liveViewState(
+          () => this.repository.list(filter, { limit: PAGE_SIZE, cursor: null }),
+          unlessPaged(
+            this.live.changes(RELEASE_LIST_TOPICS),
+            () => this.further().length > 0 || this.loadingMore(),
+            () => this.listChanged.set(true),
+          ),
+          this.live,
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<CursorPage<Release>> },

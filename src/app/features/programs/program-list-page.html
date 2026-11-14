@@ -72,6 +72,10 @@
     <p class="callout callout--warning catalog__note" role="note">{{ because }}</p>
   }
 
+  @if (listChanged()) {
+    <app-list-changed-notice (reload)="reloadList()" />
+  }
+
   <app-data-table
     [caption]="copy.caption"
     [columns]="columns()"

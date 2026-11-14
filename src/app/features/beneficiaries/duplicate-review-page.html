@@ -16,6 +16,10 @@
           <p class="review__empty-message">{{ copy.emptyMessage }}</p>
         </div>
       } @else {
+        @if (listChanged()) {
+          <app-list-changed-notice (reload)="reloadList()" />
+        }
+
         <div class="table-scroll">
           <table class="simple-table review__table">
             <caption class="review__caption">
