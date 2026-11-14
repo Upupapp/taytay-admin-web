@@ -66,6 +66,8 @@ const HELPERS = [
   'item',
   'optionalItem',
   'blob',
+  // Text as it arrives (`DL-222`): answers `string`, takes no type argument for its answer.
+  'stream',
   // Bytes for a grant (`DL-178`): answers `Blob`, takes no type argument for its answer.
   'postBlob',
   'post',

@@ -11,6 +11,7 @@ import {
 } from '@domain/index';
 
 import { SessionState } from '../auth/session-state';
+import { LiveUpdates } from '../live/live-updates';
 
 /**
  * Application-wide notification surface.
@@ -31,6 +32,7 @@ export class NotificationStore {
    */
   private readonly session = inject(SessionState);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly live = inject(LiveUpdates);
 
   private readonly inboxItems = signal<readonly AppNotification[]>([]);
   private readonly toastItems = signal<readonly AppNotification[]>([]);
@@ -42,7 +44,16 @@ export class NotificationStore {
   readonly unreadCount = computed(() => this.inboxItems().filter(isUnread).length);
 
   constructor() {
+    /*
+     * The badge and the inbox re-read when the server says this account's notifications changed,
+     * and on reconnect and focus (`DL-222`, superseding `DL-135`'s "nothing polls"). Still no timer
+     * of this store's own: `LiveUpdates` is the one place that schedules, and only a hint, a
+     * reconnection or a person looking again makes it ask.
+     */
+    const live = this.live.changes(['notifications']).subscribe(() => this.refresh());
+
     this.destroyRef.onDestroy(() => {
+      live.unsubscribe();
       for (const timer of this.timers.values()) {
         clearTimeout(timer);
       }

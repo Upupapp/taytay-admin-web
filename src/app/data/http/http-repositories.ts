@@ -17,6 +17,7 @@ import {
 import { AuthTokenHolder } from '@core/auth/auth-token.holder';
 import type { SessionRefresher } from '@core/auth/session-refresher';
 import { isApiFailure, isNotFound, readApiError } from '@core/http/api-failure';
+import type { ChangeFeed, ChangeFeedEvent } from '@core/live/change-feed';
 import {
   AppConfigRefusedError,
   DIGITAL_ID_SEARCH_MIN_LENGTH,
@@ -359,6 +360,8 @@ import { IdentityProvider } from './identity/identity.provider';
 import { invalidCredentials, signInUnavailable } from './identity/sign-in-messages';
 import { confinesToOneBarangay, toServerIdentity } from './mappers/me.mapper';
 import { toDashboardSummary } from './mappers/dashboard.mapper';
+import { changeFeedEvents } from './mappers/change-feed.mapper';
+import { sseFrames } from './sse-parser';
 import {
   toAssistanceHistoryReading,
   toBeneficiaryRecordParts,
@@ -779,6 +782,24 @@ export class HttpSessionRefresher implements SessionRefresher {
     );
 
     return this.inFlight;
+  }
+}
+
+/**
+ * The API's change feed, `GET changes` (`CHANGE_FEED`, `DL-222`): "something changed" hints that
+ * tell a screen to read again through its own repository.
+ *
+ * One stream per `open()`, through `ApiClient.stream` and so through the interceptors — the bearer
+ * in a header, never in the URL. Each frame keeps its topic names and nothing else
+ * (`toChangeFeedEvent`); a frame this console does not use, `retry:` among them, is dropped. When
+ * and how to reconnect is `LiveUpdates`' decision, not this adapter's.
+ */
+@Injectable()
+export class HttpChangeFeed implements ChangeFeed {
+  private readonly api = inject(ApiClient);
+
+  open(): Observable<ChangeFeedEvent> {
+    return this.api.stream(API_ENDPOINTS.changes).pipe(sseFrames(), changeFeedEvents());
   }
 }
 

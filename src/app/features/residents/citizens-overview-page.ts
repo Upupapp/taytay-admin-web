@@ -13,6 +13,8 @@ import { map, switchMap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { SessionStore } from '@core/auth/session.store';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   isResidentSummaryFiltered,
   isSensitiveSector,
@@ -37,7 +39,8 @@ import {
   type SummaryDelta,
   type VulnerabilitySector,
 } from '@domain/index';
-import { LOADING, toViewState, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { ChartTable } from '@shared/ui/chart-table/chart-table';
 import { Icon } from '@shared/ui/icon/icon';
@@ -49,6 +52,13 @@ import { residentFilterParams } from './resident-query';
 /** The three sectors the board shows as headline figures, in its order. */
 const HEADLINE_SECTORS = ['senior-citizen', 'pwd', 'solo-parent'] as const;
 type HeadlineSector = (typeof HEADLINE_SECTORS)[number];
+
+/**
+ * What the summary counts (`DL-222`): the registry's residents — by barangay, sector, age and sex,
+ * added in the period, missing a contact — and the possible duplicates the beneficiary review
+ * resolves. An approved sector application changes a resident, so it arrives as `residents`.
+ */
+export const CITIZENS_OVERVIEW_TOPICS: readonly LiveTopic[] = ['residents', 'beneficiaries'];
 
 interface Headline {
   readonly key: string;
@@ -89,6 +99,7 @@ export class CitizensOverviewPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly locale = inject(LOCALE_ID);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = CITIZENS_OVERVIEW_COPY;
   protected readonly barangays = TAYTAY_BARANGAYS;
@@ -113,7 +124,14 @@ export class CitizensOverviewPage {
 
   protected readonly state = toSignal(
     toObservable(computed(() => ({ filter: this.filter(), generation: this.generation() }))).pipe(
-      switchMap(({ filter }) => toViewState(this.repository.summary(filter))),
+      // A new filter, or "Try again", shows the skeleton; a change on the server swaps in quietly.
+      switchMap(({ filter }) =>
+        liveViewState(
+          () => this.repository.summary(filter),
+          this.live.changes(CITIZENS_OVERVIEW_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<ResidentSummary> },
   );

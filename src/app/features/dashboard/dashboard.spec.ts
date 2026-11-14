@@ -1,11 +1,13 @@
-import { Component, Injectable } from '@angular/core';
+import { Component, Injectable, type Provider } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, map, of, type Observable } from 'rxjs';
+import { firstValueFrom, map, of, Subject, type Observable } from 'rxjs';
+import { vi } from 'vitest';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { LiveUpdates } from '@core/live/live-updates';
 import { MockDashboardRepository } from '@data/mock/mock-dashboard.repository';
 import {
   ACCESS_CONTEXT,
@@ -41,7 +43,7 @@ import {
 // The figures and the lists they open are checked against each other: a spec is where the two meet.
 import { readRequestQuery } from '@features/requests/request-list-page';
 import { readReleaseQuery } from '@features/releases/release-list-page';
-import { DashboardPage, readFilter } from './dashboard-page';
+import { DASHBOARD_TOPICS, DashboardPage, readFilter } from './dashboard-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
@@ -128,6 +130,7 @@ async function setUp(
   barangayId: BarangayId | null = null,
   url = '/dashboard',
   dashboard: typeof MockDashboardRepository = MockDashboardRepository,
+  extra: readonly Provider[] = [],
 ): Promise<ComponentFixture<DashboardPage>> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -145,6 +148,7 @@ async function setUp(
         useValue: repository(role ? staffUser(role, barangayId) : null),
       },
       { provide: DASHBOARD_REPOSITORY, useClass: dashboard },
+      ...extra,
     ],
   });
   await firstValueFrom(TestBed.inject(SessionStore).load());
@@ -618,5 +622,56 @@ describe('the released figures', () => {
   it('keeps the plain sentence when every release was money', () => {
     expect(DASHBOARD_COPY.disbursedHint(1, 0)).toBe('Across 1 beneficiary.');
     expect(DASHBOARD_COPY.disbursedHint(3, 0)).toBe('Across 3 beneficiaries.');
+  });
+});
+
+/* ── live updates (DL-222) ────────────────────────────────────────────────── */
+
+let summaryReads = 0;
+
+@Injectable()
+class CountingDashboardRepository extends MockDashboardRepository {
+  override summary(filter: DashboardFilter): Observable<DashboardSummary> {
+    summaryReads += 1;
+    return super.summary(filter);
+  }
+}
+
+describe('the dashboard keeps itself current (DL-222)', () => {
+  it('re-reads the summary quietly when a topic it counts changes', async () => {
+    summaryReads = 0;
+    const changes = new Subject<void>();
+    const asked: (readonly string[])[] = [];
+    const live = {
+      changes: (topics: readonly string[]) => {
+        asked.push(topics);
+        return changes.asObservable();
+      },
+      noteRefreshed: vi.fn(),
+      noteRefreshFailed: vi.fn(),
+    };
+
+    const fixture = await setUp('mswdo-head', null, '/dashboard', CountingDashboardRepository, [
+      { provide: LiveUpdates, useValue: live },
+    ]);
+    expect(summaryReads).toBe(1);
+    expect(asked).toEqual([DASHBOARD_TOPICS]);
+    expect(live.noteRefreshed).toHaveBeenCalledTimes(1);
+
+    changes.next();
+    // The figures stay on screen while the new ones are read: no skeleton.
+    fixture.detectChanges();
+    expect(html(fixture).querySelector('app-skeleton')).toBeNull();
+    expect(html(fixture).querySelector('.attention__list')).not.toBeNull();
+
+    await fixture.whenStable();
+    expect(summaryReads).toBe(2);
+    expect(live.noteRefreshed).toHaveBeenCalledTimes(2);
+  });
+
+  it('counts what its figures count: requests, payouts, referrals, the app', () => {
+    expect([...DASHBOARD_TOPICS].sort()).toEqual(
+      ['assistance-requests', 'digital-ids', 'programs', 'referrals', 'releases', 'users', 'verification'],
+    );
   });
 });

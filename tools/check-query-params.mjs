@@ -63,6 +63,8 @@ const READ_HELPERS = {
   optionalItem: { filterAt: null, cursorKeys: false },
   /* Takes a path and nothing else: an image is addressed, never filtered (`DL-167`). */
   blob: { filterAt: null, cursorKeys: false },
+  /* The change feed (`DL-222`): a path and nothing else, so nothing can reach its URL. */
+  stream: { filterAt: null, cursorKeys: false },
 };
 
 /* Writes. Excluded because their arguments are a BODY, which `check:wire-adoption` owns. */

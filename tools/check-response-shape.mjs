@@ -24,6 +24,7 @@
  * | `list`                    | an array, `meta: {}`                  | `list`         |
  * | `blob`                    | no envelope at all: bytes             | `binary`       |
  * | `postBlob`                | no envelope at all: bytes, at `POST`  | `binary`       |
+ * | `stream`                  | no envelope at all: events as text    | `event-stream` |
  *
  * `binary` (`DL-167`) is a `200` whose every content type is a non-JSON media type with a
  * `format: binary` schema — `GET media/{id}/content` and nothing else today. It is matched both
@@ -71,10 +72,18 @@ const resolve = (schema) => {
   return resolve(ref.replace(/^#\//, '').split('/').reduce((node, key) => node?.[key], spec));
 };
 
-/** `item`, `list`, `cursor-page`, `binary`, or `undeclared` when the spec says nothing a helper can match. */
+/**
+ * `item`, `list`, `cursor-page`, `binary`, `event-stream`, or `undeclared` when the spec says nothing
+ * a helper can match.
+ */
 function envelopeOf(operation) {
   const content = operation?.responses?.['200']?.content ?? {};
   const mediaTypes = Object.keys(content);
+  // A server-sent event stream (`DL-222`): no envelope at all, events as they happen. Every content
+  // type the 200 declares must be the stream, or a JSON helper could be argued right as well.
+  if (mediaTypes.length > 0 && mediaTypes.every((type) => type === 'text/event-stream')) {
+    return 'event-stream';
+  }
   if (
     mediaTypes.length > 0 &&
     mediaTypes.every((type) => type !== 'application/json' && resolve(content[type]?.schema)?.format === 'binary')
@@ -166,6 +175,8 @@ const NEEDS = {
   blob: 'binary',
   /** Bytes for a grant, at `POST` (`DL-178`): judged against that operation's answer. */
   postBlob: 'binary',
+  /** Text as it arrives (`DL-222`): only a route whose answer is `text/event-stream`. */
+  stream: 'event-stream',
 };
 
 /** The verb a read helper is judged at; anything not named here is a `GET`. */

@@ -172,6 +172,8 @@ const VERBS = {
   postForm: 'POST',
   patchForm: 'PATCH',
   delete: 'DELETE',
+  /** A server-sent event stream (`DL-222`): a read, judged at its verb like any other. */
+  stream: 'GET',
 };
 
 /*

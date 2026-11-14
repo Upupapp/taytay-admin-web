@@ -1,4 +1,4 @@
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpClient, HttpContext, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
@@ -10,6 +10,7 @@ import { APP_ENVIRONMENT } from '../config/app-environment.token';
 import { NotificationStore } from '../notifications/notification.store';
 import { isApiFailure, isNotFound } from './api-failure';
 import { apiHeadersInterceptor, httpErrorInterceptor } from './api.interceptors';
+import { QUIET_FAILURE } from './quiet-failure';
 
 const BASE = 'https://api.example.gov.ph/api/v1';
 
@@ -43,6 +44,16 @@ describe('apiHeadersInterceptor', () => {
     const { request } = http.expectOne(`${BASE}/me`);
     expect(request.headers.get('Authorization')).toBe('Bearer fixture-token');
     expect(request.headers.get('X-Client-Channel')).toBe('admin-console');
+  });
+
+  it('asks for JSON unless the request names what it accepts, as the change feed does', () => {
+    client.get(`${BASE}/me`).subscribe();
+    client.get(`${BASE}/changes`, { headers: { Accept: 'text/event-stream' } }).subscribe();
+
+    expect(http.expectOne(`${BASE}/me`).request.headers.get('Accept')).toBe('application/json');
+    expect(http.expectOne(`${BASE}/changes`).request.headers.get('Accept')).toBe(
+      'text/event-stream',
+    );
   });
 
   it.each([
@@ -235,6 +246,37 @@ describe('httpErrorInterceptor — where a refusal is said (DL-196)', () => {
 
     expect(endExpiredSession).toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith(['/sign-in'], expect.anything());
+    http.verify();
+  });
+
+  /** The change feed drops as a matter of course (`DL-222`); that is never a notice. */
+  it('raises no notice for a quiet request, and still ends a refused session', async () => {
+    const { client, http, navigate, error, endExpiredSession } = setUp();
+    const quiet = { context: new HttpContext().set(QUIET_FAILURE, true) };
+    const failures: unknown[] = [];
+
+    client.get(`${BASE}/changes`, quiet).subscribe({ error: (e: unknown) => failures.push(e) });
+    await answer(
+      http,
+      'GET',
+      `${BASE}/changes`,
+      { error: { code: 'INTERNAL', message: 'x' } },
+      500,
+    );
+    expect(error).not.toHaveBeenCalled();
+    expect(isApiFailure(failures[0])).toBe(true);
+
+    client.get(`${BASE}/changes`, quiet).subscribe({ error: () => undefined });
+    await answer(
+      http,
+      'GET',
+      `${BASE}/changes`,
+      { error: { code: 'UNAUTHENTICATED', message: 'Sign in again.' } },
+      401,
+    );
+    expect(endExpiredSession).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/sign-in'], expect.anything());
+    expect(error).not.toHaveBeenCalled();
     http.verify();
   });
 });

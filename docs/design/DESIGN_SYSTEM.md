@@ -498,7 +498,8 @@ Usually reached through `AsyncContent` or `DataTable [loading]` rather than plac
 
 `app-toast-host` (by `App`; raise messages through `NotificationStore`), `app-connection-banner`
 (by the shell: `role="status"`, the reconnected message dismissed by a person, nothing queued,
-`DL-118`), `app-route-progress` (by the shell: an indeterminate bar, `aria-hidden`, announced once).
+`DL-118`), `app-route-progress` (by the shell: an indeterminate bar, `aria-hidden`, announced once),
+`app-live-indicator` (by the topbar: the Live toggle, never announced, `DL-222`).
 
 ### Other shared pieces restyled with the redesign
 
@@ -511,6 +512,7 @@ Usually reached through `AsyncContent` or `DataTable [loading]` rather than plac
 | `VulnerabilitySnapshotPanel`                                                         | `shared/households` | Household indicators, advisory only (`DL-42`).                |
 | `RelationshipGraph`                                                                  | `shared/families`   | Relationships; the graph is the list (`DL-50`).               |
 | `ImageFileField`                                                                     | `shared/media`      | An image picker with a preview and a refusal line.            |
+| `ListChangedNotice` (`app-list-changed-notice`)                                      | `shared/ui`         | A paged list changed under its reader: "Reload list" (`DL-222`). |
 | `BrandMark`, `MunicipalSeal`, `SealPlaceholder`                                      | `shared/brand`      | The console's name and seal (`DL-199`).                       |
 | `NotConnected` (`app-not-connected [port]`)                                          | `core/access`       | A panel whose port the API does not serve (`DL-175`).         |
 | `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe`, `InitialsPipe` | `shared/pipes`      | Formatting; `{{ name \| initials }}` feeds `.avatar`.         |
@@ -523,8 +525,8 @@ Usually reached through `AsyncContent` or `DataTable [loading]` rather than plac
 `app-shell` mounts, in order: `app-route-progress`, the skip link, `app-connection-banner`, the glass
 sidebar (`app-brand-mark`, `app-nav`, the signed-in identity, the Dark mode button
 `app-theme-toggle` and sign-out), and the main column
-(`app-topbar`: the navigation toggle, `app-breadcrumb`, `app-global-search-trigger` and the
-notification inbox button; then `main#main-content`). The notification inbox is an `app-drawer` holding `app-notification-list`.
+(`app-topbar`: the navigation toggle, `app-breadcrumb`, `app-global-search-trigger`, the Live
+toggle `app-live-indicator` and the notification inbox button; then `main#main-content`). The notification inbox is an `app-drawer` holding `app-notification-list`.
 
 Settled for the frame (`DL-201`): navigation sections are always open (their titles are `h2`, not
 toggles); the topbar scrolls with the page; the sidebar is the one glass element with a backdrop
@@ -716,6 +718,42 @@ Mock-up: [`Main.dc.html`](./admin/screens/Main.dc.html). Reference:
 
 A figure links to the records behind it. A figure the API does not provide is not drawn.
 
+### Live updates — every pattern (`DL-222`)
+
+A data view keeps itself current by re-reading through its own repository when the API says a topic
+it shows changed. Swap `toViewState` for `liveViewState`: the first read and a new query still show
+the skeleton; a re-read **never** does, swaps the new value in only on success, and keeps what is on
+screen when it fails (the topbar then says "Not updated" with **Refresh now**).
+
+```ts
+private readonly live = inject(LiveUpdates);                       // @core/live/live-updates
+protected readonly state = toSignal(
+  this.query$.pipe(switchMap((q) => liveViewState(                 // @shared/state/live-view-state
+    () => this.repository.list(q),                                 // list: its query
+    this.live.changes(['residents']),                              // the topics its read counts
+    this.live,                                                     // hears "Updated 10:32" / failures
+  ))),
+  { initialValue: LOADING },
+);
+// Detail: switchMap((id) => liveViewState(() => this.repository.get(id), this.live.changes(['cases']), this.live))
+```
+
+- **List with more pages loaded:** it does not reshuffle. Wrap the refreshes in
+  `unlessPaged(refreshes, () => this.further().length > 0, () => this.listChanged.set(true))`, and
+  above the rows show `@if (listChanged()) { <app-list-changed-notice (reload)="reloadList()" /> }` —
+  "This list has changed. Reload list", a `.callout` with a small secondary button. Reloading starts
+  from the first page and clears the flag.
+- **Form:** re-read nothing the person is editing; input, scroll position and selection are theirs.
+- **Topics** are `LiveTopic` (`@core/live/change-feed`), named for what the read counts. A screen
+  whose topic never arrives still refreshes on reconnect, resync and when the tab is looked at again.
+- **The topbar control** (`app-live-indicator`, mounted once): a glass pill like the inbox button
+  with a status dot (`--tone-success-fg` live, `--tone-info-fg` every 15 s, `--tone-warning-fg`
+  reconnecting, hollow `--muted` paused or idle) and the word "Live"; the state follows in
+  `--fs-xs` `--muted` words ("Reconnecting · Updated 10:32"), hidden at ≤640px but kept as the
+  button's description. It is a toggle (`aria-pressed`) with the fixed name "Live updates", pauses
+  every update on the page (WCAG 2.2.2), and is **never announced**: no live region, no
+  `role="status"`. It is absent where live updates are off (the mock set, signed out).
+
 ### Inbox (messaging)
 
 Mock-ups: [`OfficeInbox.dc.html`](./admin/screens/OfficeInbox.dc.html),
@@ -811,6 +849,7 @@ attachments open only after a warning, and nothing is logged (`check:inbox`).
 | Command                   | Holds                                                                                                                                                                                             |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run check:styles`    | No colour literal (hex, `rgb()`, `hsl()`, …, named colours), no px font size, no shadow or glow anywhere under `src/`, except a token's value in `styles.scss` / `_brand-tokens.scss` (`DL-203`). |
+| `npm run check:live`      | Live updates stay hints re-read through the screens' own repositories: no `EventSource`/`WebSocket`, no polling or visibility watching outside `core/live`, topic names only, the indicator and the list-changed notice never announced (`DL-222`). |
 | `npm run check:contrast`  | The audited colour pairs meet their thresholds in the light theme and the dark one; no text in `--primary`, no fill in a red ink (`DL-204`); no border, outline, accent, fill or stroke in `--primary` while it is below 3:1 on a surface in either theme. |
 | `npm run check:brand`     | SCSS colour tokens and status tones equal `brand-palette.ts` in both themes; no unsupportable colour-system claim; brand images registered.                                                       |
 | `npm run check:shell`     | Target size, focus scroll margin, reduced motion, icon-only buttons, overflow rules in the frame.                                                                                                 |

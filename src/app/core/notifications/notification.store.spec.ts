@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of, type Observable } from 'rxjs';
+import { of, Subject, type Observable } from 'rxjs';
 
 import {
   asId,
@@ -12,6 +12,7 @@ import {
   type NotificationRequest,
 } from '@domain/index';
 
+import { LiveUpdates } from '../live/live-updates';
 import { NotificationStore } from './notification.store';
 
 /** Mirrors the channel/dismissal defaults the real adapters apply. */
@@ -148,6 +149,52 @@ describe('NotificationStore', () => {
     store.info('Saved');
     expect(store.toasts()[0]?.autoDismissMs).toBe(DEFAULT_TOAST_DISMISS_MS);
   });
+  /**
+   * `DL-222`, superseding `DL-135` for the badge: the inbox is re-read when the server says this
+   * account's notifications changed — a hint, never a poll of the store's own.
+   */
+  it('re-reads the inbox when the change feed names notifications, and only then', () => {
+    const changes = new Subject<void>();
+    const asked: (readonly string[])[] = [];
+    const repository = new FakeNotificationRepository();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: NOTIFICATION_REPOSITORY, useValue: repository },
+        {
+          provide: LiveUpdates,
+          useValue: {
+            changes: (topics: readonly string[]) => {
+              asked.push(topics);
+              return changes.asObservable();
+            },
+          },
+        },
+      ],
+    });
+    const store = TestBed.inject(NotificationStore);
+    expect(asked).toEqual([['notifications']]);
+    expect(store.inbox()).toHaveLength(0);
+
+    repository.seed([
+      {
+        kind: 'general',
+        id: asId<NotificationId>('ntf-live'),
+        recipientId: null,
+        severity: 'info',
+        title: 'Seeded',
+        body: null,
+        channel: 'inbox',
+        action: null,
+        createdAt: asIsoDateTime(new Date()),
+        readAt: null,
+        autoDismissMs: null,
+      },
+    ]);
+    changes.next();
+
+    expect(store.inbox()).toHaveLength(1);
+  });
+
   /**
    * `DL-135` — TAB 11 step 10. Nothing polls, and nothing claims to be live.
    *

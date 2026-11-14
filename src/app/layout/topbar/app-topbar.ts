@@ -7,10 +7,11 @@ import { Icon } from '@shared/ui/icon/icon';
 import { AppBreadcrumb } from '../breadcrumb/app-breadcrumb';
 import { GlobalSearchTrigger } from '../search/global-search-trigger';
 import { LAYOUT_COPY } from '../layout.copy';
+import { LiveIndicator } from './live-indicator';
 
 /**
- * The topbar: navigation toggle, breadcrumb, global-search trigger and the
- * notification inbox. It scrolls with the page, as the console mock-ups draw
+ * The topbar: navigation toggle, breadcrumb, global-search trigger, the live-updates
+ * toggle (`DL-222`) and the notification inbox. It scrolls with the page, as the console mock-ups draw
  * it (`DL-201`): a row on the page wash, not a bar over the content.
  *
  * Identity and sign-out deliberately live in the sidebar footer instead. Put
@@ -23,7 +24,7 @@ import { LAYOUT_COPY } from '../layout.copy';
 @Component({
   selector: 'app-topbar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppBreadcrumb, GlobalSearchTrigger, Icon],
+  imports: [AppBreadcrumb, GlobalSearchTrigger, Icon, LiveIndicator],
   template: `
     <header class="topbar">
       <button
@@ -42,6 +43,8 @@ import { LAYOUT_COPY } from '../layout.copy';
       @if (searchServed) {
         <app-global-search-trigger class="topbar__search" (activated)="searchActivated.emit()" />
       }
+
+      <app-live-indicator class="topbar__live" />
 
       <button
         type="button"

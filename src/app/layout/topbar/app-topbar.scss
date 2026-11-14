@@ -49,6 +49,12 @@
   min-inline-size: 0;
 }
 
+/* Live updates (DL-222): absent when off, so it takes no room in the mock set. */
+.topbar__live {
+  flex: none;
+  min-inline-size: 0;
+}
+
 /* The count is in the button's accessible name; this repeats it for the eye.
    White on the danger fill, ringed in --ring (white, or the page colour in
    the dark theme) so it reads over the glass. */

@@ -121,7 +121,7 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:port-adoption`, `check:scanners`, `check:unserved`, `check:verification`,
 `check:inbox`, `check:accounts`, `check:directory`, `check:home`,
 `check:app-settings`, `check:digital-ids`, `check:balita`,
-`check:platform-audit` and `check:styles`.
+`check:platform-audit`, `check:styles` and `check:live`.
 `check:unserved` keeps a module whose primary port the active adapter set cannot
 serve out of the navigation and names it on one page (`DL-167`), and holds every
 secondary panel whose port is unserved to saying so in place — no request, and
@@ -157,7 +157,12 @@ the app's audit trail to the six things a row records — no value, no reason, i
 given, nothing looked up beside a row, never the governance trail (`DL-171`, `DL-114`);
 `check:styles` holds every stylesheet under `src/` — component files and inline `styles` — to the
 design tokens: no colour literal, no px font size, no shadow or glow but the focus ring, except as a
-token's own value in `styles.scss` or `_brand-tokens.scss` (`DL-203`).
+token's own value in `styles.scss` or `_brand-tokens.scss` (`DL-203`);
+`check:live` keeps live updates hints read through the screens' own repositories —
+no `EventSource` or `WebSocket`, no `setInterval`, rxjs polling or visibility watching
+outside `core/live`, topic names and nothing else off the change feed, one caller of
+`ApiClient.stream`, the feed bound only in the http set, nothing announced, and an
+idle console that stops talking to the API (`DL-222`).
 Each enforces a rule a comment could not, and each was validated against planted
 regressions. Do not weaken one to make a change pass.
 
@@ -910,6 +915,7 @@ All but the last two rows live in `src/app/shared/` and are exported from
 | `CaseTimeline`                                                                       | A record's history. An ordered list, no connectors — see `DL-56`.                                |
 | `ToastHost`                                                                          | Mounted once by `App`. Never place toast markup in a feature.                                    |
 | `ConnectionBanner`, `RouteProgress`                                                  | Mounted once by the shell. Never place them in a feature.                                        |
+| `ListChangedNotice`                                                                  | "This list has changed. Reload list" — a paged list's live hint, held (`DL-222`).                |
 | `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe`, `InitialsPipe` | Formatting. `InitialsPipe` feeds an `.avatar` from the name already shown.                       |
 | `NotConnected` (`@core/access/`)                                                     | `<app-not-connected port="…">` where a panel whose port is unserved would be.                    |
 | `HasPermissionDirective` (`@core/access/`)                                           | `*appHasPermission="'request.approve'"`.                                                         |
@@ -923,6 +929,37 @@ cannot show "no results" while still loading.
 
 `features/residents/resident-list-page.ts` is the reference implementation for
 list screens; `features/dashboard/dashboard-page.ts` for read-only summaries.
+
+### Live updates (`DL-222`)
+
+A screen keeps itself current by **re-reading through its own repository** when
+the API says a topic it shows has changed. `LiveUpdates` (`@core/live/`) holds the
+one stream and is the only thing that schedules; a screen never polls, never opens
+a stream, and never watches page visibility (`check:live`). Swap `toViewState` for
+`liveViewState` (`@shared/state/live-view-state`): the first read and a query change
+still show the skeleton, a re-read never does, and a failed re-read keeps what is on
+screen and tells the topbar.
+
+```ts
+private readonly live = inject(LiveUpdates);
+// A list or a summary: the query in, the topics its read counts.
+protected readonly state = toSignal(
+  this.query$.pipe(switchMap((q) =>
+    liveViewState(() => this.repository.list(q), this.live.changes(['residents']), this.live))),
+  { initialValue: LOADING },
+);
+// A detail page: the same, keyed on the id from the route.
+//   switchMap((id) => liveViewState(() => this.repository.get(id), this.live.changes(['cases']), this.live))
+```
+
+**A list with more than one page loaded does not reshuffle.** Pass its refreshes
+through `unlessPaged(this.live.changes([...]), () => this.further().length > 0, () =>
+this.listChanged.set(true))` and show `<app-list-changed-notice (reload)="…">` while
+`listChanged()`: the person reloads from the first page. Topics are `LiveTopic`
+(`@core/live/change-feed`); name every topic the read counts, and nothing that
+merely shares a word. Never overwrite form input, the scroll position or a
+selection: a form page re-reads nothing it is editing. The topbar's Live toggle
+(`aria-pressed`, never announced) pauses everything for the page (WCAG 2.2.2).
 
 ### Notifications
 

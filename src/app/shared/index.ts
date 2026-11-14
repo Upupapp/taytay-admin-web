@@ -4,6 +4,7 @@
  * finds it instead of re-inventing it.
  */
 export * from './state/debounced';
+export * from './state/live-view-state';
 export * from './state/theme.service';
 export * from './state/view-state';
 export * from './brand/app-image';
@@ -43,6 +44,7 @@ export * from './ui/data-table/data-table';
 export * from './ui/data-table/table-column';
 export * from './ui/drawer/drawer';
 export * from './ui/empty-state/empty-state';
+export * from './ui/list-changed-notice/list-changed-notice';
 export * from './ui/icon/icon';
 export * from './ui/icon/icons';
 export * from './ui/icon/severity-icons';

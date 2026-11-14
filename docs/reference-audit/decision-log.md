@@ -10409,3 +10409,184 @@ photo taken is chosen for the card.
    consent is withdrawn. The step's effects say so.
 
 Easiest to reverse: remove `CardPhotoTake` from the card record and the photo argument from `issue`.
+
+## DL-222 — every screen can update by itself: the API says which topics changed, and screens read again quietly
+
+**Status:** Settled (15 November 2026), across the three repositories. Backend: `GET /api/v1/changes`
+(`taytay-backend`, DL-222, commit `17a604c`, spec vendored at that commit). Mobile: D-218 (`taytay-mobile-app`). This console:
+below. Supersedes `DL-135`'s "nothing polls, and nothing claims to be live" for the inbox and its
+badge; amends `DL-166`; `DL-118` and `DL-87` stand unchanged.
+
+**Asked.** Ella, 15 November 2026: the systems should refresh "every second automatically like the
+data changes real time for example in the dashboard". Decided by researched best practice (her
+standing rule), as below.
+
+### The decision, in all three repositories
+
+The server **pushes a hint** — "these topics changed" — and each screen **reads again through the
+same authorised read it already makes**. Nothing asks the server anything while nothing changes, and
+a change reaches an open screen in about a second.
+
+1. **The API** (`taytay-backend`) serves `GET /api/v1/changes`: `text/event-stream`, authenticated
+   with the Firebase ID token as a bearer header like every other request. It learns of changes from
+   Postgres `LISTEN/NOTIFY` on one dedicated connection, coalesces them for about 300 ms, and sends
+   `event: change` with **topic names only**, filtered for each connection by permission and
+   ownership. `ready` (first, naming every topic the connection can ever carry), `resync` (its
+   `LISTEN` connection dropped and came back, so it may have missed something), `expired` (sent
+   before it closes the stream at the token's expiry or after 15 minutes, whichever is sooner, or
+   when the account's role, office or status changes), and a `: ping` comment every 25 seconds so
+   proxies keep the connection. At most five streams per account; a sixth closes the oldest.
+2. **This console** holds one stream for the tab and re-reads what is on screen (below).
+3. **The residents' app** (D-218) holds the stream only while it is in the foreground and resyncs on
+   resume. It does not poll: residents pay for mobile data.
+
+### Why not a poll every second
+
+- **The server.** The API runs on a 2 GB Linode shared with three other projects. A one-second poll
+  is one query per screen per open console per second whether or not anything changed — thirty
+  consoles on a dashboard are thirty dashboard summaries a second, all day, to say "no change".
+- **The office is one address.** Twenty to forty staff reach the API from behind one public IP. A
+  poll that size would spend the per-address allowance that stops a flood, and the office would
+  refuse itself.
+- **The residents.** Polling from a phone is mobile data and battery spent on nothing.
+- **Practice.** Invalidation plus refetch is how the established client libraries keep screens
+  current: TanStack Query refetches a query when the window regains focus and on invalidation rather
+  than on a clock, and Apollo's event-based refetching re-reads named queries when an event says they
+  are stale. A hint carrying no data is the same pattern with the server naming the stale topics.
+
+### The console
+
+1. **One transport, through the interceptors.** `ApiClient.stream(path)` is
+   `HttpClient.get(url, { observe: 'events', reportProgress: true, responseType: 'text' })` with
+   `Accept: text/event-stream`, and emits only the new slice of each `DownloadProgress` event's
+   cumulative `partialText`. Verified in `@angular/common/fesm2022`: Angular 22's default backend is
+   **`fetch`** (`FetchBackend`, which `provideHttpClient` binds unless `withXhr()` is given), and it
+   reads the body through a stream reader and reports every chunk with `partialText` when
+   `reportProgress` is set; the XHR backend reports the same from `xhr.responseText`. So the bearer
+   travels in the `Authorization` header the interceptor adds, renewed on demand like any request,
+   and a `401` ends the session as any request's does. `EventSource` was rejected because it cannot
+   send a header — the token would have to go in the URL (CLAUDE.md rule 5) — and so was a `fetch`
+   of our own: it would bypass the interceptors that hold the token, its renewal and the error map.
+   No query string and no `Last-Event-ID` (the stream has no replay, and the CORS policy allows no
+   header beyond its four); `Accept` is CORS-safelisted, and the header interceptor now keeps an
+   `Accept` a request names instead of overwriting it with JSON.
+2. **A dropped stream is not news.** The request carries `QUIET_FAILURE`, an `HttpContext` token the
+   error interceptor honours: no toast and no inbox entry for a drop, a refusal or a server error on
+   the stream. A `401` still ends the session and goes to sign-in.
+3. **Topic names and nothing else.** A pure SSE parser (`data/http/sse-parser.ts`: `retry`,
+   `event`, `data`, comments, a byte-order mark, and text cut anywhere — including between the halves
+   of a `\r\n`) feeds `toChangeFeedEvent`, which reads one field, `topics`, keeps only strings shaped
+   like a topic name, and builds a new event. Should the server ever send an id, a count or a value,
+   nothing more reaches a screen, a log or a signal. The port is `CHANGE_FEED` in `core/live`
+   (`open(): Observable<ChangeFeedEvent>`, `ready{topics} | change{topics} | resync | expired`),
+   bound to `HttpChangeFeed` **only in the http set** and injected optionally, like
+   `SESSION_REFRESHER`: the mock set has no server to push anything, so there the console is simply
+   not live and the control is absent.
+4. **`LiveUpdates` is the only scheduler** (`core/live/live-updates.ts`, root). It connects only
+   while somebody is signed in, and `changes(topics)` tells a screen when to read again: a matching
+   `change`; `resync`; every reconnection after the first `ready`; the tab coming back into view;
+   the network coming back; `refreshNow()`; and the fallback tick. At most once per 2 seconds per
+   screen, the first and last of a burst kept, and never while paused or idle. A hidden tab is not
+   woken change by change; it is woken once when it is looked at again.
+   - **Reconnecting:** exponential from 1 second to 30, each delay between half and all of its step
+     (jitter, so an office's consoles dropped by one restart do not all return in the same second);
+     at once after `expired`, the header interceptor renewing the token on the way out; at once when
+     the network comes back.
+   - **An older API:** a `404` or `501` on the stream (or a `403` for an account it will not serve)
+     turns live updates into a **15-second re-read, only while the tab is visible** — the honest
+     fallback for an API without the feed, said in the topbar as "Every 15 s".
+   - **Hidden:** the stream closes after 5 minutes hidden and reopens, with a resync, when the tab
+     is visible again.
+   - **Idle:** after 30 minutes with no pointer or key, the stream closes and every re-read stops
+     until the next activity, which reconnects and resyncs. Activity is a timestamp written by
+     passive listeners; the only timer is a one-shot check when 30 minutes could have passed.
+5. **Quiet re-reads.** `liveViewState(load, refreshes, report)` (`shared/state`) replaces
+   `toViewState` on a live screen: the first read and a new query still go through `toViewState`
+   and show the skeleton; a re-read never emits `loading`, swaps the new value in only on success,
+   and on failure keeps what is on screen and tells `LiveUpdates`, whose topbar line then says "Not
+   updated" beside **Refresh now**. Re-reads are never stacked (`exhaustMap`). **A list with more
+   than one page loaded does not reshuffle:** `unlessPaged` holds its hints and the shared
+   `ListChangedNotice` says "This list has changed. Reload list", leaving the reload — from the first
+   page — to the person. A form re-reads nothing it is editing.
+6. **One control for the whole page (WCAG 2.2 SC 2.2.2, Pause, Stop, Hide).** Content that updates
+   by itself, alongside other content, must be possible to pause, stop or hide; the topbar's
+   **Live** toggle (`aria-pressed`, fixed name "Live updates") pauses every live update on every
+   page and closes the stream, and resuming re-reads. Beside it, in words: "Reconnecting", "Every
+   15 s", "Paused", "Paused, no activity", and "Updated 10:32" — the button's description, read on
+   focus. **Nothing is announced**: no live region and no `role="status"`, because an update that
+   arrives by itself is exactly what must not interrupt somebody reading a case note, and the
+   console's live regions are capped at twelve (`check:hardening`).
+7. **The first screens.** The notification badge and inbox re-read on `notifications`. The dashboard
+   on `assistance-requests`, `releases`, `referrals`, `programs`, `users`, `verification` and
+   `digital-ids` — everything its summary counts. The citizens overview on `residents` and
+   `beneficiaries` (possible duplicates). The other screens follow the same pattern (CLAUDE.md §7,
+   DESIGN_SYSTEM.md §7 "Live updates").
+8. **`check:live`** fails the build on an `EventSource` or `WebSocket`; on `setInterval` anywhere,
+   or rxjs `interval`, `repeat`, a repeating `timer(due, period)` or page-visibility watching outside
+   `core/live`; on the change-feed mapper reading anything but `topics`, spreading a value or
+   building an event with another field; on any caller of `stream()` but `HttpChangeFeed`, a stream
+   that takes more than a path or loses `QUIET_FAILURE`; on a mock binding of `CHANGE_FEED`; on an
+   announcing indicator or notice, or one whose name changes with its state; and on losing the
+   30-minute idle limit, or `core/live` naming the token holder or the refresher. Each rule was
+   validated against a planted regression. `check:routes`, `check:response-shape`,
+   `check:query-params`, `check:wire-adoption` and `check:mapper-adoption` were taught `stream` on
+   purpose; `check:response-shape` reads a `200` whose every content type is `text/event-stream` as
+   the `event-stream` envelope, the only one `stream` accepts.
+
+### What it supersedes, amends and keeps
+
+- **`DL-135` is superseded for the inbox and its badge.** It held that nothing polls and nothing
+  claims to be live, because a badge recomputed only when the drawer opened would be a freshness
+  claim the system could not keep. The topbar now shows an unread badge, and the claim can now be
+  kept: the badge is re-read when the server says this account's notifications changed, on
+  reconnection and on focus. Against an API with the feed nothing polls; the 15-second tick exists
+  only against one without it, and only while the tab is visible. Its other reasoning stands: no
+  recurring request is made for nothing.
+- **`DL-166` is amended, not reversed.** A token is still renewed only by an API request on its way
+  out, never by a timer. The stream's own request is such a request, so a console somebody is using
+  renews about every 15 minutes, when the stream is reopened after `expired`. After 30 minutes
+  without a pointer or a key the console closes the stream and asks nothing, so an unattended console
+  stops renewing, as `DL-166` intended: "nothing renews in the background" still holds for a tab
+  nobody is using.
+- **`DL-118` holds.** A hint triggers reads and nothing else. Nothing is queued, nothing is retried
+  in the background, and nothing is said to be saved because a hint arrived; a reconnection
+  re-reads, it never resends.
+
+### Privacy
+
+A hint carries topic names and nothing else — no id, no count, no value, never personal data — and
+the server filters each connection by permission and ownership before sending: a public topic to
+every account, an owned topic only to its owner (`notifications` always owner-only, staff included),
+and a staff topic only to an account whose permissions include one guarding a `GET` that reads it.
+The console then reads through the ordinary authorised endpoints, so a hint discloses nothing a read
+would not, beyond "something in a list you may read changed". The console's mapper keeps only
+`topics` even if the server sends more (`check:live`).
+
+### Rate limits
+
+The backend splits its limiter (backend DL-222): a coarse per-address limit before authentication,
+set high because an office shares one address, which stops a flood and token guessing; then a
+per-account, per-path limit once the caller is known, so one busy desk does not refuse the rest of
+the office. The re-reads a hint causes are ordinary requests under the ordinary limits, which is why
+the console throttles each screen to one re-read per 2 seconds and coalesces with `exhaustMap`.
+
+### Sources
+
+- WCAG 2.2, Understanding SC 2.2.2 Pause, Stop, Hide:
+  https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide
+- TanStack Query (Angular), window focus refetching:
+  https://tanstack.com/query/v5/docs/framework/angular/guides/window-focus-refetching
+- Apollo Client, event-based refetching:
+  https://www.apollographql.com/docs/react/data/event-based-refetching
+- node-postgres, `Client` (a dedicated connection for `LISTEN`): https://node-postgres.com/apis/client
+- pg-listen (reconnecting `LISTEN/NOTIFY`): https://github.com/andywer/pg-listen
+- Caddy `reverse_proxy` (`flush_interval`, streaming responses):
+  https://caddyserver.com/docs/caddyfile/directives/reverse_proxy
+- SSE with a bearer header: `EventSource` takes no request headers, so the established workaround is
+  a streamed `fetch` whose `ReadableStream` is parsed as `text/event-stream` (the HTML standard's
+  event-stream interpretation); Angular's `FetchBackend` does exactly that underneath `HttpClient`,
+  which is what keeps the interceptors.
+
+Easiest to reverse: unbind `CHANGE_FEED` in `data-access.providers.ts`. `LiveUpdates` is then off,
+`changes()` never emits, `liveViewState` behaves as `toViewState`, and the topbar control is absent;
+the backend's endpoint can stay or go independently.

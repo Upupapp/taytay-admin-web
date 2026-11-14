@@ -419,6 +419,11 @@ export const API_ENDPOINTS = {
   newsCategories: 'news/categories',
   /** The API's audit trail (`audit.view`, `DL-171`). Cursor-paged, newest first; read-only. */
   adminAudit: 'admin/audit',
+  /**
+   * The change feed (`DL-222`): `text/event-stream` of topic names that changed, never ids or
+   * values. Read only through `ApiClient.stream`, by `HttpChangeFeed`.
+   */
+  changes: 'changes',
 } as const;
 
 /** The one place `meta.pagination` becomes a domain `CursorPage`. */

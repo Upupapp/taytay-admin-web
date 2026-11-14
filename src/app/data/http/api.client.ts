@@ -1,9 +1,10 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpEventType } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, map, of, switchMap, throwError, type Observable } from 'rxjs';
+import { catchError, defer, filter, map, of, switchMap, throwError, type Observable } from 'rxjs';
 
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { isNotFound } from '@core/http/api-failure';
+import { QUIET_FAILURE } from '@core/http/quiet-failure';
 import type { CursorPage, CursorRequest } from '@domain/index';
 
 import {
@@ -185,6 +186,55 @@ export class ApiClient {
    */
   blob(path: string): Observable<Blob> {
     return this.http.get(this.url(path), { responseType: 'blob' });
+  }
+
+  /**
+   * A server-sent event stream, as the text arrives — today only `GET changes`, the live-updates
+   * hints (`DL-222`). Each emission is the **new** text since the last one, cut wherever the network
+   * cut it; framing it into events is the SSE parser's job, not this one's.
+   *
+   * ## Why `HttpClient` and not `EventSource`
+   *
+   * `EventSource` cannot send a header, so it could only authenticate with the token in the URL —
+   * where every proxy and history entry keeps it (rule 5). A request made here goes through the
+   * interceptors like any other: the bearer in `Authorization`, renewed on demand if it is about to
+   * lapse (`DL-166`), and a `401` ending the session. Angular's default backend in this version is
+   * `fetch`, which reads the body as a stream and reports each piece as a `DownloadProgress` event
+   * whose `partialText` is everything so far (the XHR backend does the same), so only the slice past
+   * what was already passed on is emitted.
+   *
+   * No query string and no `Last-Event-ID`: the stream has no replay, and the API's CORS policy
+   * allows no header beyond its four. `Accept: text/event-stream` is CORS-safelisted. A failure
+   * raises no notice (`QUIET_FAILURE`): the caller reconnects, and a dropped stream is not news.
+   */
+  stream(path: string): Observable<string> {
+    return defer(() => {
+      let passedOn = 0;
+      const fresh = (text: string): string => {
+        const slice = text.slice(passedOn);
+        passedOn = text.length;
+        return slice;
+      };
+
+      return this.http
+        .get(this.url(path), {
+          observe: 'events',
+          reportProgress: true,
+          responseType: 'text',
+          headers: { Accept: 'text/event-stream' },
+          context: new HttpContext().set(QUIET_FAILURE, true),
+        })
+        .pipe(
+          map((event) =>
+            event.type === HttpEventType.DownloadProgress
+              ? fresh(event.partialText ?? '')
+              : event.type === HttpEventType.Response
+                ? fresh(event.body ?? '')
+                : '',
+          ),
+          filter((slice) => slice.length > 0),
+        );
+    });
   }
 
   /**

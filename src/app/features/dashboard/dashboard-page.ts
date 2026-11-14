@@ -6,6 +6,8 @@ import { map, switchMap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { PermissionService } from '@core/access/permission.service';
+import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
   ACCOUNT_VERIFICATION_STATUSES,
   ASSISTANCE_STATUS_CATALOG,
@@ -23,7 +25,8 @@ import {
   type DashboardSummary,
   type ProgramCategory,
 } from '@domain/index';
-import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { ChartTable, type ChartRow } from '@shared/ui/chart-table/chart-table';
 import { Icon } from '@shared/ui/icon/icon';
@@ -55,6 +58,22 @@ const PESO = new PesoPipe();
 
 const SEVERITIES: readonly AttentionSeverity[] = ['critical', 'warning', 'info'];
 
+/**
+ * What the summary counts (`DL-222`): requests by status and barangay and the attention signals
+ * built on them, payouts, unanswered referrals, programme categories, and the residents' app —
+ * accounts by verification standing, the ID review queue, cards in force. A change to any of them
+ * re-reads the summary quietly.
+ */
+export const DASHBOARD_TOPICS: readonly LiveTopic[] = [
+  'assistance-requests',
+  'releases',
+  'referrals',
+  'programs',
+  'users',
+  'verification',
+  'digital-ids',
+];
+
 @Component({
   selector: 'app-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -77,6 +96,7 @@ export class DashboardPage {
   private readonly permissions = inject(PermissionService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly live = inject(LiveUpdates);
 
   protected readonly copy = DASHBOARD_COPY;
   protected readonly barangays = TAYTAY_BARANGAYS;
@@ -94,7 +114,14 @@ export class DashboardPage {
   protected readonly state = toSignal(
     this.route.queryParamMap.pipe(
       map((params) => readFilter(params)),
-      switchMap((filter) => toViewState(this.repository.summary(filter))),
+      // A new filter shows the skeleton; a change on the server swaps the figures in quietly.
+      switchMap((filter) =>
+        liveViewState(
+          () => this.repository.summary(filter),
+          this.live.changes(DASHBOARD_TOPICS),
+          this.live,
+        ),
+      ),
     ),
     { initialValue: LOADING as ViewState<DashboardSummary> },
   );

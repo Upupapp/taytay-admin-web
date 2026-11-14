@@ -7,6 +7,7 @@ import { RETURN_URL_PARAM } from '../access/access.guards';
 import { APP_ENVIRONMENT } from '../config/app-environment.token';
 
 import { readApiError, type ApiFailure } from './api-failure';
+import { QUIET_FAILURE } from './quiet-failure';
 import { AuthTokenHolder } from '../auth/auth-token.holder';
 import { SESSION_REFRESHER } from '../auth/session-refresher';
 import { SessionStore } from '../auth/session.store';
@@ -53,12 +54,16 @@ export const apiHeadersInterceptor: HttpInterceptorFn = (request, next) => {
   const tokens = inject(AuthTokenHolder);
   const refresher = inject(SESSION_REFRESHER, { optional: true });
 
+  // A request that names what it accepts keeps it: the change feed asks for `text/event-stream`
+  // (`DL-222`), which is CORS-safelisted like the JSON default.
+  const accept = request.headers.get('Accept') ?? 'application/json';
+
   // Read when the request leaves, not when the interceptor ran: after a renewal the header must
   // carry the new token, never the one that prompted it.
   const decorated = (): HttpRequest<unknown> =>
     request.clone({
       setHeaders: {
-        Accept: 'application/json',
+        Accept: accept,
         'X-Client-Channel': 'admin-console',
         ...tokens.authorization(),
       },
@@ -163,6 +168,13 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
   function refuse(error: HttpErrorResponse) {
     const failure = readApiError(error);
     const isRead = READ_METHODS.has(request.method);
+    const quiet = request.context.get(QUIET_FAILURE);
+
+    // The live-updates stream (`DL-222`): its drops are the console's to handle, never a notice. A
+    // refused credential is still the end of the session, below.
+    if (quiet && (failure.code ?? codeFromStatus(failure.status)) !== 'UNAUTHENTICATED') {
+      return throwError(() => failure);
+    }
 
     /*
      * Branch on `code`, never on `message` — the message is written for

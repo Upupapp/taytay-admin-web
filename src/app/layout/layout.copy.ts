@@ -48,4 +48,19 @@ export const LAYOUT_COPY = {
 
   // Route progress
   routeLoading: 'Loading page',
+
+  // Live updates (`DL-222`). The button's visible word never changes, so its name never does: the
+  // state is `aria-pressed` and the description beside it, which is read on focus, never announced.
+  liveLabel: 'Live',
+  liveName: 'Live updates',
+  liveState: {
+    connecting: 'Connecting',
+    reconnecting: 'Reconnecting',
+    polling: 'Every 15 s',
+    paused: 'Paused',
+    idle: 'Paused, no activity',
+  },
+  liveUpdatedAt: (time: string): string => `Updated ${time}`,
+  liveRefreshFailed: 'Not updated',
+  liveRefreshNow: 'Refresh now',
 } as const;

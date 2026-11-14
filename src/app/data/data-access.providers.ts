@@ -2,6 +2,7 @@ import type { EnvironmentProviders } from '@angular/core';
 import { makeEnvironmentProviders } from '@angular/core';
 
 import { SESSION_REFRESHER } from '@core/auth/session-refresher';
+import { CHANGE_FEED } from '@core/live/change-feed';
 import {
   ASSISTANCE_REQUEST_REPOSITORY,
   BENEFICIARY_REPOSITORY,
@@ -43,6 +44,7 @@ import {
 
 import {
   HttpAppAccountRepository,
+  HttpChangeFeed,
   HttpCaseRepository,
   HttpBeneficiaryRepository,
   HttpDashboardRepository,
@@ -167,5 +169,8 @@ export function provideDataAccess(): EnvironmentProviders {
     // swapped in — Firebase, or the development verifier for `local-api` — never by a runtime flag.
     { provide: SIGN_IN_METHOD, useFactory: identitySignInMethod },
     { provide: SESSION_REFRESHER, useClass: HttpSessionRefresher },
+    // Live updates (`DL-222`): only the API can push a hint, so the mock set binds nothing and the
+    // console there is simply not live.
+    { provide: CHANGE_FEED, useClass: HttpChangeFeed },
   ]);
 }
