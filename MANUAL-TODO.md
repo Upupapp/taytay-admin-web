@@ -16,7 +16,13 @@ Last updated: 19 August 2026, after TAB 07.
       (no Actions credit), so the two workflow files stay uncommitted by design rather than by
       blocker. `docs/` and the local gates carry what they would have enforced.
 
-- [ ] **Install Docker Desktop or OrbStack** — *now blocking a P0 acceptance criterion*
+- [x] ~~**Install Docker Desktop or OrbStack**~~ — **done another way, 2026-11-15.** PostgreSQL
+      16 is installed on this machine. Backend `fb52b0f` (`npm run test:pg`) proves on it that two
+      officers releasing the same payout at once get one success and one refusal, and that the test
+      fails when the row lock is removed. Staging has run every migration on `postgres:16` since
+      5 November. Launch gate line 08.
+
+      *The original note:* Install Docker Desktop or OrbStack — *was blocking a P0 acceptance criterion*
       Everything proven so far ran on SQLite. Nothing about concurrency, row locking or
       `lockForUpdate` is proven, and `migrate` has never run against real PostgreSQL.
       → **TAB 08 step 8 is unmet because of this**: "two officers releasing the same payout
@@ -166,7 +172,13 @@ Last updated: 19 August 2026, after TAB 07.
 
 ## 🟣 Added by TAB 12 — cutover
 
-- [ ] **Rehearse a rollback in staging and time it** — *the cheapest outstanding item*
+- [x] **Rehearsed 2026-11-15, with the owner's approval:**
+      - console about 2.5 s each way;
+      - API about 25 s each way, about 8–9 s of it unreachable, on a warm cache.
+
+      Nobody signed in, and the database was not restored (`rollback.md`).
+
+      *The original note:* Rehearse a rollback in staging and time it — *the cheapest outstanding item*
       The plan is written ([`docs/integration/rollback.md`](docs/integration/rollback.md)); the
       five-minute figure is an estimate from the hosting model, not a measurement. Needs a staging
       site with two deploys and about fifteen minutes.

@@ -24,6 +24,12 @@ audit.
 | **NO-GO — engineering** | 3 |
 | **NO-GO — needs people, appointments or infrastructure** | 8 |
 
+**Update 2026-11-15.** Line 08 moves from *NO-GO — engineering* to *evidence exists; awaiting
+signature*: concurrency is proven on PostgreSQL. The table above is left as measured on
+2026-08-29, so the counts are now 5 / 2 / 8. Line 18 keeps its verdict: its rollback is now
+rehearsed and timed on staging, but the pipeline, off-machine backups, timed restore and production
+clauses are still open.
+
 ---
 
 ## The lines
@@ -120,6 +126,23 @@ and no container runtime. The row-locking test runs on SQLite, which is not evid
 PostgreSQL — and the two staff at two tables pressing at the same instant is exactly the case
 SQLite cannot reproduce.
 
+**Update 2026-11-15: concurrency is proven on PostgreSQL 16, so this line now has evidence and
+awaits a signature.**
+- **How it ran.** PostgreSQL 16 is installed on this machine now. Backend `fb52b0f` runs the money
+  writes on a real server (`npm run test:pg`) with requests that genuinely overlap.
+- **What it showed.** Two officers releasing the same payout get one 200 and one 409, twenty times
+  out of twenty, and the money is recorded once. The same holds for the receipt, payout sessions
+  naming the same families, preparing the same request, and hand-over against deferral.
+- **The test can fail.** Removing the row lock makes it fail at once.
+- **Line 08 on the Node API:**
+  - the money path end to end, retries under one key, and the self-release warning are proven by
+    `tests/office-releases.test.ts`;
+  - separation of duties is proven by `tests/casework.test.ts`: no staff office role holds both
+    `request.approve` and `release.release`.
+- **Two limits.** The proof ran on a scratch cluster on a developer machine, not on staging's
+  database. And journey 1 is still the Laravel-era walk-through, not a Node one. Detail:
+  [evidence ledger](evidence-ledger.md), 2026-11-15.
+
 ### 09 — Documents append-only; no public object URL; every read audited
 **Evidence exists; awaiting the DPO's signature.**
 
@@ -183,7 +206,12 @@ rollback steps are now in taytay-backend `deploy/staging-shared-linode/`, and
 - **The backups are not off the machine.** Losing the server loses them with the database.
 - **The restore has no observed figures**: it was not timed, and no recovery point or recovery
   time objective has been agreed.
-- **No rollback has been rehearsed or timed**, on staging or anywhere else.
+- ~~**No rollback has been rehearsed or timed**, on staging or anywhere else.~~ **Rehearsed and
+  timed on staging, 2026-11-15:**
+  - Console: back and forward in about 2.5 s each.
+  - API: about 25 s each way, of which about 8–9 s unreachable, on a warm Docker cache.
+  - The database was not restored, and nobody signed in.
+  - Detail: [rollback.md](rollback.md) and the [evidence ledger](evidence-ledger.md).
 - **Production does not exist**, so nothing about its backups, restore or rollback can be measured
   (GL-5).
 

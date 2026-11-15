@@ -1967,3 +1967,59 @@ belongs before a push rather than in every local gate.
 
 The backend repository no longer tracks a copy of the PHP scanner; it left with the Laravel tree
 (`laravel-archive`).
+
+## 2026-11-15 — Payout concurrency proven on PostgreSQL; a rollback rehearsed and timed on staging
+
+_Appended note. The entries above, including "nothing about concurrency, row locking or
+`lockForUpdate` is proven", are left as they were written._
+
+**Line 08: two officers releasing the same payout at the same instant get one success and one
+refusal, on real PostgreSQL.** PostgreSQL 16 is installed on this machine now, so the proof ran on
+a throwaway cluster (`initdb` in a temporary folder, trust authentication on loopback, stopped and
+deleted afterwards) of the same major version as staging's `postgres:16`. Backend `fb52b0f` adds
+`npm run test:pg`. Each test file gets a fresh database migrated by the real migrator and served by
+the production pool, outside `npm test`. Without `TEST_DATABASE_URL`, every test shows as skipped,
+with the reason, rather than passing.
+
+`Promise.all` alone does not make two requests overlap. Each race therefore holds a lock on the
+contested rows itself, and lets go only once PostgreSQL shows every request waiting on it. Twenty
+iterations each, all passing on 16.15:
+
+| Race | Observed |
+| --- | --- |
+| Two officers release the same payout | 200 + 409 every time; one release event, one request move, one audit row |
+| The receipt after it | 200 + 409 every time |
+| The same release twice under one idempotency key | two identical 200s, one effect |
+| Two sessions naming the same two families, in opposite orders | 201 + 409, no deadlock; each family on exactly one session |
+| Two officers prepare a payout for the same request | 201 + 409, one release |
+| Hand-over against deferral | exactly one recorded |
+
+**The test can fail.** With the row lock removed (locally, never committed), the release, session
+and deferral races each failed at iteration 1. The loser got a 500 from a detected deadlock instead
+of the 409, and the database's own trigger still kept the money to one record. All 59 migrations
+apply on PostgreSQL 16 in about 3 seconds. No defect was found in the release code.
+
+**Line 18: a rollback was rehearsed on staging and timed.** With the owner's approval, staging went
+back from the live-updates release (console `92ad6a5`, API `52c82cb`) to the one before it, then
+forward again. Only Taytay's containers were touched, and the database was not restored.
+
+| Step | Measured |
+| --- | --- |
+| Console back (swap, nonce check, restart) | other build served after **about 2.5 s** (2.4 s and 2.9 s in two runs) |
+| API back (swap, `docker compose up -d --build`) | older API answering after **24.8 s**, unreachable for **about 9 s** of it |
+| API forward | answering after **26.4 s**, unreachable for **about 8 s** |
+| Console forward | served after **2.8 s** |
+
+The builds were quick because Docker's layer cache still held both images. A build with a cold
+cache, or after a dependency change, runs `npm ci` and will take longer.
+
+The older API started against the newer database: it said "No pending migrations" and ignored 0061
+and 0062. Today's API, back again, reopened its change listener (one `LISTEN` connection).
+
+The check after each step:
+- which bundle the console serves;
+- `/api/v1/changes` (401 from today's API, 404 from the older one);
+- `/api/v1/offices`, which reads the database without a sign-in.
+
+**Nobody signed in during the rehearsal**: there are no staging credentials on this machine, so the
+runbook's "sign in and open one list" step was replaced by the database read above.

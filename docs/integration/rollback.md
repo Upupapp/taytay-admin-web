@@ -68,8 +68,8 @@ from a checkout of that commit.
 2. Hard-reload https://taytay.139-162-51-165.sslip.io and confirm the build you expected.
 3. Confirm sign-in works and one list screen loads.
 
-**Expected time: under five minutes**, dominated by steps 2–3. This is an estimate, not a
-measurement.
+**Measured 2026-11-15: the other build was served about 2.5 seconds after step 1 started** (2.4 s
+and 2.9 s in two runs). The rest of the five minutes is steps 2–3, the person checking.
 
 `index.html` is served `no-store` (`console.Caddyfile`), so the next request after the swap gets the
 old bundle — there is no cache to wait out. That header is load-bearing for the rollback, not only
@@ -98,7 +98,16 @@ revalidate.
    disaster-recovery restore in the staging README: it **loses everything written since the dump**,
    so it is decided with the owner, not taken as a routine rollback step.
 
-**Expected time:** not measured. A console rollback never fixes a fault in the API, and an API
+**Measured 2026-11-15:**
+
+- the older API was answering **25 seconds** after step 2 started, and unreachable for about
+  **9 seconds** of that, while its container was recreated;
+- going forward again took 26 seconds, with about 8 seconds unreachable.
+
+Docker's layer cache still held both images. A cold build, or one after a dependency change, runs
+`npm ci` on the shared server and takes minutes.
+
+A console rollback never fixes a fault in the API, and an API
 rollback never fixes a fault in the console.
 
 ## What a rollback does not fix
@@ -111,13 +120,28 @@ rollback never fixes a fault in the console.
   build never publishes.
 - **Data written by the faulty API.** Swapping the code back leaves those rows in place.
 
-## Not yet rehearsed
+## Rehearsed once, 2026-11-15
 
-The command asks for _"a rollback executed once in staging and timed."_ Staging now exists, and
-each deploy since 6 November 2026 has kept a `.prev` folder, so a rehearsal is possible. **It has
-not been done**: neither the console nor the API rollback has been executed and timed, and the
-times above are estimates (launch gate line 18).
+The command asks for _"a rollback executed once in staging and timed."_ It has now been done, with
+the owner's approval:
 
-**A rehearsal is a manual item.** It is also the cheapest of the outstanding ones: the console swap,
-done twice (back, then forward again), takes about fifteen minutes with its checks. First confirm
-the `.prev` folders are there: `ssh ebpco-linode 'ls -d /opt/taytay/*.prev'`.
+- staging went back from the live-updates release (console `92ad6a5`, API `52c82cb`) to the one
+  before it, then forward again;
+- only Taytay's containers were touched, and the database was not restored.
+
+The times are in the steps above, and the full record is in
+[`evidence-ledger.md`](./evidence-ledger.md) under 2026-11-15.
+
+What the rehearsal did **not** cover, so a real rollback should not assume it:
+
+- **Nobody signed in.** There were no staging credentials on the machine that ran it. Step 3 of each
+  half was replaced by a database read that needs no sign-in (`/api/v1/offices`) and by which build
+  each side served (`/api/v1/changes` answers 401 on the newer API and 404 on the older one).
+- **A warm build.** Both API images were still in Docker's cache. A cold build, or one after a
+  dependency change, takes minutes.
+- **A database restore.** The older code ran against the newer database, so step 4 of the API half
+  was never needed. The restore is tested separately, into a scratch database, and has not been
+  timed (launch gate line 18).
+
+To rehearse again, first confirm the `.prev` folders are there:
+`ssh ebpco-linode 'ls -d /opt/taytay/*.prev'`. Each half is the same command run twice.
