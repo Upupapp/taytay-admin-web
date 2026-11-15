@@ -108,6 +108,9 @@ describe('a port whose adapter is fetched on its first question (DL-224)', () =>
       lazyPort<OfficeRepository>((m) => m.HttpOfficeRepository),
     );
     const http = TestBed.inject(HttpTestingController);
+    // Loaded here first, so the wait below covers the port's own turn and not a cold import, which
+    // on a machine short of memory took longer than the wait allows and failed a verify run.
+    await import('./http-repositories');
 
     const read = firstValueFrom(offices.list());
     // The module arrives on a later turn; the request follows it.
