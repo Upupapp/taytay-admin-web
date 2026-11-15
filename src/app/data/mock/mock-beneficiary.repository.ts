@@ -195,19 +195,6 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
     return queue;
   }
 
-  duplicatesFor(id: ResidentId): Observable<readonly DuplicateCandidate[]> {
-    const user = this.access.currentUser();
-    const denied = denyUnless<readonly DuplicateCandidate[]>(user, 'beneficiary.review-duplicates');
-    if (denied) {
-      return denied;
-    }
-    const resident = this.residents.find(id);
-    if (!resident || !canReadRecord(user, 'resident.view', resident.address.barangayId)) {
-      return this.latency.respond([]);
-    }
-    return this.latency.respond(this.openCandidatesFor(resident, user));
-  }
-
   /**
    * The mock recomputes the queue on every read, so a detection pass has nothing to persist.
    *

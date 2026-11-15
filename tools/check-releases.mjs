@@ -404,7 +404,6 @@ for (const method of [
   'queue',
   'approverFor',
   'listBatches',
-  'getBatch',
   'createBatch',
   'prepare',
   'manifestFor',

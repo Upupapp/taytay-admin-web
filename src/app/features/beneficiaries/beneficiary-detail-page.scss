@@ -1,5 +1,6 @@
 // ResidentRecord mock-up as the beneficiary record: standing and totals, household and
-// families, programmes, possible duplicates, then the assistance history across the width.
+// families, programmes, possible duplicates, identity findings, then the assistance history
+// across the width.
 
 .beneficiary__line {
   color: var(--text);
@@ -17,7 +18,8 @@
 
 .standing-list__label,
 .enrollments__name,
-.duplicates__label {
+.duplicates__label,
+.findings__verdict {
   font-weight: var(--fw-semibold);
 }
 

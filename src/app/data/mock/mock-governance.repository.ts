@@ -14,7 +14,6 @@ import {
   classificationOf,
   formatPersonName,
   toAuditRow,
-  userHasPermission,
   type AuditEntryDetail,
   type AuditEntryId,
   type AuditFilter,
@@ -78,16 +77,6 @@ export class MockGovernanceRepository implements GovernanceRepository {
         .sort((a, b) => `${a.name.last} ${a.name.first}`.localeCompare(`${b.name.last} ${b.name.first}`))
         .map((staff) => this.toAccount(staff)),
     );
-  }
-
-  accountById(id: StaffUserId): Observable<StaffAccount | null> {
-    const user = this.access.currentUser();
-    if (!userHasPermission(user, 'staff.view')) {
-      // Not found and not yours read identically (`DL-31`).
-      return this.latency.respond(null);
-    }
-    const staff = this.accountState.find((candidate) => candidate.id === id);
-    return this.latency.respond(staff === undefined ? null : this.toAccount(staff));
   }
 
   setAccountActive(

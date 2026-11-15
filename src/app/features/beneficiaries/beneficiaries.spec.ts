@@ -19,6 +19,7 @@ import {
   SAVED_VIEW_REPOSITORY,
   STAFF_REPOSITORY,
   asId,
+  asIsoDateTime,
   emptyPage,
   toAuthenticatedUser,
   type AuthenticatedUser,
@@ -28,6 +29,8 @@ import {
   type BeneficiarySummary,
   type CursorPage,
   type CursorRequest,
+  type IdentityResolution,
+  type IdentityResolutionId,
   type Page,
   type ResidentId,
   type StaffRepository,
@@ -400,6 +403,76 @@ describe('the duplicate queue', () => {
     page.reason.set('Confirmed with her at the counter; one person, registered twice.');
     fixture.detectChanges();
     expect(page.canSubmit()).toBe(true);
+  });
+});
+
+/* ── Identity findings on the record (DL-74, DL-223) ──────────────────────── */
+
+const AURORA_AGAIN = 'res-0011';
+
+/** A reviewer found Aurora's second registration to be her, and kept the first. */
+class FoundSamePerson extends MockBeneficiaryRepository {
+  override resolutionsFor(): Observable<readonly IdentityResolution[]> {
+    return of([
+      {
+        id: asId<IdentityResolutionId>('finding-1'),
+        verdict: 'same-person',
+        canonicalResidentId: asId<ResidentId>(AURORA),
+        supersededResidentId: asId<ResidentId>(AURORA_AGAIN),
+        pair: [asId<ResidentId>(AURORA), asId<ResidentId>(AURORA_AGAIN)],
+        reason: 'Confirmed with her at the counter.',
+        decidedBy: asId<StaffUserId>('staff-head'),
+        decidedAt: asIsoDateTime('2026-11-02T01:30:00.000Z'),
+      },
+    ]);
+  }
+}
+
+/** The findings cannot be read; the rest of the record can. */
+class FindingsFail extends MockBeneficiaryRepository {
+  override resolutionsFor(): Observable<readonly IdentityResolution[]> {
+    return throwError(() => new Error('offline'));
+  }
+}
+
+describe('the identity findings on a record', () => {
+  it('says no finding has been recorded, rather than leaving the panel blank', async () => {
+    const element = html(await openDetail(AURORA));
+
+    expect(element.textContent).toContain('Identity findings');
+    expect(element.textContent).toContain('No reviewer has recorded a finding about this record.');
+  });
+
+  it('tells a reader of the superseded record which record the office uses now', async () => {
+    const element = html(await openDetail(AURORA_AGAIN, 'mswdo-head', FoundSamePerson));
+    const text = element.textContent ?? '';
+
+    expect(text).toContain('The same person');
+    expect(text).toContain('The office uses the other record now.');
+    expect(text).toContain('Confirmed with her at the counter.');
+    expect(element.querySelector(`a[href="/beneficiaries/${AURORA}"]`)).not.toBeNull();
+  });
+
+  it('tells a reader of the kept record that it is the one in use', async () => {
+    const element = html(await openDetail(AURORA, 'mswdo-head', FoundSamePerson));
+
+    expect(element.textContent).toContain('The office keeps using this record.');
+    expect(element.querySelector(`a[href="/beneficiaries/${AURORA_AGAIN}"]`)).not.toBeNull();
+  });
+
+  it('shows the findings to a reader who may not adjudicate them', async () => {
+    const element = html(await openDetail(AURORA_AGAIN, 'intake-officer', FoundSamePerson));
+
+    expect(element.textContent).toContain('The office uses the other record now.');
+  });
+
+  it('says the findings could not be loaded and keeps the rest of the record', async () => {
+    const element = html(await openDetail(AURORA, 'mswdo-head', FindingsFail));
+    const text = element.textContent ?? '';
+
+    expect(text).toContain('The identity findings could not be loaded');
+    expect(text).not.toContain('No reviewer has recorded a finding about this record.');
+    expect(element.querySelector(`a[href="/residents/${AURORA}"]`)).not.toBeNull();
   });
 });
 

@@ -105,6 +105,22 @@ export const BENEFICIARIES_COPY = {
     duplicatesHint:
       'Comparisons show which details agree, not what they are. Open a comparison only when you are reviewing it.',
     review: 'Review',
+
+    // `DL-74`, `DL-223`: a finding changes no record, and a superseded one stays readable by id.
+    findingsHeading: 'Identity findings',
+    findingsHint:
+      'What a reviewer recorded about this record and another on file, newest first. A finding removes nothing: both records stay readable.',
+    findingsNone: 'No reviewer has recorded a finding about this record.',
+    findingsError: 'The identity findings could not be loaded',
+    findingMeaning: {
+      kept: 'The office keeps using this record. The other one stays readable for its history.',
+      superseded:
+        'The office uses the other record now. This one stays readable for its history; record new work on the other.',
+      distinct: 'Two different people. The pair will not be offered for review again.',
+    },
+    findingReason: 'Reason',
+    findingRecorded: 'Recorded',
+    openOther: 'Open the other record',
   },
 
   duplicates: {

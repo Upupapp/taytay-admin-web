@@ -941,9 +941,10 @@ export const ASSISTANCE_REQUEST_REPOSITORY = new InjectionToken<AssistanceReques
  *    designates a canonical id and supersedes the other; both survive, and so
  *    does everything attached to either (`DL-74`). There is no `merge`, no
  *    `deleteResident` and no automatic resolution above any threshold.
- *  - **No score.** `duplicatesFor` returns graded candidates whose signals each
- *    state their rule, on the same doctrine as the intake advisory (`DL-60`).
- *    Nothing in this port ranks people or resolves a pair on its own.
+ *  - **No score.** `duplicateQueue` and a record's `duplicateCandidates` carry
+ *    graded candidates whose signals each state their rule, on the same doctrine
+ *    as the intake advisory (`DL-60`). Nothing in this port ranks people or
+ *    resolves a pair on its own.
  *
  * Reads carry `ResidentView`, already redacted for the caller (`DL-38`), and a
  * caller without `beneficiary.review-duplicates` receives no candidates at all
@@ -955,9 +956,11 @@ export interface BeneficiaryRepository {
    * of N" (`DL-161`). There is no sort — the order is the registry's (`DL-187`).
    */
   list(filter: BeneficiaryFilter, page: CursorRequest): Observable<CursorPage<BeneficiarySummary>>;
-  /** `null` for "not found *or* not yours", deliberately indistinguishable (`DL-31`). */
+  /**
+   * `null` for "not found *or* not yours", deliberately indistinguishable (`DL-31`). The record
+   * carries its own open duplicate candidates, so there is no second read of them (`DL-223`).
+   */
   getByResidentId(id: ResidentId): Observable<BeneficiaryDetail | null>;
-
 
   /**
    * The duplicate-review queue. Candidates report *agreement between fields*,
@@ -965,7 +968,6 @@ export interface BeneficiaryRepository {
    * person's details to somebody who came to look at another's (`DL-73`).
    */
   duplicateQueue(page: CursorRequest): Observable<CursorPage<DuplicateCandidate>>;
-  duplicatesFor(id: ResidentId): Observable<readonly DuplicateCandidate[]>;
 
   /**
    * What a `same-person` finding would carry across, shown before it is
@@ -1108,8 +1110,8 @@ export interface ReleaseRepository {
   /** Who approved the request behind a release, for the self-release cue. */
   approverFor(id: ReleaseId): Observable<StaffUserId | null>;
 
+  /** Every session, each whole with its counts; the payout page reads no session on its own (`DL-223`). */
   listBatches(): Observable<readonly ReleaseBatch[]>;
-  getBatch(id: ReleaseBatchId): Observable<ReleaseBatch | null>;
   /** Schedules releases into a payout session. Each stays individually tracked. */
   createBatch(draft: ReleaseBatchDraft, intent: WriteIntent): Observable<ReleaseBatch>;
 
@@ -1435,7 +1437,6 @@ export const SEARCH_REPOSITORY = new InjectionToken<SearchRepository>('SearchRep
 export interface GovernanceRepository {
   /** The staff directory, assembled from the account and its profile. */
   accounts(): Observable<readonly StaffAccount[]>;
-  accountById(id: StaffUserId): Observable<StaffAccount | null>;
   /**
    * Turns an account on or off, with a required reason.
    *

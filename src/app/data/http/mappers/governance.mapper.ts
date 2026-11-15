@@ -80,7 +80,6 @@ export const STAFF_NAME_NOT_RECORDED = 'No name recorded';
  * `GET office/staff` → a directory entry, or `null` for one this console cannot place.
  *
  * @consumes GET office/staff
- * @consumes GET office/staff/{id}
  * @consumes POST office/staff/{id}/deactivate
  * @consumes POST office/staff/{id}/reactivate
  */

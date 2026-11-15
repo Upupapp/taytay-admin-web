@@ -191,15 +191,6 @@ export class MockReleaseRepository implements ReleaseRepository {
     );
   }
 
-  getBatch(id: ReleaseBatchId): Observable<ReleaseBatch | null> {
-    const user = this.access.currentUser();
-    if (!userHasPermission(user, 'release.view')) {
-      return this.latency.respond(null);
-    }
-    const batch = this.batches.find((entry) => entry.id === id);
-    return this.latency.respond(batch === undefined ? null : this.counted(batch, user));
-  }
-
   createBatch(draft: ReleaseBatchDraft): Observable<ReleaseBatch> {
     const user = this.access.currentUser();
     const denied = denyUnless<ReleaseBatch>(user, 'release.schedule');

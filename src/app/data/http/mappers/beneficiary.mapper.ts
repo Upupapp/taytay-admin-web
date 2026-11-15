@@ -425,7 +425,6 @@ function toSignal(wire: unknown): MatchSignal | null {
  * A pair the office is holding, turned towards `resident_id`.
  *
  * @consumes GET office/duplicate-pairs
- * @consumes GET office/beneficiaries/{residentId}/duplicates
  */
 export function toDuplicateCandidate(wire: unknown): DuplicateCandidate | null {
   const pairId = id<DuplicatePairId>(field(wire, 'pair_id'));

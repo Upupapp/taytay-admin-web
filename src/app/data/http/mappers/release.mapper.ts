@@ -153,7 +153,6 @@ export function toReleaseApprover(wire: unknown): StaffUserId | null {
  * none to read (`DL-90`).
  *
  * @consumes GET office/release-batches
- * @consumes GET office/release-batches/{id}
  */
 export function toReleaseBatch(wire: unknown): ReleaseBatch | null {
   const batchId = id<ReleaseBatchId>(field(wire, 'id'));

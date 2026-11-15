@@ -1396,23 +1396,6 @@
     },
     {
       "method": "GET",
-      "path": "office/beneficiaries/{residentId}/duplicates",
-      "consumer": "beneficiary.mapper.ts#toDuplicateCandidate",
-      "required": [
-        "other_label",
-        "other_resident_id",
-        "pair_id",
-        "resident_id",
-        "resident_label",
-        "signals",
-        "strength"
-      ],
-      "optional": [
-        "holds_sensitive_record"
-      ]
-    },
-    {
-      "method": "GET",
       "path": "office/beneficiaries/{residentId}/findings",
       "consumer": "beneficiary.mapper.ts#toIdentityResolution",
       "required": [],
@@ -2996,26 +2979,6 @@
     },
     {
       "method": "GET",
-      "path": "office/release-batches/{id}",
-      "consumer": "release.mapper.ts#toReleaseBatch",
-      "required": [
-        "created_at",
-        "id",
-        "officer_id",
-        "reference_number",
-        "scheduled_for",
-        "title",
-        "venue"
-      ],
-      "optional": [
-        "created_by",
-        "notes",
-        "progress",
-        "release_ids"
-      ]
-    },
-    {
-      "method": "GET",
       "path": "office/release-batches/{id}/manifest",
       "consumer": "release.mapper.ts#toReleaseManifest",
       "required": [],
@@ -3624,21 +3587,6 @@
     {
       "method": "GET",
       "path": "office/staff",
-      "consumer": "governance.mapper.ts#toStaffAccount",
-      "required": [
-        "id",
-        "is_active",
-        "role"
-      ],
-      "optional": [
-        "name",
-        "office_role",
-        "scope_barangay_id"
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "office/staff/{id}",
       "consumer": "governance.mapper.ts#toStaffAccount",
       "required": [
         "id",

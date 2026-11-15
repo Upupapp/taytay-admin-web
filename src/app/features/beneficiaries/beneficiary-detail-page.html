@@ -159,6 +159,51 @@
           </section>
         }
 
+        <section class="card card--padded beneficiary__panel" aria-labelledby="findings-heading">
+          <h2 class="section-title beneficiary__heading" id="findings-heading">
+            {{ copy.findingsHeading }}
+          </h2>
+          <p class="status-line beneficiary__hint">{{ copy.findingsHint }}</p>
+
+          <app-async-content
+            [state]="findingsState()"
+            [content]="findingsBody"
+            [skeletonLines]="2"
+            [errorHeading]="copy.findingsError"
+            (retryRequested)="retryFindings()"
+          >
+            <ng-template #findingsBody let-findings>
+              @if (findings.length === 0) {
+                <p class="status-line beneficiary__empty">{{ copy.findingsNone }}</p>
+              } @else {
+                <!-- The other record is linked, never named: the pair compares without
+                     disclosing (DL-73), and the link opens only what the reader may see. -->
+                <ul class="soft-list findings">
+                  @for (finding of findings; track finding.id) {
+                    <li class="soft-row soft-row--stacked findings__item">
+                      <span class="findings__verdict">{{ verdictLabel(finding) }}</span>
+                      <span class="findings__meaning">
+                        {{ copy.findingMeaning[standingIn(finding)] }}
+                      </span>
+                      <span class="soft-row__meta">
+                        <span class="beneficiary__term">{{ copy.findingReason }}:</span>
+                        {{ finding.reason }}
+                      </span>
+                      <span class="soft-row__meta">
+                        {{ copy.findingRecorded }} {{ finding.decidedAt | date: 'd MMM y, HH:mm' }}
+                        ·
+                        <a [routerLink]="'/beneficiaries/' + otherRecord(finding)">
+                          {{ copy.openOther }}
+                        </a>
+                      </span>
+                    </li>
+                  }
+                </ul>
+              }
+            </ng-template>
+          </app-async-content>
+        </section>
+
         <section class="card card--padded beneficiary__panel record-grid__wide">
           <app-assistance-history-timeline
             [entries]="record.timeline"

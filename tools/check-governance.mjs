@@ -331,7 +331,6 @@ notes.push('matrix: a real table, every cell spoken; classifications cited');
 
 for (const method of [
   'accounts',
-  'accountById',
   'setAccountActive',
   'auditRows',
   'auditDetail',

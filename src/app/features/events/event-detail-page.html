@@ -190,6 +190,35 @@
               </app-async-content>
             </section>
 
+            @if (canViewInsights()) {
+              <section
+                class="card card--padded stack event__panel"
+                aria-labelledby="insights-heading"
+              >
+                <h2 class="section-title event__heading" id="insights-heading">
+                  {{ copy.insightsHeading }}
+                </h2>
+
+                <app-async-content
+                  [state]="insightsState()"
+                  [content]="insightsContent"
+                  [skeletonLines]="2"
+                  [errorHeading]="copy.insightsError"
+                >
+                  <ng-template #insightsContent let-metrics>
+                    <p class="event__counts">{{ rateLine(metrics) }}</p>
+                    <dl class="facts event__facts">
+                      <div class="facts__item">
+                        <dt>{{ copy.asOf }}</dt>
+                        <dd>{{ metrics.asOf | date: 'd MMM y, HH:mm:ss' }}</dd>
+                      </div>
+                    </dl>
+                    <p class="status-line event__hint">{{ copy.insightsNote }}</p>
+                  </ng-template>
+                </app-async-content>
+              </section>
+            }
+
             <section class="card card--padded stack event__panel" aria-labelledby="actions-heading">
               <h2 class="section-title event__heading" id="actions-heading">
                 {{ copy.actionsHeading }}

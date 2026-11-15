@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom, switchMap, type Observable } from 'rxjs';
+import { firstValueFrom, of, switchMap, type Observable } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
 import type { LiveTopic } from '@core/live/change-feed';
@@ -43,6 +43,7 @@ import {
   type AttendanceStatus,
   type AuditRow,
   type EventCapacitySummary,
+  type EventMetrics,
   type LguEvent,
   type LguEventId,
   type RegistrantView,
@@ -52,7 +53,7 @@ import {
 import { ObjectUrls } from '@shared/media/object-urls';
 import { debouncedTerm } from '@shared/state/debounced';
 import { liveViewState } from '@shared/state/live-view-state';
-import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
+import { IDLE, LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -152,6 +153,7 @@ export class EventDetailPage {
     this.permissions.has('event.mark-attendance'),
   );
   protected readonly canExport = computed(() => this.permissions.has('event.export-registrants'));
+  protected readonly canViewInsights = computed(() => this.permissions.has('event.view-insights'));
 
   private readonly key = computed(() => ({ id: this.id(), nonce: this.reloads() }));
 
@@ -194,6 +196,40 @@ export class EventDetailPage {
     ),
     { initialValue: LOADING as ViewState<EventCapacitySummary> },
   );
+
+  /**
+   * The attendance rate, for those who hold insights (`DL-122`). The API counts and says whether
+   * attendance is final; the rate exists only then (`DL-131`, `DL-149`). Without the grant nothing
+   * is asked, since the answer could only be a refusal (`DL-223`).
+   */
+  protected readonly insightsState = toSignal(
+    toObservable(this.countKey).pipe(
+      switchMap((query) =>
+        this.canViewInsights()
+          ? liveViewState(
+              () => this.repository.metrics(asId<LguEventId>(query.id)),
+              this.live.changes(EVENT_DETAIL_TOPICS),
+              this.live,
+            )
+          : of(IDLE as ViewState<EventMetrics>),
+      ),
+    ),
+    { initialValue: LOADING as ViewState<EventMetrics> },
+  );
+
+  /** The rate in words, or why there is none yet: an unfinished list is not a poor turnout. */
+  protected rateLine(metrics: EventMetrics): string {
+    if (metrics.attendanceRate !== null) {
+      return this.copy.rate(
+        Math.round(metrics.attendanceRate * 100),
+        metrics.attendedCount,
+        metrics.registeredCount,
+      );
+    }
+    return metrics.registeredCount === 0
+      ? this.copy.rateNobody
+      : this.copy.rateNotFinal(metrics.unmarkedCount);
+  }
 
   protected readonly historyState = toSignal(
     toObservable(this.countKey).pipe(

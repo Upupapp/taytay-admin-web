@@ -3872,12 +3872,6 @@ export class HttpReleaseRepository implements ReleaseRepository {
       .pipe(map((rows) => rows.map(readReleaseBatch)));
   }
 
-  getBatch(id: ReleaseBatchId): Observable<ReleaseBatch | null> {
-    return this.api
-      .optionalItem(`${API_ENDPOINTS.officeReleaseBatches}/${id}`)
-      .pipe(map((wire) => (wire === null ? null : readReleaseBatch(wire))));
-  }
-
   createBatch(draft: ReleaseBatchDraft, intent: WriteIntent): Observable<ReleaseBatch> {
     return this.api
       .post(API_ENDPOINTS.officeReleaseBatches, toWireReleaseBatchOpen(draft, intent))
@@ -4798,14 +4792,6 @@ export class HttpBeneficiaryRepository implements BeneficiaryRepository {
     );
   }
 
-  duplicatesFor(id: ResidentId): Observable<readonly DuplicateCandidate[]> {
-    return this.api
-      .list(`${API_ENDPOINTS.officeBeneficiaries}/${id}/duplicates`)
-      .pipe(
-        map((rows) => rows.map((wire) => readOrRefuse(toDuplicateCandidate(wire), PAIR_UNREADABLE))),
-      );
-  }
-
   previewResolution(
     pairId: DuplicatePairId,
     canonicalResidentId: ResidentId,
@@ -5054,20 +5040,6 @@ export class HttpGovernanceRepository implements GovernanceRepository {
         this.api
           .list(API_ENDPOINTS.officeStaff)
           .pipe(map((rows) => rows.map((row) => readGovernance(toStaffAccount(row, barangays))))),
-      ),
-    );
-  }
-
-  accountById(staffId: StaffUserId): Observable<StaffAccount | null> {
-    return this.barangayJoin.read().pipe(
-      switchMap((barangays) =>
-        this.api
-          .optionalItem(`${API_ENDPOINTS.officeStaff}/${encodeURIComponent(staffId)}`)
-          .pipe(
-            map((wire) =>
-              wire === null ? null : readGovernance(toStaffAccount(wire, barangays)),
-            ),
-          ),
       ),
     );
   }

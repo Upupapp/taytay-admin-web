@@ -432,6 +432,12 @@ honestly, which building a duplicate screen would not have.
 (candidates are empty for a viewer without `beneficiary.review-duplicates`), and losing that
 coverage is not worth one point on a counter.
 
+*Superseded by `DL-223` (2026-11-15):* the coverage was moved rather than lost. The same rules —
+withheld without the grant, no field values, an answered pair leaves, a preview is inert — are now
+asserted on the record's `duplicateCandidates`, the read the screen actually makes, and
+`duplicatesFor` was retired with `accountById` and `getBatch`, each a second read of something a
+screen already holds.
+
 **One genuinely missing read was built.** `FieldVisitRepository.forResident` — home visits on the
 resident record. No composite carries them, and a visit is often the only record of what the office
 actually saw.

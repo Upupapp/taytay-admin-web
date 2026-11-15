@@ -11,6 +11,7 @@ import {
   type AccessContext,
   type AuthenticatedUser,
   type BarangayId,
+  type DuplicateCandidate,
   type DuplicatePairId,
   type IdentityResolutionDraft,
   type Permission,
@@ -69,6 +70,17 @@ function signedInAs(user: AuthenticatedUser | null): MockBeneficiaryRepository {
     ],
   });
   return TestBed.inject(MockBeneficiaryRepository);
+}
+
+/**
+ * One record's open candidates, read through the record that carries them: there is no second
+ * read of the same candidates (`DL-223`), so the rules below are asserted on the one the screen uses.
+ */
+async function candidatesOn(
+  repository: MockBeneficiaryRepository,
+  id: ResidentId,
+): Promise<readonly DuplicateCandidate[]> {
+  return (await firstValueFrom(repository.getByResidentId(id)))?.duplicateCandidates ?? [];
 }
 
 function resolution(overrides: Partial<IdentityResolutionDraft> = {}): IdentityResolutionDraft {
@@ -156,7 +168,7 @@ describe('MockBeneficiaryRepository — the duplicate queue discloses agreement,
 
   it('finds the second registration of one person', async () => {
     const repository = signedInAs(authenticated('mswdo-head'));
-    const candidates = await firstValueFrom(repository.duplicatesFor(AURORA));
+    const candidates = await candidatesOn(repository, AURORA);
 
     const match = candidates.find(
       (candidate) => candidate.otherResidentId === AURORA_AGAIN,
@@ -166,7 +178,7 @@ describe('MockBeneficiaryRepository — the duplicate queue discloses agreement,
 
   it('emits no field values — only which fields agree', async () => {
     const repository = signedInAs(authenticated('mswdo-head'));
-    const candidates = await firstValueFrom(repository.duplicatesFor(AURORA));
+    const candidates = await candidatesOn(repository, AURORA);
     const serialised = JSON.stringify(candidates);
 
     // The seeded birth date, PhilSys digits and mobile number of the pair. None
@@ -233,7 +245,7 @@ describe('MockBeneficiaryRepository — resolving an identity is a finding, not 
       ),
     );
 
-    const candidates = await firstValueFrom(repository.duplicatesFor(AURORA));
+    const candidates = await candidatesOn(repository, AURORA);
     expect(candidates.some((candidate) => candidate.otherResidentId === AURORA_AGAIN)).toBe(false);
   });
 
@@ -292,7 +304,7 @@ describe('MockBeneficiaryRepository — resolving an identity is a finding, not 
     expect(preview.supersededResidentId).toBe(AURORA_AGAIN);
 
     // The preview is inert: the pair is still open afterwards.
-    const candidates = await firstValueFrom(repository.duplicatesFor(AURORA));
+    const candidates = await candidatesOn(repository, AURORA);
     expect(candidates.some((candidate) => candidate.otherResidentId === AURORA_AGAIN)).toBe(true);
   });
 });

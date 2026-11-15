@@ -118,18 +118,6 @@ describe('governance over the API (DL-191)', () => {
       await expect(read).rejects.toThrow(/could not be read whole/);
     });
 
-    it('reads a missing account as none', async () => {
-      const read = firstValueFrom(repository.accountById(LEAVER));
-      barangays();
-      http
-        .expectOne(`${BASE}/office/staff/${LEAVER}`)
-        .flush(
-          { error: { code: 'NOT_FOUND', message: 'No.' } },
-          { status: 404, statusText: 'Not Found' },
-        );
-      expect(await read).toBeNull();
-    });
-
     it('switches an account off with the reason alone, and asks nothing without one', async () => {
       await expect(
         firstValueFrom(repository.setAccountActive(LEAVER, false, '   ')),

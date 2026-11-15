@@ -214,6 +214,18 @@ export const EVENTS_COPY = {
       'Attendance is still open. Anybody not marked is simply not marked — it does not mean they ' +
       'did not come.',
     attendanceFinalNote: 'Attendance is final for this event.',
+    // `event.view-insights` (`DL-122`, `DL-223`). A rate only once attendance is final (`DL-131`).
+    insightsHeading: 'Insights',
+    insightsError: 'The attendance rate could not be loaded',
+    rate: (percent: number, attended: number, registered: number) =>
+      `${percent}% attended: ${attended} of ${registered} registered.`,
+    rateNobody: 'Nobody registered, so there is no attendance rate.',
+    rateNotFinal: (unmarked: number) =>
+      `No attendance rate until the event is completed${
+        unmarked > 0 ? ` — ${unmarked} not yet marked` : ''
+      }. A rate taken while people are still being marked reads as a poor turnout.`,
+    insightsNote:
+      'Counted over this event’s registrations, and nothing about which resident did what.',
     safeLimit: (limit: number) =>
       `Safe limit: ${limit}. Nobody is let in past it — not by the app, and not by the office.`,
 

@@ -109,6 +109,14 @@ check, not the line: "every screen serves real data" still needs every screen wa
 staging API and signed, and `check:port-adoption` still counts 6 port methods no screen calls.
 Every other line in this document stands as last measured.
 
+**Update 2026-11-15: no port method is unreached.** The last five were settled one by one
+(`DL-223`): a record's identity findings and an event's attendance rate now reach their screens,
+and three reads that only repeated what a screen already holds — one record's duplicate candidates,
+one staff account, one payout session — were retired from the port, both adapters and their specs.
+`check:port-adoption` counts **0 of 246** and its baseline is empty. The engineering half of the
+line's port condition is met; the walk of every screen against the staging API, signed, is still
+owed, so the line stays NO-GO.
+
 ### 08 — Money journey proven; idempotency and separation of duties server-side; concurrency on PostgreSQL
 **Still NO-GO, on one count rather than two.**
 

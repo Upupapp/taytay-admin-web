@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
@@ -11,12 +12,14 @@ import {
   BENEFICIARY_ROLE_LABELS,
   ENROLLMENT_EXIT_REASON_LABELS,
   ENROLLMENT_STATUS_CATALOG,
+  IDENTITY_VERDICT_LABELS,
   PROGRAMME_MEMBERSHIP_NOT_RECORDED,
   asId,
   barangayName,
   byEnrollmentRecency,
   type BeneficiaryDetail,
   type BeneficiaryRole,
+  type IdentityResolution,
   type ProgramEnrollment,
   type ResidentId,
 } from '@domain/index';
@@ -45,6 +48,12 @@ export const BENEFICIARY_DETAIL_TOPICS: readonly LiveTopic[] = [
   'programs',
 ];
 
+/** A reviewer's identity findings are kept beside the duplicate pairs, under the registry's topic. */
+export const BENEFICIARY_FINDING_TOPICS: readonly LiveTopic[] = ['beneficiaries'];
+
+/** What one finding says about the record it is read on (`DL-74`). */
+export type FindingStanding = 'kept' | 'superseded' | 'distinct';
+
 /**
  * One person's whole record with this office.
  *
@@ -58,7 +67,15 @@ export const BENEFICIARY_DETAIL_TOPICS: readonly LiveTopic[] = [
 @Component({
   selector: 'app-beneficiary-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AssistanceHistoryTimeline, AsyncContent, PageHeader, PesoPipe, RouterLink, StatusBadge],
+  imports: [
+    AssistanceHistoryTimeline,
+    AsyncContent,
+    DatePipe,
+    PageHeader,
+    PesoPipe,
+    RouterLink,
+    StatusBadge,
+  ],
   templateUrl: './beneficiary-detail-page.html',
   styleUrl: './beneficiary-detail-page.scss',
 })
@@ -87,6 +104,52 @@ export class BeneficiaryDetailPage {
   );
 
   protected readonly record = computed(() => valueOf(this.state()) ?? null);
+
+  /** "Try again" on the findings panel: the same question asked again. */
+  private readonly findingReloads = signal(0);
+
+  protected retryFindings(): void {
+    this.findingReloads.update((value) => value + 1);
+  }
+
+  /**
+   * What reviewers have recorded about this record and another (`DL-74`), newest first. A
+   * superseded record leaves the list but stays readable by id, so it is here, where it is read,
+   * that it says which record the office uses now (`DL-223`).
+   */
+  protected readonly findingsState = toSignal(
+    toObservable(
+      computed(() => ({ id: asId<ResidentId>(this.id()), nonce: this.findingReloads() })),
+    ).pipe(
+      switchMap((query) =>
+        liveViewState(
+          () => this.repository.resolutionsFor(query.id),
+          this.live.changes(BENEFICIARY_FINDING_TOPICS),
+          this.live,
+        ),
+      ),
+    ),
+    { initialValue: LOADING as ViewState<readonly IdentityResolution[]> },
+  );
+
+  protected verdictLabel(finding: IdentityResolution): string {
+    return IDENTITY_VERDICT_LABELS[finding.verdict];
+  }
+
+  /** Whether this record is the one kept, the one superseded, or one of two different people. */
+  protected standingIn(finding: IdentityResolution): FindingStanding {
+    if (finding.verdict === 'distinct-people') {
+      return 'distinct';
+    }
+    return finding.supersededResidentId === asId<ResidentId>(this.id()) ? 'superseded' : 'kept';
+  }
+
+  /** The other record of the pair, opened by its own id; whether it is readable is the API's call. */
+  protected otherRecord(finding: IdentityResolution): ResidentId {
+    const here = asId<ResidentId>(this.id());
+    const [first, second] = finding.pair;
+    return first === here ? second : first;
+  }
 
   /**
    * Whether the system of record holds programme membership at all. Where it does not, the panel

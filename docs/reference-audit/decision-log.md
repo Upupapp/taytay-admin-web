@@ -10605,3 +10605,40 @@ the console throttles each screen to one re-read per 2 seconds and coalesces wit
 Easiest to reverse: unbind `CHANGE_FEED` in `data-access.providers.ts`. `LiveUpdates` is then off,
 `changes()` never emits, `liveViewState` behaves as `toViewState`, and the topbar control is absent;
 the backend's endpoint can stay or go independently.
+
+## DL-223 — the last five unreached port methods: two reach their screens, three repeated a read and are gone
+
+**Status:** Settled (15 November 2026). Launch-gate line 05/07, port condition.
+
+`check:port-adoption` counted **5 of 249** port methods reachable from no screen. Each was settled by
+the rule the repository already uses: a read the API serves and a screen is meant to offer is wired;
+a read that repeats what a screen already holds is retired, because two assemblies of the same
+record eventually disagree in front of the family (`DL-71`, and the precedent of `getHousehold` and
+`enrollmentsFor` in `release-engineering.md`). No decision-log entry required any of the three to
+stay.
+
+| Method | Decision | Why |
+| --- | --- | --- |
+| `BeneficiaryRepository.resolutionsFor` | **Wired**: an *Identity findings* panel on the beneficiary record | `DL-74` keeps a superseded record "readable by id" after it leaves the list. Read by id, it said nothing about being superseded, so a caseworker arriving by a link could record new work on it. The panel says, per finding, whether this is the record the office keeps using, the one it no longer does, or one of two different people, with the reason and the date, and links the other record — linked, never named (`DL-73`). `GET office/beneficiaries/{residentId}/findings` needs only `beneficiary.view`, the page's own grant. |
+| `EventRepository.metrics` | **Wired**: an *Insights* panel on the event record, for `event.view-insights` | The key (`DL-122`) gated nothing on any screen, and the attendance rate `DL-131` and `DL-149` define was shown nowhere. The panel states the rate with what it was taken from once the API says attendance is final, and otherwise says why there is none — an unfinished list is not a poor turnout. Without the grant nothing is requested and no panel is drawn. |
+| `BeneficiaryRepository.duplicatesFor` | **Retired** | `BeneficiaryDetail.duplicateCandidates`, read with the record, already carries the same candidates under the same withholding rule, and the record page shows them. `release-engineering.md` kept it for its mock spec's coverage; that coverage moved to the record's candidates, the read the screen makes, rather than being lost. |
+| `GovernanceRepository.accountById` | **Retired** | The staff page reads the directory whole (`accounts`), there is no account route, and `setAccountActive` answers with the account it changed. Accounts are provisioned outside the console (`DL-32`), so no flow needs one account by id. |
+| `ReleaseRepository.getBatch` | **Retired** | The payout page reads every session whole with its counts (`listBatches`, `DL-90`) and its list through `manifestFor` (`DL-92`); no route opens a session on its own. |
+
+Each retired method left the port, both adapters and their specs, the method lists of
+`check:governance` and `check:releases`, and its `@consumes` line, so the consumer expectations the
+backend verifies against no longer claim `GET office/staff/{id}`, `GET office/release-batches/{id}`
+or `GET office/beneficiaries/{residentId}/duplicates` (205 interactions, from 208). The API keeps
+serving all three; nothing in the backend changes. A screen that needs one later adds it back with
+its caller, which is what the check asks.
+
+**Counts.** `check:port-adoption` 244/249 → **246/246**, baseline `unreached-ports.json` empty;
+`check:routes` 0 unserved, unchanged.
+
+**What the panels do not do.** The finding's reviewer arrives as an account id only, and an id is
+not shown as though it were a name: the audit trail names who decided. The rate is a percentage of
+those registered, rounded, never a score of the event or of anybody; the counts it was taken from
+are printed beside it.
+
+Easiest to reverse: remove the two panels and their reads; restore a retired method from git history
+together with the screen that calls it.

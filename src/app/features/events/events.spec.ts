@@ -234,6 +234,43 @@ describe('an event that has happened but is not closed', () => {
   });
 });
 
+/* ── Insights: a rate only once attendance is final (DL-131, DL-223) ──────── */
+
+describe('the attendance rate', () => {
+  it('states the rate with what it was taken from once the event is completed', async () => {
+    // The relief distribution is seeded completed, with attendance marked.
+    const fixture = await openEvent('event-0005');
+
+    expect(text(fixture)).toContain('Insights');
+    expect(text(fixture)).toMatch(/\d+% attended: \d+ of \d+ registered\./);
+    expect(text(fixture)).toContain('nothing about which resident did what');
+  });
+
+  it('gives no rate while the event is still open, and says why', async () => {
+    const fixture = await openEvent('event-0006');
+
+    expect(text(fixture)).toContain('No attendance rate until the event is completed');
+    expect(text(fixture)).not.toMatch(/\d+% attended/);
+  });
+
+  it('asks nothing of a reader without the insights grant, and shows no panel', async () => {
+    const metrics = vi.spyOn(MockEventRepository.prototype, 'metrics');
+    await configure({
+      ...staffUser('social-worker', 'staff-sw'),
+      additionalPermissions: ['event.view'],
+    });
+    await TestBed.inject(Router).navigateByUrl('/events/event-0005');
+    const fixture = TestBed.createComponent(EventDetailPage);
+    fixture.componentRef.setInput('id', 'event-0005');
+    await fixture.whenStable();
+
+    expect(text(fixture)).toContain('Counted at');
+    expect(text(fixture)).not.toContain('Insights');
+    expect(metrics).not.toHaveBeenCalled();
+    metrics.mockRestore();
+  });
+});
+
 /* ── Criterion: cancelling reaches everybody and cannot be undone ─────────── */
 
 describe('cancelling an event', () => {
