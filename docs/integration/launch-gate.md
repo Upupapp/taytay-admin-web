@@ -204,8 +204,13 @@ rollback steps are now in taytay-backend `deploy/staging-shared-linode/`, and
 
 - **No pipeline.** There is no CI (no Actions credit); the gates run by hand before a push.
 - **The backups are not off the machine.** Losing the server loses them with the database.
-- **The restore has no observed figures**: it was not timed, and no recovery point or recovery
+- ~~**The restore has no observed figures**: it was not timed~~, and no recovery point or recovery
   time objective has been agreed.
+  - **Timed 2026-11-15:** the pre-deploy dump was restored into a scratch database on staging in
+    4.1 s (14 MB), with the migration count matching. The figures are in taytay-backend
+    `deploy/staging-shared-linode/README.md`.
+  - Staging holds almost no data, so this times the procedure, not a restore at office volume.
+  - The nightly dump means up to a day of writes is at risk; that point has not been agreed.
 - ~~**No rollback has been rehearsed or timed**, on staging or anywhere else.~~ **Rehearsed and
   timed on staging, 2026-11-15:**
   - Console: back and forward in about 2.5 s each.
