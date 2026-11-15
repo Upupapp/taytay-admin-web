@@ -33,8 +33,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { ADAPTER_FILES, readAdapters } from './adapter-sources.mjs';
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const ADAPTERS = 'src/app/data/http/http-repositories.ts';
+const ADAPTERS = ADAPTER_FILES.join(' + ');
 
 /*
  * 71 → 0 on 5 November 2026 (`DL-165`), and not because 71 casts were repaired. The Laravel
@@ -45,7 +47,8 @@ const ADAPTERS = 'src/app/data/http/http-repositories.ts';
  */
 const CEILING = 0;
 
-const source = readFileSync(join(ROOT, ADAPTERS), 'utf8');
+// Every adapter file (`DL-224`): the staff adapter lives apart since it is bound eagerly.
+const { source } = readAdapters(ROOT);
 
 /*
  * Every helper on ApiClient is examined — writes as well as reads, because `post<Foo>` asserts the

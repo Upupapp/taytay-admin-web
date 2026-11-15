@@ -41,6 +41,8 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { boundAdapter } from './adapter-sources.mjs';
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SRC = join(ROOT, 'src');
 const APP = join(SRC, 'app');
@@ -316,7 +318,8 @@ if (changesPath === undefined) {
 
 /* ── 5. the feed is the http set's alone ────────────────────────────────── */
 
-if (!/provide:\s*CHANGE_FEED,\s*useClass:\s*HttpChangeFeed\b/.test(source(FILES.providers))) {
+// Either binding form (`DL-224`): `useClass`, or `lazyPort((m) => m.X)`.
+if (boundAdapter(source(FILES.providers), 'CHANGE_FEED') !== 'HttpChangeFeed') {
   failures.push('data-access.providers.ts no longer binds CHANGE_FEED to HttpChangeFeed.');
 }
 if (/\bCHANGE_FEED\b/.test(source(FILES.mockProviders))) {

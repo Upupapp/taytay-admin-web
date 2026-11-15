@@ -40,6 +40,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { bindingsIn, readAdapters, unlistedApiCallers } from './adapter-sources.mjs';
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const HTTP = join(ROOT, 'src', 'app', 'data', 'http');
 const CONTRACT = join(HTTP, 'contract');
@@ -190,8 +192,17 @@ for (const helper of declared) {
   }
 }
 
-const adapters = readFileSync(join(HTTP, 'http-repositories.ts'), 'utf8');
+// Every adapter file, not one by name (`DL-224`): the staff adapter lives apart since it is bound
+// eagerly, and a file this check did not read would be a surface it reported green without seeing.
+const { source: adapters, locate } = readAdapters(ROOT);
 const calls = apiCalls(adapters);
+
+for (const path of unlistedApiCallers(ROOT)) {
+  failures.push(
+    `${path} calls this.api, and no check reads it as an adapter. Add it to ADAPTER_FILES in ` +
+      'tools/adapter-sources.mjs, or move the call into an adapter file.',
+  );
+}
 const rawCallSites = [...adapters.matchAll(/this\s*\.\s*api\s*\.\s*\w+/g)].length;
 
 if (calls.length !== rawCallSites) {
@@ -217,7 +228,7 @@ for (const call of calls) {
 
   if (verb === undefined || path === null) {
     failures.push(
-      `http-repositories.ts:${call.line} calls this.api.${call.verb}(${argument}), which this check cannot resolve.\n` +
+      `${call.where} calls this.api.${call.verb}(${argument}), which this check cannot resolve.\n` +
         `    Build the path from API_ENDPOINTS through a known ApiClient helper, or nobody can say which route it reaches.`,
     );
     continue;
@@ -242,10 +253,8 @@ for (const entry of [...composed].sort()) {
 // ── 4. an unserved port makes no request ─────────────────────────────────────
 const providers = readFileSync(join(ROOT, 'src', 'app', 'data', 'data-access.providers.ts'), 'utf8');
 const unservedSource = readFileSync(join(HTTP, 'unserved-repositories.ts'), 'utf8');
-const bindings = [...providers.matchAll(/provide:\s*(\w+),\s*useClass:\s*(\w+)/g)].map(([, token, adapter]) => ({
-  token,
-  adapter,
-}));
+// Both forms (`DL-224`): `useClass` for the eager staff adapter, `lazyPort((m) => m.X)` for the rest.
+const bindings = bindingsIn(providers).map(({ token, adapter }) => ({ token, adapter }));
 
 if (bindings.length === 0) {
   failures.push('No port bindings were read from data-access.providers.ts, so none was checked.');
@@ -258,7 +267,7 @@ for (const { token, adapter } of bindings) {
 
   if (home === null || !new RegExp(`export class ${adapter}\\b`).test(home)) {
     failures.push(
-      `${token} is bound to ${adapter}, which is neither an Http adapter in http-repositories.ts nor an\n` +
+      `${token} is bound to ${adapter}, which is neither an Http adapter in the adapter files nor an\n` +
         `    Unserved adapter in unserved-repositories.ts. A port is served by a route or it says it is not.`,
     );
   }
@@ -381,7 +390,7 @@ function apiCalls(text) {
     out.push({
       verb: m[1],
       args: text.slice(open + 1, i),
-      line: text.slice(0, m.index).split('\n').length,
+      where: locate(m.index),
     });
   }
 

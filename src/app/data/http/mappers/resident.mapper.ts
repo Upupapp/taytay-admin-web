@@ -1,21 +1,18 @@
+import { TAYTAY_BARANGAYS } from '@domain/geography/barangay';
 import {
   CIVIL_STATUSES,
-  centavos,
   formatPersonName,
   formatPersonNameListed,
   formatProtectedName,
   SEXES,
-  TAYTAY_BARANGAYS,
   VULNERABILITY_SECTORS,
-  type BarangayId,
   type Resident,
   type ResidentDraft,
-  type ResidentField,
-  type ResidentId,
-  type ResidentView,
-  type StaffUserId,
   type VulnerabilitySector,
-} from '@domain/index';
+} from '@domain/residents/resident';
+import type { ResidentField, ResidentView } from '@domain/residents/resident-disclosure';
+import type { BarangayId, ResidentId, StaffUserId } from '@domain/shared/ids';
+import { centavos } from '@domain/shared/money';
 
 import { bool, date, dateTime, field, id, int, oneOf, str } from './wire';
 

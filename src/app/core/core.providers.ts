@@ -9,7 +9,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 
 import { provideDataAccess } from '@data/data-access.providers';
-import { ACCESS_CONTEXT } from '@domain/index';
+import { ACCESS_CONTEXT } from '@domain/ports/access-context';
 import type { AppEnvironment } from '@env/environment.model';
 
 import { SessionState } from './auth/session-state';

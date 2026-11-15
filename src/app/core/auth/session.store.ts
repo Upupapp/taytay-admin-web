@@ -1,14 +1,10 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, map, of, tap, type Observable } from 'rxjs';
 
-import {
-  SignInError,
-  STAFF_REPOSITORY,
-  type AuthenticatedUser,
-  type MfaChallenge,
-  type Permission,
-  type SignInCredentials,
-} from '@domain/index';
+import { SignInError, type MfaChallenge, type SignInCredentials } from '@domain/access/credentials';
+import type { Permission } from '@domain/access/permission';
+import type { AuthenticatedUser } from '@domain/access/staff-user';
+import { STAFF_REPOSITORY } from '@domain/ports/repositories';
 
 import { SessionState } from './session-state';
 

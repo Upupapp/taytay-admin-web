@@ -40,6 +40,8 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { boundAdapter } from './adapter-sources.mjs';
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const problems = [];
 const notes = [];
@@ -744,7 +746,8 @@ const mapperFn = (name) => fn(eventMapper, name);
 if (httpClass === '') {
   problems.push('`HttpEventRepository` has gone, so the http configuration has no events adapter.');
 } else {
-  if (!/provide:\s*EVENT_REPOSITORY,\s*useClass:\s*HttpEventRepository/.test(providers)) {
+  // Either binding form (`DL-224`): `useClass`, or `lazyPort((m) => m.X)`.
+  if (boundAdapter(providers, 'EVENT_REPOSITORY') !== 'HttpEventRepository') {
     problems.push(
       '`EVENT_REPOSITORY` is not bound to `HttpEventRepository` in the http set. The API serves ' +
         'events; an unserved or mock binding tells an office it has no events, or shows it sample ' +

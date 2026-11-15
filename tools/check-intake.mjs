@@ -30,6 +30,8 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, dirname, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { boundAdapter } from './adapter-sources.mjs';
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const problems = [];
 const notes = [];
@@ -160,9 +162,11 @@ const assessmentMapper =
   httpFiles
     .map((file) => /export function toWireAssessment\s*\([\s\S]*?\n\}/.exec(read(file)))
     .find((match) => match !== null) ?? null;
-const assistanceBinding = /provide:\s*ASSISTANCE_REQUEST_REPOSITORY,\s*useClass:\s*(\w+)/.exec(
+// Either binding form (`DL-224`): `useClass`, or `lazyPort((m) => m.X)`.
+const assistanceBinding = boundAdapter(
   read('src/app/data/data-access.providers.ts'),
-)?.[1];
+  'ASSISTANCE_REQUEST_REPOSITORY',
+);
 
 /*
  * Since casework phase 2b (`DL-178`) the assessment is served, and the server keeps both figures —

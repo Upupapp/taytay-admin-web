@@ -2,13 +2,13 @@ import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core'
 
 import {
   isUnread,
-  NOTIFICATION_REPOSITORY,
   type AppNotification,
-  type NotificationId,
   type NotificationRequest,
   toLocalNotification,
   isLocalNotification,
-} from '@domain/index';
+} from '@domain/notifications/notification';
+import { NOTIFICATION_REPOSITORY } from '@domain/ports/repositories';
+import type { NotificationId } from '@domain/shared/ids';
 
 import { SessionState } from '../auth/session-state';
 import { LiveUpdates } from '../live/live-updates';

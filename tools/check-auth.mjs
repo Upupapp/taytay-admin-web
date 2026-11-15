@@ -244,6 +244,8 @@ for (const { path, code } of files) {
 const HOLD_ALLOWED = [
   'src/app/core/auth/auth-token.holder.ts',
   'src/app/data/http/http-repositories.ts',
+  // The staff adapter, apart since it is bound eagerly (`DL-224`).
+  'src/app/data/http/staff-repository.ts',
 ];
 
 for (const { path, code } of files) {
@@ -265,7 +267,8 @@ for (const { path, code } of files) {
 // revokes nothing while the screen says signed out. The token is dropped once the API has answered,
 // whatever it answered (`DL-165`, superseding the Laravel-era rule that a failed revocation keeps
 // the token): so `clear()` must sit in a `finalize`/`tap` after the request, never before it.
-const ADAPTER_PATH = 'src/app/data/http/http-repositories.ts';
+// The staff adapter's own file since `DL-224`.
+const ADAPTER_PATH = 'src/app/data/http/staff-repository.ts';
 const adapters = files.find((f) => f.path === ADAPTER_PATH)?.code ?? '';
 const contract = files.find((f) => f.path === 'src/app/data/http/api.contract.ts')?.code ?? '';
 const signOut = /signOut\(\): Observable<void> \{([\s\S]*?)\n  \}/.exec(adapters)?.[1] ?? '';

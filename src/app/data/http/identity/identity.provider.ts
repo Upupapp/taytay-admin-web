@@ -8,7 +8,7 @@ import {
   type MfaCredentials,
   type SignInCredentials,
   type SignInMethod,
-} from '@domain/index';
+} from '@domain/access/credentials';
 
 import type { IdentityGrant, IdentityPort, IdentitySignIn } from './identity.model';
 import {

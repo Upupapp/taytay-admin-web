@@ -53,9 +53,11 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { ADAPTER_FILES, readAdapters } from './adapter-sources.mjs';
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HTTP = join(ROOT, 'src', 'app', 'data', 'http');
-const ADAPTERS = 'src/app/data/http/http-repositories.ts';
+const ADAPTERS = ADAPTER_FILES.join(' + ');
 
 const read = (...segments) => readFileSync(join(...segments), 'utf8');
 
@@ -194,7 +196,8 @@ for (const [, helper] of client.matchAll(/^  ([a-zA-Z]\w*)\s*[<(]/gm)) {
   }
 }
 
-const adapters = read(ROOT, ADAPTERS);
+// Every adapter file (`DL-224`): the staff adapter lives apart since it is bound eagerly.
+const { source: adapters, locate } = readAdapters(ROOT);
 const reads = [];
 let unresolved = 0;
 
@@ -253,7 +256,7 @@ while ((match = start.exec(adapters)) !== null) {
     verb: VERB_OF[match[1]] ?? 'get',
     helper: match[1],
     path: path.replace(/\/$/, ''),
-    line: adapters.slice(0, match.index).split('\n').length,
+    where: locate(match.index),
   });
 }
 
@@ -281,7 +284,7 @@ for (const entry of reads) {
 
   if (server === undefined || server === 'undeclared') {
     failures.push(
-      `${ADAPTERS}:${entry.line} reads ${entry.verb.toUpperCase()} ${entry.path} with ${entry.helper}, and the spec declares no ` +
+      `${entry.where} reads ${entry.verb.toUpperCase()} ${entry.path} with ${entry.helper}, and the spec declares no ` +
         `envelope for it. A read nobody can check is not one this check may call agreed.`,
     );
     continue;
@@ -295,7 +298,7 @@ for (const entry of reads) {
           ? 'data is an object, so the screen shows nothing.'
           : `${entry.helper} needs ${entry.needs} and the route answers ${server}.`;
 
-    failures.push(`${ADAPTERS}:${entry.line} ${entry.helper} ${entry.verb.toUpperCase()} ${entry.path} <- ${server}. ${consequence}`);
+    failures.push(`${entry.where} ${entry.helper} ${entry.verb.toUpperCase()} ${entry.path} <- ${server}. ${consequence}`);
     continue;
   }
 

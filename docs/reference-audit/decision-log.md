@@ -10642,3 +10642,66 @@ are printed beside it.
 
 Easiest to reverse: remove the two panels and their reads; restore a retired method from git history
 together with the screen that calls it.
+
+## DL-224 — the first download is the framework, the session and the routes; every other adapter arrives with the first screen that asks
+
+**Status:** Settled (15 November 2026). The `initial` budget in `angular.json` is unchanged at 500 kB.
+
+**What was in the first download.** A production build put **720.30 kB** in the initial chunks
+against a 500 kB warning budget: `main` 345.01 kB, two shared chunks of 170.08 kB and 167.12 kB,
+styles 33.71 kB. Read from the build's own metafile (`ng build --stats-json`), the largest
+contributors were Angular core (164 kB), **the http adapters and their mappers (224 kB)**, **the
+domain (183 kB)**, the router (103 kB), Angular common (47 kB), RxJS (28 kB) and the route table
+(20 kB) — figures before the final minification pass, so they add up to more than the total. There
+is no Firebase SDK to move: sign-in talks to the identity provider over REST (`DL-166`).
+
+**Why both were there.** esbuild assigns code to chunks **file by file**, after tree-shaking within
+them:
+
+1. Binding a port with `useClass: HttpX` references the class, and the adapters are one
+   5,600-line file. One static import of one class therefore kept every adapter, and every mapper
+   they import, in `main`. A first attempt that left four adapters eager measured **727 kB** —
+   no better.
+2. `core/` imported the domain through `@domain/index`. The barrel re-exports every domain file, so
+   every domain file was reachable from `main`, and whatever any screen used of it went into the
+   first download too.
+
+**What changed.**
+
+- **Every binding but the staff adapter's goes through `lazyPort((m) => m.HttpX)`**
+  (`data/http/lazy-port.ts`): 33 ports, the session renewal and the change feed. Every port method
+  answers with an `Observable`, so a call waits for its adapter inside the Observable it already
+  returns: nothing is fetched or sent before the caller subscribes, the
+  adapter is built once in the root injector exactly as `useClass` built it, and a failed download
+  is that call's error — shown by the screen's error state like any failed read — and is retried by
+  the next call. `then` and `ngOnDestroy` answer `undefined`, so a port is never taken for a promise
+  or for something to destroy. The seam is unchanged: `data-access.providers.ts` is still the one
+  place ports are bound, and the mock set is untouched.
+- **The staff adapter is the one bound eagerly**, because the session is asked for before the first
+  screen. It moved with the barangay join it reads into `data/http/staff-repository.ts`, since a
+  module is bundled whole wherever it is imported. `http-repositories.ts` re-exports it.
+- **The eager files import the domain module they use** (`@domain/access/credentials`, …), not the
+  barrel: `core/` (session, notifications, served ports, providers), the providers file, the staff
+  adapter and the identity provider, and the two mappers and the wire helpers they read.
+
+**The checks follow the code rather than a file name.** `check:routes`, `check:response-shape`,
+`check:wire-adoption`, `check:mapper-adoption` and `check:query-params` read every adapter file
+through `tools/adapter-sources.mjs`, and `check:routes` fails if any other file under `data/http`
+calls `this.api` — a check left reading one file would have stopped seeing the staff adapter's three
+requests and gone on passing (`DL-143`). `check:auth` reads sign-out where it now is. `check:events`,
+`check:intake`, `check:money`, `check:live` and `check:routes` read a binding in either form. Nine
+planted regressions, all caught: an unserved route and an unmapped body from the staff adapter,
+sign-out that stops revoking, three ports bound lazily to the wrong or a missing class, and an API
+call in a file outside the set.
+
+**What a person notices.** The sign-in screen paints after the framework, the routes and the session
+code alone. The first question asked after signing in — the shell's or the first screen's — fetches
+the adapters once, beside that screen's own code, and every screen after that finds them loaded.
+Sessions are held in memory only (rule 5), so a reload always starts at sign-in, which is the path
+this makes lighter.
+
+**After.** Initial total **398.51 kB** (from 720.30 kB; transfer about 109 kB, from 179 kB): `main` 168.71 kB and one shared chunk of 154.06 kB, then styles and small chunks. What is left is the framework — Angular core 164 kB, the router 102 kB, common 48 kB, RxJS 28 kB, platform-browser 15 kB — the route table (20 kB), the session path in `data/http` (19 kB: the staff adapter, `ApiClient`, the identity provider) and the shell primitives. The adapters arrive as one lazy chunk of 175 kB, the domain behind the screens as another of 152 kB.
+
+Easiest to reverse: bind the ports with `useClass` again in `data-access.providers.ts`; the rest
+(the staff adapter's own file, the deep domain imports, the shared check helper) is harmless either
+way.

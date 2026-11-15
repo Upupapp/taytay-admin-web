@@ -3,6 +3,7 @@ import { makeEnvironmentProviders } from '@angular/core';
 
 import { SESSION_REFRESHER } from '@core/auth/session-refresher';
 import { CHANGE_FEED } from '@core/live/change-feed';
+import { UNSERVED_PORTS } from '@domain/ports/data-ports';
 import {
   ASSISTANCE_REQUEST_REPOSITORY,
   BENEFICIARY_REPOSITORY,
@@ -22,9 +23,7 @@ import {
   REFERRAL_REPOSITORY,
   RESIDENT_REPOSITORY,
   SAVED_VIEW_REPOSITORY,
-  SIGN_IN_METHOD,
   STAFF_REPOSITORY,
-  UNSERVED_PORTS,
   VERIFICATION_REPOSITORY,
   OFFICE_INBOX_REPOSITORY,
   OFFICE_REPOSITORY,
@@ -40,48 +39,14 @@ import {
   ISSUANCE_REPOSITORY,
   RESIDENT_IMPORT_REPOSITORY,
   SECTOR_APPLICATION_REPOSITORY,
-} from '@domain/index';
+} from '@domain/ports/repositories';
+import { SIGN_IN_METHOD } from '@domain/ports/sign-in-method';
 
-import {
-  HttpAppAccountRepository,
-  HttpChangeFeed,
-  HttpCaseRepository,
-  HttpBeneficiaryRepository,
-  HttpDashboardRepository,
-  HttpReleaseRepository,
-  HttpReferralRepository,
-  HttpFieldVisitRepository,
-  HttpDirectoryOfficeRepository,
-  HttpHomeScreenRepository,
-  HttpAppConfigRepository,
-  HttpDigitalIdRepository,
-  HttpBalitaRepository,
-  HttpPlatformAuditRepository,
-  HttpResidentRepository,
-  HttpFamilyRepository,
-  HttpHouseholdRepository,
-  HttpAssistanceRequestRepository,
-  HttpProgramRepository,
-  HttpSavedViewRepository,
-  HttpHotlineRepository,
-  HttpTulongServiceRepository,
-  HttpNotificationRepository,
-  HttpOfficeInboxRepository,
-  HttpOfficeRepository,
-  HttpSessionRefresher,
-  HttpStaffRepository,
-  HttpVerificationRepository,
-  HttpIssuanceRepository,
-  HttpResidentImportRepository,
-  HttpSectorApplicationRepository,
-  HttpGovernanceRepository,
-  HttpEventRepository,
-  HttpReportRepository,
-  HttpSearchRepository,
-  HttpWorkRepository,
-} from './http/http-repositories';
+import { lazyPort } from './http/lazy-port';
+import { HttpStaffRepository } from './http/staff-repository';
 import { identitySignInMethod } from './http/identity/identity.provider';
 import { UNSERVED_HTTP_PORTS } from './http/unserved-repositories';
+
 /**
  * THE MOCK/HTTP SEAM — the HTTP half.
  *
@@ -124,53 +89,80 @@ import { UNSERVED_HTTP_PORTS } from './http/unserved-repositories';
  * `DL-167`): a port the API does not serve is bound to an `Unserved…` adapter that makes no request
  * and fails with a sentence saying so, and moves to an `Http…` adapter only when the API serves the
  * thing the port names — not something with the same word on it.
+ *
+ * ## Fetched on the first question (`DL-224`)
+ *
+ * Every port but the staff one is bound through `lazyPort`, so its adapter is downloaded the first
+ * time a screen asks it something rather than before the sign-in screen can paint. A `useClass`
+ * here would put that adapter — and, because a module is bundled whole, every adapter — back in the
+ * first download.
  */
 
 export function provideDataAccess(): EnvironmentProviders {
   return makeEnvironmentProviders([
-    { provide: RESIDENT_REPOSITORY, useClass: HttpResidentRepository },
-    { provide: PROGRAM_REPOSITORY, useClass: HttpProgramRepository },
-    { provide: ASSISTANCE_REQUEST_REPOSITORY, useClass: HttpAssistanceRequestRepository },
-    { provide: RELEASE_REPOSITORY, useClass: HttpReleaseRepository },
-    { provide: REFERRAL_REPOSITORY, useClass: HttpReferralRepository },
+    { provide: RESIDENT_REPOSITORY, useFactory: lazyPort((m) => m.HttpResidentRepository) },
+    { provide: PROGRAM_REPOSITORY, useFactory: lazyPort((m) => m.HttpProgramRepository) },
+    {
+      provide: ASSISTANCE_REQUEST_REPOSITORY,
+      useFactory: lazyPort((m) => m.HttpAssistanceRequestRepository),
+    },
+    { provide: RELEASE_REPOSITORY, useFactory: lazyPort((m) => m.HttpReleaseRepository) },
+    { provide: REFERRAL_REPOSITORY, useFactory: lazyPort((m) => m.HttpReferralRepository) },
+    // Eager, alone (`DL-224`): the session is asked for before the first screen. Every other
+    // adapter is fetched on its port's first question, so the sign-in screen does not wait for it.
     { provide: STAFF_REPOSITORY, useClass: HttpStaffRepository },
-    { provide: NOTIFICATION_REPOSITORY, useClass: HttpNotificationRepository },
-    { provide: VERIFICATION_REPOSITORY, useClass: HttpVerificationRepository },
-    { provide: OFFICE_INBOX_REPOSITORY, useClass: HttpOfficeInboxRepository },
-    { provide: OFFICE_REPOSITORY, useClass: HttpOfficeRepository },
-    { provide: APP_ACCOUNT_REPOSITORY, useClass: HttpAppAccountRepository },
-    { provide: DIRECTORY_OFFICE_REPOSITORY, useClass: HttpDirectoryOfficeRepository },
-    { provide: TULONG_SERVICE_REPOSITORY, useClass: HttpTulongServiceRepository },
-    { provide: HOTLINE_REPOSITORY, useClass: HttpHotlineRepository },
-    { provide: HOME_SCREEN_REPOSITORY, useClass: HttpHomeScreenRepository },
-    { provide: APP_CONFIG_REPOSITORY, useClass: HttpAppConfigRepository },
-    { provide: DIGITAL_ID_REPOSITORY, useClass: HttpDigitalIdRepository },
-    { provide: BALITA_REPOSITORY, useClass: HttpBalitaRepository },
-    { provide: PLATFORM_AUDIT_REPOSITORY, useClass: HttpPlatformAuditRepository },
-    { provide: DASHBOARD_REPOSITORY, useClass: HttpDashboardRepository },
-    { provide: WORK_REPOSITORY, useClass: HttpWorkRepository },
-    { provide: REPORT_REPOSITORY, useClass: HttpReportRepository },
-    { provide: SEARCH_REPOSITORY, useClass: HttpSearchRepository },
-    { provide: GOVERNANCE_REPOSITORY, useClass: HttpGovernanceRepository },
-    { provide: EVENT_REPOSITORY, useClass: HttpEventRepository },
-    { provide: SAVED_VIEW_REPOSITORY, useClass: HttpSavedViewRepository },
-    { provide: HOUSEHOLD_REPOSITORY, useClass: HttpHouseholdRepository },
-    { provide: FAMILY_REPOSITORY, useClass: HttpFamilyRepository },
-    { provide: CASE_REPOSITORY, useClass: HttpCaseRepository },
-    { provide: BENEFICIARY_REPOSITORY, useClass: HttpBeneficiaryRepository },
-    { provide: FIELD_VISIT_REPOSITORY, useClass: HttpFieldVisitRepository },
-    { provide: ISSUANCE_REPOSITORY, useClass: HttpIssuanceRepository },
-    { provide: RESIDENT_IMPORT_REPOSITORY, useClass: HttpResidentImportRepository },
-    { provide: SECTOR_APPLICATION_REPOSITORY, useClass: HttpSectorApplicationRepository },
+    { provide: NOTIFICATION_REPOSITORY, useFactory: lazyPort((m) => m.HttpNotificationRepository) },
+    { provide: VERIFICATION_REPOSITORY, useFactory: lazyPort((m) => m.HttpVerificationRepository) },
+    { provide: OFFICE_INBOX_REPOSITORY, useFactory: lazyPort((m) => m.HttpOfficeInboxRepository) },
+    { provide: OFFICE_REPOSITORY, useFactory: lazyPort((m) => m.HttpOfficeRepository) },
+    { provide: APP_ACCOUNT_REPOSITORY, useFactory: lazyPort((m) => m.HttpAppAccountRepository) },
+    {
+      provide: DIRECTORY_OFFICE_REPOSITORY,
+      useFactory: lazyPort((m) => m.HttpDirectoryOfficeRepository),
+    },
+    {
+      provide: TULONG_SERVICE_REPOSITORY,
+      useFactory: lazyPort((m) => m.HttpTulongServiceRepository),
+    },
+    { provide: HOTLINE_REPOSITORY, useFactory: lazyPort((m) => m.HttpHotlineRepository) },
+    { provide: HOME_SCREEN_REPOSITORY, useFactory: lazyPort((m) => m.HttpHomeScreenRepository) },
+    { provide: APP_CONFIG_REPOSITORY, useFactory: lazyPort((m) => m.HttpAppConfigRepository) },
+    { provide: DIGITAL_ID_REPOSITORY, useFactory: lazyPort((m) => m.HttpDigitalIdRepository) },
+    { provide: BALITA_REPOSITORY, useFactory: lazyPort((m) => m.HttpBalitaRepository) },
+    {
+      provide: PLATFORM_AUDIT_REPOSITORY,
+      useFactory: lazyPort((m) => m.HttpPlatformAuditRepository),
+    },
+    { provide: DASHBOARD_REPOSITORY, useFactory: lazyPort((m) => m.HttpDashboardRepository) },
+    { provide: WORK_REPOSITORY, useFactory: lazyPort((m) => m.HttpWorkRepository) },
+    { provide: REPORT_REPOSITORY, useFactory: lazyPort((m) => m.HttpReportRepository) },
+    { provide: SEARCH_REPOSITORY, useFactory: lazyPort((m) => m.HttpSearchRepository) },
+    { provide: GOVERNANCE_REPOSITORY, useFactory: lazyPort((m) => m.HttpGovernanceRepository) },
+    { provide: EVENT_REPOSITORY, useFactory: lazyPort((m) => m.HttpEventRepository) },
+    { provide: SAVED_VIEW_REPOSITORY, useFactory: lazyPort((m) => m.HttpSavedViewRepository) },
+    { provide: HOUSEHOLD_REPOSITORY, useFactory: lazyPort((m) => m.HttpHouseholdRepository) },
+    { provide: FAMILY_REPOSITORY, useFactory: lazyPort((m) => m.HttpFamilyRepository) },
+    { provide: CASE_REPOSITORY, useFactory: lazyPort((m) => m.HttpCaseRepository) },
+    { provide: BENEFICIARY_REPOSITORY, useFactory: lazyPort((m) => m.HttpBeneficiaryRepository) },
+    { provide: FIELD_VISIT_REPOSITORY, useFactory: lazyPort((m) => m.HttpFieldVisitRepository) },
+    { provide: ISSUANCE_REPOSITORY, useFactory: lazyPort((m) => m.HttpIssuanceRepository) },
+    {
+      provide: RESIDENT_IMPORT_REPOSITORY,
+      useFactory: lazyPort((m) => m.HttpResidentImportRepository),
+    },
+    {
+      provide: SECTOR_APPLICATION_REPOSITORY,
+      useFactory: lazyPort((m) => m.HttpSectorApplicationRepository),
+    },
     // Which of the above make no request, said once for the navigation and the routes (`DL-167`):
     // a module that cannot be served leaves the menu, and its address explains why.
     { provide: UNSERVED_PORTS, useValue: UNSERVED_HTTP_PORTS },
     // Sign-in (`DL-166`): which identity provider answers is decided by which file angular.json
     // swapped in — Firebase, or the development verifier for `local-api` — never by a runtime flag.
     { provide: SIGN_IN_METHOD, useFactory: identitySignInMethod },
-    { provide: SESSION_REFRESHER, useClass: HttpSessionRefresher },
+    { provide: SESSION_REFRESHER, useFactory: lazyPort((m) => m.HttpSessionRefresher) },
     // Live updates (`DL-222`): only the API can push a hint, so the mock set binds nothing and the
     // console there is simply not live.
-    { provide: CHANGE_FEED, useClass: HttpChangeFeed },
+    { provide: CHANGE_FEED, useFactory: lazyPort((m) => m.HttpChangeFeed) },
   ]);
 }

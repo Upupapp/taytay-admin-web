@@ -1,11 +1,7 @@
-import {
-  STAFF_ROLES,
-  canHoldSession,
-  type BarangayId,
-  type DataScope,
-  type ServerIdentity,
-  type StaffUserId,
-} from '@domain/index';
+import { STAFF_ROLES, type DataScope } from '@domain/access/permission';
+import type { ServerIdentity } from '@domain/access/staff-user';
+import { canHoldSession } from '@domain/governance/staff-profile';
+import type { BarangayId, StaffUserId } from '@domain/shared/ids';
 
 import type { BarangayIndex } from './resident.mapper';
 import { field, flag, id, list, oneOf, str } from './wire';

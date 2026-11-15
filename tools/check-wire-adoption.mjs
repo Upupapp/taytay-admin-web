@@ -45,11 +45,13 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { readAdapters } from './adapter-sources.mjs';
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const HTTP = join(ROOT, 'src', 'app', 'data', 'http');
-const SOURCE = join(HTTP, 'http-repositories.ts');
 
-const src = readFileSync(SOURCE, 'utf8');
+// Every adapter file (`DL-224`): the staff adapter lives apart since it is bound eagerly.
+const { source: src, locate } = readAdapters(ROOT);
 const spec = JSON.parse(readFileSync(join(HTTP, 'contract', 'openapi.json'), 'utf8'));
 const contract = readFileSync(join(HTTP, 'api.contract.ts'), 'utf8');
 const failures = [];
@@ -160,7 +162,7 @@ function callsIn(text) {
       }
     }
 
-    out.push({ verb: m[1], args: text.slice(open + 1, i), line: text.slice(0, m.index).split('\n').length });
+    out.push({ verb: m[1], args: text.slice(open + 1, i), where: locate(m.index) });
   }
 
   return out;
@@ -259,7 +261,7 @@ const mediaTypesOf = (operation) => Object.keys(operation?.requestBody?.content 
 
 for (const call of calls) {
   const [pathArgument, body] = topLevelArgs(call.args);
-  const where = `http-repositories.ts:${call.line}`;
+  const where = call.where;
   const helper = WRITE_HELPERS[call.verb];
 
   // A DELETE with no body sends nothing to map.

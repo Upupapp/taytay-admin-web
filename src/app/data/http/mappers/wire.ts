@@ -1,4 +1,4 @@
-import { asId, type Branded, type IsoDate, type IsoDateTime } from '@domain/index';
+import { asId, type Branded, type IsoDate, type IsoDateTime } from '@domain/shared/ids';
 
 /**
  * The primitives every per-resource mapper is built from.

@@ -38,6 +38,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { boundAdapter } from './adapter-sources.mjs';
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 /** The money writes. Each must be replayable, so each takes an intent. */
@@ -75,7 +77,8 @@ for (const method of MONEY_WRITES) {
 // The transport half. Unserved sends nothing, so it needs no key; served, every money write carries
 // the intent's key in its body, and nothing but the screen mints one.
 const providers = readFileSync(join(ROOT, 'src/app/data/data-access.providers.ts'), 'utf8');
-const releaseBinding = /provide:\s*RELEASE_REPOSITORY,\s*useClass:\s*(\w+)/.exec(providers)?.[1];
+// Either binding form (`DL-224`): `useClass`, or `lazyPort((m) => m.X)`.
+const releaseBinding = boundAdapter(providers, 'RELEASE_REPOSITORY');
 
 if (releaseBinding === undefined) {
   failures.push('could not find the RELEASE_REPOSITORY binding in data-access.providers.ts.');

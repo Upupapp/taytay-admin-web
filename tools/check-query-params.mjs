@@ -36,9 +36,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { readAdapters } from './adapter-sources.mjs';
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const HTTP = join(ROOT, 'src', 'app', 'data', 'http');
-const ADAPTERS = 'src/app/data/http/http-repositories.ts';
 
 const wireShaped = (key) => /^[a-z][a-z0-9_]*$/.test(key);
 
@@ -196,7 +197,8 @@ function pathOf(argument) {
   return bare !== null ? (lookup[bare[1]] ?? null) : null;
 }
 
-const adapters = readFileSync(join(ROOT, ADAPTERS), 'utf8');
+// Every adapter file (`DL-224`): the staff adapter lives apart since it is bound eagerly.
+const { source: adapters, locate } = readAdapters(ROOT);
 const calls = callArguments(adapters);
 const offenders = [];
 
@@ -208,8 +210,7 @@ if (calls.length !== rawReads) {
 }
 
 for (const call of calls) {
-  const line = adapters.slice(0, call.index).split('\n').length;
-  const where = `${ADAPTERS}:${line}`;
+  const where = locate(call.index);
   const path = pathOf(call.args[0] ?? '');
   const declared = path === null ? undefined : declaredQuery.get(normalise(path.replace(/\/$/, '')));
 

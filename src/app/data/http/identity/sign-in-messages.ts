@@ -1,4 +1,4 @@
-import { SignInError } from '@domain/index';
+import { SignInError } from '@domain/access/credentials';
 
 /**
  * What a sign-in refusal says, written once for both identity providers and the staff adapter.

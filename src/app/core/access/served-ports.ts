@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Router, type CanActivateFn, type UrlTree } from '@angular/router';
 
-import { DATA_PORTS, UNSERVED_PORTS, type DataPort } from '@domain/index';
+import { DATA_PORTS, UNSERVED_PORTS, type DataPort } from '@domain/ports/data-ports';
 
 /** The one page that names every module the bound API cannot serve (`DL-167`). */
 export const UNSERVED_ROUTE = '/unavailable';
