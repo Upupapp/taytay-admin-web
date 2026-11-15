@@ -200,6 +200,35 @@ the strings need the MSWDO head, not an engineer.
 API. Adversarial refusals are server-side. **No CI** — there is no Actions credit — and **no role
 sign-offs**, which need six members of staff on office hardware with the trainer silent.
 
+**Update 2026-11-15: four of six journeys run against the Node API; the line is still NO-GO.**
+The two Laravel-era journeys left with the Laravel tree. Backend `b8d46c2` rebuilds the TAB 17 list
+in `tests/journeys/`. Each journey drives the HTTP API in order with the real roles, then asks what
+the resident can see. They run in `npm test`, and on PostgreSQL 16 in `npm run test:pg`, where all
+of them passed.
+
+| # | Journey | Status |
+| --- | --- | --- |
+| 1 | Walk-in to payout, through seven actors, the resident's view checked at 7 points | green |
+| 2 | Resident-initiated request | **skipped**: no resident endpoint files one (the `online` channel is withheld, DL-61) |
+| 3 | Continuing case (ADR 0044 written, not ratified) | green |
+| 4 | Duplicate identity, found and resolved without a merge | green |
+| 5 | Publication through Balita | green; its comment and moderation half **skipped**, as no route exists |
+| 6 | Event with a waitlist, attendance and a restricted export | green |
+
+**Two defects found and fixed:**
+- After two records were found to be one person, the intake check missed the requests filed under
+  the dropped record.
+- On a host set to Manila time, every date read back from PostgreSQL moved a day early.
+
+**Four findings are left for the owner**, each asserted in place with a `// FINDING:` comment:
+- a resident is shown nothing of their own request or case;
+- the MSWDO head may both endorse and approve the same request;
+- an app account linked to a superseded record keeps reading it;
+- Balita gives every reader, guests included, the author's staff account id.
+
+**Still open on this line:** journeys run in no CI (no Actions credit) and not against the deployed
+API; journey 2 has no endpoint; no adversarial suite beyond the journeys' refusals; no role sign-offs.
+
 ### 18 — Pipelines in place; backup restored with observed figures; rollback rehearsed and timed
 **NO-GO. Release-gate blocker 3.** ~~No pipeline, no backup, no restore, no rollback rehearsal.~~
 *"A backup that has never been restored is a hypothesis."*
