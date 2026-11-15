@@ -546,7 +546,7 @@ describe('the workspace offers only what the office record accepts', () => {
     const fixture = await openWorkspace(MERCADO, 'mswdo-head', 'staff-head');
     const element = html(fixture);
     const end = buttonNamed(element, 'End link');
-    expect(end?.getAttribute('aria-label')).toContain('End the link to');
+    expect(end?.getAttribute('aria-label')).toContain('End link to');
     end?.click();
     await fixture.whenStable();
     expect(element.querySelector('.modal')?.textContent).toContain('kept in the case’s history');

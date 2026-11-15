@@ -211,10 +211,9 @@
 
         <!-- Unclaimed is recorded here with a reason, and never a guess at why they did not come. -->
         @if (permittedMoves().length > 0) {
-          <section
-            class="card card--padded release__panel"
-            aria-labelledby="release-status-heading"
-          >
+          <!-- The transition is its own labelled section; a second one around it would repeat the
+               landmark under the same name. -->
+          <div class="card card--padded release__panel">
             <app-status-transition
               idPrefix="release-status"
               [heading]="copy.moveHeading"
@@ -225,7 +224,7 @@
               [busy]="saving()"
               (confirmed)="onTransition($event)"
             />
-          </section>
+          </div>
         }
       </div>
     }

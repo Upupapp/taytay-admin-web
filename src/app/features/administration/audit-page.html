@@ -53,10 +53,13 @@
       }
 
       @if (rows().length === 0) {
-        <div class="card card--padded audit__empty">
-          <h2 class="audit__empty-heading">{{ copy.emptyHeading }}</h2>
-          <p class="audit__empty-message">{{ copy.emptyMessage }}</p>
-        </div>
+        <app-empty-state
+          variant="no-results"
+          [heading]="copy.emptyHeading"
+          [message]="copy.emptyMessage"
+          [actionLabel]="hasFilters() ? copy.clear : null"
+          (actionSelected)="clearFilters()"
+        />
       } @else {
         <ul class="entries">
           @for (row of rows(); track row.id) {

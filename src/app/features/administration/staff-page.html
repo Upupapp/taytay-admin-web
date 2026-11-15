@@ -28,10 +28,11 @@
   <app-async-content [state]="state()" [content]="staffContent" [skeletonLines]="6">
     <ng-template #staffContent>
       @if (!hasAny()) {
-        <div class="card card--padded staff__empty">
-          <h2 class="staff__empty-heading">{{ copy.emptyHeading }}</h2>
-          <p class="staff__empty-message">{{ copy.emptyMessage }}</p>
-        </div>
+        <app-empty-state
+          variant="no-results"
+          [heading]="copy.emptyHeading"
+          [message]="copy.emptyMessage"
+        />
       } @else {
         <ul class="accounts">
           @for (account of accounts(); track account.staffId) {

@@ -7,11 +7,10 @@
 
 <ng-template #body let-request>
   @if (!request) {
-    <div class="card card--padded stack assessment__missing">
-      <h1>{{ copy.notFoundHeading }}</h1>
-      <p>{{ copy.notFoundMessage }}</p>
+    <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+    <p class="assessment__back">
       <a class="btn" routerLink="/assistance-requests">{{ copy.back }}</a>
-    </div>
+    </p>
   } @else {
     <app-page-header
       [title]="request.referenceNumber || copy.subtitle"

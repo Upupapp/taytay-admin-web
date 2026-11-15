@@ -43,6 +43,7 @@ import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
+import type { EmptyStateVariant } from '@shared/ui/empty-state/empty-state';
 import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
@@ -270,6 +271,10 @@ export class IssuanceQueuePage {
     }
     return this.filter().status === null ? this.copy.emptyOpen : this.copy.emptyOther;
   });
+  /** A reference or a status narrows the queue: nothing shown is "no results", not "empty". */
+  protected readonly emptyVariant = computed<EmptyStateVariant>(() =>
+    this.reference() !== null || this.filter().status !== null ? 'no-results' : 'empty',
+  );
 
   protected readonly rowKey = (request: IssuanceRequestSummary): string => request.id;
 

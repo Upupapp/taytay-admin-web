@@ -21,6 +21,7 @@ import { debouncedTerm } from '@shared/state/debounced';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { EmptyState } from '@shared/ui/empty-state/empty-state';
 import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
@@ -44,7 +45,7 @@ export const STAFF_TOPICS: readonly LiveTopic[] = ['users'];
 @Component({
   selector: 'app-staff-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, Icon, InitialsPipe, PageHeader, RouterLink],
+  imports: [AsyncContent, DatePipe, EmptyState, Icon, InitialsPipe, PageHeader, RouterLink],
   templateUrl: './staff-page.html',
   styleUrl: './staff-page.scss',
 })

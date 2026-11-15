@@ -31,6 +31,7 @@ import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
+import type { EmptyStateVariant } from '@shared/ui/empty-state/empty-state';
 import { Icon } from '@shared/ui/icon/icon';
 import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Modal } from '@shared/ui/modal/modal';
@@ -172,6 +173,10 @@ export class VerificationQueuePage {
     this.filter().status === DEFAULT_VERIFICATION_FILTER.status
       ? this.copy.emptyPending
       : this.copy.emptyOther,
+  );
+  /** A status other than the default narrows the queue: nothing shown is "no results", not "empty". */
+  protected readonly emptyVariant = computed<EmptyStateVariant>(() =>
+    this.filter().status === DEFAULT_VERIFICATION_FILTER.status ? 'empty' : 'no-results',
   );
 
   protected readonly rowKey = (request: VerificationRequest): string => request.id;

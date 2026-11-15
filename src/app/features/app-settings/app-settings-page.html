@@ -200,7 +200,7 @@
             }
 
             <div class="subpanel subpanel--soft" id="settings-review-preview">
-              <h3 class="section-title">{{ copy.reviewPreviewLead }}</h3>
+              <h2 class="section-title">{{ copy.reviewPreviewLead }}</h2>
               <p>{{ reviewPreview() }}</p>
             </div>
           }
@@ -221,9 +221,9 @@
                 class="settings__legal"
                 [attr.aria-labelledby]="'settings-' + kind + '-heading'"
               >
-                <h3 class="settings__legal-heading" [id]="'settings-' + kind + '-heading'">
+                <h2 class="settings__legal-heading" [id]="'settings-' + kind + '-heading'">
                   {{ words.heading }}
-                </h3>
+                </h2>
                 @if (published === undefined) {
                   <p class="note-box" role="note">{{ copy.textNotSent }}</p>
                 } @else {
@@ -289,9 +289,9 @@
                           class="subpanel settings__requirements"
                           aria-labelledby="settings-requirements-heading"
                         >
-                          <h4 class="section-title" id="settings-requirements-heading">
+                          <h3 class="section-title" id="settings-requirements-heading">
                             {{ copy.requirementsHeading }}
-                          </h4>
+                          </h3>
                           <p class="settings__note">{{ copy.requirementsLead }}</p>
                           <ul class="soft-list">
                             @for (requirement of requirements; track requirement.topic) {

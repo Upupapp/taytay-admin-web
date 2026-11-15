@@ -7,11 +7,10 @@
 
 <ng-template #body let-workspace>
   @if (!workspace) {
-    <div class="card card--padded workspace__missing">
-      <h1>{{ copy.notFoundHeading }}</h1>
-      <p>{{ copy.notFoundMessage }}</p>
+    <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+    <p class="workspace__back">
       <a class="btn" routerLink="/cases">{{ copy.back }}</a>
-    </div>
+    </p>
   } @else {
     <app-page-header
       [title]="workspace.record.referenceNumber"

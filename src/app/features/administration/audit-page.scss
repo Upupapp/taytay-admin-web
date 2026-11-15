@@ -197,24 +197,6 @@
   color: var(--ink);
 }
 
-.audit__empty {
-  text-align: center;
-}
-
-.audit__empty-heading {
-  margin: 0;
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--fs-heading);
-  font-weight: var(--fw-medium);
-}
-
-.audit__empty-message {
-  margin: var(--space-1) 0 0;
-  color: var(--muted);
-  font-size: var(--fs-sm);
-}
-
 .audit__more {
   display: flex;
   flex-wrap: wrap;

@@ -164,7 +164,7 @@ export const CASES_COPY = {
       `Closing is not offered while ${count === 1 ? 'a task is' : `${count} tasks are`} open. Record what happened to each first — mark it done with its outcome, or cancel it with the reason it is no longer needed — because a task left open on a closed case would be owed by nobody.`,
     closeBlockedHeading: 'Open tasks to settle before closing',
     endLink: 'End link',
-    endLinkLabel: (reference: string) => `End the link to ${reference}`,
+    endLinkLabel: (reference: string) => `End link to ${reference}`,
   },
 
   noteForm: {

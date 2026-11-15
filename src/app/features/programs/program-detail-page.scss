@@ -1,8 +1,8 @@
 /* Layout only. Every statement on this page is read from the programme record.
    ResidentRecord mock-up: the record in a wide column, who runs it and its figures beside. */
 
-.program__missing {
-  align-items: flex-start;
+.program__back {
+  margin-block-start: var(--space-4);
 }
 
 .program {

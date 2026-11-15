@@ -6,7 +6,7 @@
   <p class="callout roles__notice">{{ copy.notice }}</p>
 
   <section class="card card--padded separation" aria-labelledby="separation-heading">
-    <h2 class="separation__heading" id="separation-heading">{{ copy.separationHeading }}</h2>
+    <h2 class="section-title" id="separation-heading">{{ copy.separationHeading }}</h2>
     <p class="separation__body">{{ copy.separationBody }}</p>
     @if (separationBreaches().length > 0) {
       <p class="separation__breach" role="alert">
@@ -15,9 +15,16 @@
     }
   </section>
 
-  <div class="card card--panel card--padded matrix__scroll">
+  <!-- The matrix is wider than the page: the box that scrolls takes focus, so a keyboard can
+       scroll it (WCAG 2.1.1). -->
+  <div
+    class="card card--panel card--padded matrix__scroll"
+    role="region"
+    tabindex="0"
+    aria-labelledby="matrix-caption"
+  >
     <table class="matrix">
-      <caption class="matrix__caption">
+      <caption id="matrix-caption" class="matrix__caption">
         {{
           copy.title
         }}:

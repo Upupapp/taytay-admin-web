@@ -109,8 +109,10 @@
 
 .settings__legal-heading {
   color: var(--ink);
+  font-family: var(--font-body);
   font-size: var(--fs-control);
   font-weight: var(--fw-bold);
+  letter-spacing: normal;
 }
 
 .settings__legal-current summary {

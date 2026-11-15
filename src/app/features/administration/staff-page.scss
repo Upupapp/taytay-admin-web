@@ -86,24 +86,6 @@
   align-self: stretch;
 }
 
-.staff__empty {
-  text-align: center;
-}
-
-.staff__empty-heading {
-  margin: 0;
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--fs-heading);
-  font-weight: var(--fw-medium);
-}
-
-.staff__empty-message {
-  margin: var(--space-1) 0 0;
-  color: var(--muted);
-  font-size: var(--fs-sm);
-}
-
 /* Said plainly: no invite or reset flow exists here (DL-32). */
 .not-built {
   flex-direction: column;

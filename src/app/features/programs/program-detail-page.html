@@ -2,11 +2,10 @@
 
 <ng-template #body let-view>
   @if (!view) {
-    <div class="card card--padded stack program__missing">
-      <h1>{{ copy.notFoundHeading }}</h1>
-      <p>{{ copy.notFoundMessage }}</p>
+    <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+    <p class="program__back">
       <a class="btn" routerLink="/programs">{{ copy.back }}</a>
-    </div>
+    </p>
   } @else {
     <app-page-header [title]="view.program.name" [subtitle]="copy.subtitle" />
 

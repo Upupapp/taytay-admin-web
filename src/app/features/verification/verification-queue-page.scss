@@ -7,11 +7,7 @@
 }
 
 .queue__toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
   justify-content: space-between;
-  gap: var(--space-3);
 }
 
 .queue__filter {
@@ -46,11 +42,6 @@
 }
 
 .queue__more {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
   margin-block-start: var(--space-3);
 }
 

@@ -34,6 +34,7 @@ import { debouncedTerm } from '@shared/state/debounced';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { EmptyState } from '@shared/ui/empty-state/empty-state';
 import { Icon } from '@shared/ui/icon/icon';
 import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -64,7 +65,7 @@ export const AUDIT_TOPICS: readonly LiveTopic[] = ['audit'];
 @Component({
   selector: 'app-audit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, Icon, ListChangedNotice, PageHeader, RouterLink],
+  imports: [AsyncContent, DatePipe, EmptyState, Icon, ListChangedNotice, PageHeader, RouterLink],
   templateUrl: './audit-page.html',
   styleUrl: './audit-page.scss',
 })

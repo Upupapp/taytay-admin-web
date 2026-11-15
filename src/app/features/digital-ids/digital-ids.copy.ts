@@ -67,7 +67,7 @@ export const DIGITAL_IDS_COPY = {
     noName: 'No name given',
     noEmail: 'No email given',
     open: 'Open the card',
-    openLabel: (name: string) => `Open the digital ID of ${name}`,
+    openLabel: (name: string) => `Open the card of ${name}`,
     read: (accounts: number, verified: number) =>
       `${verified} verified ${verified === 1 ? 'resident' : 'residents'} among the ${accounts} ${accounts === 1 ? 'account' : 'accounts'} read.`,
     moreAvailable: 'More accounts are available.',

@@ -3,6 +3,10 @@
    the wide column (`.split`), the applicant and the decision beside it. Shared
    looks (notes, facts, rows, withheld words) come from the global patterns. */
 
+.assessment__back {
+  margin-block-start: var(--space-4);
+}
+
 .assessment__subheading {
   margin-block-start: var(--space-2);
   color: var(--ink);

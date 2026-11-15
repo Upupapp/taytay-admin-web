@@ -4,7 +4,7 @@
 
 <div class="governance">
   <section class="card card--padded section" aria-labelledby="classification-heading">
-    <h2 class="section__heading" id="classification-heading">
+    <h2 class="section-title section-title--display" id="classification-heading">
       {{ copy.classificationHeading }}
     </h2>
     <p class="section__notice">{{ copy.classificationNotice }}</p>
@@ -60,7 +60,9 @@
   </section>
 
   <section class="card card--padded section" aria-labelledby="retention-heading">
-    <h2 class="section__heading" id="retention-heading">{{ copy.retentionHeading }}</h2>
+    <h2 class="section-title section-title--display" id="retention-heading">
+      {{ copy.retentionHeading }}
+    </h2>
     <!-- Empty on purpose. An invented retention period is the one invented
          policy an office cannot undo once it has acted on it. -->
     <p class="section__notice">{{ retentionNotice }}</p>
@@ -82,7 +84,9 @@
   </section>
 
   <section class="card card--padded section" aria-labelledby="correction-heading">
-    <h2 class="section__heading" id="correction-heading">{{ copy.correctionHeading }}</h2>
+    <h2 class="section-title section-title--display" id="correction-heading">
+      {{ copy.correctionHeading }}
+    </h2>
     <p class="section__notice">{{ copy.correctionNotice }}</p>
 
     <app-async-content

@@ -3,7 +3,7 @@
 <section class="card card--panel card--padded queue" aria-labelledby="verification-queue-heading">
   <h2 id="verification-queue-heading" class="visually-hidden">{{ copy.caption }}</h2>
 
-  <div class="queue__toolbar">
+  <div class="toolbar queue__toolbar">
     <div class="field queue__filter">
       <label class="field__label" for="verification-status">{{ copy.filterLabel }}</label>
       <select
@@ -44,12 +44,13 @@
         [rows]="rows()"
         [rowKey]="rowKey"
         [caption]="copy.caption"
+        [emptyVariant]="emptyVariant()"
         [emptyHeading]="copy.emptyHeading"
         [emptyMessage]="emptyMessage()"
       />
 
       @if (rows().length > 0) {
-        <div class="queue__more">
+        <div class="list-more queue__more">
           <p class="status-line" role="status">
             {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
           </p>

@@ -33,6 +33,7 @@
         [columns]="columns()"
         [rows]="rows()"
         [rowKey]="rowKey"
+        [emptyVariant]="status() === 'pending' ? 'empty' : 'no-results'"
         [emptyHeading]="status() === 'pending' ? copy.emptyHeading : copy.emptyDecidedHeading"
         [emptyMessage]="status() === 'pending' ? copy.emptyMessage : copy.emptyDecidedMessage"
       />

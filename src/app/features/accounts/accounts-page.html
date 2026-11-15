@@ -54,12 +54,13 @@
         [rows]="rows()"
         [rowKey]="rowKey"
         [caption]="copy.caption"
+        [emptyVariant]="narrowedTo() ? 'no-results' : 'empty'"
         [emptyHeading]="copy.emptyHeading"
         [emptyMessage]="copy.emptyMessage"
       />
 
       @if (rows().length > 0) {
-        <div class="accounts__more">
+        <div class="list-more accounts__more">
           <p class="status-line" role="status">
             {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
           </p>

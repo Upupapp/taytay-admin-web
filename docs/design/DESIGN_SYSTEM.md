@@ -914,3 +914,7 @@ computed styles instead.
   totals, per-week series, office category); they are listed in the redesign's notes and are not
   drawn until the API sends them.
 - `.bento` has no user yet; the dashboard uses its own grids.
+- A whole-page notice without a page header (`errors/forbidden-page`, `errors/not-found-page`) has
+  no `h1`: `EmptyState` draws its heading as an `h3` (axe `page-has-heading-one`, best practice).
+  Closing it needs a choice: a heading-level input on `EmptyState`, or `app-page-header` above the
+  notice as `notice-page--under-header` does.

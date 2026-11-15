@@ -177,7 +177,7 @@
             </label>
           </div>
 
-          <h3 class="program-form__subheading">{{ copy.sourcesHeading }}</h3>
+          <h2 class="program-form__subheading">{{ copy.sourcesHeading }}</h2>
           <p class="field__hint">{{ copy.sourcesHint }}</p>
           @for (source of current.responsibility.sources; track $index; let index = $index) {
             <fieldset class="program-form__entry">
@@ -226,7 +226,7 @@
             {{ copy.addSource }}
           </button>
 
-          <h3 class="program-form__subheading">{{ copy.preview }}</h3>
+          <h2 class="program-form__subheading">{{ copy.preview }}</h2>
           <app-responsibility-notice [responsibility]="draft.responsibility" />
         </fieldset>
 

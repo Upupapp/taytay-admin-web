@@ -41,7 +41,7 @@
         />
 
         @if (rows().length > 0) {
-          <div class="inbox__more">
+          <div class="list-more inbox__more">
             <p class="status-line" role="status">
               {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
             </p>

@@ -9,8 +9,10 @@
 .program-form__subheading {
   margin-block-start: var(--space-2);
   color: var(--ink);
+  font-family: var(--font-body);
   font-size: var(--fs-label);
   font-weight: var(--fw-bold);
+  letter-spacing: normal;
 }
 
 .program-form__grid {

@@ -24,8 +24,10 @@ export const LAYOUT_COPY = {
   breadcrumbLandmark: 'Breadcrumb',
   breadcrumbHome: 'Dashboard',
 
-  // Global search. The trigger navigates; the search screen owns the rest.
-  searchLabel: 'Search',
+  // Global search. The trigger navigates; the search screen owns the rest. The button's name
+  // holds every word it shows, the shortcut included, so a speech user can say what they see
+  // (WCAG 2.5.3).
+  searchLabel: 'Search residents, requests, programmes, Ctrl K',
   searchPlaceholder: 'Search residents, requests, programmes…',
   searchShortcutHint: 'Ctrl K',
 

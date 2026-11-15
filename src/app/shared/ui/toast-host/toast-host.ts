@@ -19,7 +19,7 @@ import { SEVERITY_ICONS } from '../icon/severity-icons';
   template: `
     <div class="toasts" role="region" aria-label="Notifications">
       @for (toast of notifications.toasts(); track toast.id) {
-        <article
+        <div
           class="toast"
           [class]="'toast--' + toast.severity"
           [attr.role]="toast.severity === 'error' ? 'alert' : 'status'"
@@ -42,7 +42,7 @@ import { SEVERITY_ICONS } from '../icon/severity-icons';
             <app-icon name="close" [size]="14" [stroke]="2.2" />
             <span class="visually-hidden">Dismiss notification</span>
           </button>
-        </article>
+        </div>
       }
     </div>
   `,
