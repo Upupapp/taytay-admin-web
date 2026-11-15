@@ -137,6 +137,8 @@ export const EVENTS_COPY = {
     correctTitle: 'Correct a published event',
     correctBack: 'Back to the event',
     correctLoading: 'Loading the event…',
+    correctReadFailed: 'The event could not be read, so there is nothing to correct here yet.',
+    tryAgain: 'Try again',
     correctUnavailable:
       'This event cannot be corrected: only a published event that has not started can be. A ' +
       'cancelled event that is back on is a new event.',

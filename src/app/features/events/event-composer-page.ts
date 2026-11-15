@@ -38,6 +38,8 @@ import {
   type RegistrationEligibility,
 } from '@domain/index';
 import { ImageFileField } from '@shared/media/image-file-field';
+import { LOADING, ready, toViewState, type ViewState } from '@shared/state/view-state';
+import { EmptyState } from '@shared/ui/empty-state/empty-state';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { EVENTS_COPY } from './events.copy';
@@ -75,7 +77,7 @@ import { EVENTS_COPY } from './events.copy';
 @Component({
   selector: 'app-event-composer-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ImageFileField, PageHeader, RouterLink],
+  imports: [EmptyState, ImageFileField, PageHeader, RouterLink],
   templateUrl: './event-composer-page.html',
   styleUrl: './event-composer-page.scss',
 })
@@ -126,14 +128,31 @@ export class EventComposerPage {
   /* ── Correcting (`DL-195`) ──────────────────────────────────────────────── */
 
   protected readonly correcting = computed(() => this.id() !== undefined);
-  /** The event being corrected, as last read: `undefined` while loading, `null` if not found. */
-  protected readonly original = toSignal(
+  /**
+   * The event being corrected, held as a view state: a read that fails is said, with Try again,
+   * rather than thrown out of the template. A form, so it is read once and never re-read
+   * (`DL-222`): a re-read would overwrite the correction being written.
+   */
+  protected readonly originalState = toSignal(
     toObservable(this.id).pipe(
       switchMap((id) =>
-        id === undefined ? of(null) : this.repository.getById(asId<LguEventId>(id)),
+        id === undefined
+          ? of(ready<LguEvent | null>(null))
+          : toViewState(this.repository.getById(asId<LguEventId>(id))),
       ),
     ),
+    { initialValue: LOADING as ViewState<LguEvent | null> },
   );
+  /** The event as last read: `undefined` while loading or failed, `null` if not found. */
+  protected readonly original = computed<LguEvent | null | undefined>(() => {
+    const state = this.originalState();
+    return state.kind === 'ready' ? state.value : undefined;
+  });
+  /** The failed read, when it failed; its `retry` asks the same question again. */
+  protected readonly originalFailure = computed(() => {
+    const state = this.originalState();
+    return state.kind === 'error' ? state : null;
+  });
   /** The cover the event already has, kept unless a new file is chosen. */
   private readonly storedCover = signal<EventCover | null>(null);
   protected readonly reason = signal('');
@@ -376,6 +395,11 @@ export class EventComposerPage {
 
   protected onTellRegistrants(event: Event): void {
     this.tellRegistrants.set((event.target as HTMLInputElement).checked);
+  }
+
+  /** Asks for the event again after a failed read. */
+  protected retryOriginal(): void {
+    this.originalFailure()?.retry?.();
   }
 
   protected submit(): Promise<void> {

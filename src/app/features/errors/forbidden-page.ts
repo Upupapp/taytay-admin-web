@@ -13,6 +13,7 @@ import { ERRORS_COPY } from './errors.copy';
   template: `
     <div class="card card--panel card--padded notice-page">
       <app-empty-state
+        [headingLevel]="1"
         variant="forbidden"
         [heading]="copy.forbiddenHeading"
         [message]="copy.forbiddenBody(session.displayName())"

@@ -308,7 +308,7 @@ Use the class; do not re-type the mock-up's inline styles.
 | Tabs              | `ul.tabs` of `.tab` (+ `.tab--active` or `aria-current` / `aria-selected`), `.tab__count`, `.step-number` (numbered steps). `.tabs--fill`: the tabs share the box's width (a short choice in a narrow column). Hover never outranks a chosen tab. A radio group drawn as tabs (reference: the relationship graph's view): a `.choice-list` fieldset whose legend names the group, a `.tabs` of `<label class="tab">`, each around a `.visually-hidden` radio; the chosen tab is read from its radio (`.tab:has(> input:checked)`, no class), filled and underlined, so it is marked without colour; the tab draws the focused radio's ring (`.tab:has(> input:focus-visible)`). In forced colours a chosen tab takes `Highlight`. |
 | Figures           | `.kpi` / `a.kpi` (+ `__label`, `__value`, `__value--long`, `__hint`, `__arrow`): a link KPI fills primary on hover and focus. `.tally-row` + `.tally` (+ `--primary                                                                                                                                                                                                                                                                       | gold                     | red                                                                                                                                                      | soft`, `--figure-first`): a record's totals. |
 | Grids             | `.bento` + `.span-3` … `.span-9` (12 columns; halves ≤1100px, full ≤700px; no page uses it yet), `.record-grid` (+ `__wide`): auto-fit two columns of panels, `.split` + `__main` / `__side` (3fr/2fr work page with a context column, one column ≤1100px).                                                                                                                                                                               |
-| Records           | `dl.facts` (+ `.facts__row`, `.facts__row--wide`, `.facts--pairs`), `.soft-list` of `.soft-row` (+ `--stacked`, `__meta`), `.subpanel` (+ `--soft`, `--deep`; a preview of what a change will look like is a `.subpanel.subpanel--soft` headed by a `.section-title`), `.record-link`, `.withheld` (words withheld from this reader).                                                                                                                                                                                                             |
+| Records           | `dl.facts` (+ `.facts__row` or `.facts__item`, `.facts__row--wide`, `.facts--pairs`), `.soft-list` of `.soft-row` (+ `--stacked`, `__meta`), `.subpanel` (+ `--soft`, `--deep`; a preview of what a change will look like is a `.subpanel.subpanel--soft` headed by a `.section-title`), `.record-link`, `.withheld` (words withheld from this reader).                                                                                                                                                                                                             |
 | Icons and people  | `.icon-tile` (+ `--sm                                                                                                                                                                                                                                                                                                                                                                                                                     | lg`, `--round`, `--green | gold                                                                                                                                                     | red                                          | navy                                                                                              | sky | soft | blue-soft | red-soft`), `.avatar`/`.avatar--lg`(initials from`InitialsPipe`, always `aria-hidden`). |
 | Notices           | `.callout` (+ `--warning                                                                                                                                                                                                                                                                                                                                                                                                                  | danger                   | success`, `__title`, an inner `ul`), `.effects`(+`__lead`): "what this does", always **before** its button; `.note-box` (a quiet note with a left rule: nothing here, not built, a count that decides nothing; never a preview). |
 | Forms             | `.form-panel`, `.form-section` (+ `__legend`, `__note`): a hairline fieldset with its legend in the edge; `.choice-list` + `.choice` (+ `__text`, `__hint`): radio/checkbox tiles; `.form-footer` (Cancel + submit, end-aligned 48px pills); `.form-problem:empty` hides an empty alert line (never on a live region); `.field-row`: short `.field`s side by side (a range's two ends), each up to 240px, wrapping when narrow; each field's label, input, hint and error sit on four shared tracks (subgrid), so the inputs stay level whatever a label or hint wraps to and an error under one leaves the other in place. `.field input[type='file']` is styled globally. |
@@ -407,7 +407,8 @@ Nothing to show. `empty` (nothing exists yet: blue inbox tile, invites creating)
 (filters hid everything: the search illustration, invites clearing), `error` (the offline
 illustration while `NetworkStatus` says offline, otherwise a red tile), `forbidden` (gold lock).
 Never collapse `empty` and `no-results`.
-Inputs: `heading` (required), `variant`, `message`, `actionLabel`. Output: `actionSelected`.
+Inputs: `heading` (required), `variant`, `message`, `actionLabel`, `headingLevel` (3; a
+whole-page notice with no page header passes 1). Output: `actionSelected`.
 
 ```angular-html
 <app-empty-state
@@ -615,6 +616,13 @@ plain `.record-grid` form.
 ```
 
 A record whose port is unserved shows `<app-not-connected>` where the panel would be, never mock data.
+
+**A fact's wrapper has two names in use.** Each `dt`/`dd` pair in a `dl.facts` sits in a `div`: the
+residents, households, families, import and sector-application pages call it `.facts__row`; the
+events, referrals, releases (record and payout session) and visits pages call it `.facts__item`
+(`releases.spec.ts` reads that name). Neither class is styled: `.facts` lays out its children, and
+only `.facts__row--wide` (a fact across the whole row) carries a rule. A new page uses
+`.facts__row`.
 
 ### Form
 
@@ -914,7 +922,7 @@ computed styles instead.
   totals, per-week series, office category); they are listed in the redesign's notes and are not
   drawn until the API sends them.
 - `.bento` has no user yet; the dashboard uses its own grids.
-- A whole-page notice without a page header (`errors/forbidden-page`, `errors/not-found-page`) has
-  no `h1`: `EmptyState` draws its heading as an `h3` (axe `page-has-heading-one`, best practice).
-  Closing it needs a choice: a heading-level input on `EmptyState`, or `app-page-header` above the
-  notice as `notice-page--under-header` does.
+- Closed (November 2026): a whole-page notice without a page header (`errors/forbidden-page`,
+  `errors/not-found-page`) had no `h1` (axe `page-has-heading-one`). `EmptyState` now takes
+  `[headingLevel]` (1, 2 or 3; default 3, looking the same at every level), and those two notices
+  pass 1, because the notice is the page. A notice under a page header keeps the default.

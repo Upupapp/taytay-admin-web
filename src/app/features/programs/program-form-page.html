@@ -13,7 +13,15 @@
     <p class="card card--padded" role="status">{{ copy.loadingRecord }}</p>
   }
   @case ('error') {
-    <p class="callout callout--danger" role="alert">{{ copy.recordFailed }}</p>
+    @if (recordFailure(); as failure) {
+      <app-empty-state
+        variant="error"
+        [heading]="copy.recordFailed"
+        [message]="failure.message"
+        [actionLabel]="failure.retry ? copy.tryAgain : null"
+        (actionSelected)="retryRecord()"
+      />
+    }
   }
   @default {
     @if (editing() && record() === null) {

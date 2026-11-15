@@ -202,6 +202,7 @@ export const PROGRAMS_COPY = {
       'The whole record, as recorded. Saving keeps a new version with your reason; the old one is not lost.',
     loadingRecord: 'Reading the programme…',
     recordFailed: 'The programme could not be read, so there is nothing to edit here yet.',
+    tryAgain: 'Try again',
     recordMissing:
       'That programme is not in the catalog, or is not one your account can read. Nothing can be edited.',
     saving: 'Recording…',

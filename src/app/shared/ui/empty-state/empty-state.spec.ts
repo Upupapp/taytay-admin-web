@@ -18,6 +18,17 @@ describe('EmptyState', () => {
     expect(element.querySelector('.empty__heading')?.textContent).toContain('No residents yet');
   });
 
+  it('heads a section with an h3 unless told it is the whole page', async () => {
+    const section = (await render()).nativeElement as HTMLElement;
+    expect(section.querySelector('h3.empty__heading')?.textContent).toContain('No residents yet');
+    expect(section.querySelector('h1')).toBeNull();
+
+    // A whole-page notice with no page header is the page: its heading is the h1.
+    const page = (await render({ headingLevel: 1 })).nativeElement as HTMLElement;
+    expect(page.querySelector('h1.empty__heading')?.textContent).toContain('No residents yet');
+    expect(page.querySelector('h3')).toBeNull();
+  });
+
   it('omits the message and action when not supplied', async () => {
     const element = (await render()).nativeElement as HTMLElement;
     expect(element.querySelector('.empty__message')).toBeNull();

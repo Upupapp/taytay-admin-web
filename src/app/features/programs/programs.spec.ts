@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, of, throwError, type Observable } from 'rxjs';
+import { defer, firstValueFrom, of, throwError, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
@@ -284,6 +284,41 @@ describe('editing a programme', () => {
     );
     expect(options).toContain('The municipality refers into this');
     expect(options).not.toContain('The municipality runs and funds this');
+  });
+  it('says so when the programme cannot be read, and reads it again on Try again', async () => {
+    await configure('mswdo-head');
+    const repository = repo();
+    const real = repository.getById.bind(repository);
+    let reads = 0;
+    // Counted when the read is made, as an HTTP request is, not when it is asked for.
+    vi.spyOn(repository, 'getById').mockImplementation((...args) =>
+      defer(() => {
+        reads += 1;
+        return reads === 1
+          ? throwError(() => new Error('The server did not answer.'))
+          : real(...args);
+      }),
+    );
+    const fixture = TestBed.createComponent(ProgramFormPage);
+    fixture.componentRef.setInput('id', AICS_MEDICAL);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const element = html(fixture);
+    expect(element.textContent).toContain('The programme could not be read');
+    expect(element.textContent).toContain('The server did not answer.');
+    expect(element.querySelector('form')).toBeNull();
+
+    const again = [...element.querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Try again',
+    );
+    expect(again).toBeDefined();
+    again?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(reads).toBe(2);
+    expect(element.textContent).not.toContain('The programme could not be read');
+    expect(element.querySelector('form')).not.toBeNull();
   });
 });
 

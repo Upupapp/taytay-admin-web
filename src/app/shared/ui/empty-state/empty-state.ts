@@ -49,7 +49,17 @@ const OFFLINE_ILLUSTRATION = 'illustrations/empty-offline.svg';
           <app-icon [name]="shown.icon" [size]="26" />
         </span>
       }
-      <h3 class="empty__heading">{{ heading() }}</h3>
+      @switch (headingLevel()) {
+        @case (1) {
+          <h1 class="empty__heading">{{ heading() }}</h1>
+        }
+        @case (2) {
+          <h2 class="empty__heading">{{ heading() }}</h2>
+        }
+        @default {
+          <h3 class="empty__heading">{{ heading() }}</h3>
+        }
+      }
       @if (message(); as text) {
         <p class="empty__message">{{ text }}</p>
       }
@@ -67,6 +77,12 @@ export class EmptyState {
 
   readonly variant = input<EmptyStateVariant>('empty');
   readonly heading = input.required<string>();
+  /**
+   * The heading's level. A section's empty state sits under the page's own headings (3); a
+   * whole-page notice with no page header is the page, so its heading is the `h1` (1). Every
+   * level looks the same.
+   */
+  readonly headingLevel = input<1 | 2 | 3>(3);
   readonly message = input<string | null>(null);
   readonly actionLabel = input<string | null>(null);
 

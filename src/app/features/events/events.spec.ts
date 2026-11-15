@@ -857,6 +857,44 @@ describe('correcting a published event (DL-195)', () => {
     expect(text(fixture)).toContain('only a published event that has not started can be');
     expect(buttons(fixture)).not.toContain('Save the correction');
   });
+
+  it('says so when the event cannot be read, and reads it again on Try again', async () => {
+    await configure(staffUser('mswdo-head', 'staff-head'));
+    const repository = TestBed.inject(EVENT_REPOSITORY);
+    const real = repository.getById.bind(repository);
+    let reads = 0;
+    // Counted when the read is made, as an HTTP request is, not when it is asked for.
+    vi.spyOn(repository, 'getById').mockImplementation((...args) =>
+      defer(() => {
+        reads += 1;
+        return reads === 1
+          ? throwError(() => new Error('The server did not answer.'))
+          : real(...args);
+      }),
+    );
+    const fixture = TestBed.createComponent(EventComposerPage);
+    fixture.componentRef.setInput('id', 'event-0002');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    // Said, not thrown: the failure and its reason, and no form to correct from nothing.
+    expect(text(fixture)).toContain('The event could not be read');
+    expect(text(fixture)).toContain('The server did not answer.');
+    expect(html(fixture).querySelector('form')).toBeNull();
+    expect(buttons(fixture)).not.toContain('Save the correction');
+
+    const again = [...html(fixture).querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Try again',
+    );
+    expect(again).toBeDefined();
+    again?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(reads).toBe(2);
+    expect(text(fixture)).not.toContain('The event could not be read');
+    expect(html(fixture).querySelector('form')).not.toBeNull();
+  });
 });
 
 describe('the safe limit and who may register (DL-195)', () => {

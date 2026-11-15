@@ -47,6 +47,7 @@ import {
 import { PROGRAM_COPY } from '@shared/programs/program.copy';
 import { ResponsibilityNotice } from '@shared/programs/responsibility-notice';
 import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
+import { EmptyState } from '@shared/ui/empty-state/empty-state';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import {
@@ -107,7 +108,7 @@ const STATUSES = Object.keys(PROGRAM_STATUS_CATALOG) as readonly ProgramStatus[]
 @Component({
   selector: 'app-program-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, RequirementListEditor, ResponsibilityNotice, RouterLink],
+  imports: [EmptyState, PageHeader, RequirementListEditor, ResponsibilityNotice, RouterLink],
   templateUrl: './program-form-page.html',
   styleUrl: './program-form-page.scss',
 })
@@ -150,6 +151,11 @@ export class ProgramFormPage {
     ),
     { initialValue: LOADING as ViewState<AssistanceProgram | null> },
   );
+  /** The failed read, when it failed; its `retry` asks the same question again. */
+  protected readonly recordFailure = computed(() => {
+    const state = this.recordState();
+    return state.kind === 'error' ? state : null;
+  });
 
   protected readonly record = computed(() => valueOf(this.recordState()) ?? null);
 
@@ -411,6 +417,11 @@ export class ProgramFormPage {
   }
 
   /* ── recording ──────────────────────────────────────────────────────────── */
+
+  /** Asks for the programme again after a failed read. */
+  protected retryRecord(): void {
+    this.recordFailure()?.retry?.();
+  }
 
   protected submit(event: Event): void {
     event.preventDefault();

@@ -4,22 +4,17 @@
   <ng-template #body>
     @if (notFound()) {
       <div class="card card--padded form__blocked">
-        <h2 class="form__blocked-heading">That resident is not available</h2>
-        <p class="form__blocked-body">
-          The record does not exist, or it is outside the part of the municipality you cover.
-        </p>
-        <a class="btn" routerLink="/residents">Back to residents</a>
+        <h2 class="form__blocked-heading">{{ copy.notFoundHeading }}</h2>
+        <p class="form__blocked-body">{{ copy.notFoundMessage }}</p>
+        <a class="btn" routerLink="/residents">{{ copy.back }}</a>
       </div>
     } @else if (blockedByDisclosure()) {
       <!-- Refusing here is the honest outcome: a saved draft replaces the whole
            record, so editing from a redacted copy would delete what was hidden. -->
       <div class="card card--padded form__blocked">
-        <h2 class="form__blocked-heading">This record cannot be edited by your role</h2>
-        <p class="form__blocked-body">
-          Some details on it are not disclosed to you. Saving from here would erase them, so the
-          form is not offered. Ask the MSWDO head or the assigned social worker to make the change.
-        </p>
-        <a class="btn" routerLink="/residents">Back to residents</a>
+        <h2 class="form__blocked-heading">{{ copy.blockedHeading }}</h2>
+        <p class="form__blocked-body">{{ copy.blockedMessage }}</p>
+        <a class="btn" routerLink="/residents">{{ copy.back }}</a>
       </div>
     } @else {
       <form class="card card--panel form" novalidate (submit)="submit($event)">

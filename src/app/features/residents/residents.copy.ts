@@ -209,6 +209,14 @@ export const RESIDENTS_COPY = {
     createSubtitle: 'Add a person to the municipal registry.',
     editTitle: 'Edit resident',
     editSubtitle: 'Correct the details on an existing record.',
+    back: 'Back to residents',
+    notFoundHeading: 'That resident is not available',
+    notFoundMessage:
+      'The record does not exist, or it is outside the part of the municipality you cover.',
+    blockedHeading: 'This record cannot be edited by your role',
+    blockedMessage:
+      'Some details on it are not disclosed to you. Saving from here would erase them, so the ' +
+      'form is not offered. Ask the MSWDO head or the assigned social worker to make the change.',
     save: 'Save record',
     saving: 'Saving…',
     saveFailedHeading: 'Not saved',

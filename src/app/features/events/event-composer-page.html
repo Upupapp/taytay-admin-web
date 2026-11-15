@@ -8,7 +8,15 @@
   </app-page-header>
 }
 
-@if (correcting() && original() === undefined) {
+@if (originalFailure(); as failure) {
+  <app-empty-state
+    variant="error"
+    [heading]="copy.correctReadFailed"
+    [message]="failure.message"
+    [actionLabel]="failure.retry ? copy.tryAgain : null"
+    (actionSelected)="retryOriginal()"
+  />
+} @else if (correcting() && original() === undefined) {
   <p class="status-line composer__hint" role="status">{{ copy.correctLoading }}</p>
 } @else if (correcting() && !correctable()) {
   <p class="callout composer__unavailable" role="status">{{ copy.correctUnavailable }}</p>
