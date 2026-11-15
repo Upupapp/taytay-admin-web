@@ -28,9 +28,9 @@ import { bool, dateTime, field, id, oneOf, str } from './wire';
  * | `cover_media_id` | `hasCover`    | no cover                     |
  *
  * **Not read**: `cover_url` — the cover is read as bytes through the data layer, never from an
- * address; `share_url`, which this console does not hand out; `author_id`, an account id nothing here
- * shows; `office_slug`, which the office's id already names; `pinned_at` and `created_at`, which only
- * order the server's list.
+ * address; `share_url`, which this console does not hand out; `office_slug`, which the office's id
+ * already names; `pinned_at` and `created_at`, which only order the server's list. The API stopped
+ * sending `author_id` at backend `ff7eac7`; nothing here had read it.
  *
  * @consumes GET news
  * @consumes GET news/{id}
