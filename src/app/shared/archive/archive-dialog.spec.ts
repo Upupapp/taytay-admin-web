@@ -163,6 +163,21 @@ describe('ArchiveDialog (DL-225)', () => {
     expect(confirmButton(element)?.disabled).toBe(false);
   });
 
+  it('keeps the lines under the sentence they finish, in one block of the callout', async () => {
+    // A callout lays its children side by side; the browser run of 2026-11-16 showed the office's
+    // in-use lines beside the sentence instead of under it.
+    const { fixture } = open({
+      problem: 'The office is still in use, so it was not archived.',
+      problemLines: ['1 Tulong page in use is under it.'],
+    });
+    const element = await settle(fixture);
+
+    const alert = element.querySelector('.callout--danger[role="alert"]');
+    expect(alert?.children.length).toBe(1);
+    const block = alert?.firstElementChild;
+    expect([...(block?.children ?? [])].map((child) => child.tagName)).toEqual(['P', 'UL']);
+  });
+
   it('shows no alert list for a refusal without lines', async () => {
     const { fixture } = open({ problem: 'Not done. The server did not answer.' });
     const element = await settle(fixture);

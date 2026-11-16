@@ -222,6 +222,44 @@ describe('httpErrorInterceptor — where a refusal is said (DL-196)', () => {
     http.verify();
   });
 
+  it.each(['ALREADY_ARCHIVED', 'NOT_ARCHIVED', 'ARCHIVED', 'OFFICE_IN_USE', 'OFFICE_ARCHIVED'])(
+    'leaves an archive refusal (%s) to the screen that says it in plain words (DL-225)',
+    async (code) => {
+      const { client, http, navigate, error } = setUp();
+      let thrown: unknown = null;
+      client
+        .post(`${BASE}/admin/offices/o-1/archive`, { reason: 'Moved.' })
+        .subscribe({ error: (failure: unknown) => (thrown = failure) });
+      await answer(
+        http,
+        'POST',
+        `${BASE}/admin/offices/o-1/archive`,
+        { error: { code, message: 'Refused.', request_id: 'r-9' } },
+        409,
+      );
+
+      expect(error).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(isApiFailure(thrown) && thrown.code).toBe(code);
+      http.verify();
+    },
+  );
+
+  it('still says a conflict no screen words as an archive refusal', async () => {
+    const { client, http, error } = setUp();
+    client.post(`${BASE}/admin/hotlines`, {}).subscribe({ error: () => undefined });
+    await answer(
+      http,
+      'POST',
+      `${BASE}/admin/hotlines`,
+      { error: { code: 'CONFLICT', message: 'There is a command center already.' } },
+      409,
+    );
+
+    expect(error).toHaveBeenCalledWith('Request failed', 'There is a command center already.');
+    http.verify();
+  });
+
   it('says a write to something gone, since no screen reads it as an absence', async () => {
     const { client, http, error } = setUp();
     client

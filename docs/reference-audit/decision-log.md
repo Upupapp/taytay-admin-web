@@ -10783,6 +10783,14 @@ server deletes a replaced office banner, Tulong picture and Balita cover, which 
 the hotline list said a list of exactly 100 lines "may be missing some", which since `ca71f23` is
 whole — past 100 the API refuses with `LIST_TOO_LONG`, shown as the list's error with Try again.
 
+**Found in the browser, after the commit** (a local run against the in-memory API, 2026-11-16, that
+archived and restored one of each kind through the screens). The five archive refusals also raised
+the interceptor's "Request failed" toast in the server's words, over the dialog that already said
+them in plain words — and an error toast stays until dismissed, so it sat on the next row's buttons.
+They are now the screen's to say, like `VALIDATION_FAILED`; every place the API raises one was
+matched to a screen that says it. And the office-in-use lines stood beside the refusal's sentence
+rather than under it, because a callout lays its children side by side; they are one block now.
+
 **Held by** `check:archive` (new), `check:directory`, `check:home` and `check:live`, each rule
 validated against a planted regression: 13, 14, 6 and 2, all caught, every file restored byte for
 byte.

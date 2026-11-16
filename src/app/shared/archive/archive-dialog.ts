@@ -53,15 +53,19 @@ let dialogs = 0;
           }
         </div>
         @if (problem(); as message) {
+          <!-- One block inside: a callout lays its children side by side, and the lines belong
+               under the sentence they finish. -->
           <div class="callout callout--danger" role="alert">
-            <p>{{ message }}</p>
-            @if (problemLines().length > 0) {
-              <ul>
-                @for (line of problemLines(); track $index) {
-                  <li>{{ line }}</li>
-                }
-              </ul>
-            }
+            <div class="stack">
+              <p>{{ message }}</p>
+              @if (problemLines().length > 0) {
+                <ul>
+                  @for (line of problemLines(); track $index) {
+                    <li>{{ line }}</li>
+                  }
+                </ul>
+              }
+            </div>
           </div>
         }
       </div>

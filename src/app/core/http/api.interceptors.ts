@@ -229,6 +229,17 @@ export const httpErrorInterceptor: HttpInterceptorFn = (request, next) => {
         // A toast as well would say the same thing twice, less usefully.
         break;
 
+      // An archive refusal (`DL-225`) is said in plain words by the screen that asked, beside the
+      // record: the archive dialog, which stays open over it, or the form that tried to change an
+      // archived record or name an archived office. A toast as well said it twice, in the server's
+      // words, and stayed over the dialog's own buttons until somebody dismissed it.
+      case 'ALREADY_ARCHIVED':
+      case 'NOT_ARCHIVED':
+      case 'ARCHIVED':
+      case 'OFFICE_IN_USE':
+      case 'OFFICE_ARCHIVED':
+        break;
+
       // `INVALID_STATE_TRANSITION` had its own warning here. The Node API
       // never sends it — a refused transition there is a `CONFLICT`, which
       // is also what a closed account receives on every write — so the case
