@@ -10875,9 +10875,14 @@ the account reads afterwards. No account is identified.
 
 **Audit words.** `office_request.self_approved`, `resident_account.relinked`,
 `resident_account.not_relinked`, and `resident_account.linked`, which the app trail had shown as
-undescribed since `DL-215`. Checking for them found three more codes the backend records with no
-words here — `digital_id.card_photo_taken`, `sector_application.approved`,
-`sector_application.proof_viewed` — left for their own change.
+undescribed since `DL-215`. A scan of every `audit.record` call in the backend at `d1e997c` then found
+nine more acts the app trail showed as "No description in this console", and they have words now
+too, in a commit of their own: the counter card photo (`digital_id.card_photo_taken`, `DL-221`), the
+four acts of a resident import (`resident_import.uploaded`, `mapped`, `row_resolved`, `committed`,
+`DL-214`) and the four of a sector application (`sector_application.submitted`, `proof_viewed`,
+`approved`, `returned`, `DL-215`). Each says what the act was and nothing it carried — no value, no
+reason, ids as given (`DL-171`). The scan reads string codes in `.record(` calls, so a code built
+at run time would escape it; none was found.
 
 **The mock.** Its registry links no app account to a record, so its findings and previews answer
 `null` and say no account moves; its sector applications refuse a superseded record in the API's

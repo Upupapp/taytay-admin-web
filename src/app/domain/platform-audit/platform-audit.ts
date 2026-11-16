@@ -28,7 +28,8 @@ export interface PlatformAuditEntry {
 /**
  * Every action the API records at `2fd0566`, in words — and since `cc86189` the archive's acts
  * (`DL-225`), and since `dd8dbc3` a self-approval and an app account following the record kept
- * (`DL-226`). The old `*.deleted` and `saved_view.removed` stay: rows written before the API stopped
+ * (`DL-226`), with the card photo, the import and the sector application acts it had no words for.
+ * The old `*.deleted` and `saved_view.removed` stay: rows written before the API stopped
  * deleting still carry them. Read from the backend's
  * `audit.record(...)` calls; a code not here is shown as given and said to have no description in
  * this console, never dropped or guessed at.
@@ -41,6 +42,9 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'banner.archived': 'Archived a home screen banner, with a reason; it is kept and can be restored',
   'banner.restored': 'Restored an archived home screen banner, with a reason',
   'banner.updated': 'Changed a home screen banner',
+  // DL-221: taken at the counter for the card only, with the resident's agreement.
+  'digital_id.card_photo_taken':
+    'Took a resident’s card photo at the counter, with their agreement, for their digital ID only',
   'digital_id.issued': 'Issued a digital ID',
   'digital_id.reissued': 'Replaced a digital ID with a new one',
   'digital_id.revoked': 'Revoked a digital ID',
@@ -194,6 +198,13 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
     'Moved a resident’s app account to the record the office kept, when two records were found to be one person',
   'resident_account.not_relinked':
     'Left a resident’s app account where it was when two records were found to be one person, because the record kept already has an app account',
+  // Importing residents from a file the office keeps (DL-214): four acts, each its own row.
+  'resident_import.uploaded': 'Uploaded a file of residents to import; the registry did not change',
+  'resident_import.mapped': 'Matched an import file’s columns to the registry’s fields',
+  'resident_import.row_resolved':
+    'Decided one row of an import, with a reason: a new person, a person already on the registry, or not imported',
+  'resident_import.committed':
+    'Confirmed an import: its rows became registry records or were attached to them, and the file’s cells were emptied',
   'office_visit.scheduled': 'Scheduled a home visit',
   'office_visit.observation_recorded': 'Recorded what was found on a home visit',
   'office_visit.checklist_item_set': 'Ticked or cleared a line of a home visit’s checklist',
@@ -203,6 +214,14 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'saved_view.removed': 'Took away a saved view of a list',
   'saved_view.archived': 'Archived a saved view of a list; it can be restored',
   'saved_view.restored': 'Restored an archived saved view of a list',
+  // Sector applications from the residents' app (DL-215).
+  'sector_application.submitted':
+    'A resident applied in the app to be recorded in a sector, with proof',
+  'sector_application.proof_viewed': 'Opened the proof sent with a resident’s sector application',
+  'sector_application.approved':
+    'Approved a resident’s sector application, recording the sector on their registry record, with a reason',
+  'sector_application.returned':
+    'Returned a resident’s sector application, with a reason the resident reads in the app',
   'service.created': 'Added a Tulong page',
   'service.deleted': 'Deleted a Tulong page',
   'service.archived': 'Archived a Tulong page, with a reason; it is kept and can be restored',

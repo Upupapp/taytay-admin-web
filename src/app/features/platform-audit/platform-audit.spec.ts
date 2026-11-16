@@ -184,3 +184,34 @@ describe('the words for a self-approval and an app account following the record 
     );
   });
 });
+
+describe('the words for the card photo, the import and the sector application acts (DL-226)', () => {
+  // taytay-backend d1e997c: the remaining audit.record codes the app trail showed as undescribed.
+  const ACTIONS = [
+    'digital_id.card_photo_taken',
+    'resident_import.uploaded',
+    'resident_import.mapped',
+    'resident_import.row_resolved',
+    'resident_import.committed',
+    'sector_application.submitted',
+    'sector_application.proof_viewed',
+    'sector_application.approved',
+    'sector_application.returned',
+  ];
+
+  it('describes each one', () => {
+    for (const action of ACTIONS) {
+      expect(PLATFORM_AUDIT_ACTIONS[action], action).toBeTruthy();
+    }
+  });
+
+  it('says what each act was, and who it was for', () => {
+    expect(PLATFORM_AUDIT_ACTIONS['digital_id.card_photo_taken']).toContain(
+      'for their digital ID only',
+    );
+    expect(PLATFORM_AUDIT_ACTIONS['resident_import.uploaded']).toContain('the registry did not change');
+    expect(PLATFORM_AUDIT_ACTIONS['sector_application.submitted']).toContain('A resident applied');
+    expect(PLATFORM_AUDIT_ACTIONS['sector_application.proof_viewed']).toContain('Opened the proof');
+    expect(PLATFORM_AUDIT_ACTIONS['sector_application.returned']).toContain('reads in the app');
+  });
+});
