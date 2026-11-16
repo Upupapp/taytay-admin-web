@@ -162,8 +162,10 @@ export const HOME_SCREEN_COPY = {
     featured: 'Featured Tulong pages',
     noFeatured: 'No Tulong page is featured.',
     carries: (hotlines: number, news: number) =>
-      `It also carries ${hotlines} ${hotlines === 1 ? 'hotline' : 'hotlines'} and the latest ` +
-      `${news} Balita ${news === 1 ? 'article' : 'articles'}.`,
+      `It also carries ${hotlines} ${hotlines === 1 ? 'hotline' : 'hotlines'} and ` +
+      (news === 0
+        ? 'no Balita article.'
+        : `the latest ${news} Balita ${news === 1 ? 'article' : 'articles'}.`),
     imageAlt: (title: string) => `Banner: ${title}`,
     imageFailed: 'Image could not be loaded.',
     noImage: 'No image',

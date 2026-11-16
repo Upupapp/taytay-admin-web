@@ -29,6 +29,7 @@ import {
 
 import { BannersSection } from './banners-section';
 import { HomeScreenPage } from './home-screen-page';
+import { HOME_SCREEN_COPY } from './home-screen.copy';
 import { LinksSection } from './links-section';
 import { PreviewSection } from './preview-section';
 
@@ -744,6 +745,15 @@ describe.each([
 });
 
 describe('PreviewSection (DL-170)', () => {
+  it('says the app carries no Balita article, never "the latest 0"', () => {
+    expect(HOME_SCREEN_COPY.preview.carries(0, 0)).toBe(
+      'It also carries 0 hotlines and no Balita article.',
+    );
+    expect(HOME_SCREEN_COPY.preview.carries(1, 1)).toBe(
+      'It also carries 1 hotline and the latest 1 Balita article.',
+    );
+  });
+
   it('shows what the app is given, with banner images read through the data layer', async () => {
     const home = configure();
     const fixture = TestBed.createComponent(PreviewSection);
