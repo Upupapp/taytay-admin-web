@@ -534,6 +534,7 @@ describe('preparing a release for an approved request', () => {
               actorId: asId<StaffUserId>('staff-head'),
               actorName: 'Head',
               occurredAt: asIsoDateTime(new Date('2026-11-01T00:00:00.000Z')),
+              selfApproved: false,
             },
           ],
         },

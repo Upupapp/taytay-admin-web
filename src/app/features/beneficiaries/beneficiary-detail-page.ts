@@ -132,6 +132,13 @@ export class BeneficiaryDetailPage {
     { initialValue: LOADING as ViewState<readonly IdentityResolution[]> },
   );
 
+  /** What the finding did to a resident's app account, or `null` when none was linked (`DL-226`). */
+  protected accountLine(finding: IdentityResolution): string | null {
+    return finding.appAccount === null
+      ? null
+      : this.copy.findingAccount[finding.appAccount.outcome];
+  }
+
   protected verdictLabel(finding: IdentityResolution): string {
     return IDENTITY_VERDICT_LABELS[finding.verdict];
   }

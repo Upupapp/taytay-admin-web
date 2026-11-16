@@ -81,6 +81,8 @@ import { bool, date, dateTime, field, flag, id, int, list, oneOf, str } from './
  * | `status_history`              | `statusHistory`              | one unreadable: the request is not    |
  * | `assigned_to`, `assignments`  | the same, camelCased         | one unreadable: the request is not    |
  * | `assessment`                  | `assessment`                 | present and unreadable: not readable  |
+ * | `endorsed_by`                 | `endorsedBy`                 | never endorsed                        |
+ * | `would_self_approve`, `self_approved` | the same, camelCased | not a self-approval (`DL-226`)      |
  * | `is_protected`, `withheld`    | the same, camelCased         | a field it cannot name: not readable  |
  * | `created_*`, `updated_*`      | `audit`                      | the request is not readable           |
  *
@@ -186,6 +188,10 @@ export function toAssistanceRequest(wire: unknown, barangays: BarangayIndex): As
     requestedAmount: requested === null ? null : centavos(requested),
     approvedAmount: approved === null ? null : centavos(approved),
     approvedInKindDescription: str(field(wire, 'approved_in_kind_description')),
+    // A self-approval as the server read it from the history (DL-226), never worked out here.
+    endorsedBy: id<StaffUserId>(field(wire, 'endorsed_by')),
+    wouldSelfApprove: bool(field(wire, 'would_self_approve')),
+    selfApproved: bool(field(wire, 'self_approved')),
     reasonForRequest: str(field(wire, 'reason_for_request')) ?? '',
     assignedTo: id<StaffUserId>(field(wire, 'assigned_to')),
     assignments,
@@ -992,6 +998,7 @@ function toChange(value: unknown): StatusChange | null {
     actorId: id<StaffUserId>(field(value, 'actor_id')),
     actorName: str(field(value, 'actor_name')) ?? UNNAMED_ACTOR,
     occurredAt,
+    selfApproved: bool(field(value, 'self_approved')),
   };
 }
 

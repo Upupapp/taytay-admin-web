@@ -16,12 +16,14 @@ import {
   type IdentityResolutionDraft,
   type Permission,
   type ResidentId,
+  type SectorApplicationId,
   type StaffRole,
   type StaffUserId,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
 import { MockBeneficiaryRepository } from './mock-beneficiary.repository';
+import { MockSectorApplicationRepository } from './mock-sector-application.repository';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
@@ -376,5 +378,52 @@ describe('MockBeneficiaryRepository — the record it assembles', () => {
     const expected = handedOver.reduce((total, payout) => total + (payout.amount?.centavos ?? 0), 0);
 
     expect(detail?.totalReleased.centavos).toBe(expected);
+  });
+});
+
+describe('an app account and a same-person finding (DL-226)', () => {
+  function signedInWithSectors(): {
+    readonly beneficiaries: MockBeneficiaryRepository;
+    readonly sectors: MockSectorApplicationRepository;
+  } {
+    const context: AccessContext = { currentUser: () => authenticated('system-administrator') };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
+        { provide: ACCESS_CONTEXT, useValue: context },
+        MockBeneficiaryRepository,
+        MockSectorApplicationRepository,
+      ],
+    });
+    return {
+      beneficiaries: TestBed.inject(MockBeneficiaryRepository),
+      sectors: TestBed.inject(MockSectorApplicationRepository),
+    };
+  }
+
+  it('says no app account moves, because no mock record has one', async () => {
+    const { beneficiaries } = signedInWithSectors();
+    const preview = await firstValueFrom(
+      beneficiaries.previewResolution(resolution().pairId, AURORA, AURORA_AGAIN),
+    );
+    expect(preview.appAccount).toBeNull();
+    expect((await firstValueFrom(beneficiaries.resolveIdentity(resolution()))).appAccount).toBeNull();
+  });
+
+  it('links no app account to a superseded record, in the API’s words, and links the record kept', async () => {
+    const { beneficiaries, sectors } = signedInWithSectors();
+    await firstValueFrom(beneficiaries.resolveIdentity(resolution()));
+    const application = asId<SectorApplicationId>('sector-application-0001');
+    const link = (residentId: ResidentId) => ({
+      reason: 'Card seen at the counter.',
+      link: { residentId, reason: 'Same name and birth date.' },
+    });
+
+    await expect(firstValueFrom(sectors.approve(application, link(AURORA_AGAIN)))).rejects.toThrow(
+      'That registry record was found to be the same person as another record, which the office kept.',
+    );
+    const approved = await firstValueFrom(sectors.approve(application, link(AURORA)));
+    expect(approved.residentId).toBe(AURORA);
   });
 });

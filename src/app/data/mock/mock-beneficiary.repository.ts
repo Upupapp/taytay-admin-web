@@ -246,6 +246,8 @@ export class MockBeneficiaryRepository implements BeneficiaryRepository {
             .filter((name) => canonicalPrograms.has(name)),
         ),
       ],
+      // No app account is linked to a mock record, so none would follow the record kept (DL-226).
+      appAccount: null,
     });
   }
 

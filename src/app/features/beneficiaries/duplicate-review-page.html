@@ -190,7 +190,15 @@
               </p>
               <p class="preview__overlap-hint">{{ copy.previewOverlapHint }}</p>
             }
+
+            <!-- What happens to a resident's app account, said before the button (DL-226). -->
+            <p class="preview__account">
+              <span class="preview__overlap-label">{{ copy.previewAccount }}:</span>
+              {{ accountEffect(summary) }}
+            </p>
           </section>
+        } @else {
+          <p class="field__hint finding__hint">{{ copy.previewAccountRule }}</p>
         }
       }
 

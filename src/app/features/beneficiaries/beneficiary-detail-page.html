@@ -189,6 +189,10 @@
                         <span class="beneficiary__term">{{ copy.findingReason }}:</span>
                         {{ finding.reason }}
                       </span>
+                      @if (accountLine(finding); as line) {
+                        <!-- What the finding did to a resident's app account (DL-226). -->
+                        <span class="soft-row__meta">{{ line }}</span>
+                      }
                       <span class="soft-row__meta">
                         {{ copy.findingRecorded }} {{ finding.decidedAt | date: 'd MMM y, HH:mm' }}
                         ·

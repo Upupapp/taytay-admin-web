@@ -21,6 +21,7 @@ import {
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
+import { MockBeneficiaryStore } from './mock-beneficiary.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
 import { samplePlaceholder } from './seed/verification-requests.seed';
@@ -66,6 +67,10 @@ const SEED: readonly HeldApplication[] = [
   sample(3, 'solo-parent', 'Sample Applicant Three', 1),
 ];
 
+/** The API's 409 for a link to a record a same-person finding superseded, in its words. */
+const SUPERSEDED_RECORD_REFUSAL =
+  'That registry record was found to be the same person as another record, which the office kept. Name the record kept.';
+
 const PROOF_WARNING =
   'A proof is a picture of a person’s card or certificate. Open it only to decide this application; it is not kept on this computer, and opening it is recorded under your name.';
 
@@ -79,6 +84,7 @@ export class MockSectorApplicationRepository implements SectorApplicationReposit
   private readonly latency = inject(MockLatency);
   private readonly access = inject(ACCESS_CONTEXT);
   private readonly store = inject(MockResidentStore);
+  private readonly findings = inject(MockBeneficiaryStore);
   private held: HeldApplication[] = SEED.map((entry) => ({ ...entry }));
 
   list(
@@ -147,6 +153,11 @@ export class MockSectorApplicationRepository implements SectorApplicationReposit
       return throwError(
         () => new Error('Say which registry record this account is, and why, before approving.'),
       );
+    }
+    // A record a same-person finding superseded stands for nobody now, so no account is linked to
+    // it: the API refuses it in these words (DL-226).
+    if (entry.application.residentId === null && this.findings.isSuperseded(residentId)) {
+      return throwError(() => new Error(SUPERSEDED_RECORD_REFUSAL));
     }
     if (approval.details?.idLastFour !== undefined && !isCardLastFour(approval.details.idLastFour)) {
       return throwError(() => new Error('A card number is kept as its last four characters.'));

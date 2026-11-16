@@ -167,3 +167,20 @@ describe('the words for switching accounts and opening an entry (DL-191)', () =>
     expect(PLATFORM_AUDIT_ACTIONS['office_audit.detail_read']).toContain('one entry');
   });
 });
+
+describe('the words for a self-approval and an app account following the record kept (DL-226)', () => {
+  it('says a self-approval was recorded and not refused', () => {
+    // taytay-backend f7192d7: approving writes office_request.self_approved beside the move.
+    expect(PLATFORM_AUDIT_ACTIONS['office_request.self_approved']).toContain('same person endorsed');
+    expect(PLATFORM_AUDIT_ACTIONS['office_request.self_approved']).toContain('not refused');
+  });
+
+  it('says where an app account went when two records were found to be one person', () => {
+    // taytay-backend dd8dbc3: the finding's transaction audits the move, or that nothing moved.
+    expect(PLATFORM_AUDIT_ACTIONS['resident_account.linked']).toContain('app account');
+    expect(PLATFORM_AUDIT_ACTIONS['resident_account.relinked']).toContain('record the office kept');
+    expect(PLATFORM_AUDIT_ACTIONS['resident_account.not_relinked']).toContain(
+      'already has an app account',
+    );
+  });
+});

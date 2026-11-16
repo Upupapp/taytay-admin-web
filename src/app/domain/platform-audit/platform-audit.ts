@@ -27,7 +27,8 @@ export interface PlatformAuditEntry {
 
 /**
  * Every action the API records at `2fd0566`, in words — and since `cc86189` the archive's acts
- * (`DL-225`). The old `*.deleted` and `saved_view.removed` stay: rows written before the API stopped
+ * (`DL-225`), and since `dd8dbc3` a self-approval and an app account following the record kept
+ * (`DL-226`). The old `*.deleted` and `saved_view.removed` stay: rows written before the API stopped
  * deleting still carry them. Read from the backend's
  * `audit.record(...)` calls; a code not here is shown as given and said to have no description in
  * this console, never dropped or guessed at.
@@ -158,6 +159,9 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_request.filed': 'Filed an assistance request and issued its control number',
   'office_request.note_added': 'Added a note to an assistance request',
   'office_request.status_changed': 'Moved an assistance request on, with a reason',
+  // DL-226: warned before the button and recorded, never refused, as a self-release is (DL-91).
+  'office_request.self_approved':
+    'Approved an assistance request the same person endorsed — recorded, not refused',
   'office_request.assigned': 'Assigned an assistance request to a social worker, with a reason',
   'office_request.assessment_opened': 'Opened an assessment form on an assistance request',
   'office_request.assessment_answered': 'Answered questions on an assessment form',
@@ -183,6 +187,13 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_resident.sector_ended': 'Ended a resident’s sector membership',
   'office_resident.sector_recorded': 'Recorded a resident’s sector membership',
   'office_resident.updated': 'Changed a resident’s registry record',
+  // A resident's app account and the registry record it reads (DL-215, DL-226).
+  'resident_account.linked':
+    'Linked a resident’s app account to a registry record, with a reason, when approving a sector application',
+  'resident_account.relinked':
+    'Moved a resident’s app account to the record the office kept, when two records were found to be one person',
+  'resident_account.not_relinked':
+    'Left a resident’s app account where it was when two records were found to be one person, because the record kept already has an app account',
   'office_visit.scheduled': 'Scheduled a home visit',
   'office_visit.observation_recorded': 'Recorded what was found on a home visit',
   'office_visit.checklist_item_set': 'Ticked or cleared a line of a home visit’s checklist',

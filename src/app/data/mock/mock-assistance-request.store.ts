@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import {
   REQUEST_WITHHELD_FIELDS,
   hasSensitiveSector,
+  isSelfApproval,
   isWithinBarangayScope,
   maskDocumentNumber,
   userHasPermission,
@@ -53,6 +54,8 @@ export function inReach(user: AuthenticatedUser | null, request: AssistanceReque
  * A request as this reader may see it, redacted here rather than in a template (`DL-38`): a
  * protected request's words withheld from a reader without `request.view-sensitive`, the case study
  * from a reader without `case.view`, and document numbers masked without the grant to read them.
+ * Whether approving it now would be the reader's own endorsement is said for this reader, as the
+ * API says it (`DL-226`).
  */
 export function discloseRequest(
   request: AssistanceRequest,
@@ -71,6 +74,8 @@ export function discloseRequest(
     ...request,
     isProtected,
     withheld,
+    wouldSelfApprove:
+      request.status === 'endorsed' && isSelfApproval(request.endorsedBy, user?.id ?? null),
     reasonForRequest: masked ? '' : request.reasonForRequest,
     referredBy: masked ? null : request.referredBy,
     statusHistory: masked

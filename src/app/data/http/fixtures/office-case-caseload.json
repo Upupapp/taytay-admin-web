@@ -142,6 +142,9 @@
         "requested_amount_centavos": null,
         "approved_amount_centavos": null,
         "approved_in_kind_description": null,
+        "endorsed_by": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c02",
+        "would_self_approve": false,
+        "self_approved": false,
         "submitted_at": "2026-11-04T01:00:00.000Z",
         "requirements": [
           {
@@ -196,7 +199,8 @@
             "actor_name": "Liezl Padilla",
             "occurred_at": "2026-11-04T01:00:00.000Z",
             "approved_amount_centavos": null,
-            "approved_in_kind_description": null
+            "approved_in_kind_description": null,
+            "self_approved": false
           },
           {
             "from": "assessment",
@@ -206,7 +210,8 @@
             "actor_name": "Ramon Cruz",
             "occurred_at": "2026-11-04T07:20:00.000Z",
             "approved_amount_centavos": null,
-            "approved_in_kind_description": null
+            "approved_in_kind_description": null,
+            "self_approved": false
           }
         ],
         "is_protected": false,

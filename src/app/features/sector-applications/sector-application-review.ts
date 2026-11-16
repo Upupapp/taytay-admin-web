@@ -57,8 +57,10 @@ interface OpenedProof {
  * another application is opened, or the dialog goes.
  *
  * **Approving links an account to a record once.** When the account is not linked, the reviewer
- * chooses the record among the API's suggestions and says why; the effects say the link is never
- * moved. **A card number is taken as its last four characters only** (`DL-183`).
+ * chooses the record among the API's suggestions and says why; the effects say the link moves only
+ * with a same-person finding, to the record kept, and that a superseded record is refused
+ * (`DL-226`); that refusal arrives in the server's own sentence. **A card number is taken as its
+ * last four characters only** (`DL-183`).
  */
 @Component({
   selector: 'app-sector-application-review',

@@ -120,6 +120,13 @@ export const BENEFICIARIES_COPY = {
     },
     findingReason: 'Reason',
     findingRecorded: 'Recorded',
+    // DL-226: what the finding did to a resident's app account linked to the record superseded.
+    findingAccount: {
+      relinked:
+        'Residents’ app: the app account linked to the superseded record was moved to the record kept with this finding.',
+      'not-relinked':
+        'Residents’ app: the app account linked to the superseded record was not moved, because the record kept already had an app account of its own.',
+    },
     openOther: 'Open the other record',
   },
 
@@ -194,10 +201,26 @@ export const BENEFICIARIES_COPY = {
       'The same programme appears on both. Check whether it is one episode recorded twice before you decide.',
     previewNothing: 'Nothing is attached to the record being superseded.',
 
+    // DL-226 (backend ADR 0003 B): an app account follows the record kept, said before the button.
+    previewAccount: 'Residents’ app',
+    previewAccountRule:
+      'If a resident’s app account is linked to the record being superseded, recording this moves it to the record kept, and the app then reads the record kept. If the record kept already has an app account of its own, nothing moves and you are told.',
+    previewAccountNone:
+      'No resident’s app account is linked to the record being superseded, so no app account moves.',
+    previewAccountRelinked:
+      'A resident’s app account is linked to the record being superseded. Recording this moves it to the record kept: the app will read the record kept, with what was recorded under both.',
+    previewAccountNotRelinked:
+      'A resident’s app account is linked to the record being superseded, and the record kept already has an app account of its own. Nothing moves: the account stays on the record being superseded, and one person has two app accounts for the office to settle.',
+
     submit: 'Record finding',
     submitting: 'Recording…',
     cancel: 'Cancel',
     recorded: 'Finding recorded.',
+    recordedAccountRelinked:
+      'The resident’s app account linked to the superseded record now reads the record kept.',
+    recordedAccountNotMoved: 'Finding recorded. The app account was not moved.',
+    recordedAccountNotMovedBody:
+      'The record kept already has an app account of its own, so the account linked to the superseded record stayed on it. One person now has two app accounts, and the office has to settle which one is theirs.',
     failed: 'That finding could not be recorded.',
 
     problemReason: 'Give a reason before recording this.',

@@ -91,6 +91,9 @@ export class MockBeneficiaryStore {
       reason: draft.reason.trim(),
       decidedBy,
       decidedAt: asIsoDateTime(new Date()),
+      // The mock registry holds no resident app account: its sector applications are kept apart, so
+      // there is none to follow the record kept (DL-226), and the finding says so.
+      appAccount: null,
     };
 
     this.resolutions = [...this.resolutions, resolution];

@@ -70,7 +70,8 @@ export const SECTOR_APPLICATIONS_COPY = {
     candidatesLead:
       'The account is not linked to a registry record yet. These records share its birth date and a surname: a suggestion, never a link. Choose the one this person is.',
     linkReason: 'Why this record is this person',
-    linkReasonHint: 'Kept with the link. The link is made once and never moved.',
+    linkReasonHint:
+      'Kept with the link. The link is made once, and moves only with a finding that this record and another are one person.',
     openRecord: 'Open the record',
 
     detailsHeading: 'The card’s details (optional)',

@@ -138,7 +138,8 @@ export const SECTOR_APPLICATION_EFFECTS = {
     'The decision is recorded in the audit trail under your name. It cannot be decided again.',
   ],
   link: [
-    'This account is linked to the record you choose, for good: the link is never moved, and a record already linked to another account is refused.',
+    'This account is linked to the record you choose. The link is never removed; it moves only if the office later finds this record to be the same person as another and keeps the other, and then it follows the record kept.',
+    'A record already linked to another account is refused, and so is a record the office has found to be the same person as another and superseded: link the record the office kept.',
   ],
   return: [
     'Nothing is recorded in the registry.',

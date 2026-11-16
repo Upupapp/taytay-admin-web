@@ -226,6 +226,12 @@ of them passed.
 - an app account linked to a superseded record keeps reading it;
 - Balita gives every reader, guests included, the author's staff account id.
 
+**Update 2026-11-16.** The first three were decided and fixed (backend ADR 0003, `f7192d7`,
+`dd8dbc3`, `d1e997c`; the console's side is `DL-226`): a resident sees her own filed requests in the
+app; a self-approval is warned before the button, recorded and audited, never refused; an app account
+follows the record the office kept. The fourth went earlier: Balita no longer sends the author's
+account id (`ff7eac7`).
+
 **Still open on this line:** journeys run in no CI (no Actions credit) and not against the deployed
 API; journey 2 has no endpoint; no adversarial suite beyond the journeys' refusals; no role sign-offs.
 

@@ -182,6 +182,9 @@ export const REQUESTS_COPY = {
     historyHeading: 'History',
     noHistory: 'No move has been recorded yet.',
     noReasonGiven: 'No reason was recorded with this move.',
+    // DL-226: an approval by the request's own endorser is recorded on its history entry.
+    selfApprovedLine:
+      'Approved by the person who endorsed it, so no second person checked the recommendation. Recorded, not refused.',
 
     documentsHeading: 'Documents',
     documentsNote:
@@ -300,6 +303,10 @@ export const REQUESTS_COPY = {
     approveReason: 'Why it is approved',
     approveSubmit: 'Approve',
     approvedNotice: 'The request has been approved.',
+    // DL-226, on the doctrine of a self-release (DL-91): warned before the button, never blocked.
+    selfApproveHeading: 'Check before you approve',
+    selfApproveWarning:
+      'You endorsed this request yourself. Approving it means no second person checked your recommendation, which the office normally separates. It will be recorded, in its history and the audit trail, as approved by the person who endorsed it. You may still approve it; ask another approver to decide it if one is available.',
     approveProblems: {
       amountUnreadable: 'Enter the approved amount in pesos, like 3,000 or 3,000.50. Nothing was sent.',
       'amount-not-positive': 'The approved amount has to be more than nothing. Nothing was sent.',

@@ -196,7 +196,29 @@ export interface IdentityResolution {
   readonly reason: string;
   readonly decidedBy: StaffUserId;
   readonly decidedAt: IsoDateTime;
+  /**
+   * What the finding did to a resident's app account linked to the record it superseded (`DL-226`).
+   * `null` when none was linked to it, and for `distinct-people`.
+   */
+  readonly appAccount: AppAccountOutcome | null;
 }
+
+/**
+ * What a `same-person` finding did, or would do, to a resident's app account linked to the record
+ * it supersedes (`DL-226`, backend ADR 0003 B). The account follows the record the office kept,
+ * moved in the finding's own act, unless the record kept already has an app account of its own:
+ * then nothing moves, because which of two accounts is this person's is for somebody who has seen
+ * both to say. No account is identified — only the record it reads.
+ */
+export interface AppAccountOutcome {
+  readonly outcome: AppAccountMove;
+  /** Why nothing moved; `null` when the account moved. */
+  readonly reason: 'kept-record-has-account' | null;
+  /** The registry record the account is linked to after the finding. */
+  readonly linkedResidentId: ResidentId;
+}
+
+export type AppAccountMove = 'relinked' | 'not-relinked';
 
 /**
  * What a reviewer submits. The repository supplies actor and time; a client
@@ -284,6 +306,11 @@ export interface MergePreview {
    * deciding which of two payouts was the real one is an office judgement.
    */
   readonly overlappingProgramNames: readonly string[];
+  /**
+   * What recording the finding would do to an app account linked to the record superseded, said
+   * before the button (`DL-226`); `null` when no account is linked to it.
+   */
+  readonly appAccount: AppAccountOutcome | null;
 }
 
 export class ResolutionInvalidError extends Error {

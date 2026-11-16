@@ -980,6 +980,13 @@
               <h3 class="section-title assessment__heading" id="approve-heading">
                 {{ copy.approveHeading }}
               </h3>
+              <!-- Said by the API for this reader, read from the history, never from a role (DL-226). -->
+              @if (request.wouldSelfApprove) {
+                <p class="callout callout--warning assessment__self-approve" role="status">
+                  <span class="callout__title">{{ copy.selfApproveHeading }}</span>
+                  {{ copy.selfApproveWarning }}
+                </p>
+              }
               <p class="status-line assessment__note">{{ copy.approveNote }}</p>
               <p class="status-line assessment__note">
                 {{
@@ -1091,6 +1098,9 @@
                     </time>
                     · {{ change.actorName }}
                   </p>
+                  @if (change.selfApproved) {
+                    <p class="soft-row__meta history__self-approved">{{ copy.selfApprovedLine }}</p>
+                  }
                   @if (withheld(request, 'statusReasons')) {
                     <p class="history__reason withheld assessment__withheld">{{ copy.withheld }}</p>
                   } @else if (change.reason) {

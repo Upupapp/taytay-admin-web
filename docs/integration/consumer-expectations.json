@@ -1420,14 +1420,17 @@
         "assessment",
         "assigned_to",
         "created_by",
+        "endorsed_by",
         "is_protected",
         "program_id",
         "reason_for_request",
         "reference_number",
         "referred_by",
         "requested_amount_centavos",
+        "self_approved",
         "submitted_at",
-        "updated_by"
+        "updated_by",
+        "would_self_approve"
       ]
     },
     {
@@ -1453,14 +1456,17 @@
         "assessment",
         "assigned_to",
         "created_by",
+        "endorsed_by",
         "is_protected",
         "program_id",
         "reason_for_request",
         "reference_number",
         "referred_by",
         "requested_amount_centavos",
+        "self_approved",
         "submitted_at",
-        "updated_by"
+        "updated_by",
+        "would_self_approve"
       ]
     },
     {
@@ -1486,14 +1492,17 @@
         "assessment",
         "assigned_to",
         "created_by",
+        "endorsed_by",
         "is_protected",
         "program_id",
         "reason_for_request",
         "reference_number",
         "referred_by",
         "requested_amount_centavos",
+        "self_approved",
         "submitted_at",
-        "updated_by"
+        "updated_by",
+        "would_self_approve"
       ]
     },
     {
@@ -1519,14 +1528,17 @@
         "assessment",
         "assigned_to",
         "created_by",
+        "endorsed_by",
         "is_protected",
         "program_id",
         "reason_for_request",
         "reference_number",
         "referred_by",
         "requested_amount_centavos",
+        "self_approved",
         "submitted_at",
-        "updated_by"
+        "updated_by",
+        "would_self_approve"
       ]
     },
     {
@@ -1588,14 +1600,17 @@
         "assessment",
         "assigned_to",
         "created_by",
+        "endorsed_by",
         "is_protected",
         "program_id",
         "reason_for_request",
         "reference_number",
         "referred_by",
         "requested_amount_centavos",
+        "self_approved",
         "submitted_at",
-        "updated_by"
+        "updated_by",
+        "would_self_approve"
       ]
     },
     {
@@ -1621,14 +1636,17 @@
         "assessment",
         "assigned_to",
         "created_by",
+        "endorsed_by",
         "is_protected",
         "program_id",
         "reason_for_request",
         "reference_number",
         "referred_by",
         "requested_amount_centavos",
+        "self_approved",
         "submitted_at",
-        "updated_by"
+        "updated_by",
+        "would_self_approve"
       ]
     },
     {
@@ -1723,14 +1741,17 @@
         "assessment",
         "assigned_to",
         "created_by",
+        "endorsed_by",
         "is_protected",
         "program_id",
         "reason_for_request",
         "reference_number",
         "referred_by",
         "requested_amount_centavos",
+        "self_approved",
         "submitted_at",
-        "updated_by"
+        "updated_by",
+        "would_self_approve"
       ]
     },
     {
@@ -1773,14 +1794,17 @@
         "assessment",
         "assigned_to",
         "created_by",
+        "endorsed_by",
         "is_protected",
         "program_id",
         "reason_for_request",
         "reference_number",
         "referred_by",
         "requested_amount_centavos",
+        "self_approved",
         "submitted_at",
-        "updated_by"
+        "updated_by",
+        "would_self_approve"
       ]
     },
     {
@@ -1821,14 +1845,17 @@
         "assessment",
         "assigned_to",
         "created_by",
+        "endorsed_by",
         "is_protected",
         "program_id",
         "reason_for_request",
         "reference_number",
         "referred_by",
         "requested_amount_centavos",
+        "self_approved",
         "submitted_at",
-        "updated_by"
+        "updated_by",
+        "would_self_approve"
       ]
     },
     {
@@ -1854,14 +1881,17 @@
         "assessment",
         "assigned_to",
         "created_by",
+        "endorsed_by",
         "is_protected",
         "program_id",
         "reason_for_request",
         "reference_number",
         "referred_by",
         "requested_amount_centavos",
+        "self_approved",
         "submitted_at",
-        "updated_by"
+        "updated_by",
+        "would_self_approve"
       ]
     },
     {
@@ -1949,6 +1979,7 @@
       "consumer": "beneficiary.mapper.ts#toIdentityResolution",
       "required": [],
       "optional": [
+        "app_account",
         "canonical_resident_id",
         "decided_at",
         "decided_by",
@@ -2172,6 +2203,7 @@
       "consumer": "beneficiary.mapper.ts#toIdentityResolution",
       "required": [],
       "optional": [
+        "app_account",
         "canonical_resident_id",
         "decided_at",
         "decided_by",
@@ -2188,6 +2220,7 @@
       "consumer": "beneficiary.mapper.ts#toMergePreview",
       "required": [],
       "optional": [
+        "app_account",
         "canonical_resident_id",
         "moving_case_count",
         "moving_enrollment_count",

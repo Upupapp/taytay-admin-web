@@ -6,6 +6,7 @@ import { firstValueFrom, map, of, throwError, type Observable } from 'rxjs';
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { NotificationStore } from '@core/notifications/notification.store';
 import { MockBeneficiaryRepository } from '@data/mock/mock-beneficiary.repository';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
 import { MockProgramRepository } from '@data/mock/mock-program.repository';
@@ -29,8 +30,12 @@ import {
   type BeneficiarySummary,
   type CursorPage,
   type CursorRequest,
+  type AppAccountOutcome,
+  type DuplicatePairId,
   type IdentityResolution,
+  type IdentityResolutionDraft,
   type IdentityResolutionId,
+  type MergePreview,
   type Page,
   type ResidentId,
   type StaffRepository,
@@ -187,8 +192,9 @@ async function openDetail(
 
 async function openQueue(
   role: StaffRole = 'mswdo-head',
+  beneficiaries?: Type<BeneficiaryRepository>,
 ): Promise<ComponentFixture<DuplicateReviewPage>> {
-  await configure(role);
+  await configure(role, beneficiaries);
   await TestBed.inject(Router).navigateByUrl('/beneficiaries/duplicates');
   const fixture = TestBed.createComponent(DuplicateReviewPage);
   await fixture.whenStable();
@@ -406,6 +412,122 @@ describe('the duplicate queue', () => {
   });
 });
 
+/* ── A resident's app account follows the record kept (DL-226) ─────────────── */
+
+/** The API's answer about an app account linked to the record superseded, for every pair. */
+function accountsThat(
+  outcome: (kept: ResidentId, superseded: ResidentId) => AppAccountOutcome | null,
+): Type<BeneficiaryRepository> {
+  return class extends MockBeneficiaryRepository {
+    override previewResolution(
+      pairId: DuplicatePairId,
+      kept: ResidentId,
+      superseded: ResidentId,
+    ): Observable<MergePreview> {
+      return super
+        .previewResolution(pairId, kept, superseded)
+        .pipe(map((preview) => ({ ...preview, appAccount: outcome(kept, superseded) })));
+    }
+
+    override resolveIdentity(draft: IdentityResolutionDraft): Observable<IdentityResolution> {
+      return super.resolveIdentity(draft).pipe(
+        map((finding) => ({
+          ...finding,
+          appAccount:
+            finding.canonicalResidentId === null || finding.supersededResidentId === null
+              ? null
+              : outcome(finding.canonicalResidentId, finding.supersededResidentId),
+        })),
+      );
+    }
+  };
+}
+
+const MOVES = accountsThat((kept) => ({ outcome: 'relinked', reason: null, linkedResidentId: kept }));
+const STAYS = accountsThat((_kept, superseded) => ({
+  outcome: 'not-relinked',
+  reason: 'kept-record-has-account',
+  linkedResidentId: superseded,
+}));
+
+interface OpenReview {
+  rows: () => readonly { residentId: string }[];
+  open: (candidate: never) => Promise<void>;
+  reason: { set: (value: string) => void };
+  submit: () => Promise<void>;
+}
+
+/** Opens the first pair, as the same person, with the record it was opened from kept. */
+async function reviewFirstPair(fixture: ComponentFixture<DuplicateReviewPage>): Promise<OpenReview> {
+  const page = fixture.componentInstance as unknown as OpenReview;
+  const first = page.rows()[0];
+  expect(first).toBeDefined();
+  await page.open(first as never);
+  fixture.detectChanges();
+  await fixture.whenStable();
+  return page;
+}
+
+const recordButton = (element: HTMLElement) =>
+  [...element.querySelectorAll('button')].find(
+    (node) => (node.textContent ?? '').trim() === 'Record finding',
+  );
+
+describe('a resident’s app account and a same-person finding (DL-226)', () => {
+  it('says before the button that an account on the superseded record moves to the record kept', async () => {
+    const fixture = await openQueue('mswdo-head', MOVES);
+    await reviewFirstPair(fixture);
+    const element = html(fixture);
+    const line = element.querySelector('.preview__account');
+    expect(line?.textContent).toContain('Recording this moves it to the record kept');
+    const button = recordButton(element);
+    expect(
+      line !== null &&
+        button !== undefined &&
+        (line.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+    ).toBe(true);
+  });
+
+  it('says the account was moved once the finding is recorded', async () => {
+    const fixture = await openQueue('mswdo-head', MOVES);
+    const page = await reviewFirstPair(fixture);
+    page.reason.set('Confirmed with her at the counter; one person, registered twice.');
+    await page.submit();
+    const toast = TestBed.inject(NotificationStore).toasts().at(-1);
+    expect(toast?.title).toBe('Finding recorded.');
+    expect(toast?.body).toContain('now reads the record kept');
+  });
+
+  it('says before the button that nothing moves when the record kept has an account of its own', async () => {
+    const fixture = await openQueue('mswdo-head', STAYS);
+    await reviewFirstPair(fixture);
+    const text = html(fixture).querySelector('.preview__account')?.textContent ?? '';
+    expect(text).toContain('the record kept already has an app account of its own');
+    expect(text).toContain('Nothing moves');
+  });
+
+  it('tells the office, until dismissed and in the inbox, when the account was not moved', async () => {
+    const fixture = await openQueue('mswdo-head', STAYS);
+    const page = await reviewFirstPair(fixture);
+    page.reason.set('Confirmed with her at the counter; one person, registered twice.');
+    await page.submit();
+    const notices = TestBed.inject(NotificationStore);
+    const toast = notices.toasts().at(-1);
+    expect(toast?.severity).toBe('warning');
+    expect(toast?.title).toBe('Finding recorded. The app account was not moved.');
+    expect(toast?.autoDismissMs).toBeNull();
+    expect(notices.inbox().some((entry) => entry.id === toast?.id)).toBe(true);
+  });
+
+  it('says no account moves when none is linked to the record superseded', async () => {
+    const fixture = await openQueue();
+    await reviewFirstPair(fixture);
+    expect(html(fixture).querySelector('.preview__account')?.textContent).toContain(
+      'No resident’s app account is linked to the record being superseded',
+    );
+  });
+});
+
 /* ── Identity findings on the record (DL-74, DL-223) ──────────────────────── */
 
 const AURORA_AGAIN = 'res-0011';
@@ -423,6 +545,7 @@ class FoundSamePerson extends MockBeneficiaryRepository {
         reason: 'Confirmed with her at the counter.',
         decidedBy: asId<StaffUserId>('staff-head'),
         decidedAt: asIsoDateTime('2026-11-02T01:30:00.000Z'),
+        appAccount: null,
       },
     ]);
   }
@@ -435,7 +558,34 @@ class FindingsFail extends MockBeneficiaryRepository {
   }
 }
 
+/** The same finding, which also moved an app account to the record kept (DL-226). */
+class FoundSamePersonAccountMoved extends FoundSamePerson {
+  override resolutionsFor(): Observable<readonly IdentityResolution[]> {
+    return super.resolutionsFor().pipe(
+      map((findings) =>
+        findings.map((finding) => ({
+          ...finding,
+          appAccount: {
+            outcome: 'relinked' as const,
+            reason: null,
+            linkedResidentId: asId<ResidentId>(AURORA),
+          },
+        })),
+      ),
+    );
+  }
+}
+
 describe('the identity findings on a record', () => {
+  it('says what a finding did to a resident’s app account (DL-226)', async () => {
+    const element = html(await openDetail(AURORA, 'mswdo-head', FoundSamePersonAccountMoved));
+    expect(element.textContent).toContain(
+      'the app account linked to the superseded record was moved to the record kept',
+    );
+    const plain = html(await openDetail(AURORA, 'mswdo-head', FoundSamePerson));
+    expect(plain.textContent).not.toContain('Residents’ app:');
+  });
+
   it('says no finding has been recorded, rather than leaving the panel blank', async () => {
     const element = html(await openDetail(AURORA));
 

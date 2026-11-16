@@ -99,3 +99,9 @@
 .assessment__blockers > p {
   font-weight: var(--fw-semibold);
 }
+
+/* The self-approval warning (DL-226): its heading above its sentence, as a self-release's. */
+.assessment__self-approve {
+  flex-direction: column;
+  gap: var(--space-1);
+}

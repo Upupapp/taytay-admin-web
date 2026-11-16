@@ -147,8 +147,9 @@ async function openAssessment(
   id: string,
   role: StaffRole = 'social-worker',
   requests: Type<unknown> = MockAssistanceRequestRepository,
+  staffId = 'staff-sw-1',
 ): Promise<ComponentFixture<AssessmentPage>> {
-  await configure(role, 'staff-sw-1', requests);
+  await configure(role, staffId, requests);
   await TestBed.inject(Router).navigateByUrl(`/assistance-requests/${id}`);
   const fixture = TestBed.createComponent(AssessmentPage);
   fixture.componentRef.setInput('id', id);
@@ -656,6 +657,66 @@ describe('approving says what was approved (DL-183)', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(html(fixture).textContent).toContain('3,000.50');
+  });
+});
+
+/*
+ * DL-226: approving a request one endorsed is warned before the button, recorded and allowed — the
+ * rule a self-release follows (DL-91). req-0001 was endorsed by staff-sw-1.
+ */
+describe('approving one’s own endorsement is warned, never refused (DL-226)', () => {
+  const approveSection = (element: HTMLElement) =>
+    element.querySelector('#approve-heading')?.parentElement;
+
+  it('warns the endorser before the approve button, and approves when asked', async () => {
+    const fixture = await openAssessment(
+      ENDORSED,
+      'mswdo-head',
+      MockAssistanceRequestRepository,
+      'staff-sw-1',
+    );
+    const section = approveSection(html(fixture));
+    const warning = section?.querySelector('.callout--warning');
+    const button = buttonNamed(section, 'Approve');
+    expect(warning?.textContent).toContain('You endorsed this request yourself');
+    expect(warning?.textContent).toContain('no second person checked');
+    expect(warning?.textContent).toContain('as approved by the person who endorsed it');
+    expect(warning?.textContent).toContain('You may still approve it');
+    // Before the button, and the button is the ordinary one: warned, never blocked.
+    expect(
+      warning !== null &&
+        warning !== undefined &&
+        button !== undefined &&
+        (warning.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+    ).toBe(true);
+    expect(button?.disabled).toBe(false);
+    expect(button?.classList.contains('btn--danger')).toBe(false);
+
+    type(section?.querySelector('input[type="text"]'), '3,000');
+    type(section?.querySelector('textarea'), 'Within the programme ceiling.');
+    button?.click();
+    await fixture.whenStable();
+    const reread = await firstValueFrom(
+      TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY).getById(asId<AssistanceRequestId>(ENDORSED)),
+    );
+    expect(reread?.status).toBe('approved');
+    expect(reread?.selfApproved).toBe(true);
+    expect(reread?.statusHistory.at(-1)?.selfApproved).toBe(true);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(html(fixture).querySelector('.history__self-approved')?.textContent).toContain(
+      'Approved by the person who endorsed it',
+    );
+  });
+
+  it('says nothing of the kind to an approver who did not endorse it', async () => {
+    const element = html(
+      await openAssessment(ENDORSED, 'mswdo-head', MockAssistanceRequestRepository, 'staff-head'),
+    );
+    expect(approveSection(element)?.textContent).toContain('Approved amount (₱)');
+    expect(approveSection(element)?.querySelector('.callout--warning')).toBeNull();
+    expect(element.querySelector('.history__self-approved')).toBeNull();
   });
 });
 

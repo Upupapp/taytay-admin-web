@@ -313,6 +313,32 @@ export interface StatusChange {
   readonly actorId: StaffUserId | null;
   readonly actorName: string;
   readonly occurredAt: IsoDateTime;
+  /**
+   * On a move to `approved`: the approver made the request's latest endorsement too (`DL-226`).
+   * Set by the system of record from the history, never from a role; `false` on every other move.
+   * Warned before, recorded, never refused — the rule a self-release follows (`DL-91`).
+   */
+  readonly selfApproved: boolean;
+}
+
+/**
+ * Who made the request's latest move to `endorsed`, read from its history — never inferred from a
+ * role (`DL-226`): the head holds `request.endorse` as well as `request.approve`, and an
+ * administrator holds every key, so a role says nothing about who recommended this request.
+ */
+export function latestEndorser(
+  history: readonly Pick<StatusChange, 'to' | 'actorId'>[],
+): StaffUserId | null {
+  return [...history].reverse().find((change) => change.to === 'endorsed')?.actorId ?? null;
+}
+
+/**
+ * Whether an approval by `approver` would be its endorser's own (`DL-226`). A warning rather than a
+ * refusal, on the doctrine of `isSelfRelease` (`DL-91`): a small office on a bad day may have one
+ * person available, and refusing the approval punishes the family for the office's staffing.
+ */
+export function isSelfApproval(endorsedBy: StaffUserId | null, approver: StaffUserId | null): boolean {
+  return endorsedBy !== null && approver !== null && endorsedBy === approver;
 }
 
 /**
@@ -530,6 +556,16 @@ export interface AssistanceRequest {
   readonly approvedAmount: Money | null;
   /** The goods the latest approval described, when it approved goods rather than an amount. */
   readonly approvedInKindDescription: string | null;
+  /** Who made the latest move to `endorsed`, from the history; `null` if it was never endorsed. */
+  readonly endorsedBy: StaffUserId | null;
+  /**
+   * The request stands at `endorsed` and **the reader** made that endorsement, so approving it now
+   * would be a self-approval (`DL-226`). Said by the system of record for whoever reads, so the
+   * screen warns before the button; it never refuses.
+   */
+  readonly wouldSelfApprove: boolean;
+  /** The latest approval was made by its endorser; its history entry says so too. */
+  readonly selfApproved: boolean;
   /** `''` when withheld from this reader — read `withheld` before reading it as "none given". */
   readonly reasonForRequest: string;
   /** The social worker it is assigned to for assessment: the latest of `assignments`. */

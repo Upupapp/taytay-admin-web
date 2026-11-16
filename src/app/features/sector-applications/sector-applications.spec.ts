@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, type Observable } from 'rxjs';
+import { of, throwError, type Observable } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -50,6 +50,8 @@ const DETAIL: SectorApplicationDetail = {
 class Applications implements SectorApplicationRepository {
   readonly calls: string[] = [];
   approval: SectorApproval | null = null;
+  /** What the API answers an approval with, when it refuses one. */
+  refusal: unknown = null;
   list(
     page: CursorRequest,
     status: SectorApplicationStatus,
@@ -68,6 +70,10 @@ class Applications implements SectorApplicationRepository {
   approve(id: SectorApplicationId, approval: SectorApproval): Observable<SectorApplication> {
     this.calls.push(`approve:${id}`);
     this.approval = approval;
+    if (this.refusal !== null) {
+      const refusal = this.refusal;
+      return throwError(() => refusal);
+    }
     return of({ ...APPLICATION, status: 'approved' });
   }
   returnToApplicant(id: SectorApplicationId, reason: string): Observable<SectorApplication> {
@@ -162,6 +168,41 @@ describe('Sector applications (DL-215)', () => {
     expect(applications.calls).toContain('approve:application-1');
     expect(applications.approval?.link?.residentId).toBe('resident-1');
     expect(applications.approval?.details?.idLastFour).toBe('1234');
+  });
+
+  it('says a superseded record is refused before the button, and the refusal in a sentence (DL-226)', async () => {
+    const applications = configure();
+    // The API's 409, as the error interceptor hands it on: its code is for the console, never shown.
+    applications.refusal = {
+      code: 'CONFLICT',
+      status: 409,
+      message:
+        'That registry record was found to be the same person as another record, which the office kept. Name the record kept.',
+      details: null,
+      requestId: 'req-1',
+      retryAfterSeconds: null,
+      counts: null,
+    };
+    const fixture = TestBed.createComponent(SectorApplicationReview);
+    fixture.componentRef.setInput('application', APPLICATION);
+    await settle(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+    expect(text(root)).toContain(
+      'a record the office has found to be the same person as another and superseded: link the record the office kept',
+    );
+
+    root.querySelector<HTMLInputElement>('input[name="application-record"]')?.click();
+    type(root, 'textarea[aria-describedby="application-approve-hint"]', 'Card seen at the counter.');
+    type(root, 'textarea[aria-describedby="application-link-hint"]', 'Same name, birth date and ID.');
+    root.querySelector<HTMLFormElement>('form[aria-labelledby="application-approve"]')?.dispatchEvent(
+      new Event('submit'),
+    );
+    await settle(fixture);
+    expect(applications.calls).toContain('approve:application-1');
+    expect(text(root)).toContain(
+      'Not done: That registry record was found to be the same person as another record, which the office kept.',
+    );
+    expect(text(root)).not.toContain('CONFLICT');
   });
 
   it('returns with the reason the resident will read', async () => {

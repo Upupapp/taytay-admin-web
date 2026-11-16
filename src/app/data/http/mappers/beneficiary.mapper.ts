@@ -9,6 +9,7 @@ import {
   REFERRAL_STATUS_CATALOG,
   RELEASE_STATUS_CATALOG,
   centavos,
+  type AppAccountOutcome,
   type AssistanceHistoryReading,
   type AssistanceRequestId,
   type AssistanceRequestStatus,
@@ -474,8 +475,10 @@ export function toIdentityResolution(wire: unknown): IdentityResolution | null {
   const reason = str(field(wire, 'reason'));
   const decidedBy = id<StaffUserId>(field(wire, 'decided_by'));
   const decidedAt = dateTime(field(wire, 'decided_at'));
+  const appAccount = toAppAccountOutcome(field(wire, 'app_account'));
   const [first, second] = pair ?? [];
   if (
+    appAccount === undefined ||
     findingId === null ||
     verdict === null ||
     (canonicalRaw !== null && canonical === null) ||
@@ -497,6 +500,7 @@ export function toIdentityResolution(wire: unknown): IdentityResolution | null {
     reason,
     decidedBy,
     decidedAt,
+    appAccount,
   };
 }
 
@@ -515,7 +519,9 @@ export function toMergePreview(wire: unknown): MergePreview | null {
   const enrollmentsRaw = field(wire, 'moving_enrollment_count');
   const enrollments = enrollmentsRaw === null ? null : int(enrollmentsRaw);
   const overlapping = whole(field(wire, 'overlapping_program_names'), str);
+  const appAccount = toAppAccountOutcome(field(wire, 'app_account'));
   if (
+    appAccount === undefined ||
     canonicalResidentId === null ||
     supersededResidentId === null ||
     requests === null ||
@@ -534,7 +540,34 @@ export function toMergePreview(wire: unknown): MergePreview | null {
     movingCaseCount: cases,
     movingEnrollmentCount: enrollments,
     overlappingProgramNames: overlapping,
+    appAccount,
   };
+}
+
+/**
+ * `app_account` on a finding or its preview (`DL-226`): `null` when no app account is linked to the
+ * record superseded, the outcome otherwise — or `undefined` when it cannot be read, absent included,
+ * which refuses the finding or the preview whole. Read as "no account" instead, an unreadable
+ * outcome would tell a reviewer that nobody's app changes when one may already have moved.
+ */
+function toAppAccountOutcome(wire: unknown): AppAccountOutcome | null | undefined {
+  if (wire === null) {
+    return null;
+  }
+  const outcome = oneOf(field(wire, 'outcome'), ['relinked', 'not-relinked'] as const);
+  const reasonRaw = field(wire, 'reason');
+  const reason = reasonRaw === null ? null : oneOf(reasonRaw, ['kept-record-has-account'] as const);
+  const linkedResidentId = id<ResidentId>(field(wire, 'linked_resident_id'));
+  // The two outcomes say opposite things about the reason, so a mismatch is one nobody can word.
+  if (
+    outcome === null ||
+    linkedResidentId === null ||
+    (reasonRaw !== null && reason === null) ||
+    (outcome === 'relinked') !== (reason === null)
+  ) {
+    return undefined;
+  }
+  return { outcome, reason, linkedResidentId };
 }
 
 /** What `POST office/duplicate-pairs/{id}/decide` reads, and nothing else: the body is strict. */

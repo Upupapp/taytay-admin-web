@@ -23,6 +23,7 @@ import {
   resolutionProblems,
   type CursorPage,
   type DuplicateCandidate,
+  type IdentityResolution,
   type IdentityResolutionDraft,
   type IdentityVerdict,
   type MergePreview,
@@ -273,8 +274,10 @@ export class DuplicateReviewPage {
 
     this.submitting.set(true);
     try {
-      await firstValueFrom(this.repository.resolveIdentity(this.draftFrom(candidate)));
-      this.notifications.success(this.copy.recorded);
+      const finding = await firstValueFrom(
+        this.repository.resolveIdentity(this.draftFrom(candidate)),
+      );
+      this.announce(finding);
       this.close();
       this.reloadToken.update((token) => token + 1);
     } catch (error: unknown) {
@@ -287,6 +290,40 @@ export class DuplicateReviewPage {
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  /** What the finding would do to an app account linked to the record superseded (`DL-226`). */
+  protected accountEffect(preview: MergePreview): string {
+    const account = preview.appAccount;
+    if (account === null) {
+      return this.copy.previewAccountNone;
+    }
+    return account.outcome === 'relinked'
+      ? this.copy.previewAccountRelinked
+      : this.copy.previewAccountNotRelinked;
+  }
+
+  /**
+   * The finding, and what it did to a resident's app account (`DL-226`). An account left where it
+   * was means one person has two, which only the office can settle: that stays on screen until
+   * dismissed and is kept in the inbox, rather than fading with a toast nobody was looking at.
+   */
+  private announce(finding: IdentityResolution): void {
+    const account = finding.appAccount;
+    if (account?.outcome === 'not-relinked') {
+      this.notifications.notify({
+        severity: 'warning',
+        title: this.copy.recordedAccountNotMoved,
+        body: this.copy.recordedAccountNotMovedBody,
+        channel: 'both',
+        autoDismissMs: null,
+      });
+      return;
+    }
+    this.notifications.success(
+      this.copy.recorded,
+      account?.outcome === 'relinked' ? this.copy.recordedAccountRelinked : undefined,
+    );
   }
 
   protected labelFor(candidate: DuplicateCandidate, residentId: ResidentId): string {

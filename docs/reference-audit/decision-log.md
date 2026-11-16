@@ -10812,3 +10812,84 @@ byte.
 
 Easiest to reverse: nothing here deletes, so reversing means re-adding delete routes on the API
 first; the console side is the five sections' dialogs and the ports' `archive`/`restore`.
+
+## DL-226 — approving one's own endorsement is warned, recorded and allowed; an app account follows the record the office kept
+
+**Status:** Settled (16 November 2026). The console's side of `taytay-backend` ADR 0003, sections A
+and B, decided by the lead on the owner's "fix, you decide for the best". Contract pinned at
+`taytay-backend` `d1e997c` (A is `f7192d7`, B `dd8dbc3`; C, the residents' own requests in the app,
+has no surface here — its notification type is the residents', and an unknown type is read as
+`general` already). Extends `DL-91` one step before the money and `DL-74`'s finding with what it does
+to an app account; supersedes `DL-215`'s "the link is never moved".
+
+**A. A self-approval is warned and recorded, never refused.** The MSWDO head holds `request.endorse`
+as well as `request.approve`, and an administrator holds every key, so separated permissions no more
+separate people at the approval than they do at the payout (`DL-91`). The API now says, for whoever
+reads a request, whether approving it now would be their own endorsement (`would_self_approve`, only
+while it stands at `endorsed`), who made the latest endorsement (`endorsed_by`, read from the history,
+never from a role), and which approval was its endorser's (`self_approved`, on the request and on
+each history entry); the approval writes one more audit row, `office_request.self_approved`.
+
+- The approve panel says it **before** the form and its button, in a `.callout--warning` headed
+  "Check before you approve": the reader endorsed this request; approving it means no second person
+  checked the recommendation, which the office normally separates; it will be recorded, in its
+  history and the audit trail, as approved by the person who endorsed it; and they may still approve
+  it, asking another approver if one is available. The button stays the ordinary `.btn--primary` and
+  enabled, for `DL-91`'s reason: a small office on a bad day may have one person, and refusing the
+  approval punishes the family for the office's staffing.
+- The history says it on the approval that was one: "Approved by the person who endorsed it, so no
+  second person checked the recommendation. Recorded, not refused."
+- Whether to warn is the server's answer for this reader. The console does not compare the session
+  with `endorsedBy` to decide it; `latestEndorser` and `isSelfApproval` exist in the domain for the
+  mock adapter, which marks its own approvals by the same rule.
+
+**B. An app account follows the record the office kept.** A same-person finding that supersedes a
+record moves an app account linked to it onto the record kept, in the finding's own transaction —
+unless the record kept already has an app account, when nothing moves: which of two accounts is this
+person's is for somebody who has seen both to say. The finding, the findings list and the preview
+answer `app_account`: `null` when no account is linked to the record superseded, otherwise the
+outcome (`relinked` or `not-relinked`), why nothing moved (`kept-record-has-account`), and the record
+the account reads afterwards. No account is identified.
+
+- The review drawer says it **before** "Record finding", under what the finding carries across: no
+  account is linked to the record being superseded; or an account is, and recording this moves it to
+  the record kept, whose app then reads the record kept with what was recorded under both; or an
+  account is and stays, because the record kept has its own, leaving one person with two accounts for
+  the office to settle. Before the preview has been read, the drawer states the rule in general.
+- After the finding, a moved account is said in the success notice. An account left where it was is
+  a warning kept until dismissed and in the inbox, not a toast that fades: the office now has two
+  accounts for one person to settle, and was told so.
+- A record's identity findings say what each did to an app account.
+- An `app_account` the console cannot word — absent included — refuses the finding or the preview
+  whole. Read as "no account", it would tell a reviewer that nobody's app changed when one may
+  already have moved.
+- The only place this console links an account to a record is the sector application's approval
+  (`DL-215`). The API refuses a record a finding superseded with a 409 whose code is the generic
+  `CONFLICT`, shared with that act's other refusals; the console branches on codes, never on
+  messages, so it shows the API's own sentence after "Not done:" — "That registry record was found to
+  be the same person as another record, which the office kept. Name the record kept." — and never the
+  code. The effects before the button now say that such a record is refused, to link the record kept
+  instead, and that the link moves only with a same-person finding; "for good: the link is never
+  moved" is gone. The registry search and the API's suggestions already leave superseded records out
+  (`DL-223`), so the refusal answers a race, not a choice the screen offered.
+
+**Audit words.** `office_request.self_approved`, `resident_account.relinked`,
+`resident_account.not_relinked`, and `resident_account.linked`, which the app trail had shown as
+undescribed since `DL-215`. Checking for them found three more codes the backend records with no
+words here — `digital_id.card_photo_taken`, `sector_application.approved`,
+`sector_application.proof_viewed` — left for their own change.
+
+**The mock.** Its registry links no app account to a record, so its findings and previews answer
+`null` and say no account moves; its sector applications refuse a superseded record in the API's
+words; its approvals are marked from their history, and its reads say `wouldSelfApprove` for the
+reader.
+
+**Held by** focused tests at each layer: the domain's two rules, both mappers (including every
+unreadable `app_account`), the mock, the approve panel (the warning before an enabled, ordinary
+button; the history line; nothing said to an approver who did not endorse), the review drawer (each
+outcome before the button, and after it), the findings list, the sector review's refusal, and the
+audit words. No repository check was added: like `DL-91`'s warning, this is a sentence beside a
+button, and the tests read the button.
+
+Easiest to reverse: A is one `@if` and two copy lines over a server flag; B is one preview line, one
+notice and one findings line over a field the API keeps sending.

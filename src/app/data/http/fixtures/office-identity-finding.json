@@ -11,7 +11,12 @@
     ],
     "reason": "Same birth date and barangay; the second record was typed at a satellite desk.",
     "decided_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
-    "decided_at": "2026-11-07T02:00:00.000Z"
+    "decided_at": "2026-11-07T02:00:00.000Z",
+    "app_account": {
+      "outcome": "relinked",
+      "reason": null,
+      "linked_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03"
+    }
   },
   "meta": {}
 }

@@ -813,6 +813,11 @@ and the screen warns before the money moves (`DL-91`). It **warns rather than
 blocks**: a small office on a bad day may have one person available, and
 refusing the payout punishes the family for the office's staffing.
 
+A self-approval — approving a request one endorsed, which the head's keys allow —
+is treated like a self-release: the API says `wouldSelfApprove` for the reader,
+the approve panel warns before its button, and the approval is recorded as one
+in the request's history and the audit trail, never refused (`DL-226`).
+
 ### A household is not a family
 
 A household is an address; a family is a claim about who belongs to whom

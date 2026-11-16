@@ -24,6 +24,8 @@ import {
   type AssessmentTemplate,
   type OpenAssessment,
   canTransition,
+  isSelfApproval,
+  latestEndorser,
   cautions,
   isOutstandingObligation,
   REASON_MIN_LENGTH,
@@ -397,6 +399,8 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       }
     }
 
+    // An approval by the request's own endorser goes ahead and says so on its history entry, as the
+    // API marks it from the history under the request's lock (DL-226): warned, never refused.
     const change: StatusChange = {
       from: current.status,
       to,
@@ -404,7 +408,11 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       actorId: user?.id ?? null,
       actorName: user?.displayName ?? 'Unknown',
       occurredAt: asIsoDateTime(new Date()),
+      selfApproved:
+        to === 'approved' &&
+        isSelfApproval(latestEndorser(current.statusHistory), user?.id ?? null),
     };
+    const statusHistory = [...current.statusHistory, change];
 
     const updated: AssistanceRequest = {
       ...current,
@@ -415,7 +423,9 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
             approvedAmount: approval.kind === 'money' ? approval.amount : null,
             approvedInKindDescription: approval.kind === 'in-kind' ? approval.description.trim() : null,
           }),
-      statusHistory: [...current.statusHistory, change],
+      endorsedBy: latestEndorser(statusHistory),
+      selfApproved: to === 'approved' ? change.selfApproved : current.selfApproved,
+      statusHistory,
       audit: { ...current.audit, updatedAt: change.occurredAt, updatedBy: user?.id ?? null },
     };
 
@@ -521,6 +531,9 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       ...this.fieldsFrom(draft, resident.address.barangayId),
       approvedAmount: null,
       approvedInKindDescription: null,
+      endorsedBy: null,
+      wouldSelfApprove: false,
+      selfApproved: false,
       assignedTo: null,
       assignments: [],
       requirements: requirementsFrom(draft.requirements),
@@ -589,6 +602,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       actorId: user?.id ?? null,
       actorName: user?.displayName ?? 'Unknown',
       occurredAt: now,
+      selfApproved: false,
     };
 
     this.serial += 1;

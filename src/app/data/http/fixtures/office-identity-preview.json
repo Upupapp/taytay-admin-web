@@ -9,7 +9,12 @@
     "moving_enrollment_count": null,
     "overlapping_program_names": [
       "Medical assistance"
-    ]
+    ],
+    "app_account": {
+      "outcome": "relinked",
+      "reason": null,
+      "linked_resident_id": "7d1c2b3a-4e5f-4a6b-8c7d-8e9f0a1b2c03"
+    }
   },
   "meta": {}
 }

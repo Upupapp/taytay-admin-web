@@ -1,9 +1,12 @@
 import { DOCUMENT_UPLOAD_POLICY } from '../requirements/upload-policy';
+import { asId, type StaffUserId } from '../shared/ids';
 import { canTransition, nextStatuses } from '../shared/status';
 import {
   ASSISTANCE_STATUS_CATALOG,
   ASSISTANCE_STATUS_TRANSITIONS,
+  isSelfApproval,
   isTerminalAssistanceStatus,
+  latestEndorser,
   outstandingRequirements,
   type AssistanceRequest,
   type AssistanceRequestStatus,
@@ -140,5 +143,34 @@ describe('outstandingRequirements', () => {
       requirement({ id: 'rq-2' as SubmittedRequirement['id'], status: 'waived' }),
     ]);
     expect(outstandingRequirements(request)).toHaveLength(0);
+  });
+});
+
+describe('a self-approval is read from the history, never from a role (DL-226)', () => {
+  const HEAD = asId<StaffUserId>('staff-head');
+  const WORKER = asId<StaffUserId>('staff-sw-1');
+  const move = (to: AssistanceRequestStatus, actorId: StaffUserId | null) => ({ to, actorId });
+
+  it('names whoever made the latest move to endorsed, or nobody before one', () => {
+    expect(latestEndorser([])).toBeNull();
+    expect(latestEndorser([move('submitted', HEAD), move('assessment', WORKER)])).toBeNull();
+    expect(latestEndorser([move('endorsed', WORKER)])).toBe(WORKER);
+    // Returned and endorsed again: the endorsement that stands is the latest one.
+    expect(
+      latestEndorser([
+        move('endorsed', WORKER),
+        move('returned', HEAD),
+        move('intake-review', WORKER),
+        move('endorsed', HEAD),
+      ]),
+    ).toBe(HEAD);
+  });
+
+  it('is an approval by that same account, and nothing else', () => {
+    expect(isSelfApproval(HEAD, HEAD)).toBe(true);
+    expect(isSelfApproval(WORKER, HEAD)).toBe(false);
+    expect(isSelfApproval(null, HEAD)).toBe(false);
+    expect(isSelfApproval(HEAD, null)).toBe(false);
+    expect(isSelfApproval(null, null)).toBe(false);
   });
 });

@@ -42,7 +42,8 @@
   font-weight: var(--fw-semibold);
 }
 
-.preview__overlap {
+.preview__overlap,
+.preview__account {
   color: var(--text);
   font-size: var(--fs-label);
 }
