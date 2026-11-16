@@ -133,7 +133,12 @@ export class HotlinesSection {
 
   protected readonly columns = computed<readonly TableColumn<Hotline>[]>(() => [
     { key: 'name', header: this.copy.columnName, value: (hotline) => hotline.name },
-    { key: 'number', header: this.copy.columnNumber, value: (hotline) => hotline.number },
+    {
+      key: 'number',
+      header: this.copy.columnNumber,
+      value: (hotline) => hotline.number,
+      nowrap: true,
+    },
     {
       key: 'kind',
       header: this.copy.columnKind,

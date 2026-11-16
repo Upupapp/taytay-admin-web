@@ -52,6 +52,10 @@
   text-align: end;
 }
 
+.table__cell--nowrap {
+  white-space: nowrap;
+}
+
 .table__row:last-child td {
   border-block-end: none;
 }

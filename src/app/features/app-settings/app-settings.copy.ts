@@ -1,4 +1,4 @@
-import { REVIEW_DAYS_BOUNDS } from '@domain/index';
+import { actorInSentence, REVIEW_DAYS_BOUNDS } from '@domain/index';
 
 /**
  * Every sentence the app settings page says (`DL-170`). What a change does is the domain's
@@ -172,7 +172,7 @@ export const APP_SETTINGS_COPY = {
   noArchivedFlags: 'No flag is archived.',
   archivedFlagsFailed: 'The archived flags could not be read',
   flagArchivedOn: (date: string, name: string | null) =>
-    name === null ? `Archived ${date}` : `Archived ${date} by ${name}`,
+    name === null ? `Archived ${date}` : `Archived ${date} by ${actorInSentence(name)}`,
   newFlagClash: 'A new flag has the name of one the app already has; change that one instead.',
   newFlagArchivedClash:
     'A new flag has the name of an archived flag; tick Restore beside that one instead.',

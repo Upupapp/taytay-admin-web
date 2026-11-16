@@ -1,4 +1,9 @@
-import { isArchiveRefusal, officeInUseWords, type ArchiveRefusalKind } from '@domain/index';
+import {
+  actorInSentence,
+  isArchiveRefusal,
+  officeInUseWords,
+  type ArchiveRefusalKind,
+} from '@domain/index';
 import { failureReason } from '../state/failure-reason';
 
 /**
@@ -21,7 +26,7 @@ export const ARCHIVE_COPY = {
   },
   row: {
     archivedOn: (date: string, name: string | null): string =>
-      name === null ? `Archived ${date}` : `Archived ${date} by ${name}`,
+      name === null ? `Archived ${date}` : `Archived ${date} by ${actorInSentence(name)}`,
     reason: (reason: string): string => `Reason: ${reason}`,
     noReason: 'No reason was recorded.',
     history: 'History',

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  actorInSentence,
   ARCHIVE_REASON_LIMIT,
   archiveReasonProblem,
   ArchiveRefusedError,
@@ -43,5 +44,15 @@ describe('archive, never delete (DL-225)', () => {
       false,
     );
     expect(isArchiveRefusal(null)).toBe(false);
+  });
+
+  it('lowers only the API stand-in for an unnamed account after "by", never a name', () => {
+    expect(actorInSentence('An account with no name recorded')).toBe(
+      'an account with no name recorded',
+    );
+    expect(actorInSentence('An account since closed')).toBe('an account since closed');
+    expect(actorInSentence('Ana Cruz')).toBe('Ana Cruz');
+    expect(actorInSentence('Ancheta, M.')).toBe('Ancheta, M.');
+    expect(actorInSentence('An Accountant')).toBe('An Accountant');
   });
 });

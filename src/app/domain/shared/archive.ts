@@ -28,6 +28,16 @@ export interface ArchiveRecord {
   readonly reason: string | null;
 }
 
+/**
+ * An account's name as it reads after "by". The API stands in for an account it cannot name with a
+ * phrase written to stand alone — "An account with no name recorded", "An account since closed" —
+ * which read "by An account…" mid-sentence. Only those phrases are lowered; a person's name is
+ * never touched, however it is spelt.
+ */
+export function actorInSentence(name: string): string {
+  return /^An account\b/.test(name) ? `an${name.slice(2)}` : name;
+}
+
 export type ArchiveAct = 'archived' | 'restored';
 
 /**

@@ -21,6 +21,11 @@ export interface TableColumn<TRow> {
   readonly width?: string;
   /** Hides the header text visually but keeps it for screen readers. */
   readonly hideHeader?: boolean;
+  /**
+   * Keeps a short value on one line — a phone number broken at its hyphen, "(02) 8000-" over
+   * "0000", reads as two numbers. Only for values that are short by nature.
+   */
+  readonly nowrap?: boolean;
 }
 
 export function columnText<TRow>(column: TableColumn<TRow>, row: TRow): string {

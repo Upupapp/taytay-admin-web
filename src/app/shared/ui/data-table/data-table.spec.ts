@@ -48,6 +48,17 @@ describe('DataTable', () => {
     expect(element.textContent).toContain('6500');
   });
 
+  it('keeps a nowrap column on one line, and only that column', async () => {
+    const columns: readonly TableColumn<Row>[] = [
+      { key: 'name', header: 'Name', value: (row) => row.name },
+      { key: 'phone', header: 'Number', value: () => '(02) 8000-0000', nowrap: true },
+    ];
+    const element = (await render({ columns })).nativeElement as HTMLElement;
+    const cells = element.querySelectorAll('tbody tr:first-child td');
+    expect(cells[0]?.classList.contains('table__cell--nowrap')).toBe(false);
+    expect(cells[1]?.classList.contains('table__cell--nowrap')).toBe(true);
+  });
+
   it('renders an accessible caption', async () => {
     const element = (await render()).nativeElement as HTMLElement;
     expect(element.querySelector('caption')?.textContent).toContain('Test table');

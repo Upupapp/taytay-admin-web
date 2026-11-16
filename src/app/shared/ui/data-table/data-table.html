@@ -47,7 +47,10 @@
             (keydown.space)="selectRow(row)"
           >
             @for (column of columns(); track column.key) {
-              <td [class.table__cell--end]="column.align === 'end'">
+              <td
+                [class.table__cell--end]="column.align === 'end'"
+                [class.table__cell--nowrap]="column.nowrap === true"
+              >
                 @if (column.cell) {
                   <ng-container
                     *ngTemplateOutlet="column.cell; context: { $implicit: row }"

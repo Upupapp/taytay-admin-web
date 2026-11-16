@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { of, switchMap, type Observable } from 'rxjs';
 
-import type { ArchiveEvent } from '@domain/index';
+import { actorInSentence, type ArchiveEvent } from '@domain/index';
 
 import { IDLE, toViewState, type ViewState } from '../state/view-state';
 import { AsyncContent } from '../ui/async-content/async-content';
@@ -46,7 +46,7 @@ let histories = 0;
                     <time [attr.datetime]="event.occurredAt">
                       {{ event.occurredAt | date: 'd MMM y, HH:mm' }}</time
                     >
-                    {{ copy.by }} {{ event.actorName }}
+                    {{ copy.by }} {{ actor(event.actorName) }}
                   </span>
                   <span class="soft-row__meta">
                     @if (event.reason) {
@@ -68,6 +68,8 @@ export class ArchiveHistory {
   readonly source = input.required<Observable<readonly ArchiveEvent[]> | null>();
 
   protected readonly copy = ARCHIVE_COPY.history;
+  /** "by an account since closed", never "by An account…" mid-sentence. */
+  protected readonly actor = actorInSentence;
   protected readonly headingId = `archive-history-${++histories}`;
 
   protected readonly state = toSignal(
