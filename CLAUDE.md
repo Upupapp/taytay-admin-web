@@ -523,8 +523,8 @@ rather than how many neighbours signed up.
 
 ### Archive, never delete
 
-Nothing an office user does in this console removes a record (`DL-225`; RA 9470 §18 as the
-backend's ADR 0002 reads it, unverified against the primary text). An office, a Tulong page, a
+Nothing an office user does in this console removes a record (`DL-225`; RA 9470 §18, checked
+word for word against the Supreme Court E-Library's text of the Act). An office, a Tulong page, a
 hotline, a home banner or link, a saved view and a feature flag are **archived** — out of what
 residents see, kept under Archived with who, when and why, read-only — and **restored**. Archive and
 restore take a required reason (1 to 500), except a flag (through App settings' review) and a saved

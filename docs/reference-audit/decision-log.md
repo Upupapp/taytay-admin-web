@@ -10723,21 +10723,36 @@ except taking a Balita article's pin away (`DELETE news/{id}/pin`, a flag on a k
 API refuses a delete in the database (migration `0063`), so this is the console holding the same
 line, not the only line.
 
-**Why.** RA 9470 (the National Archives of the Philippines Act of 2007), §18 "Disposal of Public
-Records", forbids a government agency to dispose of or destroy public records in its custody without
-the prior written authority of the National Archives' executive director, and §4 counts as a public
-record what an agency creates in the conduct of its affairs. What the municipality offered its
-residents — which offices, pages, numbers and notices, and when — is such a record. The wording is
-the backend's ADR `docs/adr/0002-archive-never-delete.md`, read from LawPhil's reproduction of the
-Act; the Senate PDF and the Official Gazette refused an automated fetch, so it is **not verified
-against the primary text**, and the office should confirm it and obtain its records disposition
-schedule before relying on it for anything beyond "do not delete" (CLAUDE.md §6).
+**Why.** RA 9470, the National Archives of the Philippines Act of 2007 (approved 21 May 2007), §18
+"Disposal of Public Records": "No government department, bureau, agency and instrumentality shall
+dispose of, destroy or authorize the disposal or destruction of any public records, which are in the
+custody or under its control except with the prior written authority of the executive director."
+§4(w): "'Public records' refers to record or classes of records, in any form, in whole or in part,
+created or received, whether before or after the effectivity of this Act, by a government agency in
+the conduct of its affairs, and have been retained by that government agency or its successors as
+evidence or because of the information contained therein." What the municipality offered its
+residents — which offices, pages, numbers and notices, and when — is such a record. Both quotations
+were checked word for word on 16 November 2026 against the Supreme Court E-Library's text of the Act
+(elibrary.judiciary.gov.ph, document 19575), and agree with LawPhil's reproduction; the Official
+Gazette, Senate, House and National Archives copies refused an automated fetch. The penalty sections
+(§40, §41) were not read in full and are not relied on here. The office still owes its records
+disposition schedule before anything archived here is ever disposed of (`DL-113`).
 
 **The exceptions live outside this console.** What stays a deletion is a resident's own data in the
 residents' app under RA 10173 — closing their account, withdrawing the selfie consent, their own
 household and members, their device tokens — plus cleanup of a file no record ever named and
 technical state (rate-limit counters, used challenges). None of it is an act in this console, so
 `check:archive` lists no exception for it.
+
+**What a reviewer decides on is kept** (ruled 16 November 2026, backend `0064`, ADR 0002). The ID
+images on a verification request when a reviewer approves or rejects it are the evidence of that
+decision — this console's own `DL-77` rule, "the superseded copy is the evidence of what the office
+actually read when it decided". A resident's re-send after a rejection no longer removes them; they
+are kept, shown nowhere and sent in no response, until the office has a disposition schedule
+(`DL-113`), and only `verification.review` reads one by id. An image nobody decided on still goes
+when it is replaced (RA 10173's minimum). A selfie yields to biometric minimisation even when a
+decision was made on it: it is erased when the consent is withdrawn or an in-person verification
+supersedes the request, and the record says so. Nothing on the review screen changes.
 
 **Why an archive is reversible and takes a reason.** An archive is a decision about what residents
 see, not a judgement on the record, so a mistaken one must cost a restore rather than a re-entry
