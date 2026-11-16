@@ -9,7 +9,10 @@
       "sort_order": 1,
       "active": true,
       "created_at": "2026-10-01T00:00:00.000Z",
-      "updated_at": "2026-10-01T00:00:00.000Z"
+      "updated_at": "2026-10-01T00:00:00.000Z",
+      "archived_at": null,
+      "archive_reason": null,
+      "archived_by_name": null
     },
     {
       "id": "9b8a7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6e",
@@ -20,7 +23,10 @@
       "sort_order": 20,
       "active": false,
       "created_at": "2026-10-01T00:00:00.000Z",
-      "updated_at": "2026-10-02T00:00:00.000Z"
+      "updated_at": "2026-10-02T00:00:00.000Z",
+      "archived_at": null,
+      "archive_reason": null,
+      "archived_by_name": null
     }
   ],
   "meta": {}

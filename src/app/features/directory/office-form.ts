@@ -25,7 +25,7 @@ import {
 } from '@domain/index';
 import { blankToNull, coordinateOf, coordinateProblem, readText } from '@shared/forms/form-values';
 import { ImageFileField } from '@shared/media/image-file-field';
-import { failureReason } from '@shared/state/failure-reason';
+import { plainRefusal } from '@shared/archive/archive.copy';
 
 import { DIRECTORY_COPY } from './directory.copy';
 
@@ -219,7 +219,9 @@ export class OfficeForm {
       error: (failure: unknown) => {
         this.busy.set(false);
         this.outcome.set(
-          DIRECTORY_COPY.list.notDone(failureReason(failure) ?? DIRECTORY_COPY.list.failed),
+          DIRECTORY_COPY.list.notDone(
+            plainRefusal(failure, DIRECTORY_COPY.offices.noun, DIRECTORY_COPY.list.failed),
+          ),
         );
       },
     });

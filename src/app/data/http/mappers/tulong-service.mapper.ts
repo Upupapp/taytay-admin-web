@@ -9,6 +9,7 @@ import {
   type TulongServiceId,
 } from '@domain/index';
 
+import { toArchiveState } from './archive.mapper';
 import { bool, dateTime, field, id, oneOf, str } from './wire';
 
 function contactOf(wire: unknown): ServiceContact | null {
@@ -48,19 +49,21 @@ const lines = (value: unknown): readonly string[] | null =>
  * | `requirements`, `contacts`, `locations` | as named              | the page is not readable |
  * | `claim_steps`                          | `claimSteps`           | none                     |
  * | `media_id`                             | `hasImage`             | no picture               |
+ * | `archived_at` …                        | `archived`             | in use (`toArchiveState`) |
  * | the rest                               | as named               | not given                |
  *
  * A list with one element this console cannot read — a contact of a kind it does not know — makes
  * the page unreadable rather than shorter (`whole`), because a save sends the list back.
  *
  * **Not read**: `hero_url`, an address on the API's host (see `toDirectoryOffice`); `office_slug`,
- * which the office's id already says; `created_at`, which only orders the cursor.
+ * which the office's id already says; `created_at`.
  *
- * @consumes GET services
- * @consumes GET services/{slug}
+ * @consumes GET admin/services
  * @consumes POST admin/services
  * @consumes PATCH admin/services/{id}
  * @consumes POST admin/services/{id}/media
+ * @consumes POST admin/services/{id}/archive
+ * @consumes POST admin/services/{id}/restore
  */
 export function toTulongService(wire: unknown): TulongService | null {
   const serviceId = id<TulongServiceId>(field(wire, 'id'));
@@ -75,6 +78,7 @@ export function toTulongService(wire: unknown): TulongService | null {
   // Optional on the wire: absent is no steps; present and unreadable refuses the page, as above.
   const claimStepsWire = field(wire, 'claim_steps');
   const claimSteps = claimStepsWire === undefined ? [] : lines(claimStepsWire);
+  const archived = toArchiveState(wire);
 
   if (
     serviceId === null ||
@@ -86,7 +90,8 @@ export function toTulongService(wire: unknown): TulongService | null {
     requirements === null ||
     contacts === null ||
     locations === null ||
-    claimSteps === null
+    claimSteps === null ||
+    archived === undefined
   ) {
     return null;
   }
@@ -114,6 +119,7 @@ export function toTulongService(wire: unknown): TulongService | null {
     schedule: str(field(wire, 'schedule')),
     hasImage: str(field(wire, 'media_id')) !== null,
     updatedAt,
+    archived,
   };
 }
 

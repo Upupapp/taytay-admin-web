@@ -433,8 +433,6 @@ const NOT_LIVE = {
     'form',
     'the app settings editor; a re-read would overwrite a pending change',
   ],
-  'home-screen/banners-section': ['form', 'part of the home-screen editor, which is a form'],
-  'home-screen/links-section': ['form', 'part of the home-screen editor, which is a form'],
   'home-screen/preview-section': ['form', 'previews the home-screen editor’s own draft'],
   'search/search-page': ['search', 'runs when somebody searches, never by itself'],
   'reports/report-view-page': [
@@ -445,8 +443,12 @@ const NOT_LIVE = {
 };
 const NOT_LIVE_KINDS = new Set(['form', 'search', 'report run', 'static']);
 
-/** Feature helpers that make a page that calls them, with its topics, live. */
-const LIVE_HELPERS = { cursorList: join(APP, 'features', 'directory', 'cursor-list.ts') };
+/**
+ * Feature helpers that make a page that calls them, with its topics, live. Empty since `DL-225`:
+ * the directory's `cursorList` went when its lists became whole reads, each section live through
+ * `liveViewState` itself. A helper added here is held to re-reading through LiveUpdates.
+ */
+const LIVE_HELPERS = {};
 
 const FEATURES = join(APP, 'features');
 const routedPages = [

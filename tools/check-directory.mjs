@@ -15,12 +15,17 @@
  *
  *   2. In each form (office, Tulong page, hotline) the effects come before the submit button, and the
  *      Tulong picture's effects before the upload button.
- *   3. In each section a delete is reachable only through its confirmation: the repository's
- *      `remove` is called in `confirmRemove` alone, and the modal lists the effects before the
- *      confirming button.
- *   4. The effects say the things somebody would regret not being told: deleting an office is
- *      refused while anything names it and nothing brings it back; hiding a page takes it out of
- *      this list too; deleting a hotline offers making it inactive instead.
+ *   3. Nothing is deleted (`DL-225`). In each section an archive or a restore is reachable only
+ *      through its confirmation: the repository's `archive` and `restore` are each called once, in
+ *      `confirmMove` alone; `confirmMove` is reached only from the shared `<app-archive-dialog>`'s
+ *      `(confirmed)`, which is handed the domain's effects (the dialog itself shows them before its
+ *      button, `check:archive`); no section calls a `remove`, and none draws a destructive
+ *      `.btn--danger*` button — archiving is undone by a restore.
+ *   4. The effects say the things somebody would regret not being told: archiving an office is
+ *      refused while anything still uses it, and an archived record can be restored; restoring a
+ *      Tulong page is refused while its office is archived; hiding a page keeps it in this list;
+ *      restoring a hotline can be refused for a second command center, and archiving the command
+ *      center says first that the app will have none.
  *
  * ## Not a programme
  *
@@ -39,8 +44,11 @@
  *
  * ## The list is not presented as the whole when it may not be
  *
- *   8. The hotline adapter computes `mayBeIncomplete` from `HOTLINE_LIST_CAP`, and the section renders
- *      the capped sentence.
+ *   8. Each list is read whole from the administrator's own endpoint, or refused: the offices, the
+ *      Tulong pages — hidden ones included, which the residents' `GET services` left out — and the
+ *      hotlines come from `admin/…` through `list`, never from a public cursor page; and nothing
+ *      says a list "may be incomplete" any more, because since `ca71f23` the API refuses a list past
+ *      its cap (`LIST_TOO_LONG`) instead of cutting it short — a capped warning would now be false.
  *
  * ## Nothing logged or stored, and the server's keys
  *
@@ -55,8 +63,9 @@
  *      know; a new line's kind is sent, not left to the server's default, and a change of kind is
  *      sent; the form offers every kind from the list, explains the command center beside it, warns
  *      before its button when another line holds the role (a warning, never a disabled button), and
- *      puts the server's 409 beside the kind (`aria-invalid`, `aria-describedby`), which the adapter
- *      and the mock raise as the domain's refusal; the list shows the kind as words; and the section
+ *      puts the server's 409 `CONFLICT` beside the kind (`aria-invalid`, `aria-describedby`), which
+ *      the adapter and the mock raise as the domain's refusal — on a save and on a restore, and on
+ *      that code alone, because a hotline's other 409s are the archive's (`DL-225`); the list shows the kind as words; and the section
  *      says plainly when no line is marked as the command center.
  *
  *      Since `DL-220` an **absent** kind is not set rather than unreadable — the console tolerates an
@@ -164,39 +173,68 @@ for (const form of FORMS) {
   }
 }
 
-/* ── 3. a delete only through its confirmation ───────────────────────────── */
+/* ── 3. archive and restore only through their confirmation (DL-225) ─────── */
 
 for (const section of SECTIONS) {
   const source = code(read(FEATURE, `${section}.ts`));
   const template = code(read(FEATURE, `${section}.html`));
-  const calls = [...source.matchAll(/this\s*\.\s*repository\s*\.\s*remove\s*\(/g)].length;
-  if (calls !== 1 || !/this\s*\.\s*repository\s*\.\s*remove\s*\(/.test(methodBody(source, 'confirmRemove'))) {
-    failures.push(`${section}.ts deletes somewhere other than confirmRemove, after the confirmation.`);
+  const move = methodBody(source, 'confirmMove');
+  for (const act of ['archive', 'restore']) {
+    const call = new RegExp(`this\\s*\\.\\s*repository\\s*\\.\\s*${act}\\s*\\(`, 'g');
+    const calls = [...source.matchAll(call)].length;
+    if (calls !== 1 || !new RegExp(call.source).test(move)) {
+      failures.push(`${section}.ts: ${act} is called somewhere other than confirmMove, after the confirmation.`);
+    }
   }
-  const modal = template.indexOf('<app-modal');
-  const effects = template.indexOf('@for (effect of removeEffects', modal);
-  const confirm = template.indexOf('(click)="confirmRemove()"', modal);
-  if (modal === -1 || effects === -1 || confirm === -1 || effects > confirm) {
-    failures.push(`${section}.html: the delete confirmation no longer lists what deleting does before its button.`);
+  if (/this\s*\.\s*repository\s*\.\s*remove\s*\(/.test(source)) {
+    failures.push(`${section}.ts removes a record. Nothing in the directory is deleted: it is archived (DL-225).`);
+  }
+  const dialogAt = template.indexOf('<app-archive-dialog');
+  const dialog = dialogAt === -1 ? '' : template.slice(dialogAt, template.indexOf('/>', dialogAt));
+  if (
+    !/\(confirmed\)="confirmMove\(\$event\)"/.test(dialog) ||
+    !/\[effects\]="[^"]*archiveEffects[^"]*restoreEffects[^"]*"/.test(dialog) ||
+    [...template.matchAll(/confirmMove\(/g)].length !== 1
+  ) {
+    failures.push(
+      `${section}.html: an archive or a restore no longer goes through the archive dialog with its effects.`,
+    );
+  }
+  if (/btn--danger/.test(template)) {
+    failures.push(
+      `${section}.html draws a destructive button. Archiving is reversible: a row's Archive and Restore ` +
+        'are plain .btn, the dialog confirms with .btn--primary (DL-225).',
+    );
   }
 }
 
 /* ── 4. the consequences somebody would regret not being told ─────────────── */
 
+const effectsIn = (text, name, key) =>
+  new RegExp(`${key}:\\s*\\[([\\s\\S]*?)\\],`).exec(text.slice(text.indexOf(name)))?.[1] ?? '';
 const office = code(read(DOMAIN, 'directory-office.ts'));
-const officeRemove = /remove:\s*\[([\s\S]*?)\],/.exec(office.slice(office.indexOf('OFFICE_EFFECTS')))?.[1] ?? '';
-if (!/refuses while anything still names/.test(officeRemove) || !/Nothing brings it back/.test(officeRemove)) {
-  failures.push('OFFICE_EFFECTS.remove no longer says the server refuses while the office is named, or that nothing brings it back.');
+if (
+  !/refuses while anything still uses it/.test(effectsIn(office, 'OFFICE_EFFECTS', 'archive')) ||
+  !/can be restored/.test(effectsIn(office, 'OFFICE_EFFECTS', 'archive'))
+) {
+  failures.push('OFFICE_EFFECTS.archive no longer says the server refuses while the office is used, or that it can be restored.');
 }
 const service = code(read(DOMAIN, 'tulong-service.ts'));
-const hide = /hide:\s*\[([\s\S]*?)\],/.exec(service.slice(service.indexOf('SERVICE_EFFECTS')))?.[1] ?? '';
-if (!/leaves this list/.test(hide)) {
-  failures.push('SERVICE_EFFECTS.hide no longer says a hidden page leaves this list as well.');
+if (!/stays in this list/.test(effectsIn(service, 'SERVICE_EFFECTS', 'hide'))) {
+  failures.push('SERVICE_EFFECTS.hide no longer says a hidden page stays in this list.');
+}
+if (!/office is archived/.test(effectsIn(service, 'SERVICE_EFFECTS', 'restore'))) {
+  failures.push("SERVICE_EFFECTS.restore no longer says a restore is refused while the page's office is archived.");
 }
 const hotline = code(read(DOMAIN, 'hotline.ts'));
-const hotlineRemove = /remove:\s*\[([\s\S]*?)\],/.exec(hotline.slice(hotline.indexOf('HOTLINE_EFFECTS')))?.[1] ?? '';
-if (!/make it inactive instead/.test(hotlineRemove)) {
-  failures.push('HOTLINE_EFFECTS.remove no longer offers making the line inactive instead.');
+if (!/can be restored/.test(effectsIn(hotline, 'HOTLINE_EFFECTS', 'archive'))) {
+  failures.push('HOTLINE_EFFECTS.archive no longer says the line can be restored.');
+}
+if (!/command center/.test(effectsIn(hotline, 'HOTLINE_EFFECTS', 'restore'))) {
+  failures.push('HOTLINE_EFFECTS.restore no longer says a restore can be refused for a second command center.');
+}
+if (!/COMMAND_CENTER_EFFECTS\s*\.\s*leaves\s*,\s*\.\.\.\s*HOTLINE_EFFECTS\s*\.\s*archive/.test(code(read(FEATURE, 'hotlines-section.ts')))) {
+  failures.push('Archiving the command center no longer says first that the app will have none (DL-217).');
 }
 
 /* ── 5. not a programme ──────────────────────────────────────────────────── */
@@ -256,17 +294,35 @@ if (
   failures.push("APP_IMAGE_POLICY is no longer the API's five megabytes of JPEG, PNG or WebP.");
 }
 
-/* ── 8. a capped list says so ────────────────────────────────────────────── */
+/* ── 8. a whole list from the administrator's own endpoint, or none ───────── */
 
 const adapters = code(readFileSync(ADAPTERS, 'utf8'));
 const hotlines = block(adapters, adapters.indexOf('export class HttpHotlineRepository'));
-if (!/mayBeIncomplete:\s*items\.length\s*>=\s*HOTLINE_LIST_CAP/.test(hotlines)) {
-  failures.push('HttpHotlineRepository no longer says a list as long as the cap may be incomplete.');
+const WHOLE = {
+  HttpDirectoryOfficeRepository: 'adminOffices',
+  HttpTulongServiceRepository: 'adminServices',
+  HttpHotlineRepository: 'adminHotlines',
+};
+for (const [adapter, endpoint] of Object.entries(WHOLE)) {
+  const body = block(adapters, adapters.indexOf(`export class ${adapter}`));
+  const list = /\n\s+list\([^)]*\)[^{]*\{([\s\S]*?)\n\s{2}\}/.exec(body)?.[1] ?? '';
+  if (
+    !new RegExp(`this\\s*\\.\\s*api\\s*\\.\\s*list\\(\\s*API_ENDPOINTS\\s*\\.\\s*${endpoint}\\b`).test(list) ||
+    /cursorPage|API_ENDPOINTS\s*\.\s*(?:offices|services)\b/.test(body)
+  ) {
+    failures.push(
+      `${adapter} no longer reads its list whole from API_ENDPOINTS.${endpoint}. A public page leaves ` +
+        'archived records out and, for Tulong pages, hidden ones too (DL-225).',
+    );
+  }
 }
-if (
-  !/@if \(mayBeIncomplete\s*\(\s*\)\)[\s\S]{0,160}copy\s*\.\s*capped/.test(code(read(FEATURE, 'hotlines-section.html')))
-) {
-  failures.push('The hotlines section no longer says a capped list may be missing lines.');
+for (const file of [...moduleFiles, ADAPTERS, join(APP, 'domain', 'ports', 'repositories.ts')]) {
+  if (/\bmayBeIncomplete\b/.test(code(readFileSync(file, 'utf8')))) {
+    failures.push(
+      `${shown(file)} says a list may be incomplete. Since ca71f23 the API refuses a list past its cap ` +
+        '(LIST_TOO_LONG) rather than cutting it short, so a list it answers is whole.',
+    );
+  }
 }
 
 /* ── 9. no log, no storage ───────────────────────────────────────────────── */
@@ -346,9 +402,10 @@ const updated = block(hotlines, hotlines.indexOf('update(id'));
 if (!/kind:\s*draft\.kind/.test(created) || !/kind:\s*changes\.kind/.test(updated)) {
   failures.push("HttpHotlineRepository no longer sends a line's kind: a new line's is chosen, never the server's default.");
 }
+const restored = block(hotlines, hotlines.indexOf('restore(id'));
 if (
-  [created, updated].some((body) => !/catchError\(withCommandCenterRefusal\)/.test(body)) ||
-  !/read\s*\.\s*status === 409\s*\?\s*new HotlineCommandCenterTakenError\(\s*read\s*\.\s*message\s*\)/.test(adapters)
+  [created, updated, restored].some((body) => !/catchError\(withCommandCenterRefusal\)/.test(body)) ||
+  !/read\s*\.\s*status === 409 && read\s*\.\s*code === 'CONFLICT'\)\s*\{\s*return throwError\(\(\) => new HotlineCommandCenterTakenError\(\s*read\s*\.\s*message\s*\)\)/.test(adapters)
 ) {
   failures.push("HttpHotlineRepository no longer hands a second command center back as the domain's refusal, in the server's words.");
 }
@@ -447,8 +504,9 @@ function report() {
   }
   console.log(
     `Directory check passed (${moduleFiles.length} files: residents told, effects before every button, ` +
-      'deletes only through a confirmation, not a programme, no image address, every file refused first, ' +
-      'a capped list said so, the keys the administrator’s; every kind the API’s, in words, read ' +
+      'nothing deleted — archived and restored only through a confirmation with its effects, no ' +
+      'destructive button — not a programme, no image address, every file refused first, each list ' +
+      'whole from its admin endpoint, the keys the administrator’s; every kind the API’s, in words, read ' +
       'strictly, the one command center explained and warned about before the button, its refusal ' +
       'beside the kind, and none said plainly).',
   );

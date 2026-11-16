@@ -182,7 +182,12 @@ import type {
   LinkDraft,
   QuickLink,
 } from '../home/home-screen';
-import type { AppConfig, AppConfigChanges } from '../app-config/app-config';
+import type {
+  AppConfig,
+  AppConfigChanges,
+  ArchivedFeatureFlag,
+} from '../app-config/app-config';
+import type { ArchiveEvent } from '../shared/archive';
 import type { DigitalIdCard, DigitalIdHolder } from '../digital-ids/digital-id';
 import type { DigitalIdListFilter, DigitalIdListPage } from '../digital-ids/digital-id-list';
 import type { TakenCardPhoto, CardPhotoConsent } from '../digital-ids/card-photo';
@@ -585,9 +590,16 @@ export const CASE_REPOSITORY = new InjectionToken<CaseRepository>('CaseRepositor
  * the server caps how many each list may keep.
  */
 export interface SavedViewRepository {
-  listFor(resource: SavedViewResource): Observable<readonly SavedView[]>;
+  /**
+   * The views of one list this account may see, whole: in use (`archived` false), or archived ones
+   * it could restore — its own, and the office's with `saved-view.share` (`DL-225`).
+   */
+  listFor(resource: SavedViewResource, archived: boolean): Observable<readonly SavedView[]>;
   create(draft: SavedViewDraft): Observable<SavedView>;
-  remove(id: SavedViewId): Observable<void>;
+  /** Puts a view away (`DL-225`): it leaves the bar and can be restored. No reason is kept. */
+  archive(id: SavedViewId): Observable<SavedView>;
+  /** Brings an archived view back to the bar; refused past the list's cap (`SAVED_VIEW_CAP`). */
+  restore(id: SavedViewId): Observable<SavedView>;
 }
 
 export const SAVED_VIEW_REPOSITORY = new InjectionToken<SavedViewRepository>('SavedViewRepository');
@@ -1739,8 +1751,11 @@ export const APP_ACCOUNT_REPOSITORY = new InjectionToken<AppAccountRepository>(
  * picker: this one reads it **a page at a time**, as a list somebody browses, and changes it.
  */
 export interface DirectoryOfficeRepository {
-  /** One cursor page, newest first as the server orders it. No total (`DL-161`). */
-  list(page: CursorRequest): Observable<CursorPage<DirectoryOffice>>;
+  /**
+   * The offices in use, or the archived ones, **whole** and by name (`GET admin/offices`, `DL-225`)
+   * — or an error: the server refuses past five hundred rather than cutting the list short.
+   */
+  list(archived: boolean): Observable<readonly DirectoryOffice[]>;
 
   /** Creates it, with a banner if one is given. */
   create(draft: OfficeDraft, banner: Blob | null): Observable<DirectoryOffice>;
@@ -1748,8 +1763,18 @@ export interface DirectoryOfficeRepository {
   /** Changes what the contract lets a change carry, and replaces the banner if one is given. */
   update(id: OfficeId, changes: OfficeChanges, banner: Blob | null): Observable<DirectoryOffice>;
 
-  /** Deletes it. Refused by the server while anything names the office (`OFFICE_EFFECTS.remove`). */
-  remove(id: OfficeId): Observable<void>;
+  /**
+   * Archives it with a reason (`OFFICE_EFFECTS.archive`). Refused with `ArchiveRefusedError` —
+   * `office-in-use` and the counts while anything still uses it, `already-archived` if somebody
+   * archived it first.
+   */
+  archive(id: OfficeId, reason: string): Observable<DirectoryOffice>;
+
+  /** Restores it with a reason (`OFFICE_EFFECTS.restore`); `not-archived` if somebody did first. */
+  restore(id: OfficeId, reason: string): Observable<DirectoryOffice>;
+
+  /** Every time it was archived and restored, newest first. Empty for one never archived. */
+  history(id: OfficeId): Observable<readonly ArchiveEvent[]>;
 }
 
 export const DIRECTORY_OFFICE_REPOSITORY = new InjectionToken<DirectoryOfficeRepository>(
@@ -1762,46 +1787,57 @@ export const DIRECTORY_OFFICE_REPOSITORY = new InjectionToken<DirectoryOfficeRep
  */
 export interface TulongServiceRepository {
   /**
-   * One cursor page of the app's catalogue, newest first. A page hidden from the catalogue and not
-   * featured is **not in it**: the API has no list for an administrator, only the residents' one.
+   * The pages in use — hidden from the catalogue or not — or the archived ones, **whole** and by
+   * name (`GET admin/services`, `DL-225`), or an error past a thousand.
    */
-  list(page: CursorRequest): Observable<CursorPage<TulongService>>;
+  list(archived: boolean): Observable<readonly TulongService[]>;
 
-  /** One page by its address, hidden or not — or `null` when the server says there is none. */
-  find(slug: string): Observable<TulongService | null>;
-
+  /** Refused with `office-archived` under an archived office. */
   create(draft: ServiceDraft): Observable<TulongService>;
 
+  /** Refused with `read-only` once the page is archived. */
   update(id: TulongServiceId, changes: ServiceChanges): Observable<TulongService>;
 
   /** Sets the page's picture, replacing any it had. A separate act, applied at once. */
   replaceImage(id: TulongServiceId, image: Blob): Observable<TulongService>;
 
-  /** Deletes it, and its picture. Nothing refers to a page, so the server never refuses it. */
-  remove(id: TulongServiceId): Observable<void>;
+  /** Archives it with a reason (`SERVICE_EFFECTS.archive`). */
+  archive(id: TulongServiceId, reason: string): Observable<TulongService>;
+
+  /** Restores it with a reason; refused with `office-archived` while its office is archived. */
+  restore(id: TulongServiceId, reason: string): Observable<TulongService>;
+
+  /** Every time it was archived and restored, newest first. */
+  history(id: TulongServiceId): Observable<readonly ArchiveEvent[]>;
 }
 
 export const TULONG_SERVICE_REPOSITORY = new InjectionToken<TulongServiceRepository>(
   'TulongServiceRepository',
 );
 
-/** What `HotlineRepository.list` answers: the lines the API sent, and whether it held some back. */
-export interface HotlineListing {
-  readonly hotlines: readonly Hotline[];
-  /** True when the answer is as long as the API's cap, so there may be lines it did not send. */
-  readonly mayBeIncomplete: boolean;
-}
-
 /** The numbers the app lists for residents to call (`hotline.manage`). */
 export interface HotlineRepository {
-  /** Every line, shown and hidden, as the API orders them — at most `HOTLINE_LIST_CAP`. */
-  list(): Observable<HotlineListing>;
+  /**
+   * The lines in use — shown and hidden — or the archived ones, **whole**, as the API orders them,
+   * or an error: past `HOTLINE_LIST_CAP` the server refuses rather than cutting the list short.
+   */
+  list(archived: boolean): Observable<readonly Hotline[]>;
 
   create(draft: HotlineDraft): Observable<Hotline>;
 
   update(id: HotlineId, changes: HotlineChanges): Observable<Hotline>;
 
-  remove(id: HotlineId): Observable<void>;
+  /** Archives it with a reason (`HOTLINE_EFFECTS.archive`). */
+  archive(id: HotlineId, reason: string): Observable<Hotline>;
+
+  /**
+   * Restores it with a reason. Refused with `HotlineCommandCenterTakenError` when it would make a
+   * second active command center.
+   */
+  restore(id: HotlineId, reason: string): Observable<Hotline>;
+
+  /** Every time it was archived and restored, newest first. */
+  history(id: HotlineId): Observable<readonly ArchiveEvent[]>;
 }
 
 export const HOTLINE_REPOSITORY = new InjectionToken<HotlineRepository>('HotlineRepository');
@@ -1814,8 +1850,8 @@ export const HOTLINE_REPOSITORY = new InjectionToken<HotlineRepository>('Hotline
  * the app is given it now.
  */
 export interface HomeScreenRepository {
-  /** Every banner, shown and hidden, answered whole. */
-  banners(): Observable<readonly HomeBanner[]>;
+  /** Every banner in use, shown and hidden — or every archived one — answered whole. */
+  banners(archived: boolean): Observable<readonly HomeBanner[]>;
 
   /** Stores the image first, if there is one, then the banner naming it (`HOME_EFFECTS.imageUpload`). */
   createBanner(draft: BannerDraft, image: Blob | null): Observable<HomeBanner>;
@@ -1823,8 +1859,14 @@ export interface HomeScreenRepository {
   /** Saves the banner as the draft says, and its image as the change says. */
   updateBanner(id: HomeBannerId, draft: BannerDraft, image: BannerImageChange): Observable<HomeBanner>;
 
-  /** Deletes it. Its image stays stored; the API removes none (`HOME_EFFECTS.bannerRemove`). */
-  removeBanner(id: HomeBannerId): Observable<void>;
+  /** Archives it with a reason (`HOME_EFFECTS.bannerArchive`). Its image stays stored. */
+  archiveBanner(id: HomeBannerId, reason: string): Observable<HomeBanner>;
+
+  /** Restores it with a reason (`HOME_EFFECTS.bannerRestore`). */
+  restoreBanner(id: HomeBannerId, reason: string): Observable<HomeBanner>;
+
+  /** Every time the banner was archived and restored, newest first. */
+  bannerHistory(id: HomeBannerId): Observable<readonly ArchiveEvent[]>;
 
   /**
    * A banner's image, as bytes — a **method rather than an address**, as every image in the console
@@ -1832,14 +1874,24 @@ export interface HomeScreenRepository {
    */
   bannerImage(banner: HomeBanner): Observable<Blob>;
 
-  /** Every link, answered whole. Every one is on the home screen; there is no hidden link. */
-  links(): Observable<readonly QuickLink[]>;
+  /**
+   * Every link in use, or every archived one, answered whole. Every link in use is on the home
+   * screen; there is no hidden link.
+   */
+  links(archived: boolean): Observable<readonly QuickLink[]>;
 
   createLink(draft: LinkDraft): Observable<QuickLink>;
 
   updateLink(id: QuickLinkId, draft: LinkDraft): Observable<QuickLink>;
 
-  removeLink(id: QuickLinkId): Observable<void>;
+  /** Archives it with a reason (`HOME_EFFECTS.linkArchive`). */
+  archiveLink(id: QuickLinkId, reason: string): Observable<QuickLink>;
+
+  /** Restores it with a reason (`HOME_EFFECTS.linkRestore`). */
+  restoreLink(id: QuickLinkId, reason: string): Observable<QuickLink>;
+
+  /** Every time the link was archived and restored, newest first. */
+  linkHistory(id: QuickLinkId): Observable<readonly ArchiveEvent[]>;
 
   /** The home screen as the app is given it now (`GET home`). */
   preview(): Observable<HomePreview>;
@@ -1856,8 +1908,17 @@ export interface AppConfigRepository {
   /** The settings as every resident's app is given them now. */
   read(): Observable<AppConfig>;
 
-  /** Changes only what `changes` names; `null` clears a setting or deletes a flag. */
+  /**
+   * Changes only what `changes` names; `null` clears a setting or archives a flag, and a value on an
+   * archived flag's key restores it (`DL-225`).
+   */
   change(changes: AppConfigChanges): Observable<AppConfig>;
+
+  /**
+   * The flags the app is no longer given, each with its value and when and by whom it was archived
+   * (`GET admin/app/feature-flags`). The app is given the others (`read`).
+   */
+  archivedFlags(): Observable<readonly ArchivedFeatureFlag[]>;
 }
 
 export const APP_CONFIG_REPOSITORY = new InjectionToken<AppConfigRepository>('AppConfigRepository');

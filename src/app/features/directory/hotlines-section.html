@@ -1,11 +1,18 @@
 <section class="card card--panel card--padded directory-section" aria-labelledby="hotlines-heading">
   <div class="directory-section__head">
     <h2 id="hotlines-heading" class="directory-section__title">{{ copy.heading }}</h2>
-    <button type="button" class="btn btn--primary" (click)="add()">
-      <app-icon name="plus" class="directory-section__plus" [stroke]="2.2" />{{ copy.add }}
-    </button>
+    @if (!archived()) {
+      <button type="button" class="btn btn--primary" (click)="add()">
+        <app-icon name="plus" class="directory-section__plus" [stroke]="2.2" />{{ copy.add }}
+      </button>
+    }
   </div>
   <p class="directory-section__note">{{ copy.lead }}</p>
+
+  <app-archive-tabs [archived]="archived()" [label]="copy.tabsLabel" />
+  @if (archived()) {
+    <p class="directory-section__note">{{ listCopy.archivedNote }}</p>
+  }
 
   <p class="directory-section__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
 
@@ -20,30 +27,31 @@
         [columns]="columns()"
         [rows]="rows()"
         [rowKey]="rowKey"
-        [caption]="copy.caption"
-        [emptyHeading]="copy.emptyHeading"
-        [emptyMessage]="copy.emptyMessage"
+        [caption]="archived() ? copy.archivedCaption : copy.caption"
+        [emptyHeading]="archived() ? copy.archivedEmptyHeading : copy.emptyHeading"
+        [emptyMessage]="archived() ? copy.archivedEmptyMessage : copy.emptyMessage"
       />
       @if (rows().length > 0) {
-        <p class="directory-section__note" role="status">{{ copy.count(rows().length) }}</p>
-      }
-      <!-- DL-217: which line the app shows for an emergency, or plainly that none is marked. -->
-      @if (commandCenter(); as center) {
-        <p class="directory-section__note">
-          {{ copy.commandCenterIs(center.name, center.number) }}
-        </p>
-      } @else {
-        <p class="callout callout--warning" role="note">
-          <span
-            ><strong>{{ copy.noCommandCenterTitle }}</strong> {{ copy.noCommandCenter }}</span
-          >
+        <p class="directory-section__note" role="status">
+          {{ copy.count(rows().length, archived()) }}
         </p>
       }
-      @if (withoutKind() > 0) {
-        <p class="directory-section__note">{{ copy.kindsNotSet(withoutKind()) }}</p>
-      }
-      @if (mayBeIncomplete()) {
-        <p class="directory-section__problem" role="alert">{{ copy.capped(cap) }}</p>
+      @if (!archived()) {
+        <!-- DL-217: which line the app shows for an emergency, or plainly that none is marked. -->
+        @if (commandCenter(); as center) {
+          <p class="directory-section__note">
+            {{ copy.commandCenterIs(center.name, center.number) }}
+          </p>
+        } @else {
+          <p class="callout callout--warning" role="note">
+            <span
+              ><strong>{{ copy.noCommandCenterTitle }}</strong> {{ copy.noCommandCenter }}</span
+            >
+          </p>
+        }
+        @if (withoutKind() > 0) {
+          <p class="directory-section__note">{{ copy.kindsNotSet(withoutKind()) }}</p>
+        }
       }
     </ng-template>
   </app-async-content>
@@ -53,24 +61,54 @@
   <app-status-badge [catalog]="visibility" [status]="visibilityOf(hotline.active)" />
 </ng-template>
 
+<ng-template #archivedCell let-hotline>
+  @if (hotline.archived; as archived) {
+    <span class="directory-section__label">
+      <span>{{ rowCopy.archivedOn((archived.at | date: 'd MMM y') ?? '', archived.byName) }}</span>
+      <span class="directory-section__secondary">
+        {{ archived.reason ? rowCopy.reason(archived.reason) : rowCopy.noReason }}
+      </span>
+    </span>
+  }
+</ng-template>
+
 <ng-template #actionCell let-hotline>
   <div class="directory-section__actions">
-    <button
-      type="button"
-      class="btn"
-      [attr.aria-label]="copy.editLabel(hotline.name)"
-      (click)="edit(hotline)"
-    >
-      {{ listCopy.edit }}
-    </button>
-    <button
-      type="button"
-      class="btn btn--danger-soft"
-      [attr.aria-label]="copy.removeLabel(hotline.name)"
-      (click)="askRemove(hotline)"
-    >
-      {{ listCopy.remove }}
-    </button>
+    @if (hotline.archived === null) {
+      <button
+        type="button"
+        class="btn"
+        [attr.aria-label]="copy.editLabel(hotline.name)"
+        (click)="edit(hotline)"
+      >
+        {{ listCopy.edit }}
+      </button>
+      <button
+        type="button"
+        class="btn"
+        [attr.aria-label]="copy.archiveLabel(hotline.name)"
+        (click)="askArchive(hotline)"
+      >
+        {{ listCopy.archive }}
+      </button>
+    } @else {
+      <button
+        type="button"
+        class="btn"
+        [attr.aria-label]="copy.historyLabel(hotline.name)"
+        (click)="showHistory(hotline)"
+      >
+        {{ listCopy.history }}
+      </button>
+      <button
+        type="button"
+        class="btn"
+        [attr.aria-label]="copy.restoreLabel(hotline.name)"
+        (click)="askRestore(hotline)"
+      >
+        {{ listCopy.restore }}
+      </button>
+    }
   </div>
 </ng-template>
 
@@ -80,44 +118,46 @@
     [heading]="drawerHotline() === null ? copy.createHeading : copy.editHeading"
     (dismissed)="closeDrawer()"
   >
-    <div modal-body>
+    <div modal-body class="stack">
       <app-hotline-form
         [hotline]="drawerHotline()"
         [commandCenter]="commandCenter()"
         (saved)="onSaved($event)"
       />
+      @if (drawerHotline() !== null) {
+        <app-archive-history [source]="historySource()" />
+      }
     </div>
   </app-modal>
 }
 
-@if (removing(); as hotline) {
+@if (historyOf(); as hotline) {
   <app-modal
     [open]="true"
-    [heading]="copy.removeHeading(hotline.name)"
-    (dismissed)="cancelRemove()"
+    [heading]="copy.historyHeading(hotline.name)"
+    (dismissed)="closeHistory()"
   >
-    <div modal-body class="directory-section__warning">
-      <p>{{ listCopy.effectsLead }}</p>
-      <ul>
-        @for (effect of removeEffects(); track $index) {
-          <li>{{ effect }}</li>
-        }
-      </ul>
-      @if (removeProblem(); as problem) {
-        <p class="directory-section__problem" role="alert">{{ problem }}</p>
-      }
+    <div modal-body>
+      <app-archive-history [source]="historySource()" />
     </div>
-    <button type="button" modal-actions class="btn btn--secondary" (click)="cancelRemove()">
-      {{ listCopy.cancel }}
-    </button>
-    <button
-      type="button"
-      modal-actions
-      class="btn btn--danger"
-      [disabled]="removeBusy()"
-      (click)="confirmRemove()"
-    >
-      {{ copy.removeConfirm(hotline.name) }}
+    <button type="button" modal-actions class="btn btn--secondary" (click)="closeHistory()">
+      {{ listCopy.close }}
     </button>
   </app-modal>
+}
+
+@if (moving(); as move) {
+  <app-archive-dialog
+    [heading]="
+      move.act === 'archive'
+        ? copy.archiveHeading(move.hotline.name)
+        : copy.restoreHeading(move.hotline.name)
+    "
+    [effects]="move.act === 'archive' ? archiveEffects() : restoreEffects"
+    [confirmLabel]="move.act === 'archive' ? copy.archiveConfirm : copy.restoreConfirm"
+    [busy]="moveBusy()"
+    [problem]="moveProblem()"
+    (confirmed)="confirmMove($event)"
+    (dismissed)="cancelMove()"
+  />
 }

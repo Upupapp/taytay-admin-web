@@ -24,6 +24,7 @@ import {
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
+import { MockOfficeRegistry } from './mock-archive';
 import { mockVerificationOf } from './mock-account-verification';
 import { MockLatency } from './mock-latency';
 import { MockAppAccountStore } from './mock-app-account.store';
@@ -45,6 +46,7 @@ const LARGEST_PAGE = 50;
 @Injectable()
 export class MockAppAccountRepository implements AppAccountRepository {
   private readonly latency = inject(MockLatency);
+  private readonly offices = inject(MockOfficeRegistry);
   private readonly access = inject(ACCESS_CONTEXT);
 
   /** Shared with the ID review's in-person check, which verifies an account too (`DL-219`). */
@@ -120,6 +122,14 @@ export class MockAppAccountRepository implements AppAccountRepository {
     if (office !== null && !MOCK_OFFICES.some((candidate) => candidate.id === office)) {
       return throwError(() => new Error('That office was not found.'));
     }
+    const archived = this.offices.refuseIfArchived<AppAccount>(
+      office,
+      'That office is archived. Restore it before linking staff to it.',
+    );
+    if (archived) {
+      return archived;
+    }
+    this.offices.linkStaff(account.id, office);
     return this.save({ ...account, officeId: office });
   }
 

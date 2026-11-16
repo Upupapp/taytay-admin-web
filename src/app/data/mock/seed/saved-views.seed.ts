@@ -18,6 +18,7 @@ export const MOCK_SAVED_VIEWS: readonly SavedView[] = [
     isShared: true,
     ownerId: null,
     audit: stamp(300),
+    archived: null,
   },
   {
     id: asId<SavedViewId>('view-0002'),
@@ -27,6 +28,7 @@ export const MOCK_SAVED_VIEWS: readonly SavedView[] = [
     isShared: true,
     ownerId: null,
     audit: stamp(300),
+    archived: null,
   },
   {
     id: asId<SavedViewId>('view-0003'),
@@ -36,6 +38,7 @@ export const MOCK_SAVED_VIEWS: readonly SavedView[] = [
     isShared: true,
     ownerId: null,
     audit: stamp(180),
+    archived: null,
   },
   {
     id: asId<SavedViewId>('view-0004'),
@@ -45,5 +48,6 @@ export const MOCK_SAVED_VIEWS: readonly SavedView[] = [
     isShared: true,
     ownerId: null,
     audit: stamp(90),
+    archived: null,
   },
 ];

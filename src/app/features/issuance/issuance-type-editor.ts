@@ -31,7 +31,7 @@ import {
   type OfficeId,
 } from '@domain/index';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
-import { failureReason } from '@shared/state/failure-reason';
+import { plainRefusal } from '@shared/archive/archive.copy';
 import { valueOf, type ViewState } from '@shared/state/view-state';
 
 import { ISSUANCE_COPY } from './issuance.copy';
@@ -281,7 +281,7 @@ export class IssuanceTypeEditor {
       },
       error: (failure: unknown) => {
         this.busy.set(false);
-        this.outcome.set(this.copy.notSaved(failureReason(failure) ?? this.copy.failed));
+        this.outcome.set(this.copy.notSaved(plainRefusal(failure, 'office', this.copy.failed)));
       },
     });
   }

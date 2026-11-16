@@ -1,5 +1,6 @@
 import { isHotlineKind, type Hotline, type HotlineId, type HotlineKind } from '@domain/index';
 
+import { toArchiveState } from './archive.mapper';
 import { dateTime, field, id, int, str } from './wire';
 
 /** A boolean, or `null` for anything that is not one. */
@@ -36,6 +37,8 @@ function kindOf(value: unknown): HotlineKind | null | undefined {
  * @consumes GET admin/hotlines
  * @consumes POST admin/hotlines
  * @consumes PATCH admin/hotlines/{id}
+ * @consumes POST admin/hotlines/{id}/archive
+ * @consumes POST admin/hotlines/{id}/restore
  */
 export function toHotline(wire: unknown): Hotline | null {
   const hotlineId = id<HotlineId>(field(wire, 'id'));
@@ -46,6 +49,7 @@ export function toHotline(wire: unknown): Hotline | null {
   const sortOrder = int(field(wire, 'sort_order'));
   const active = flag(field(wire, 'active'));
   const updatedAt = dateTime(field(wire, 'updated_at'));
+  const archived = toArchiveState(wire);
 
   if (
     hotlineId === null ||
@@ -55,10 +59,11 @@ export function toHotline(wire: unknown): Hotline | null {
     kind === undefined ||
     sortOrder === null ||
     active === null ||
-    updatedAt === null
+    updatedAt === null ||
+    archived === undefined
   ) {
     return null;
   }
 
-  return { id: hotlineId, name, number, category, kind, sortOrder, active, updatedAt };
+  return { id: hotlineId, name, number, category, kind, sortOrder, active, updatedAt, archived };
 }

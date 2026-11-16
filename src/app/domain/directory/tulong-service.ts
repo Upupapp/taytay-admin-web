@@ -1,3 +1,4 @@
+import type { ArchiveRecord } from '../shared/archive';
 import type { IsoDateTime, OfficeId, TulongServiceId } from '../shared/ids';
 import type { StatusCatalog, StatusTransitions } from '../shared/status';
 
@@ -35,7 +36,7 @@ export interface TulongService {
   /** Shown among the featured pages on the app's home screen. */
   readonly featured: boolean;
   readonly featuredHeadline: string | null;
-  /** Left out of the app's Tulong catalogue — and so out of the API's list (`SERVICE_EFFECTS.hide`). */
+  /** Left out of the app's Tulong catalogue; still in the administrator's list (`SERVICE_EFFECTS.hide`). */
   readonly hiddenFromList: boolean;
   readonly badge: string | null;
   readonly iconKey: string | null;
@@ -45,6 +46,8 @@ export interface TulongService {
   readonly schedule: string | null;
   readonly hasImage: boolean;
   readonly updatedAt: IsoDateTime;
+  /** `null` while residents can read it; when, by whom and why once it is archived (`DL-225`). */
+  readonly archived: ArchiveRecord | null;
 }
 
 /** The kinds of contact the API takes, exactly as `ServiceContact.type` lists them. */
@@ -313,12 +316,14 @@ export function serviceProblems(
  * What each act on a Tulong page does in the residents' app, shown **before** the button (`DL-170`).
  *
  * Read from `taytay-backend` `2736e28`: `src/modules/services/routes.ts` (audited as
- * `service.created`, `service.updated` — an image upload included — and `service.deleted`, with no
- * reason; a new image saved, set, and the old one deleted; a delete removes the page and then its
- * image), `src/modules/services/repository.ts` (the list leaves out a page hidden from the list
- * unless asked for featured pages; nothing refers to a page, so a delete is never refused), and
+ * `service.created`, `service.updated` — an image upload included — with no reason), and
  * `src/modules/home/repository.ts` (the home screen's featured pages: newest first, six at most,
- * hidden ones included).
+ * hidden ones included) — and `cc86189` (`DL-225`): nothing deletes a page; it is archived and
+ * restored (`service.archived`, `service.restored`, each with a reason kept in its archive history);
+ * an archived page leaves every public read, the home screen's featured pages included, keeps its
+ * picture and its address, and takes no change until it is restored; a restore is refused while its
+ * office is archived; a replaced picture stays in storage; the administrator's list
+ * (`GET admin/services`) holds every page, hidden ones included.
  */
 export const SERVICE_EFFECTS = {
   create: [
@@ -336,29 +341,36 @@ export const SERVICE_EFFECTS = {
   hide: [
     'The page leaves the app’s Tulong catalogue. It still opens from a link to its address, and ' +
       'still shows on the home screen while it is featured.',
-    'It leaves this list as well: the API lists only what residents can browse. To open it here ' +
-      'again, use “Open a page by its address” with its address.',
+    'It stays in this list, marked as hidden from the catalogue, and can be shown again.',
   ],
-  show: ['The page returns to the app’s Tulong catalogue, and to this list.'],
+  show: ['The page returns to the app’s Tulong catalogue.'],
   feature: [
     'The page joins the featured pages on the app’s home screen. The home screen shows the six ' +
       'newest featured pages, so featuring a seventh pushes the oldest off it.',
   ],
   unfeature: ['The page leaves the featured pages on the app’s home screen.'],
   imageReplaced: [
-    'The image replaces the page’s picture in the app at once. The server deletes the old one.',
+    'The image replaces the page’s picture in the app at once. The old one stays stored on the ' +
+      'server; nothing deletes it.',
     'The server records it as a change to the page.',
   ],
   imageAdded: [
     'The image becomes the page’s picture in the app at once.',
     'The server records it as a change to the page.',
   ],
-  remove: [
-    'The page is deleted from the app. Residents can no longer find it or open it, and a link to ' +
-      'it stops working.',
-    'Its picture is deleted from the server with it.',
-    'Nothing brings it back. Creating it again makes a new page.',
-    'The server records that you deleted it, and when.',
+  archive: [
+    'The page leaves the app. Residents can no longer find it in the Tulong catalogue or among the ' +
+      'featured pages on the home screen, and a link to its address stops opening it.',
+    'It stays here under Archived, with its picture, your name, the date and your reason, and its ' +
+      'address stays reserved for it.',
+    'It can be restored, and comes back as it was.',
+    'The server records that you archived it, when, and why.',
+  ],
+  restore: [
+    'The page returns to the app as it was: in the Tulong catalogue unless it is hidden from it, ' +
+      'and among the featured pages on the home screen if it is featured.',
+    'The server refuses while the page’s office is archived: restore the office first.',
+    'The server records that you restored it, when, and why.',
   ],
 } as const;
 

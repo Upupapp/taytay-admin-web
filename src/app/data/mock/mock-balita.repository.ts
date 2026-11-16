@@ -17,6 +17,7 @@ import {
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
+import { MockOfficeRegistry } from './mock-archive';
 import { MockLatency } from './mock-latency';
 import { MOCK_OFFICE_HEALTH, MOCK_OFFICE_MSWDO } from './seed/offices.seed';
 import { samplePlaceholder } from './seed/verification-requests.seed';
@@ -67,6 +68,7 @@ const SEED: readonly BalitaArticle[] = [
 @Injectable()
 export class MockBalitaRepository implements BalitaRepository {
   private readonly latency = inject(MockLatency);
+  private readonly offices = inject(MockOfficeRegistry);
   private readonly access = inject(ACCESS_CONTEXT);
   private articles: readonly BalitaArticle[] = SEED;
   private created = 0;
@@ -104,6 +106,11 @@ export class MockBalitaRepository implements BalitaRepository {
     if (denied) return denied;
     const problem = balitaProblem(draft.title, draft.body);
     if (problem !== null) return throwError(() => new Error(problem));
+    const archived = this.offices.refuseIfArchived<BalitaArticle>(
+      draft.officeId ?? MOCK_OFFICE_MSWDO,
+      'That office is archived. Restore it before publishing in its name.',
+    );
+    if (archived) return archived;
 
     const now = asIsoDateTime(new Date());
     const article: BalitaArticle = {

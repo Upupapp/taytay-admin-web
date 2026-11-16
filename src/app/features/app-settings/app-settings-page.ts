@@ -27,6 +27,7 @@ import {
   reviewTimePhrase,
   type AppConfig,
   type AppConfigChanges,
+  type ArchivedFeatureFlag,
   type FieldProblem,
   type LegalText,
   type LegalTextDraft,
@@ -119,6 +120,14 @@ export class AppSettingsPage {
     { initialValue: LOADING as ViewState<AppConfig> },
   );
   protected readonly config = computed(() => valueOf(this.state()));
+  /** The flags the app is no longer given, read again with the settings after each save. */
+  protected readonly archivedState = toSignal(
+    toObservable(this.generation).pipe(
+      switchMap(() => toViewState(this.repository.archivedFlags())),
+    ),
+    { initialValue: LOADING as ViewState<readonly ArchivedFeatureFlag[]> },
+  );
+  private readonly archived = computed(() => valueOf(this.archivedState()) ?? []);
 
   protected readonly contactLine = signal('');
   protected readonly supportEmail = signal('');
@@ -127,7 +136,10 @@ export class AppSettingsPage {
   protected readonly minimumAppVersion = signal('');
   /** Each existing flag's value as edited, by key. */
   protected readonly flagValues = signal<ReadonlyMap<string, string>>(new Map());
-  protected readonly deletedFlags = signal<ReadonlySet<string>>(new Set());
+  /** Flags ticked to be archived in this change (`DL-225`): sent as `null`, kept with their value. */
+  protected readonly archivingFlags = signal<ReadonlySet<string>>(new Set());
+  /** Archived flags ticked to be restored in this change, each with the value it was kept with. */
+  protected readonly restoringFlags = signal<ReadonlySet<string>>(new Set());
   protected readonly newFlags = signal<readonly NewFlag[]>([]);
 
   /** The review time as edited: whether the app states one, and both ends as typed (`DL-205`). */
@@ -210,12 +222,16 @@ export class AppSettingsPage {
 
     const flags: { key: string; value: string | null }[] = [];
     for (const flag of config.featureFlags) {
-      if (this.deletedFlags().has(flag.key)) {
+      if (this.archivingFlags().has(flag.key)) {
         flags.push({ key: flag.key, value: null });
         continue;
       }
       const value = (this.flagValues().get(flag.key) ?? flag.value).trim();
       if (value !== flag.value) flags.push({ key: flag.key, value });
+    }
+    // A value on an archived key restores it (`DL-225`): the value it was kept with.
+    for (const flag of this.archived()) {
+      if (this.restoringFlags().has(flag.key)) flags.push({ key: flag.key, value: flag.value });
     }
     for (const flag of this.newFlags()) {
       if (flag.key.trim() !== '' || flag.value.trim() !== '') {
@@ -284,26 +300,22 @@ export class AppSettingsPage {
   protected readonly problems = computed<readonly string[]>(() => {
     const config = this.config();
     const changes = this.changes();
-    const clash =
-      config !== null &&
-      (changes.featureFlags ?? []).some(
-        (flag) =>
-          this.newFlags().some((added) => added.key.trim() === flag.key) &&
-          config.featureFlags.some((existing) => existing.key === flag.key),
-      );
+    const added = (key: string) => this.newFlags().some((flag) => flag.key.trim() === key);
+    const clash = config !== null && config.featureFlags.some((existing) => added(existing.key));
+    // A new flag named as an archived one would restore it with a new value, unseen (`DL-225`).
+    const archivedClash = this.archived().some((flag) => added(flag.key));
     return [
       ...appConfigProblems(changes).map((problem) => problem.message),
       ...this.reviewTimeProblems().map((problem) => problem.message),
       ...this.reviewRefused().map((problem) => problem.message),
-      ...(clash
-        ? ['A new flag has the name of one the app already has; change that one instead.']
-        : []),
+      ...(clash ? [this.copy.newFlagClash] : []),
+      ...(archivedClash ? [this.copy.newFlagArchivedClash] : []),
     ];
   });
 
   protected readonly effects = computed<readonly string[]>(() => {
     const config = this.config();
-    return config === null ? [] : appConfigEffects(config, this.changes());
+    return config === null ? [] : appConfigEffects(config, this.changes(), this.archived());
   });
 
   protected readonly needsAcknowledgement = computed(() => {
@@ -368,13 +380,12 @@ export class AppSettingsPage {
     this.flagValues.update((values) => new Map([...values, [key, value]]));
   }
 
-  protected toggleDelete(key: string, deleted: boolean): void {
-    this.deletedFlags.update((keys) => {
-      const next = new Set(keys);
-      if (deleted) next.add(key);
-      else next.delete(key);
-      return next;
-    });
+  protected toggleArchive(key: string, archiving: boolean): void {
+    this.archivingFlags.update((keys) => toggled(keys, key, archiving));
+  }
+
+  protected toggleRestore(key: string, restoring: boolean): void {
+    this.restoringFlags.update((keys) => toggled(keys, key, restoring));
   }
 
   protected addFlag(): void {
@@ -518,11 +529,20 @@ export class AppSettingsPage {
     this.reviewMax.set(days === undefined || days === null ? '' : String(days.max));
     this.reviewRefused.set([]);
     this.flagValues.set(new Map());
-    this.deletedFlags.set(new Set());
+    this.archivingFlags.set(new Set());
+    this.restoringFlags.set(new Set());
     this.newFlags.set([]);
     this.editing.set(new Set());
     this.draftVersion.set({ terms: '', privacyNotice: '', biometricConsent: '' });
     this.draftBody.set({ terms: '', privacyNotice: '', biometricConsent: '' });
     this.attempted.set(false);
   }
+}
+
+/** The set with `key` in it or not, as a checkbox says. */
+function toggled(keys: ReadonlySet<string>, key: string, on: boolean): ReadonlySet<string> {
+  const next = new Set(keys);
+  if (on) next.add(key);
+  else next.delete(key);
+  return next;
 }

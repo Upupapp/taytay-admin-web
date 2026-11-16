@@ -248,11 +248,18 @@ if (createBody === '') {
       'population to the whole office (DL-111).',
   );
 }
-const removeBody = /\n  remove\(id: SavedViewId\)[\s\S]*?\n  \}/.exec(savedViewAdapter)?.[0] ?? '';
-if (removeBody === '') {
-  problems.push('MockSavedViewRepository.remove has gone.');
-} else if (!/SHARE_VIEW_PERMISSION/.test(removeBody)) {
-  problems.push('Removing a shared view no longer costs the same grant as creating one.');
+// A view is archived and restored, never removed (DL-225); both cost what creating it costs.
+const mayMoveBody = /\n  private mayMove\(view: SavedView\)[\s\S]*?\n  \}/.exec(savedViewAdapter)?.[0] ?? '';
+for (const act of ['archive', 'restore']) {
+  const body = new RegExp(`\\n  ${act}\\(id: SavedViewId\\)[\\s\\S]*?\\n  \\}`).exec(savedViewAdapter)?.[0] ?? '';
+  if (body === '') {
+    problems.push(`MockSavedViewRepository.${act} has gone.`);
+  } else if (!/this\s*\.\s*mayMove\s*\(/.test(body)) {
+    problems.push(`MockSavedViewRepository.${act} no longer asks whose the view is before acting on it.`);
+  }
+}
+if (mayMoveBody === '' || !/SHARE_VIEW_PERMISSION/.test(mayMoveBody)) {
+  problems.push('Archiving or restoring a shared view no longer costs the same grant as creating one.');
 }
 notes.push('saved views: personal free, office-wide behind view.share');
 

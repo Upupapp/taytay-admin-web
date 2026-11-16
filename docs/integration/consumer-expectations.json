@@ -24,6 +24,34 @@
     },
     {
       "method": "GET",
+      "path": "admin/app/feature-flags",
+      "consumer": "app-config.mapper.ts#toArchivedFeatureFlag",
+      "required": [
+        "key",
+        "value"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_at",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "admin/archive-events",
+      "consumer": "archive.mapper.ts#toArchiveEvent",
+      "required": [
+        "act",
+        "actor_name",
+        "id",
+        "occurred_at"
+      ],
+      "optional": [
+        "reason"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "admin/audit",
       "consumer": "platform-audit.mapper.ts#toPlatformAuditEntry",
       "required": [
@@ -105,6 +133,18 @@
     {
       "method": "GET",
       "path": "admin/home/banners",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "admin/home/banners",
       "consumer": "home.mapper.ts#toHomeBanner",
       "required": [
         "active",
@@ -116,6 +156,18 @@
       "optional": [
         "href",
         "media_id"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/home/banners",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
       ]
     },
     {
@@ -137,6 +189,18 @@
     {
       "method": "PATCH",
       "path": "admin/home/banners/{id}",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/home/banners/{id}",
       "consumer": "home.mapper.ts#toHomeBanner",
       "required": [
         "active",
@@ -148,6 +212,74 @@
       "optional": [
         "href",
         "media_id"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/home/banners/{id}/archive",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/home/banners/{id}/archive",
+      "consumer": "home.mapper.ts#toHomeBanner",
+      "required": [
+        "active",
+        "created_at",
+        "id",
+        "sort_order",
+        "title"
+      ],
+      "optional": [
+        "href",
+        "media_id"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/home/banners/{id}/restore",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/home/banners/{id}/restore",
+      "consumer": "home.mapper.ts#toHomeBanner",
+      "required": [
+        "active",
+        "created_at",
+        "id",
+        "sort_order",
+        "title"
+      ],
+      "optional": [
+        "href",
+        "media_id"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "admin/home/links",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
       ]
     },
     {
@@ -166,6 +298,18 @@
     {
       "method": "POST",
       "path": "admin/home/links",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/home/links",
       "consumer": "home.mapper.ts#toQuickLink",
       "required": [
         "created_at",
@@ -179,6 +323,18 @@
     {
       "method": "PATCH",
       "path": "admin/home/links/{id}",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/home/links/{id}",
       "consumer": "home.mapper.ts#toQuickLink",
       "required": [
         "created_at",
@@ -188,6 +344,68 @@
         "sort_order"
       ],
       "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "admin/home/links/{id}/archive",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/home/links/{id}/archive",
+      "consumer": "home.mapper.ts#toQuickLink",
+      "required": [
+        "created_at",
+        "href",
+        "id",
+        "label",
+        "sort_order"
+      ],
+      "optional": []
+    },
+    {
+      "method": "POST",
+      "path": "admin/home/links/{id}/restore",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/home/links/{id}/restore",
+      "consumer": "home.mapper.ts#toQuickLink",
+      "required": [
+        "created_at",
+        "href",
+        "id",
+        "label",
+        "sort_order"
+      ],
+      "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "admin/hotlines",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
     },
     {
       "method": "GET",
@@ -204,6 +422,18 @@
       ],
       "optional": [
         "kind"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/hotlines",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
       ]
     },
     {
@@ -226,6 +456,18 @@
     {
       "method": "PATCH",
       "path": "admin/hotlines/{id}",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/hotlines/{id}",
       "consumer": "hotline.mapper.ts#toHotline",
       "required": [
         "active",
@@ -238,6 +480,112 @@
       ],
       "optional": [
         "kind"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/hotlines/{id}/archive",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/hotlines/{id}/archive",
+      "consumer": "hotline.mapper.ts#toHotline",
+      "required": [
+        "active",
+        "category",
+        "id",
+        "name",
+        "number",
+        "sort_order",
+        "updated_at"
+      ],
+      "optional": [
+        "kind"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/hotlines/{id}/restore",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/hotlines/{id}/restore",
+      "consumer": "hotline.mapper.ts#toHotline",
+      "required": [
+        "active",
+        "category",
+        "id",
+        "name",
+        "number",
+        "sort_order",
+        "updated_at"
+      ],
+      "optional": [
+        "kind"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "admin/offices",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "admin/offices",
+      "consumer": "directory-office.mapper.ts#toDirectoryOffice",
+      "required": [
+        "id",
+        "name",
+        "slug",
+        "updated_at"
+      ],
+      "optional": [
+        "address",
+        "banner_media_id",
+        "category",
+        "description",
+        "email",
+        "head",
+        "hours",
+        "latitude",
+        "longitude",
+        "phone",
+        "short_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/offices",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
       ]
     },
     {
@@ -267,6 +615,18 @@
     {
       "method": "PATCH",
       "path": "admin/offices/{id}",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/offices/{id}",
       "consumer": "directory-office.mapper.ts#toDirectoryOffice",
       "required": [
         "id",
@@ -286,6 +646,85 @@
         "longitude",
         "phone",
         "short_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/offices/{id}/archive",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/offices/{id}/restore",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "admin/services",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "admin/services",
+      "consumer": "tulong-service.mapper.ts#toTulongService",
+      "required": [
+        "contacts",
+        "details",
+        "id",
+        "locations",
+        "name",
+        "requirements",
+        "slug",
+        "summary",
+        "updated_at"
+      ],
+      "optional": [
+        "badge",
+        "category",
+        "claim_steps",
+        "eligibility",
+        "featured",
+        "featured_headline",
+        "hidden_from_list",
+        "icon_key",
+        "legal_basis",
+        "media_id",
+        "office_id",
+        "schedule",
+        "tile_color"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/services",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
       ]
     },
     {
@@ -322,6 +761,61 @@
     {
       "method": "PATCH",
       "path": "admin/services/{id}",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "admin/services/{id}",
+      "consumer": "tulong-service.mapper.ts#toTulongService",
+      "required": [
+        "contacts",
+        "details",
+        "id",
+        "locations",
+        "name",
+        "requirements",
+        "slug",
+        "summary",
+        "updated_at"
+      ],
+      "optional": [
+        "badge",
+        "category",
+        "claim_steps",
+        "eligibility",
+        "featured",
+        "featured_headline",
+        "hidden_from_list",
+        "icon_key",
+        "legal_basis",
+        "media_id",
+        "office_id",
+        "schedule",
+        "tile_color"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/services/{id}/archive",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/services/{id}/archive",
       "consumer": "tulong-service.mapper.ts#toTulongService",
       "required": [
         "contacts",
@@ -353,6 +847,61 @@
     {
       "method": "POST",
       "path": "admin/services/{id}/media",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/services/{id}/media",
+      "consumer": "tulong-service.mapper.ts#toTulongService",
+      "required": [
+        "contacts",
+        "details",
+        "id",
+        "locations",
+        "name",
+        "requirements",
+        "slug",
+        "summary",
+        "updated_at"
+      ],
+      "optional": [
+        "badge",
+        "category",
+        "claim_steps",
+        "eligibility",
+        "featured",
+        "featured_headline",
+        "hidden_from_list",
+        "icon_key",
+        "legal_basis",
+        "media_id",
+        "office_id",
+        "schedule",
+        "tile_color"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/services/{id}/restore",
+      "consumer": "archive.mapper.ts#toArchiveState",
+      "required": [
+        "archived_at"
+      ],
+      "optional": [
+        "archive_reason",
+        "archived_by_name"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "admin/services/{id}/restore",
       "consumer": "tulong-service.mapper.ts#toTulongService",
       "required": [
         "contacts",
@@ -3422,7 +3971,9 @@
       "method": "GET",
       "path": "office/saved-views",
       "consumer": "saved-view.mapper.ts#toSavedView",
-      "required": [
+      "required": [],
+      "optional": [
+        "archived_at",
         "created_at",
         "id",
         "is_shared",
@@ -3430,14 +3981,15 @@
         "owner_id",
         "params",
         "resource"
-      ],
-      "optional": []
+      ]
     },
     {
       "method": "POST",
       "path": "office/saved-views",
       "consumer": "saved-view.mapper.ts#toSavedView",
-      "required": [
+      "required": [],
+      "optional": [
+        "archived_at",
         "created_at",
         "id",
         "is_shared",
@@ -3445,8 +3997,39 @@
         "owner_id",
         "params",
         "resource"
-      ],
-      "optional": []
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/saved-views/{id}/archive",
+      "consumer": "saved-view.mapper.ts#toSavedView",
+      "required": [],
+      "optional": [
+        "archived_at",
+        "created_at",
+        "id",
+        "is_shared",
+        "name",
+        "owner_id",
+        "params",
+        "resource"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/saved-views/{id}/restore",
+      "consumer": "saved-view.mapper.ts#toSavedView",
+      "required": [],
+      "optional": [
+        "archived_at",
+        "created_at",
+        "id",
+        "is_shared",
+        "name",
+        "owner_id",
+        "params",
+        "resource"
+      ]
     },
     {
       "method": "GET",
@@ -3732,30 +4315,6 @@
     {
       "method": "GET",
       "path": "offices",
-      "consumer": "directory-office.mapper.ts#toDirectoryOffice",
-      "required": [
-        "id",
-        "name",
-        "slug",
-        "updated_at"
-      ],
-      "optional": [
-        "address",
-        "banner_media_id",
-        "category",
-        "description",
-        "email",
-        "head",
-        "hours",
-        "latitude",
-        "longitude",
-        "phone",
-        "short_name"
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "offices",
       "consumer": "office.mapper.ts#toOffice",
       "required": [
         "id",
@@ -3764,68 +4323,6 @@
       ],
       "optional": [
         "short_name"
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "services",
-      "consumer": "tulong-service.mapper.ts#toTulongService",
-      "required": [
-        "contacts",
-        "details",
-        "id",
-        "locations",
-        "name",
-        "requirements",
-        "slug",
-        "summary",
-        "updated_at"
-      ],
-      "optional": [
-        "badge",
-        "category",
-        "claim_steps",
-        "eligibility",
-        "featured",
-        "featured_headline",
-        "hidden_from_list",
-        "icon_key",
-        "legal_basis",
-        "media_id",
-        "office_id",
-        "schedule",
-        "tile_color"
-      ]
-    },
-    {
-      "method": "GET",
-      "path": "services/{slug}",
-      "consumer": "tulong-service.mapper.ts#toTulongService",
-      "required": [
-        "contacts",
-        "details",
-        "id",
-        "locations",
-        "name",
-        "requirements",
-        "slug",
-        "summary",
-        "updated_at"
-      ],
-      "optional": [
-        "badge",
-        "category",
-        "claim_steps",
-        "eligibility",
-        "featured",
-        "featured_headline",
-        "hidden_from_list",
-        "icon_key",
-        "legal_basis",
-        "media_id",
-        "office_id",
-        "schedule",
-        "tile_color"
       ]
     },
     {

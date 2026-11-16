@@ -25,10 +25,34 @@ describe('the home screen (DL-170)', () => {
     expect(BANNER_NO_DESCRIPTION).toContain('the API keeps none');
   });
 
-  it('says an image outlives what replaces or deletes it, and offers hiding before deleting', () => {
+  it('says an image outlives what replaces or archives its banner', () => {
     expect(HOME_EFFECTS.imageReplaced.join(' ')).toContain('stays stored on the server');
     expect(HOME_EFFECTS.imageUpload.join(' ')).toContain('If the banner is then refused');
-    expect(HOME_EFFECTS.bannerRemove.join(' ')).toContain('hide it instead');
+    expect(HOME_EFFECTS.bannerArchive.join(' ')).toContain('Its image stays stored on the server');
     expect(HOME_EFFECTS.linkCreate.join(' ')).toContain('there is no hidden link');
+  });
+
+  it('archives a banner or a link with a reason, and restores it as it was (DL-225)', () => {
+    expect(HOME_EFFECTS.bannerArchive.join(' ')).toContain('whether it is shown or hidden');
+    expect(HOME_EFFECTS.bannerArchive.join(' ')).toContain('your name, the date and your reason');
+    expect(HOME_EFFECTS.bannerRestore.join(' ')).toContain('returns as it was');
+    expect(HOME_EFFECTS.linkArchive.join(' ')).toContain('can be restored');
+    expect(HOME_EFFECTS.linkRestore.join(' ')).toContain('in its place in the order');
+    for (const effects of [
+      HOME_EFFECTS.bannerArchive,
+      HOME_EFFECTS.bannerRestore,
+      HOME_EFFECTS.linkArchive,
+      HOME_EFFECTS.linkRestore,
+    ]) {
+      expect(effects.join(' ')).toMatch(
+        /The server records that you (archived|restored) it, when, and why/,
+      );
+    }
+  });
+
+  it('never says a banner, a link or an image is deleted (DL-225)', () => {
+    const said = Object.values(HOME_EFFECTS).flat().join(' ');
+    expect(said).not.toMatch(/\bis deleted\b|deleted it|\bdeletes the\b/i);
+    expect(said).not.toContain('Nothing brings it back');
   });
 });

@@ -28,26 +28,42 @@ const banner = (
   sortOrder,
   active: true,
   createdAt: asIsoDateTime('2026-10-01T00:00:00.000Z'),
+  archived: null,
   ...values,
 });
+
+/** An archive as the sample administrator left it (`DL-225`): sample words, a fixed date. */
+const SAMPLE_ARCHIVE = {
+  at: asIsoDateTime('2026-10-15T02:00:00.000Z'),
+  byName: 'Sample administrator',
+  reason: 'The campaign has ended; kept for reference (sample).',
+} as const;
 
 export const MOCK_HOME_BANNERS: readonly HomeBanner[] = [
   banner('senior-id', 'Senior citizen IDs, every weekday (sample)', 1),
   banner('feeding', 'Supplementary feeding resumes (sample)', 2),
   banner('typhoon', 'Typhoon relief, 2025 (sample)', 3, { active: false, href: null }),
+  banner('vaccination', 'Vaccination week, 2025 (sample)', 4, { archived: SAMPLE_ARCHIVE }),
 ];
 
-const link = (key: string, label: string, sortOrder: number): QuickLink => ({
+const link = (
+  key: string,
+  label: string,
+  sortOrder: number,
+  archived: QuickLink['archived'] = null,
+): QuickLink => ({
   id: asId<QuickLinkId>(`link-${key}`),
   label,
   href: `https://${SAMPLE_HOME_DOMAIN}/${key}`,
   sortOrder,
   createdAt: asIsoDateTime('2026-10-01T00:00:00.000Z'),
+  archived,
 });
 
 export const MOCK_QUICK_LINKS: readonly QuickLink[] = [
   link('tulong', 'Tulong (sample)', 1),
   link('hotlines', 'Hotlines (sample)', 2),
+  link('relief', 'Relief sign-up, 2025 (sample)', 3, SAMPLE_ARCHIVE),
 ];
 
 /** A drawn placeholder standing in for a banner's image: a coloured SVG, never a photograph. */

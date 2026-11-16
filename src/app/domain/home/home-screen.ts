@@ -1,4 +1,5 @@
 import type { FieldProblem } from '../directory/directory-office';
+import type { ArchiveRecord } from '../shared/archive';
 import type { HomeBannerId, IsoDateTime, MediaId, QuickLinkId } from '../shared/ids';
 
 /**
@@ -26,15 +27,21 @@ export interface HomeBanner {
   readonly sortOrder: number;
   readonly active: boolean;
   readonly createdAt: IsoDateTime;
+  /** `null` while it is in use, shown or not; when, by whom and why once archived (`DL-225`). */
+  readonly archived: ArchiveRecord | null;
 }
 
-/** A link on the app's home screen. Every one is shown, in order — there is no hidden link. */
+/**
+ * A link on the app's home screen. Every link in use is shown, in order — there is no hidden link;
+ * an archived one is in no list the app reads (`DL-225`).
+ */
 export interface QuickLink {
   readonly id: QuickLinkId;
   readonly label: string;
   readonly href: string;
   readonly sortOrder: number;
   readonly createdAt: IsoDateTime;
+  readonly archived: ArchiveRecord | null;
 }
 
 export interface BannerDraft {
@@ -130,9 +137,11 @@ export const BANNER_NO_DESCRIPTION =
  * `banner.*` and `link.*` with no reason; an image is any stored media the request names, uploaded
  * first through `POST media`; the public image route answers only a shown banner),
  * `src/modules/home/repository.ts` (the home screen carries shown banners by order then age, and every
- * link by order then age; nothing removes a banner's image from storage when it is replaced or the
- * banner deleted), and `src/modules/media/routes.ts` (an upload is kept whether or not anything ends
- * up naming it).
+ * link by order then age; nothing removes a banner's image from storage when it is replaced), and
+ * `src/modules/media/routes.ts` (an upload is kept whether or not anything ends up naming it) — and
+ * `cc86189` (`DL-225`): nothing deletes a banner or a link; each is archived and restored
+ * (`banner.archived`, `link.restored`, …, each with a reason kept in its archive history); an
+ * archived one leaves the home screen, keeps its image, and takes no change until it is restored.
  */
 export const HOME_EFFECTS = {
   bannerCreateShown: [
@@ -160,11 +169,16 @@ export const HOME_EFFECTS = {
   ],
   bannerHide: ['The banner leaves the app’s home screen. It is kept here, and can be shown again.'],
   bannerShow: ['The banner appears on the app’s home screen again.'],
-  bannerRemove: [
-    'The banner leaves the app’s home screen and is deleted. Nothing brings it back. To take it off ' +
-      'the home screen for a while, hide it instead.',
-    'Its image stays stored on the server; nothing removes it.',
-    'The server records that you deleted it, and when.',
+  bannerArchive: [
+    'The banner leaves the app’s home screen, whether it is shown or hidden.',
+    'It stays here under Archived, with your name, the date and your reason, and can be restored. ' +
+      'Its image stays stored on the server with it.',
+    'The server records that you archived it, when, and why.',
+  ],
+  bannerRestore: [
+    'The banner returns as it was: on the app’s home screen if it is shown, and kept here only if ' +
+      'it is hidden.',
+    'The server records that you restored it, when, and why.',
   ],
   linkCreate: [
     'The link appears on the app’s home screen. Every link is shown, in order; there is no hidden ' +
@@ -175,9 +189,14 @@ export const HOME_EFFECTS = {
     'Residents see the change the next time the app loads its home screen.',
     'The server records that you changed it, and when. It keeps no reason, so none is asked for.',
   ],
-  linkRemove: [
-    'The link leaves the app’s home screen and is deleted. Nothing brings it back.',
-    'The server records that you deleted it, and when.',
+  linkArchive: [
+    'The link leaves the app’s home screen.',
+    'It stays here under Archived, with your name, the date and your reason, and can be restored.',
+    'The server records that you archived it, when, and why.',
+  ],
+  linkRestore: [
+    'The link returns to the app’s home screen, in its place in the order.',
+    'The server records that you restored it, when, and why.',
   ],
   href: [
     'The app opens this when the banner or link is tapped. The API checks only its length, not that ' +

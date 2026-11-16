@@ -4,6 +4,7 @@ import { asId, type OfficeId } from '@domain/index';
 
 import HOTLINES from '../fixtures/hotlines.json';
 import OFFICE from '../fixtures/office.json';
+import OFFICE_ARCHIVED from '../fixtures/office-archived.json';
 import SERVICE from '../fixtures/service.json';
 import SERVICES_PAGE from '../fixtures/services-page.json';
 import {
@@ -46,6 +47,17 @@ describe('toDirectoryOffice (DL-170)', () => {
   it('refuses an entry without its address or its time', () => {
     expect(toDirectoryOffice({ ...OFFICE.data, slug: null })).toBeNull();
     expect(toDirectoryOffice({ ...OFFICE.data, updated_at: 'yesterday' })).toBeNull();
+  });
+
+  it('reads an office in use as not archived, and an archived one with when, by whom and why (DL-225)', () => {
+    expect(toDirectoryOffice(OFFICE.data)?.archived).toBeNull();
+    expect(toDirectoryOffice(OFFICE_ARCHIVED.data)?.archived).toEqual({
+      at: '2026-11-10T01:00:00.000Z',
+      byName: 'Fixture Administrator',
+      reason: 'Merged into the MSWDO.',
+    });
+    // An office that cannot say whether residents see it is not read as one they do.
+    expect(toDirectoryOffice({ ...OFFICE_ARCHIVED.data, archived_at: 'recently' })).toBeNull();
   });
 });
 
@@ -113,8 +125,26 @@ describe('toTulongService (DL-170)', () => {
     });
   });
 
-  it('reads a hidden page by its address', () => {
+  it('reads a hidden page, which the administrator’s list holds', () => {
     expect(toTulongService(SERVICE.data)?.hiddenFromList).toBe(true);
+  });
+
+  it('reads where a page stands in the archive: in use when the residents’ shape omits it (DL-225)', () => {
+    expect(toTulongService(SERVICE.data)?.archived).toBeNull();
+    expect(toTulongService(firstOf(SERVICES_PAGE.data))?.archived).toBeNull();
+    expect(
+      toTulongService({
+        ...SERVICE.data,
+        archived_at: '2026-11-10T01:00:00.000Z',
+        archive_reason: 'The distribution has ended.',
+        archived_by_name: 'An account since closed',
+      })?.archived,
+    ).toEqual({
+      at: '2026-11-10T01:00:00.000Z',
+      byName: 'An account since closed',
+      reason: 'The distribution has ended.',
+    });
+    expect(toTulongService({ ...SERVICE.data, archived_at: 'recently' })).toBeNull();
   });
 
   it('refuses a page with a contact it cannot read, rather than dropping the contact a save would delete', () => {
@@ -176,6 +206,26 @@ describe('the Tulong page bodies (DL-170)', () => {
 describe('toHotline (DL-170)', () => {
   it('reads a shown and a hidden line', () => {
     expect(HOTLINES.data.map((wire) => toHotline(wire)?.active)).toEqual([true, false]);
+  });
+
+  it('reads an archived line apart from a hidden one, and refuses one it cannot place (DL-225)', () => {
+    expect(HOTLINES.data.map((wire) => toHotline(wire)?.archived)).toEqual([null, null]);
+    const archived = toHotline({
+      ...HOTLINES.data[0],
+      archived_at: '2026-11-10T01:00:00.000Z',
+      archive_reason: 'The 2025 relief line was closed.',
+      archived_by_name: 'Fixture Administrator',
+    });
+    // Archived is not hidden: the line keeps whether it is active, for when it is restored.
+    expect(archived).toMatchObject({
+      active: true,
+      archived: {
+        at: '2026-11-10T01:00:00.000Z',
+        byName: 'Fixture Administrator',
+        reason: 'The 2025 relief line was closed.',
+      },
+    });
+    expect(toHotline({ ...HOTLINES.data[0], archived_at: 'recently' })).toBeNull();
   });
 
   it('never guesses whether a line is shown', () => {

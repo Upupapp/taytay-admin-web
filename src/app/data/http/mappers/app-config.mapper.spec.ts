@@ -1,11 +1,35 @@
 import { describe, expect, it } from 'vitest';
 
 import APP_CONFIG from '../fixtures/app-config.json';
+import FEATURE_FLAGS from '../fixtures/feature-flags.json';
 import {
   fromWireReviewTimeRefusal,
   toAppConfig,
+  toArchivedFeatureFlag,
   toWireAppConfigChanges,
 } from './app-config.mapper';
+
+describe('toArchivedFeatureFlag (DL-225)', () => {
+  it('reads an archived flag with its value kept, and when and by whom it was archived', () => {
+    const [inUse, archived] = FEATURE_FLAGS.data.map(toArchivedFeatureFlag);
+
+    expect(inUse).toBe('in-use');
+    expect(archived).toEqual({
+      key: 'typhoon_banner',
+      value: 'on',
+      archived: { at: '2026-11-10T01:00:00.000Z', byName: 'Fixture Administrator', reason: null },
+    });
+  });
+
+  it('refuses a flag it cannot read, rather than leaving it out as one nobody archived', () => {
+    const [, archived] = FEATURE_FLAGS.data;
+    expect(toArchivedFeatureFlag({ ...archived, key: '' })).toBeNull();
+    expect(toArchivedFeatureFlag({ ...archived, value: 7 })).toBeNull();
+    expect(toArchivedFeatureFlag({ ...archived, archived_at: 'last week' })).toBeNull();
+    // The schema requires the field; a flag that does not say where it stands is not read as in use.
+    expect(toArchivedFeatureFlag({ key: 'x', value: 'on' })).toBeNull();
+  });
+});
 
 describe('the app settings mapper (DL-170)', () => {
   it('reads every setting, the flags by name, and both texts whole with their versions (DL-186)', () => {
@@ -44,7 +68,7 @@ describe('the app settings mapper (DL-170)', () => {
     ).toBeNull();
   });
 
-  it('sends only what changed: null clears, and a flag set to null is deleted', () => {
+  it('sends only what changed: null clears, and a flag set to null is archived (DL-225)', () => {
     const wire = toWireAppConfigChanges({
       minimumAppVersion: null,
       featureFlags: [

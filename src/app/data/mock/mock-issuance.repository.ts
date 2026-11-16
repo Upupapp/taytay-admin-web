@@ -33,6 +33,7 @@ import {
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
+import { MockOfficeRegistry } from './mock-archive';
 import { MockLatency } from './mock-latency';
 import { MOCK_OFFICE_MSWDO, MOCK_OFFICES } from './seed/offices.seed';
 import { MOCK_ISSUANCE_REQUESTS, MOCK_ISSUANCE_TYPES, sampleFile } from './seed/issuance.seed';
@@ -42,6 +43,10 @@ const LARGEST_PAGE = 50;
 
 /** The API's limit on an office's active types. */
 const ACTIVE_TYPES_PER_OFFICE = 50;
+
+/** The API's refusal of a type under an archived office (`DL-225`), in its own words. */
+const OFFICE_ARCHIVED =
+  'That office is archived. Restore it before adding or changing its document types.';
 
 /**
  * In-memory residents' document requests (`DL-184`), refusing the way the API does.
@@ -57,6 +62,7 @@ const ACTIVE_TYPES_PER_OFFICE = 50;
 @Injectable()
 export class MockIssuanceRepository implements IssuanceRepository {
   private readonly latency = inject(MockLatency);
+  private readonly offices = inject(MockOfficeRegistry);
   private readonly access = inject(ACCESS_CONTEXT);
 
   private types: readonly IssuanceType[] = MOCK_ISSUANCE_TYPES;
@@ -103,6 +109,10 @@ export class MockIssuanceRepository implements IssuanceRepository {
     if (office === undefined) {
       return throwError(() => new Error('That office was not found.'));
     }
+    const archived = this.offices.refuseIfArchived<IssuanceType>(officeId, OFFICE_ARCHIVED);
+    if (archived) {
+      return archived;
+    }
     const active = this.types.filter((type) => type.office.id === officeId && type.active);
     if (active.some((type) => sameName(type.name, draft.name))) {
       return throwError(() => new Error('The office already offers a document of that name.'));
@@ -125,6 +135,7 @@ export class MockIssuanceRepository implements IssuanceRepository {
       updatedAt: now,
     };
     this.types = [...this.types, created];
+    this.offices.useIssuanceType(created.id, created.office.id);
     return this.latency.respond(created);
   }
 
@@ -139,6 +150,13 @@ export class MockIssuanceRepository implements IssuanceRepository {
     }
     if (!current.active) {
       return throwError(() => new Error('A retired document type cannot be changed.'));
+    }
+    const archived = this.offices.refuseIfArchived<IssuanceType>(
+      current.office.id,
+      OFFICE_ARCHIVED,
+    );
+    if (archived) {
+      return archived;
     }
     const next: IssuanceTypeFields = {
       name: changes.name?.trim() ?? current.name,
@@ -192,6 +210,7 @@ export class MockIssuanceRepository implements IssuanceRepository {
     const now = asIsoDateTime(new Date());
     const retired: IssuanceType = { ...current, active: false, retiredAt: now, updatedAt: now };
     this.types = this.types.map((type) => (type.id === id ? retired : type));
+    this.offices.useIssuanceType(id, null);
     return this.latency.respond(retired);
   }
 

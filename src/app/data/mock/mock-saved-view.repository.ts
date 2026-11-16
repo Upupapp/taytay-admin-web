@@ -7,6 +7,7 @@ import {
   asIsoDateTime,
   isValidSavedViewName,
   PermissionDeniedError,
+  SAVED_VIEW_CAP,
   SAVED_VIEW_PERMISSIONS,
   SAVED_VIEW_NAME_MAX_LENGTH,
   SHARE_VIEW_PERMISSION,
@@ -18,6 +19,7 @@ import {
   type SavedViewResource,
 } from '@domain/index';
 
+import { refuseArchiveState } from './mock-archive';
 import { MOCK_SAVED_VIEWS } from './seed/saved-views.seed';
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
@@ -38,7 +40,7 @@ export class MockSavedViewRepository implements SavedViewRepository {
   private views: readonly SavedView[] = MOCK_SAVED_VIEWS;
   private sequence = MOCK_SAVED_VIEWS.length;
 
-  listFor(resource: SavedViewResource): Observable<readonly SavedView[]> {
+  listFor(resource: SavedViewResource, archived: boolean): Observable<readonly SavedView[]> {
     const user = this.access.currentUser();
     const denied = denyUnless<readonly SavedView[]>(user, SAVED_VIEW_PERMISSIONS[resource]);
     if (denied) {
@@ -46,11 +48,14 @@ export class MockSavedViewRepository implements SavedViewRepository {
     }
 
     // Someone else's personal view is not listed at all. Its *name* can describe
-    // a population, so it is disclosive even though it holds no records.
+    // a population, so it is disclosive even though it holds no records. An
+    // archived list holds only what this account could restore (`DL-225`).
     return this.latency.respond(
       this.views.filter(
         (view) =>
-          view.resource === resource && (view.isShared || view.ownerId === (user?.id ?? null)),
+          view.resource === resource &&
+          (view.archived !== null) === archived &&
+          (archived ? this.mayMove(view) : view.isShared || view.ownerId === (user?.id ?? null)),
       ),
     );
   }
@@ -69,6 +74,16 @@ export class MockSavedViewRepository implements SavedViewRepository {
       if (cannotShare) {
         return cannotShare;
       }
+    }
+    const inUse = this.views.filter(
+      (view) =>
+        view.resource === draft.resource &&
+        view.archived === null &&
+        view.isShared === draft.isShared &&
+        (draft.isShared || view.ownerId === (user?.id ?? null)),
+    );
+    if (inUse.length >= SAVED_VIEW_CAP) {
+      return throwError(() => new Error(this.capReached(draft.isShared)));
     }
     if (!isValidSavedViewName(draft.name)) {
       return throwError(
@@ -92,31 +107,71 @@ export class MockSavedViewRepository implements SavedViewRepository {
         updatedAt: now,
         updatedBy: user?.id ?? null,
       },
+      archived: null,
     };
     this.views = [...this.views, created];
     return this.latency.respond(created);
   }
 
-  remove(id: SavedViewId): Observable<void> {
+  archive(id: SavedViewId): Observable<SavedView> {
+    const existing = this.views.find((view) => view.id === id);
+    if (existing === undefined || !this.mayMove(existing)) {
+      return throwError(() => new PermissionDeniedError(null));
+    }
+    const already = refuseArchiveState<SavedView>(existing.archived, 'archive', 'That saved view');
+    if (already) {
+      return already;
+    }
+    return this.put({
+      ...existing,
+      archived: { at: asIsoDateTime(new Date()), byName: null, reason: null },
+    });
+  }
+
+  restore(id: SavedViewId): Observable<SavedView> {
     const user = this.access.currentUser();
     const existing = this.views.find((view) => view.id === id);
-
-    if (existing === undefined) {
+    if (existing === undefined || !this.mayMove(existing)) {
       return throwError(() => new PermissionDeniedError(null));
     }
+    const already = refuseArchiveState<SavedView>(existing.archived, 'restore', 'That saved view');
+    if (already) {
+      return already;
+    }
+    const inUse = this.views.filter(
+      (view) =>
+        view.resource === existing.resource &&
+        view.archived === null &&
+        view.isShared === existing.isShared &&
+        (existing.isShared || view.ownerId === (user?.id ?? null)),
+    );
+    if (inUse.length >= SAVED_VIEW_CAP) {
+      return throwError(() => new Error(this.capReached(existing.isShared)));
+    }
+    return this.put({ ...existing, archived: null });
+  }
 
-    // A shared view is the office's, not the last person to look at it.
-    // Removing one costs the same grant as creating one; removing your own
-    // personal view costs nothing beyond owning it.
-    const mayRemove = existing.isShared
+  /**
+   * A shared view is the office's, not the last person to look at it: archiving or
+   * restoring one costs the same grant as creating one, and your own personal view
+   * costs nothing beyond owning it.
+   */
+  private mayMove(view: SavedView): boolean {
+    const user = this.access.currentUser();
+    return view.isShared
       ? userHasPermission(user, SHARE_VIEW_PERMISSION)
-      : existing.ownerId !== null && existing.ownerId === user?.id;
+      : view.ownerId !== null && view.ownerId === user?.id;
+  }
 
-    if (!mayRemove) {
-      return throwError(() => new PermissionDeniedError(null));
-    }
+  /** The API's refusal past a list's cap, in its own words. */
+  private capReached(shared: boolean): string {
+    return shared
+      ? `The office already keeps ${SAVED_VIEW_CAP} shared views of this list. Archive one first.`
+      : `You already keep ${SAVED_VIEW_CAP} views of this list. Archive one first.`;
+  }
 
-    this.views = this.views.filter((view) => view.id !== id);
-    return this.latency.respond(undefined);
+  private put(view: SavedView): Observable<SavedView> {
+    this.views = this.views.map((candidate) => (candidate.id === view.id ? view : candidate));
+    return this.latency.respond(view);
   }
 }

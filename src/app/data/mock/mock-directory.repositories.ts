@@ -1,24 +1,23 @@
 import { inject, Injectable } from '@angular/core';
-import { map, throwError, type Observable } from 'rxjs';
+import { throwError, type Observable } from 'rxjs';
 
 import {
   ACCESS_CONTEXT,
   APP_IMAGE_POLICY,
+  ArchiveRefusedError,
   asId,
   asIsoDateTime,
   activeCommandCenter,
   commandCenterHolder,
   HOTLINE_LIST_CAP,
   HotlineCommandCenterTakenError,
-  type CursorPage,
-  type CursorRequest,
+  type ArchiveEvent,
   type DirectoryOffice,
   type DirectoryOfficeRepository,
   type Hotline,
   type HotlineChanges,
   type HotlineDraft,
   type HotlineId,
-  type HotlineListing,
   type HotlineRepository,
   type OfficeChanges,
   type OfficeDraft,
@@ -30,21 +29,16 @@ import {
   type TulongServiceRepository,
 } from '@domain/index';
 
+import {
+  MockArchiveLog,
+  MockOfficeRegistry,
+  refuseArchiveState,
+  refuseIfReadOnly,
+  refuseReason,
+} from './mock-archive';
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
-import { MOCK_APP_ACCOUNTS } from './seed/app-accounts.seed';
 import { MOCK_DIRECTORY_OFFICES, MOCK_HOTLINES, MOCK_TULONG_SERVICES } from './seed/directory.seed';
-import { MOCK_OFFICE_THREADS } from './seed/office-threads.seed';
-
-/** The API's own ceiling on a page (`limit` maximum 50), kept so the mock pages like the server. */
-const LARGEST_PAGE = 50;
-
-function pageOf<T>(rows: readonly T[], page: CursorRequest): CursorPage<T> {
-  const start = page.cursor ? Number.parseInt(page.cursor, 10) || 0 : 0;
-  const end = start + Math.min(Math.max(1, page.limit), LARGEST_PAGE);
-  const hasMore = end < rows.length;
-  return { items: rows.slice(start, end), hasMore, nextCursor: hasMore ? String(end) : null };
-}
 
 /** The server's refusal of an image, in its own words (`src/http/error-handler.ts`). */
 function imageRefusal(image: Blob | null): Error | null {
@@ -55,25 +49,43 @@ function imageRefusal(image: Blob | null): Error | null {
     : new Error('Upload a JPEG, PNG, or WebP image.');
 }
 
+/** The API's 503 past a whole list's ceiling, in its own words. */
+function tooLong<T>(rows: readonly T[], ceiling: number, noun: string): Observable<never> | null {
+  return rows.length > ceiling
+    ? throwError(() => new Error(`There are more ${noun} than this read returns whole.`))
+    : null;
+}
+
 let created = 0;
 const nextId = (prefix: string): string => `${prefix}-new-${++created}`;
 const now = () => asIsoDateTime(new Date());
+const byName = <T extends { readonly name: string }>(rows: readonly T[]): readonly T[] =>
+  [...rows].sort((a, b) => a.name.localeCompare(b.name));
 
 /**
- * The office directory, in memory (`DL-170`), refusing the way the API does: a taken address, an
- * image the API would not take, and a delete while a staff account or a conversation still names the
- * office (`OFFICE_EFFECTS.remove`). Reads check no key, because `GET offices` is public; every write
- * re-checks `office.manage` (rule 4).
+ * The office directory, in memory (`DL-170`), refusing the way the API does: a taken address — an
+ * archived office's included, which stays reserved — an image the API would not take, a change to
+ * an archived office, and an archive while a staff account, a live Tulong page or an active document
+ * type still uses the office, with the counts (`DL-225`). Every act re-checks `office.manage`
+ * (rule 4), the list included, as `GET admin/offices` does.
  */
 @Injectable()
 export class MockDirectoryOfficeRepository implements DirectoryOfficeRepository {
   private readonly latency = inject(MockLatency);
   private readonly access = inject(ACCESS_CONTEXT);
+  private readonly registry = inject(MockOfficeRegistry);
+  private readonly log = new MockArchiveLog<OfficeId>();
 
   private offices: readonly DirectoryOffice[] = MOCK_DIRECTORY_OFFICES;
 
-  list(page: CursorRequest): Observable<CursorPage<DirectoryOffice>> {
-    return this.latency.respond(pageOf(this.offices, page));
+  list(archived: boolean): Observable<readonly DirectoryOffice[]> {
+    const denied = denyUnless<readonly DirectoryOffice[]>(
+      this.access.currentUser(),
+      'office.manage',
+    );
+    if (denied) return denied;
+    const rows = this.offices.filter((office) => (office.archived !== null) === archived);
+    return tooLong(rows, 500, 'offices') ?? this.latency.respond(byName(rows));
   }
 
   create(draft: OfficeDraft, banner: Blob | null): Observable<DirectoryOffice> {
@@ -87,6 +99,7 @@ export class MockDirectoryOfficeRepository implements DirectoryOfficeRepository 
       id: asId<OfficeId>(nextId('office')),
       hasBanner: banner !== null,
       updatedAt: now(),
+      archived: null,
     };
     this.offices = [office, ...this.offices];
     return this.latency.respond(office);
@@ -97,74 +110,142 @@ export class MockDirectoryOfficeRepository implements DirectoryOfficeRepository 
     if (denied) return denied;
     const existing = this.offices.find((office) => office.id === id);
     if (existing === undefined) return throwError(() => new Error('That office was not found.'));
+    const readOnly = refuseIfReadOnly<DirectoryOffice>(existing.archived, 'That office');
+    if (readOnly) return readOnly;
     const refused =
       (changes.slug === undefined ? null : this.slugTaken(changes.slug, id)) ??
       imageRefusal(banner);
     if (refused) return throwError(() => refused);
 
-    const office: DirectoryOffice = {
+    return this.put({
       ...existing,
       ...changes,
       hasBanner: existing.hasBanner || banner !== null,
       updatedAt: now(),
-    };
-    this.offices = this.offices.map((candidate) => (candidate.id === id ? office : candidate));
+    });
+  }
+
+  archive(id: OfficeId, reason: string): Observable<DirectoryOffice> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<DirectoryOffice>(user, 'office.manage');
+    if (denied) return denied;
+    const bad = refuseReason<DirectoryOffice>(reason);
+    if (bad) return bad;
+    const existing = this.offices.find((office) => office.id === id);
+    if (existing === undefined) return throwError(() => new Error('That office was not found.'));
+    const already = refuseArchiveState<DirectoryOffice>(
+      existing.archived,
+      'archive',
+      'That office',
+    );
+    if (already) return already;
+    const inUse = this.registry.inUse(id);
+    if (inUse.staffAccounts + inUse.services + inUse.issuanceTypes > 0) {
+      return throwError(
+        () =>
+          new ArchiveRefusedError(
+            'office-in-use',
+            'That office still has staff accounts, Tulong services or document types. Move or ' +
+              'archive them first.',
+            inUse,
+          ),
+      );
+    }
+    this.registry.setArchived(id, true);
+    return this.put({
+      ...existing,
+      archived: this.log.record(id, 'archived', reason.trim(), user),
+    });
+  }
+
+  restore(id: OfficeId, reason: string): Observable<DirectoryOffice> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<DirectoryOffice>(user, 'office.manage');
+    if (denied) return denied;
+    const bad = refuseReason<DirectoryOffice>(reason);
+    if (bad) return bad;
+    const existing = this.offices.find((office) => office.id === id);
+    if (existing === undefined) return throwError(() => new Error('That office was not found.'));
+    const already = refuseArchiveState<DirectoryOffice>(
+      existing.archived,
+      'restore',
+      'That office',
+    );
+    if (already) return already;
+    this.registry.setArchived(id, false);
+    return this.put({
+      ...existing,
+      archived: this.log.record(id, 'restored', reason.trim(), user),
+    });
+  }
+
+  history(id: OfficeId): Observable<readonly ArchiveEvent[]> {
+    const denied = denyUnless<readonly ArchiveEvent[]>(this.access.currentUser(), 'office.manage');
+    return denied ?? this.latency.respond(this.log.history(id));
+  }
+
+  private put(office: DirectoryOffice): Observable<DirectoryOffice> {
+    this.offices = this.offices.map((candidate) =>
+      candidate.id === office.id ? office : candidate,
+    );
     return this.latency.respond(office);
   }
 
-  remove(id: OfficeId): Observable<void> {
-    const denied = denyUnless<void>(this.access.currentUser(), 'office.manage');
-    if (denied) return denied;
-    if (!this.offices.some((office) => office.id === id)) {
-      return throwError(() => new Error('That office was not found.'));
-    }
-    const named =
-      MOCK_APP_ACCOUNTS.some((account) => account.officeId === id) ||
-      MOCK_OFFICE_THREADS.some((thread) => thread.officeId === id) ||
-      MOCK_TULONG_SERVICES.some((service) => service.officeId === id);
-    if (named) {
-      return throwError(() => new Error('That office still has staff or other records.'));
-    }
-    this.offices = this.offices.filter((office) => office.id !== id);
-    return this.latency.respond(undefined);
-  }
-
   private slugTaken(slug: string, except: OfficeId | null): Error | null {
-    return this.offices.some((office) => office.slug === slug && office.id !== except)
-      ? new Error('An office with that slug already exists.')
-      : null;
+    const holder = this.offices.find((office) => office.slug === slug && office.id !== except);
+    if (holder === undefined) return null;
+    return new Error(
+      holder.archived === null
+        ? 'An office with that slug already exists.'
+        : 'An archived office holds that slug. It stays reserved so old links never lead to a ' +
+            'different office: restore that office, or choose another slug.',
+    );
   }
 }
 
 /**
- * Tulong pages, in memory (`DL-170`). The list leaves out a page hidden from the catalogue, exactly
- * as `GET services` does, so the screen's way back to one — by its address — is exercised here too.
+ * Tulong pages, in memory (`DL-170`), as `GET admin/services` lists them: every page in use, hidden
+ * ones included, or every archived one (`DL-225`). Refuses a change to an archived page, a page put
+ * under an archived office, and a restore while the page's office is archived.
  */
 @Injectable()
 export class MockTulongServiceRepository implements TulongServiceRepository {
   private readonly latency = inject(MockLatency);
   private readonly access = inject(ACCESS_CONTEXT);
+  private readonly registry = inject(MockOfficeRegistry);
+  private readonly log = new MockArchiveLog<TulongServiceId>();
 
   private services: readonly TulongService[] = MOCK_TULONG_SERVICES;
 
-  list(page: CursorRequest): Observable<CursorPage<TulongService>> {
-    return this.latency.respond(
-      pageOf(
-        this.services.filter((s) => !s.hiddenFromList),
-        page,
-      ),
+  list(archived: boolean): Observable<readonly TulongService[]> {
+    const denied = denyUnless<readonly TulongService[]>(
+      this.access.currentUser(),
+      'service.manage',
     );
-  }
-
-  find(slug: string): Observable<TulongService | null> {
-    return this.latency.respond(this.services.find((service) => service.slug === slug) ?? null);
+    if (denied) return denied;
+    const rows = this.services.filter((service) => (service.archived !== null) === archived);
+    return tooLong(rows, 1000, 'services') ?? this.latency.respond(byName(rows));
   }
 
   create(draft: ServiceDraft): Observable<TulongService> {
     const denied = denyUnless<TulongService>(this.access.currentUser(), 'service.manage');
     if (denied) return denied;
-    if (this.services.some((service) => service.slug === draft.slug)) {
-      return throwError(() => new Error('A service with that slug already exists.'));
+    const underArchived = this.registry.refuseIfArchived<TulongService>(
+      draft.officeId,
+      'That office is archived. Restore it before putting a service under it.',
+    );
+    if (underArchived) return underArchived;
+    const holder = this.services.find((service) => service.slug === draft.slug);
+    if (holder !== undefined) {
+      return throwError(
+        () =>
+          new Error(
+            holder.archived === null
+              ? 'A service with that slug already exists.'
+              : 'An archived service holds that slug. It stays reserved so old links never lead ' +
+                  'to a different service: restore that service, or choose another slug.',
+          ),
+      );
     }
     const service: TulongService = {
       ...draft,
@@ -172,15 +253,17 @@ export class MockTulongServiceRepository implements TulongServiceRepository {
       featured: false,
       hasImage: false,
       updatedAt: now(),
+      archived: null,
     };
     this.services = [service, ...this.services];
+    this.registry.useService(service.id, service.officeId);
     return this.latency.respond(service);
   }
 
   update(id: TulongServiceId, changes: ServiceChanges): Observable<TulongService> {
     const denied = denyUnless<TulongService>(this.access.currentUser(), 'service.manage');
     if (denied) return denied;
-    return this.replace(id, (service) => ({ ...service, ...changes }));
+    return this.change(id, (service) => ({ ...service, ...changes }));
   }
 
   replaceImage(id: TulongServiceId, image: Blob): Observable<TulongService> {
@@ -188,56 +271,103 @@ export class MockTulongServiceRepository implements TulongServiceRepository {
     if (denied) return denied;
     const refused = imageRefusal(image);
     if (refused) return throwError(() => refused);
-    return this.replace(id, (service) => ({ ...service, hasImage: true }));
+    return this.change(id, (service) => ({ ...service, hasImage: true }));
   }
 
-  remove(id: TulongServiceId): Observable<void> {
-    const denied = denyUnless<void>(this.access.currentUser(), 'service.manage');
+  archive(id: TulongServiceId, reason: string): Observable<TulongService> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<TulongService>(user, 'service.manage');
     if (denied) return denied;
-    if (!this.services.some((service) => service.id === id)) {
-      return throwError(() => new Error('That service was not found.'));
-    }
-    this.services = this.services.filter((service) => service.id !== id);
-    return this.latency.respond(undefined);
+    const bad = refuseReason<TulongService>(reason);
+    if (bad) return bad;
+    const existing = this.services.find((service) => service.id === id);
+    if (existing === undefined) return throwError(() => new Error('That service was not found.'));
+    const already = refuseArchiveState<TulongService>(existing.archived, 'archive', 'That service');
+    if (already) return already;
+    this.registry.useService(id, null);
+    return this.put({
+      ...existing,
+      archived: this.log.record(id, 'archived', reason.trim(), user),
+    });
   }
 
-  private replace(
+  restore(id: TulongServiceId, reason: string): Observable<TulongService> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<TulongService>(user, 'service.manage');
+    if (denied) return denied;
+    const bad = refuseReason<TulongService>(reason);
+    if (bad) return bad;
+    const existing = this.services.find((service) => service.id === id);
+    if (existing === undefined) return throwError(() => new Error('That service was not found.'));
+    const already = refuseArchiveState<TulongService>(existing.archived, 'restore', 'That service');
+    if (already) return already;
+    const underArchived = this.registry.refuseIfArchived<TulongService>(
+      existing.officeId,
+      'That service’s office is archived. Restore the office first, or move the service.',
+    );
+    if (underArchived) return underArchived;
+    this.registry.useService(id, existing.officeId);
+    return this.put({
+      ...existing,
+      archived: this.log.record(id, 'restored', reason.trim(), user),
+    });
+  }
+
+  history(id: TulongServiceId): Observable<readonly ArchiveEvent[]> {
+    const denied = denyUnless<readonly ArchiveEvent[]>(this.access.currentUser(), 'service.manage');
+    return denied ?? this.latency.respond(this.log.history(id));
+  }
+
+  private change(
     id: TulongServiceId,
     change: (service: TulongService) => TulongService,
   ): Observable<TulongService> {
     const existing = this.services.find((service) => service.id === id);
     if (existing === undefined) return throwError(() => new Error('That service was not found.'));
-    const service = { ...change(existing), updatedAt: now() };
-    this.services = this.services.map((candidate) => (candidate.id === id ? service : candidate));
+    const readOnly = refuseIfReadOnly<TulongService>(existing.archived, 'That service');
+    if (readOnly) return readOnly;
+    return this.put({ ...change(existing), updatedAt: now() });
+  }
+
+  private put(service: TulongService): Observable<TulongService> {
+    this.services = this.services.map((candidate) =>
+      candidate.id === service.id ? service : candidate,
+    );
     return this.latency.respond(service);
   }
 }
 
-/** Hotlines, in memory (`DL-170`), ordered and capped as the API orders and caps them. */
+/**
+ * Hotlines, in memory (`DL-170`), ordered as the API orders them and read whole or refused past
+ * `HOTLINE_LIST_CAP` (`ca71f23`). Archived lines are their own list, take no change until restored,
+ * and are not counted by the one-command-center rule (`DL-225`).
+ */
 @Injectable()
 export class MockHotlineRepository implements HotlineRepository {
   private readonly latency = inject(MockLatency);
   private readonly access = inject(ACCESS_CONTEXT);
+  private readonly log = new MockArchiveLog<HotlineId>();
 
   private hotlines: readonly Hotline[] = MOCK_HOTLINES;
 
-  list(): Observable<HotlineListing> {
-    const denied = denyUnless<HotlineListing>(this.access.currentUser(), 'hotline.manage');
+  list(archived: boolean): Observable<readonly Hotline[]> {
+    const denied = denyUnless<readonly Hotline[]>(this.access.currentUser(), 'hotline.manage');
     if (denied) return denied;
-    const ordered = [...this.hotlines]
-      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
-      .slice(0, HOTLINE_LIST_CAP);
-    return this.latency
-      .respond(ordered)
-      .pipe(
-        map((hotlines) => ({ hotlines, mayBeIncomplete: hotlines.length >= HOTLINE_LIST_CAP })),
-      );
+    const ordered = this.hotlines
+      .filter((hotline) => (hotline.archived !== null) === archived)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+    return tooLong(ordered, HOTLINE_LIST_CAP, 'hotlines') ?? this.latency.respond(ordered);
   }
 
   create(draft: HotlineDraft): Observable<Hotline> {
     const denied = denyUnless<Hotline>(this.access.currentUser(), 'hotline.manage');
     if (denied) return denied;
-    const hotline: Hotline = { ...draft, id: asId<HotlineId>(nextId('hotline')), updatedAt: now() };
+    const hotline: Hotline = {
+      ...draft,
+      id: asId<HotlineId>(nextId('hotline')),
+      updatedAt: now(),
+      archived: null,
+    };
     const refused = this.secondCommandCenter(hotline);
     if (refused) return refused;
     this.hotlines = [...this.hotlines, hotline];
@@ -249,16 +379,60 @@ export class MockHotlineRepository implements HotlineRepository {
     if (denied) return denied;
     const existing = this.hotlines.find((hotline) => hotline.id === id);
     if (existing === undefined) return throwError(() => new Error('That hotline was not found.'));
+    const readOnly = refuseIfReadOnly<Hotline>(existing.archived, 'That hotline');
+    if (readOnly) return readOnly;
     const hotline = { ...existing, ...changes, updatedAt: now() };
     const refused = this.secondCommandCenter(hotline);
     if (refused) return refused;
-    this.hotlines = this.hotlines.map((candidate) => (candidate.id === id ? hotline : candidate));
-    return this.latency.respond(hotline);
+    return this.put(hotline);
   }
 
-  /** Refused as the API's partial unique index refuses it: a second active command center, 409. */
+  archive(id: HotlineId, reason: string): Observable<Hotline> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<Hotline>(user, 'hotline.manage');
+    if (denied) return denied;
+    const bad = refuseReason<Hotline>(reason);
+    if (bad) return bad;
+    const existing = this.hotlines.find((hotline) => hotline.id === id);
+    if (existing === undefined) return throwError(() => new Error('That hotline was not found.'));
+    const already = refuseArchiveState<Hotline>(existing.archived, 'archive', 'That hotline');
+    if (already) return already;
+    return this.put({
+      ...existing,
+      archived: this.log.record(id, 'archived', reason.trim(), user),
+    });
+  }
+
+  restore(id: HotlineId, reason: string): Observable<Hotline> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<Hotline>(user, 'hotline.manage');
+    if (denied) return denied;
+    const bad = refuseReason<Hotline>(reason);
+    if (bad) return bad;
+    const existing = this.hotlines.find((hotline) => hotline.id === id);
+    if (existing === undefined) return throwError(() => new Error('That hotline was not found.'));
+    const already = refuseArchiveState<Hotline>(existing.archived, 'restore', 'That hotline');
+    if (already) return already;
+    const refused = this.secondCommandCenter({ ...existing, archived: null });
+    if (refused) return refused;
+    return this.put({
+      ...existing,
+      archived: this.log.record(id, 'restored', reason.trim(), user),
+    });
+  }
+
+  history(id: HotlineId): Observable<readonly ArchiveEvent[]> {
+    const denied = denyUnless<readonly ArchiveEvent[]>(this.access.currentUser(), 'hotline.manage');
+    return denied ?? this.latency.respond(this.log.history(id));
+  }
+
+  /**
+   * Refused as the API's partial unique index refuses it: a second active command center, 409. The
+   * index leaves archived lines out, so an archived one neither holds the role nor is refused it.
+   */
   private secondCommandCenter(line: Hotline): Observable<never> | null {
-    return commandCenterHolder(line, activeCommandCenter(this.hotlines)) === null
+    const inUse = this.hotlines.filter((hotline) => hotline.archived === null);
+    return line.archived !== null || commandCenterHolder(line, activeCommandCenter(inUse)) === null
       ? null
       : throwError(
           () =>
@@ -266,13 +440,10 @@ export class MockHotlineRepository implements HotlineRepository {
         );
   }
 
-  remove(id: HotlineId): Observable<void> {
-    const denied = denyUnless<void>(this.access.currentUser(), 'hotline.manage');
-    if (denied) return denied;
-    if (!this.hotlines.some((hotline) => hotline.id === id)) {
-      return throwError(() => new Error('That hotline was not found.'));
-    }
-    this.hotlines = this.hotlines.filter((hotline) => hotline.id !== id);
-    return this.latency.respond(undefined);
+  private put(hotline: Hotline): Observable<Hotline> {
+    this.hotlines = this.hotlines.map((candidate) =>
+      candidate.id === hotline.id ? hotline : candidate,
+    );
+    return this.latency.respond(hotline);
   }
 }

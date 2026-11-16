@@ -6,7 +6,8 @@
     "params": { "indigent": "true", "band": "elevated" },
     "is_shared": false,
     "owner_id": "0f1e2d3c-4b5a-4968-8776-655443322102",
-    "created_at": "2026-11-06T06:00:00.000Z"
+    "created_at": "2026-11-06T06:00:00.000Z",
+    "archived_at": null
   },
   "meta": {}
 }

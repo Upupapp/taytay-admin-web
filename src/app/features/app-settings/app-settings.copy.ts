@@ -153,14 +153,29 @@ export const APP_SETTINGS_COPY = {
   flagsCaption: 'Feature flags the app is given',
   flagName: 'Name',
   flagValue: 'Value',
-  flagDelete: 'Delete',
-  flagDeleteLabel: (key: string) => `Delete the flag ${key}`,
+  flagArchive: 'Archive',
+  flagArchiveLabel: (key: string) => `Archive the flag ${key}`,
   flagValueLabel: (key: string) => `Value of the flag ${key}`,
   noFlags: 'The app is given no feature flags.',
   newFlagName: 'New flag name',
   newFlagValue: 'New flag value',
   addFlag: 'Add a flag',
   removeNewFlag: (index: number) => `Remove new flag ${index}`,
+  archivedFlagsHeading: 'Archived flags',
+  archivedFlagsLead:
+    'Flags the app is no longer given, each kept with its value and who archived it, when. Tick ' +
+    'Restore to give one back to the app with that value; the review lists it before anything is sent.',
+  archivedFlagsCaption: 'Archived feature flags',
+  flagArchived: 'Archived',
+  flagRestore: 'Restore',
+  flagRestoreLabel: (key: string) => `Restore the flag ${key}`,
+  noArchivedFlags: 'No flag is archived.',
+  archivedFlagsFailed: 'The archived flags could not be read',
+  flagArchivedOn: (date: string, name: string | null) =>
+    name === null ? `Archived ${date}` : `Archived ${date} by ${name}`,
+  newFlagClash: 'A new flag has the name of one the app already has; change that one instead.',
+  newFlagArchivedClash:
+    'A new flag has the name of an archived flag; tick Restore beside that one instead.',
 
   problemsLead: 'Not sent — the API would refuse it:',
   refusedLead: 'Not saved — the server refused it:',

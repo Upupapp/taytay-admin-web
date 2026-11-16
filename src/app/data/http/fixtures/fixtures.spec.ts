@@ -120,6 +120,9 @@ import DELETED from './deleted.json';
 import HOTLINE from './hotline.json';
 import HOTLINES from './hotlines.json';
 import OFFICE from './office.json';
+import OFFICE_ARCHIVED from './office-archived.json';
+import ARCHIVE_EVENTS from './archive-events.json';
+import FEATURE_FLAGS from './feature-flags.json';
 import SERVICE from './service.json';
 import SERVICES_PAGE from './services-page.json';
 import BANNER from './banner.json';
@@ -439,10 +442,13 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['user-role-changed', USER_ROLE_CHANGED, 'UserListItemEnvelope'],
     ['user-office-assigned', USER_OFFICE_ASSIGNED, 'UserListItemEnvelope'],
     ['user-office-role-changed', USER_OFFICE_ROLE_CHANGED, 'UserListItemEnvelope'],
-    ['office', OFFICE, 'OfficeEnvelope'],
+    ['office', OFFICE, 'AdminOfficeEnvelope'],
+    ['office-archived', OFFICE_ARCHIVED, 'AdminOfficeEnvelope'],
+    ['archive-events', ARCHIVE_EVENTS, 'ArchiveEventListEnvelope'],
+    ['feature-flags', FEATURE_FLAGS, 'FeatureFlagListEnvelope'],
     ['services-page', SERVICES_PAGE, 'ServiceListEnvelope'],
-    ['service', SERVICE, 'ServiceEnvelope'],
-    ['hotlines', HOTLINES, 'HotlineListEnvelope'],
+    ['service', SERVICE, 'AdminServiceEnvelope'],
+    ['hotlines', HOTLINES, 'AdminHotlineListEnvelope'],
     ['hotline', HOTLINE, 'HotlineEnvelope'],
     ['deleted', DELETED, 'DeletedEnvelope'],
     ['banners', BANNERS, 'BannerListEnvelope'],

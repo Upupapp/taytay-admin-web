@@ -1,15 +1,17 @@
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   DestroyRef,
   inject,
+  input,
   signal,
   TemplateRef,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { switchMap } from 'rxjs';
+import { combineLatest, switchMap } from 'rxjs';
 
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
@@ -20,12 +22,15 @@ import {
   HOTLINE_EFFECTS,
   hotlineKindLabel,
   linesWithoutKind,
-  HOTLINE_LIST_CAP,
   HOTLINE_REPOSITORY,
+  isCommandCenterTaken,
   visibilityOf,
   type Hotline,
-  type HotlineListing,
 } from '@domain/index';
+import { ArchiveDialog } from '@shared/archive/archive-dialog';
+import { ArchiveHistory } from '@shared/archive/archive-history';
+import { ArchiveTabs } from '@shared/archive/archive-tabs';
+import { ARCHIVE_COPY, archiveRefusalWords, movedByOthers } from '@shared/archive/archive.copy';
 import { failureReason } from '@shared/state/failure-reason';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
@@ -42,10 +47,16 @@ import { HotlineForm } from './hotline-form';
 /** The app's hotlines, read whole (`DL-222`). */
 export const DIRECTORY_HOTLINES_TOPICS: readonly LiveTopic[] = ['hotlines'];
 
+/** An archive or a restore, waiting on its confirmation. */
+interface Move {
+  readonly act: 'archive' | 'restore';
+  readonly hotline: Hotline;
+}
+
 /**
- * Hotlines (`DL-170`): every line, shown and hidden, in the order the app lists them. The API answers
- * the list whole, up to a cap, with no word of more — so a list that reaches the cap says there may
- * be lines neither this screen nor the app shows, rather than presenting itself as the whole.
+ * Hotlines (`DL-170`): every line in use, shown and hidden, in the order the app lists them — or
+ * every archived one (`DL-225`). The API answers each list whole, or refuses past its cap rather than
+ * cutting it short (`ca71f23`), so a list shown is the whole of it.
  *
  * Each line's kind is a column of words (`DL-217`), and the section says which line is the command
  * center — or, plainly, that none is: after the API's backfill no line is one until the office marks
@@ -54,7 +65,18 @@ export const DIRECTORY_HOTLINES_TOPICS: readonly LiveTopic[] = ['hotlines'];
 @Component({
   selector: 'app-hotlines-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, HotlineForm, Icon, Modal, StatusBadge],
+  imports: [
+    ArchiveDialog,
+    ArchiveHistory,
+    ArchiveTabs,
+    AsyncContent,
+    DataTable,
+    DatePipe,
+    HotlineForm,
+    Icon,
+    Modal,
+    StatusBadge,
+  ],
   templateUrl: './hotlines-section.html',
   styleUrl: './directory-section.scss',
 })
@@ -63,39 +85,47 @@ export class HotlinesSection {
   private readonly destroyRef = inject(DestroyRef);
   private readonly live = inject(LiveUpdates);
 
+  /** Which list: the lines in use, or the archived ones (`?archived=true`). */
+  readonly archived = input(false);
+
   protected readonly copy = DIRECTORY_COPY.hotlines;
   protected readonly listCopy = DIRECTORY_COPY.list;
+  protected readonly rowCopy = ARCHIVE_COPY.row;
   protected readonly visibility = APP_VISIBILITY_CATALOG;
   protected readonly visibilityOf = visibilityOf;
-  protected readonly cap = HOTLINE_LIST_CAP;
+  protected readonly restoreEffects = HOTLINE_EFFECTS.restore;
 
   private readonly generation = signal(0);
   /**
-   * Read again quietly when a line changes (`DL-222`). The drawer and the delete dialog hold the
-   * line they were opened with, so a re-read never closes them or refills a form.
+   * Read again quietly when a line changes (`DL-222`). The dialogs hold the line they were opened
+   * with, so a re-read never closes them or refills a form.
    */
   protected readonly listing = toSignal(
-    toObservable(this.generation).pipe(
-      switchMap(() =>
+    combineLatest([toObservable(this.archived), toObservable(this.generation)]).pipe(
+      switchMap(([archived]) =>
         liveViewState(
-          () => this.repository.list(),
+          () => this.repository.list(archived),
           this.live.changes(DIRECTORY_HOTLINES_TOPICS),
           this.live,
         ),
       ),
     ),
-    { initialValue: LOADING as ViewState<HotlineListing> },
+    { initialValue: LOADING as ViewState<readonly Hotline[]> },
   );
-  protected readonly rows = computed(() => valueOf(this.listing())?.hotlines ?? []);
-  /** The active command center in the list as read, or `null` when no line is marked as one. */
-  protected readonly commandCenter = computed(() => activeCommandCenter(this.rows()));
+  protected readonly rows = computed(() => valueOf(this.listing()) ?? []);
+  /**
+   * The active command center among the lines in use, or `null` when none is marked as one. An
+   * archived line holds no role (`DL-225`), so the archived list has none to say.
+   */
+  protected readonly commandCenter = computed(() =>
+    this.archived() ? null : activeCommandCenter(this.rows()),
+  );
   /** Lines the server sent with no kind (`DL-220`): shown as not set, never as `other`. */
   protected readonly withoutKind = computed(() => linesWithoutKind(this.rows()));
-  protected readonly mayBeIncomplete = computed(
-    () => valueOf(this.listing())?.mayBeIncomplete === true,
-  );
 
   private readonly shownCell = viewChild.required<TemplateRef<{ $implicit: Hotline }>>('shownCell');
+  private readonly archivedCell =
+    viewChild.required<TemplateRef<{ $implicit: Hotline }>>('archivedCell');
   private readonly actionCell =
     viewChild.required<TemplateRef<{ $implicit: Hotline }>>('actionCell');
 
@@ -116,7 +146,9 @@ export class HotlinesSection {
       align: 'end',
       value: (hotline) => String(hotline.sortOrder),
     },
-    { key: 'shown', header: this.copy.columnShown, cell: this.shownCell() },
+    this.archived()
+      ? { key: 'archived', header: this.copy.columnArchived, cell: this.archivedCell() }
+      : { key: 'shown', header: this.copy.columnShown, cell: this.shownCell() },
     {
       key: 'actions',
       header: this.copy.columnActions,
@@ -127,21 +159,28 @@ export class HotlinesSection {
   ]);
 
   protected readonly editing = signal<Hotline | 'new' | null>(null);
-  protected readonly removing = signal<Hotline | null>(null);
-  /** Deleting the command center leaves the app without one, and says so first (`DL-217`). */
-  protected readonly removeEffects = computed<readonly string[]>(() => {
-    const hotline = this.removing();
-    return hotline !== null && hotline.id === this.commandCenter()?.id
-      ? [...COMMAND_CENTER_EFFECTS.leaves, ...HOTLINE_EFFECTS.remove]
-      : HOTLINE_EFFECTS.remove;
+  protected readonly moving = signal<Move | null>(null);
+  /** Archiving the command center leaves the app without one, and says so first (`DL-217`). */
+  protected readonly archiveEffects = computed<readonly string[]>(() => {
+    const move = this.moving();
+    return move !== null && move.hotline.id === this.commandCenter()?.id
+      ? [...COMMAND_CENTER_EFFECTS.leaves, ...HOTLINE_EFFECTS.archive]
+      : HOTLINE_EFFECTS.archive;
   });
-  protected readonly removeBusy = signal(false);
-  protected readonly removeProblem = signal('');
+  protected readonly moveBusy = signal(false);
+  protected readonly moveProblem = signal<string | null>(null);
+  protected readonly historyOf = signal<Hotline | null>(null);
   protected readonly outcome = signal('');
 
   protected readonly drawerHotline = computed(() => {
     const editing = this.editing();
     return editing === 'new' ? null : editing;
+  });
+
+  /** The history of whichever line is open — in the edit dialog, or its own. */
+  protected readonly historySource = computed(() => {
+    const hotline = this.historyOf() ?? this.drawerHotline();
+    return hotline === null ? null : this.repository.history(hotline.id);
   });
 
   protected reload(): void {
@@ -168,38 +207,64 @@ export class HotlinesSection {
     this.reload();
   }
 
-  protected askRemove(hotline: Hotline): void {
-    this.removeProblem.set('');
-    this.removing.set(hotline);
+  protected showHistory(hotline: Hotline): void {
+    this.historyOf.set(hotline);
   }
 
-  protected cancelRemove(): void {
-    this.removing.set(null);
+  protected closeHistory(): void {
+    this.historyOf.set(null);
   }
 
-  protected confirmRemove(): void {
-    const hotline = this.removing();
-    if (hotline === null || this.removeBusy()) {
+  protected askArchive(hotline: Hotline): void {
+    this.moveProblem.set(null);
+    this.moving.set({ act: 'archive', hotline });
+  }
+
+  protected askRestore(hotline: Hotline): void {
+    this.moveProblem.set(null);
+    this.moving.set({ act: 'restore', hotline });
+  }
+
+  protected cancelMove(): void {
+    this.moving.set(null);
+  }
+
+  /** The one place a line is archived or restored: after its confirmation, with its reason. */
+  protected confirmMove(reason: string): void {
+    const move = this.moving();
+    if (move === null || this.moveBusy()) {
       return;
     }
-    this.removeBusy.set(true);
-    this.removeProblem.set('');
-    this.repository
-      .remove(hotline.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.removeBusy.set(false);
-          this.removing.set(null);
-          this.outcome.set(this.copy.removed(hotline.name));
+    this.moveBusy.set(true);
+    this.moveProblem.set(null);
+    const act =
+      move.act === 'archive'
+        ? this.repository.archive(move.hotline.id, reason)
+        : this.repository.restore(move.hotline.id, reason);
+    act.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (hotline) => {
+        this.moveBusy.set(false);
+        this.moving.set(null);
+        this.outcome.set(
+          move.act === 'archive'
+            ? this.copy.archived(hotline.name)
+            : this.copy.restored(hotline.name),
+        );
+        this.reload();
+      },
+      error: (failure: unknown) => {
+        this.moveBusy.set(false);
+        // A restore that would make a second command center says which line to change first.
+        this.moveProblem.set(
+          isCommandCenterTaken(failure)
+            ? DIRECTORY_COPY.hotlineForm.kindRefused(failure.message)
+            : (archiveRefusalWords(failure, this.copy.noun)?.sentence ??
+                this.listCopy.notDone(failureReason(failure) ?? this.listCopy.failed)),
+        );
+        if (movedByOthers(failure)) {
           this.reload();
-        },
-        error: (failure: unknown) => {
-          this.removeBusy.set(false);
-          this.removeProblem.set(
-            this.listCopy.notDone(failureReason(failure) ?? this.listCopy.failed),
-          );
-        },
-      });
+        }
+      },
+    });
   }
 }

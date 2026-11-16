@@ -1,4 +1,5 @@
 import type {
+  ArchivedFeatureFlag,
   AppConfig,
   AppConfigChanges,
   FeatureFlag,
@@ -142,7 +143,50 @@ export function toAppConfig(wire: unknown): AppConfig | null {
   };
 }
 
-/** `AppConfigPatch`. `undefined` is left out; `null` clears a setting or deletes a flag. */
+/**
+ * `FeatureFlag` → an archived flag (`DL-225`); `'in-use'` for a flag the app is given now, which the
+ * settings read already holds; `null` for one that cannot be read, which refuses the list — a flag
+ * left out here would read as one nobody archived.
+ *
+ * | wire               | domain             | if absent                     |
+ * | ------------------ | ------------------ | ----------------------------- |
+ * | `key`, `value`     | as named           | not readable                  |
+ * | `archived_at`      | `archived.at`      | `null`: in use                |
+ * | `archived_by_name` | `archived.byName`  | not named                     |
+ * | `archive_reason`   | `archived.reason`  | none, as for every flag       |
+ *
+ * Not read: `updated_at`, the last change of value, which the archive's own time supersedes.
+ *
+ * @consumes GET admin/app/feature-flags
+ */
+export function toArchivedFeatureFlag(wire: unknown): ArchivedFeatureFlag | 'in-use' | null {
+  const key = str(field(wire, 'key'));
+  const value = str(field(wire, 'value'));
+  const archivedAtWire = field(wire, 'archived_at');
+
+  if (key === null || value === null) {
+    return null;
+  }
+  if (archivedAtWire === null) {
+    return 'in-use';
+  }
+  const archivedAt = dateTime(archivedAtWire);
+  if (archivedAt === null) {
+    return null;
+  }
+
+  return {
+    key,
+    value,
+    archived: {
+      at: archivedAt,
+      byName: str(field(wire, 'archived_by_name')),
+      reason: str(field(wire, 'archive_reason')),
+    },
+  };
+}
+
+/** `AppConfigPatch`. `undefined` is left out; `null` clears a setting or archives a flag. */
 export interface AppConfigPatchWire {
   readonly contact_line: string | null | undefined;
   readonly support_email: string | null | undefined;

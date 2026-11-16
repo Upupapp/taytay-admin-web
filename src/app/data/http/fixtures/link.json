@@ -4,7 +4,10 @@
     "label": "Hotlines",
     "href": "https://home.example.test/hotlines",
     "sort_order": 2,
-    "created_at": "2026-11-05T02:00:00.000Z"
+    "created_at": "2026-11-05T02:00:00.000Z",
+    "archived_at": null,
+    "archive_reason": null,
+    "archived_by_name": null
   },
   "meta": {}
 }

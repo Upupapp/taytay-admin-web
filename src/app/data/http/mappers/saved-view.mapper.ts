@@ -21,16 +21,20 @@ import { dateTime, field, flag, id, oneOf, str } from './wire';
  * | `is_shared`   | `isShared`          | the view is not readable                      |
  * | `owner_id`    | `ownerId`, `audit`  | the view is not readable                      |
  * | `created_at`  | `audit`             | the view is not readable                      |
+ * | `archived_at` | `archived`          | in use; present and not a time: not readable  |
  *
- * **Whose a view is decides what the bar offers.** A personal view of your own offers removal; a
+ * **Whose a view is decides what the bar offers.** A personal view of your own offers archiving; a
  * shared one does not. So a view whose sharing could not be read is refused rather than defaulted:
- * read as personal it would offer to delete office configuration, read as shared it would hide
+ * read as personal it would offer to put office configuration away, read as shared it would hide
  * somebody's own view from them.
  *
- * A view is never edited — it is created and taken away — so `audit` is its creation twice.
+ * A view is never edited — it is created, archived and restored — so `audit` is its creation twice.
+ * Its archive names nobody and keeps no reason (`DL-225`).
  *
  * @consumes GET office/saved-views
  * @consumes POST office/saved-views
+ * @consumes POST office/saved-views/{id}/archive
+ * @consumes POST office/saved-views/{id}/restore
  */
 export function toSavedView(wire: unknown): SavedView | null {
   const viewId = id<SavedViewId>(field(wire, 'id'));
@@ -40,6 +44,9 @@ export function toSavedView(wire: unknown): SavedView | null {
   const isShared = flag(field(wire, 'is_shared'));
   const ownerId = id<StaffUserId>(field(wire, 'owner_id'));
   const createdAt = dateTime(field(wire, 'created_at'));
+  const archivedAtWire = field(wire, 'archived_at');
+  const archivedAt =
+    archivedAtWire === null || archivedAtWire === undefined ? null : dateTime(archivedAtWire);
 
   if (
     viewId === null ||
@@ -48,7 +55,8 @@ export function toSavedView(wire: unknown): SavedView | null {
     params === null ||
     isShared === null ||
     ownerId === null ||
-    createdAt === null
+    createdAt === null ||
+    (archivedAtWire !== null && archivedAtWire !== undefined && archivedAt === null)
   ) {
     return null;
   }
@@ -61,6 +69,7 @@ export function toSavedView(wire: unknown): SavedView | null {
     isShared,
     ownerId,
     audit: { createdAt, createdBy: ownerId, updatedAt: createdAt, updatedBy: ownerId },
+    archived: archivedAt === null ? null : { at: archivedAt, byName: null, reason: null },
   };
 }
 

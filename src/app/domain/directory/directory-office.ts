@@ -1,3 +1,4 @@
+import type { ArchiveRecord, OfficeInUse } from '../shared/archive';
 import type { IsoDateTime, OfficeId } from '../shared/ids';
 
 /**
@@ -28,6 +29,11 @@ export interface DirectoryOffice {
   readonly longitude: number | null;
   readonly hasBanner: boolean;
   readonly updatedAt: IsoDateTime;
+  /**
+   * `null` while residents can find it; when, by whom and why once it is archived (`DL-225`). An
+   * archived office is read-only until it is restored, and keeps its address.
+   */
+  readonly archived: ArchiveRecord | null;
 }
 
 /** A new office, as `OfficeWrite` takes it. `null` sends nothing. */
@@ -195,12 +201,15 @@ export function slugProblems(slug: string): readonly string[] {
  * What each act on an office does in the residents' app, shown **before** the button (`DL-170`).
  *
  * Read from the backend, not assumed: `taytay-backend` `2736e28` — `src/modules/offices/routes.ts`
- * (create, change and delete audited as `office.created`, `office.updated`, `office.deleted`, with
- * no reason; a new banner deletes the old image; the banner is set only when a file is sent, so it
- * cannot be removed), `src/modules/offices/repository.ts` (a delete refused with `409` on any
- * reference; nothing else removed with the row), and the four foreign keys on `offices` in
- * `migrations/0004`–`0007` (staff accounts, Balita, Tulong pages, conversations, none of them
- * cascading). If the backend changes, these sentences are wrong until somebody reads it again.
+ * (create and change audited as `office.created`, `office.updated`, with no reason; the banner is
+ * set only when a file is sent, so it cannot be removed) — and `cc86189` (`DL-225`): nothing deletes
+ * an office; it is archived and restored (`office.archived`, `office.restored`, each with a reason
+ * of 1 to 500 characters kept in its archive history); the archive is refused with `OFFICE_IN_USE`
+ * and three counts while a staff account is linked to it or a live Tulong page or an active
+ * document type is under it; an archived office leaves every public read, keeps its slug reserved,
+ * takes no change until it is restored, and nothing new is published, filed, linked or started
+ * with it; a replaced banner stays in storage. If the backend changes, these sentences are wrong
+ * until somebody reads it again.
  */
 export const OFFICE_EFFECTS = {
   create: [
@@ -219,22 +228,56 @@ export const OFFICE_EFFECTS = {
       'shortcut in the app — stops finding it.',
   ],
   bannerReplaced: [
-    'The new image replaces the banner on the office’s page in the app. The server deletes the ' +
-      'old one.',
+    'The new image replaces the banner on the office’s page in the app. The old one stays stored ' +
+      'on the server; nothing deletes it.',
   ],
   bannerAdded: ['The image becomes the banner on the office’s page in the app.'],
-  remove: [
-    'The office leaves the app’s directory. Residents can no longer find it or open its page.',
-    'The server refuses while anything still names the office: a staff account assigned to it, a ' +
-      'Balita article, a Tulong page, or a conversation with a resident. Its refusal does not say ' +
-      'which; move or remove those first.',
-    'Nothing brings it back. Creating it again makes a new office that nothing already written ' +
-      'points to.',
-    'Its banner image stays stored on the server; nothing removes it.',
-    'The server records that you deleted it, and when.',
+  archive: [
+    'The office leaves the app’s directory. Residents can no longer find it, open its page or start ' +
+      'a conversation with it, and nothing new is published in its name.',
+    'The server refuses while anything still uses it: a staff account linked to it, or a Tulong page ' +
+      'or a document type in use under it. It says how many of each; move or archive those first.',
+    'It stays here under Archived, with your name, the date and your reason, and its address stays ' +
+      'reserved for it, so an old link never leads to a different office.',
+    'It can be restored, and comes back as it was.',
+    'The server records that you archived it, when, and why.',
+  ],
+  restore: [
+    'The office returns to the app’s directory at its old address, as it was when it was archived.',
+    'Staff can be linked to it, and Tulong pages and document types put under it, again.',
+    'Its archive history keeps both acts, each with who did it, when and why.',
+    'The server records that you restored it, when, and why.',
   ],
 } as const;
 
 /** Said beside the banner field: what the API cannot do with one. */
 export const OFFICE_BANNER_LIMIT =
   'A banner can be replaced but not removed: the API has no way to take one away.';
+
+/**
+ * What still uses an office, in plain words, from the counts the server sent with its refusal — one
+ * sentence for each kind it counted, none for a kind at zero.
+ */
+export function officeInUseWords(inUse: OfficeInUse): readonly string[] {
+  const count = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+  const words: string[] = [];
+  if (inUse.staffAccounts > 0) {
+    words.push(
+      `${count(inUse.staffAccounts, 'staff account is', 'staff accounts are')} linked to it. ` +
+        'Link them to another office in Users and roles.',
+    );
+  }
+  if (inUse.services > 0) {
+    words.push(
+      `${count(inUse.services, 'Tulong page in use is', 'Tulong pages in use are')} under it. ` +
+        'Archive them under Tulong pages.',
+    );
+  }
+  if (inUse.issuanceTypes > 0) {
+    words.push(
+      `${count(inUse.issuanceTypes, 'document type in use is', 'document types in use are')} ` +
+        'under it. Retire them in the Document catalogue.',
+    );
+  }
+  return words;
+}

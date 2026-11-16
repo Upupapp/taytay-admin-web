@@ -1,77 +1,139 @@
+import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   DestroyRef,
   inject,
+  input,
   signal,
   TemplateRef,
   viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { catchError, combineLatest, of, switchMap } from 'rxjs';
 
 import type { LiveTopic } from '@core/live/change-feed';
+import { LiveUpdates } from '@core/live/live-updates';
 import {
+  DIRECTORY_OFFICE_REPOSITORY,
   listingOf,
+  officeLabel,
   OFFICE_REPOSITORY,
   SERVICE_EFFECTS,
   SERVICE_LISTING_CATALOG,
   TULONG_SERVICE_REPOSITORY,
+  type OfficeId,
   type TulongService,
 } from '@domain/index';
-import { readText } from '@shared/forms/form-values';
+import { ArchiveDialog } from '@shared/archive/archive-dialog';
+import { ArchiveHistory } from '@shared/archive/archive-history';
+import { ArchiveTabs } from '@shared/archive/archive-tabs';
+import { ARCHIVE_COPY, archiveRefusalWords, movedByOthers } from '@shared/archive/archive.copy';
 import { officeDirectory } from '@shared/offices/office-directory';
 import { failureReason } from '@shared/state/failure-reason';
+import { liveViewState } from '@shared/state/live-view-state';
+import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { Icon } from '@shared/ui/icon/icon';
-import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Modal } from '@shared/ui/modal/modal';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
-import { cursorList } from './cursor-list';
 import { DIRECTORY_COPY } from './directory.copy';
 import { ServiceForm } from './service-form';
 
 /** The app's Tulong pages (`DL-222`). */
 export const DIRECTORY_SERVICES_TOPICS: readonly LiveTopic[] = ['services'];
 
+/** An archive or a restore, waiting on its confirmation. */
+interface Move {
+  readonly act: 'archive' | 'restore';
+  readonly service: TulongService;
+}
+
 /**
- * Tulong pages (`DL-170`): the app's catalogue a page at a time, and one page by its address.
+ * Tulong pages (`DL-170`): every page in use — hidden from the catalogue or not — or every archived
+ * one, read whole and by name from the administrator's own list (`DL-225`). Before it, the screen
+ * read the residents' catalogue, which leaves a hidden page out, and offered "Open a page by its
+ * address" as the only way back to one; the administrator's list holds them, so that is gone.
  *
- * The API lists only what residents can browse, so a page hidden from the catalogue and not featured
- * is in no list — the section says so, and offers the one read that finds it, `GET services/{slug}`,
- * rather than letting a hidden page read as a deleted one.
+ * A page is archived and restored behind a confirmation that says what the act does and keeps a
+ * reason; a restore is refused while the page's office is archived, and says so in plain words.
  */
 @Component({
   selector: 'app-services-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, Icon, ListChangedNotice, Modal, ServiceForm, StatusBadge],
+  imports: [
+    ArchiveDialog,
+    ArchiveHistory,
+    ArchiveTabs,
+    AsyncContent,
+    DataTable,
+    DatePipe,
+    Icon,
+    Modal,
+    ServiceForm,
+    StatusBadge,
+  ],
   templateUrl: './services-section.html',
   styleUrl: './directory-section.scss',
 })
 export class ServicesSection {
   private readonly repository = inject(TULONG_SERVICE_REPOSITORY);
+  private readonly live = inject(LiveUpdates);
   private readonly destroyRef = inject(DestroyRef);
+
+  /** Which list: the pages in use, or the archived ones (`?archived=true`). */
+  readonly archived = input(false);
 
   protected readonly copy = DIRECTORY_COPY.services;
   protected readonly listCopy = DIRECTORY_COPY.list;
-  protected readonly removeEffects = SERVICE_EFFECTS.remove;
+  protected readonly rowCopy = ARCHIVE_COPY.row;
+  protected readonly archiveEffects = SERVICE_EFFECTS.archive;
+  protected readonly restoreEffects = SERVICE_EFFECTS.restore;
   protected readonly listingCatalog = SERVICE_LISTING_CATALOG;
   protected readonly listingOf = listingOf;
+  /** The offices in use: the form's picker, and the names in the list (`DL-161`). */
   protected readonly offices = officeDirectory(inject(OFFICE_REPOSITORY).list());
 
-  /** Live (`DL-222`); the drawer, the delete dialog and the address box keep their own state. */
-  protected readonly list = cursorList(
-    (page) => this.repository.list(page),
-    DIRECTORY_SERVICES_TOPICS,
+  /**
+   * The archived offices' names, for a page that names one: context, not the record — when they
+   * cannot be read, such a page says only that its office is archived.
+   */
+  private readonly archivedOffices = toSignal(
+    inject(DIRECTORY_OFFICE_REPOSITORY)
+      .list(true)
+      .pipe(catchError(() => of([]))),
+    { initialValue: [] },
   );
+  private readonly archivedOfficeNames = computed(
+    () => new Map(this.archivedOffices().map((office) => [office.id, officeLabel(office)])),
+  );
+
+  private readonly generation = signal(0);
+  /** Live (`DL-222`); the dialogs keep their own state. */
+  protected readonly state = toSignal(
+    combineLatest([toObservable(this.archived), toObservable(this.generation)]).pipe(
+      switchMap(([archived]) =>
+        liveViewState(
+          () => this.repository.list(archived),
+          this.live.changes(DIRECTORY_SERVICES_TOPICS),
+          this.live,
+        ),
+      ),
+    ),
+    { initialValue: LOADING as ViewState<readonly TulongService[]> },
+  );
+  protected readonly rows = computed(() => valueOf(this.state()) ?? []);
 
   private readonly nameCell =
     viewChild.required<TemplateRef<{ $implicit: TulongService }>>('nameCell');
   private readonly listingCell =
     viewChild.required<TemplateRef<{ $implicit: TulongService }>>('listingCell');
+  private readonly archivedCell =
+    viewChild.required<TemplateRef<{ $implicit: TulongService }>>('archivedCell');
   private readonly actionCell =
     viewChild.required<TemplateRef<{ $implicit: TulongService }>>('actionCell');
 
@@ -79,19 +141,22 @@ export class ServicesSection {
 
   protected readonly columns = computed<readonly TableColumn<TulongService>[]>(() => [
     { key: 'name', header: this.copy.columnName, cell: this.nameCell() },
-    { key: 'listing', header: this.copy.columnListing, cell: this.listingCell() },
-    {
-      key: 'home',
-      header: this.copy.columnHome,
-      value: (service) => (service.featured ? this.copy.featured : this.copy.notFeatured),
-    },
+    ...(this.archived()
+      ? [{ key: 'archived', header: this.copy.columnArchived, cell: this.archivedCell() }]
+      : [
+          { key: 'listing', header: this.copy.columnListing, cell: this.listingCell() },
+          {
+            key: 'home',
+            header: this.copy.columnHome,
+            value: (service: TulongService) =>
+              service.featured ? this.copy.featured : this.copy.notFeatured,
+          },
+        ]),
     {
       key: 'office',
       header: this.copy.columnOffice,
       value: (service) =>
-        service.officeId === null
-          ? this.copy.noOffice
-          : this.offices.name(service.officeId, service.officeId),
+        service.officeId === null ? this.copy.noOffice : this.officeName(service.officeId),
     },
     {
       key: 'actions',
@@ -103,22 +168,26 @@ export class ServicesSection {
   ]);
 
   protected readonly editing = signal<TulongService | 'new' | null>(null);
-  protected readonly removing = signal<TulongService | null>(null);
-  protected readonly removeBusy = signal(false);
-  protected readonly removeProblem = signal('');
+  protected readonly moving = signal<Move | null>(null);
+  protected readonly moveBusy = signal(false);
+  protected readonly moveProblem = signal<string | null>(null);
+  protected readonly moveProblemLines = signal<readonly string[]>([]);
+  protected readonly historyOf = signal<TulongService | null>(null);
   protected readonly outcome = signal('');
-
-  protected readonly address = signal('');
-  protected readonly finding = signal(false);
-  protected readonly findProblem = signal('');
 
   protected readonly drawerService = computed(() => {
     const editing = this.editing();
     return editing === 'new' ? null : editing;
   });
 
-  protected text(event: Event): string {
-    return readText(event);
+  /** The history of whichever page is open — in the edit dialog, or its own. */
+  protected readonly historySource = computed(() => {
+    const service = this.historyOf() ?? this.drawerService();
+    return service === null ? null : this.repository.history(service.id);
+  });
+
+  protected reload(): void {
+    this.generation.update((n) => n + 1);
   }
 
   protected add(): void {
@@ -134,7 +203,7 @@ export class ServicesSection {
   }
 
   /**
-   * A new page stays open in the drawer, as the server answered it, so its picture can be added and
+   * A new page stays open in the dialog, as the server answered it, so its picture can be added and
    * it can be featured — the two acts that need it to exist.
    */
   protected onSaved(service: TulongService): void {
@@ -147,70 +216,81 @@ export class ServicesSection {
           : this.copy.saved(service.name),
     );
     this.editing.set(service);
-    this.list.reload();
+    this.reload();
   }
 
-  protected find(): void {
-    const slug = this.address().trim();
-    if (slug === '' || this.finding()) {
+  protected showHistory(service: TulongService): void {
+    this.historyOf.set(service);
+  }
+
+  protected closeHistory(): void {
+    this.historyOf.set(null);
+  }
+
+  protected askArchive(service: TulongService): void {
+    this.openMove({ act: 'archive', service });
+  }
+
+  protected askRestore(service: TulongService): void {
+    this.openMove({ act: 'restore', service });
+  }
+
+  protected cancelMove(): void {
+    this.moving.set(null);
+  }
+
+  /** The one place a page is archived or restored: after its confirmation, with its reason. */
+  protected confirmMove(reason: string): void {
+    const move = this.moving();
+    if (move === null || this.moveBusy()) {
       return;
     }
-    this.finding.set(true);
-    this.findProblem.set('');
-    this.repository
-      .find(slug)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (service) => {
-          this.finding.set(false);
-          if (service === null) {
-            this.findProblem.set(this.copy.notFound(slug));
-          } else {
-            this.editing.set(service);
-          }
-        },
-        error: () => {
-          this.finding.set(false);
-          this.findProblem.set(this.copy.findFailed);
-        },
-      });
+    this.moveBusy.set(true);
+    this.moveProblem.set(null);
+    this.moveProblemLines.set([]);
+    const act =
+      move.act === 'archive'
+        ? this.repository.archive(move.service.id, reason)
+        : this.repository.restore(move.service.id, reason);
+    act.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (service) => {
+        this.moveBusy.set(false);
+        this.moving.set(null);
+        this.outcome.set(
+          move.act === 'archive'
+            ? this.copy.archived(service.name)
+            : this.copy.restored(service.name),
+        );
+        this.reload();
+      },
+      error: (failure: unknown) => {
+        this.moveBusy.set(false);
+        const words = archiveRefusalWords(failure, this.copy.noun);
+        this.moveProblem.set(
+          words?.sentence ?? this.listCopy.notDone(failureReason(failure) ?? this.listCopy.failed),
+        );
+        this.moveProblemLines.set(words?.lines ?? []);
+        if (movedByOthers(failure)) {
+          this.reload();
+        }
+      },
+    });
   }
 
-  protected askRemove(service: TulongService): void {
-    this.removeProblem.set('');
-    this.removing.set(service);
+  /**
+   * An office in use by its name; an archived one by its name and the word, when the archived
+   * offices could be read — otherwise the directory says only that it is archived (`DL-225`).
+   */
+  private officeName(id: OfficeId): string {
+    const archived = this.archivedOfficeNames().get(id);
+    return archived === undefined
+      ? this.offices.name(id, id)
+      : this.copy.archivedOfficeNamed(archived);
   }
 
-  protected cancelRemove(): void {
-    this.removing.set(null);
-  }
-
-  protected confirmRemove(): void {
-    const service = this.removing();
-    if (service === null || this.removeBusy()) {
-      return;
-    }
-    this.removeBusy.set(true);
-    this.removeProblem.set('');
-    this.repository
-      .remove(service.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.removeBusy.set(false);
-          this.removing.set(null);
-          if (this.drawerService()?.id === service.id) {
-            this.editing.set(null);
-          }
-          this.outcome.set(this.copy.removed(service.name));
-          this.list.reload();
-        },
-        error: (failure: unknown) => {
-          this.removeBusy.set(false);
-          this.removeProblem.set(
-            this.listCopy.notDone(failureReason(failure) ?? this.listCopy.failed),
-          );
-        },
-      });
+  private openMove(move: Move): void {
+    this.moveProblem.set(null);
+    this.moveProblemLines.set([]);
+    this.moving.set(move);
   }
 }

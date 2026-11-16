@@ -8,6 +8,7 @@ import { PermissionService } from '@core/access/permission.service';
 import { SessionStore } from '@core/auth/session.store';
 import {
   APP_ACCOUNT_REPOSITORY,
+  ArchiveRefusedError,
   asId,
   OFFICE_ASSIGNMENT_EFFECTS,
   OFFICE_REPOSITORY,
@@ -127,6 +128,10 @@ class RecordingAccounts implements AppAccountRepository {
   }
 
   assignOffice(id: AppAccountId, office: OfficeId | null): Observable<AppAccount> {
+    if (this.failWith !== null) {
+      const failure = this.failWith;
+      return throwError(() => failure);
+    }
     this.assignments.push({ id, office });
     return of({ ...account(id, 'staff', office) });
   }
@@ -441,6 +446,26 @@ describe('AccountPanel (DL-168)', () => {
     expect(liveRegion(element)).toBe('Assigned to Municipal Health Office.');
   });
 
+  it('says in words, never the code, that the office chosen was archived meanwhile (DL-225)', async () => {
+    const { fixture, repository } = panel(account('a', 'staff', MSWDO));
+    repository.failWith = new ArchiveRefusedError('office-archived', 'OFFICE_ARCHIVED');
+    const element = await settle(fixture);
+
+    const select = element.querySelector<HTMLSelectElement>('#account-office-choice');
+    if (select === null) throw new Error('no office picker');
+    select.value = HEALTH;
+    select.dispatchEvent(new Event('change'));
+    await settle(fixture);
+    buttonNamed(element, 'Assign to Municipal Health Office')?.click();
+    await settle(fixture);
+
+    expect(liveRegion(element)).toBe(
+      'That was not done. That office has been archived, so nothing was put under it. Choose an ' +
+        'office in use, or restore that office first under App directory, Offices, Archived.',
+    );
+    expect(repository.assignments).toEqual([]);
+  });
+
   it('removes an office link, saying the inbox closes to the account', async () => {
     const { fixture, repository } = panel(account('a', 'staff', MSWDO));
     const element = await settle(fixture);
@@ -482,7 +507,9 @@ function officeRole(subject: AppAccount, own = false, granted?: readonly Permiss
 
 function officeRoleChoices(element: HTMLElement): string[] {
   return [
-    ...element.querySelectorAll<HTMLInputElement>('input[type="radio"][name="account-office-role"]'),
+    ...element.querySelectorAll<HTMLInputElement>(
+      'input[type="radio"][name="account-office-role"]',
+    ),
   ].map((radio) => radio.value);
 }
 

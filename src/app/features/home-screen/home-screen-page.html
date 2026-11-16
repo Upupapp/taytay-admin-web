@@ -2,8 +2,8 @@
 
 <div class="home-layout">
   <div class="home-layout__lists">
-    <app-banners-section (changed)="refreshPreview()" />
-    <app-links-section (changed)="refreshPreview()" />
+    <app-banners-section [archived]="showArchivedBanners()" (changed)="refreshPreview()" />
+    <app-links-section [archived]="showArchivedLinks()" (changed)="refreshPreview()" />
   </div>
   <app-preview-section [generation]="previewGeneration()" />
 </div>

@@ -10,11 +10,13 @@
  * ## What an act does, before it is done
  *
  *   2. In the banner and link forms the effects come before the one submit button.
- *   3. A banner or a link is deleted only in `confirmRemove`, after a modal whose effects come before
- *      its button.
+ *   3. Nothing is deleted (`DL-225`): a banner or a link is archived or restored only in
+ *      `confirmMove`, reached only from the shared `<app-archive-dialog>`'s `(confirmed)`, which is
+ *      handed the domain's effects (the dialog shows them before its button, `check:archive`); no
+ *      section calls a `remove…`, and none draws a destructive `.btn--danger*` button.
  *   4. The effects still say what somebody would regret not being told: an image is stored before
- *      the banner and stays if the banner is refused; a replaced or deleted banner's image stays
- *      stored; deleting a banner offers hiding it instead; every link is shown.
+ *      the banner and stays if the banner is refused; a replaced or archived banner's image stays
+ *      stored; an archived banner or link can be restored; every link in use is shown.
  *
  * ## No description the API drops (`DL-125`)
  *
@@ -118,24 +120,41 @@ for (const form of ['banner-form.html', 'link-form.html']) {
   }
 }
 
-/* ── 3. a delete only through its confirmation ───────────────────────────── */
+/* ── 3. archive and restore only through their confirmation (DL-225) ─────── */
 
-for (const [section, remove] of [
-  ['banners-section', 'removeBanner'],
-  ['links-section', 'removeLink'],
+for (const [section, archive, restore] of [
+  ['banners-section', 'archiveBanner', 'restoreBanner'],
+  ['links-section', 'archiveLink', 'restoreLink'],
 ]) {
   const source = code(read(FEATURE, `${section}.ts`));
   const template = code(read(FEATURE, `${section}.html`));
-  const pattern = new RegExp(`this\\s*\\.\\s*repository\\s*\\.\\s*${remove}\\s*\\(`, 'g');
-  const calls = [...source.matchAll(pattern)].length;
-  if (calls !== 1 || !new RegExp(pattern.source).test(methodBody(source, 'confirmRemove'))) {
-    failures.push(`${section}.ts deletes somewhere other than confirmRemove, after the confirmation.`);
+  const move = methodBody(source, 'confirmMove');
+  for (const act of [archive, restore]) {
+    const pattern = new RegExp(`this\\s*\\.\\s*repository\\s*\\.\\s*${act}\\s*\\(`, 'g');
+    const calls = [...source.matchAll(pattern)].length;
+    if (calls !== 1 || !new RegExp(pattern.source).test(move)) {
+      failures.push(`${section}.ts: ${act} is called somewhere other than confirmMove, after the confirmation.`);
+    }
   }
-  const modal = template.indexOf('<app-modal');
-  const effects = template.indexOf('@for (effect of removeEffects', modal);
-  const confirm = template.indexOf('(click)="confirmRemove()"', modal);
-  if (modal === -1 || effects === -1 || confirm === -1 || effects > confirm) {
-    failures.push(`${section}.html: the delete confirmation no longer lists what deleting does before its button.`);
+  if (/this\s*\.\s*repository\s*\.\s*remove\w*\s*\(/.test(source)) {
+    failures.push(`${section}.ts removes a record. Nothing on the home screen is deleted: it is archived (DL-225).`);
+  }
+  const dialogAt = template.indexOf('<app-archive-dialog');
+  const dialog = dialogAt === -1 ? '' : template.slice(dialogAt, template.indexOf('/>', dialogAt));
+  if (
+    !/\(confirmed\)="confirmMove\(\$event\)"/.test(dialog) ||
+    !/\[effects\]="[^"]*archiveEffects[^"]*restoreEffects[^"]*"/.test(dialog) ||
+    [...template.matchAll(/confirmMove\(/g)].length !== 1
+  ) {
+    failures.push(
+      `${section}.html: an archive or a restore no longer goes through the archive dialog with its effects.`,
+    );
+  }
+  if (/btn--danger/.test(template)) {
+    failures.push(
+      `${section}.html draws a destructive button. Archiving is reversible: a row's Archive and Restore ` +
+        'are plain .btn, the dialog confirms with .btn--primary (DL-225).',
+    );
   }
 }
 
@@ -145,11 +164,11 @@ const effectsOf = (key) => new RegExp(`\\n\\s+${key}:\\s*\\[([\\s\\S]*?)\\],`).e
 if (!/If the banner is then refused[\s\S]*stays stored/.test(effectsOf('imageUpload'))) {
   failures.push('HOME_EFFECTS.imageUpload no longer says an image stays stored if the banner is refused.');
 }
-if (!/stays stored/.test(effectsOf('imageReplaced')) || !/stays stored/.test(effectsOf('bannerRemove'))) {
-  failures.push("HOME_EFFECTS no longer says a replaced or deleted banner's image stays stored.");
+if (!/stays stored/.test(effectsOf('imageReplaced')) || !/stays stored/.test(effectsOf('bannerArchive'))) {
+  failures.push("HOME_EFFECTS no longer says a replaced or archived banner's image stays stored.");
 }
-if (!/hide it instead/.test(effectsOf('bannerRemove'))) {
-  failures.push('HOME_EFFECTS.bannerRemove no longer offers hiding the banner instead.');
+if (!/can be restored/.test(effectsOf('bannerArchive')) || !/can be restored/.test(effectsOf('linkArchive'))) {
+  failures.push('HOME_EFFECTS no longer says an archived banner or link can be restored.');
 }
 if (!/no hidden[\s\S]*link/.test(effectsOf('linkCreate'))) {
   failures.push('HOME_EFFECTS.linkCreate no longer says every link is shown.');
@@ -250,7 +269,8 @@ function report() {
   }
   console.log(
     `Home screen check passed (${moduleFiles.length} files: residents told, effects before every button, ` +
-      'deletes only through a confirmation, no description the API drops, images through the data layer, ' +
+      'nothing deleted — archived and restored only through a confirmation with its effects, no ' +
+      'destructive button — no description the API drops, images through the data layer, ' +
       'the key the administrator’s).',
   );
 }

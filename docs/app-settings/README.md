@@ -31,7 +31,7 @@ Read from the backend at `2736e28` (`src/modules/app-config/routes.ts`, `schemas
 | --- | --- |
 | Enforcement | **None on the server.** Nothing refuses an old app, and nothing compares a resident's accepted version (`POST me/consents`) with these. The app is given the values and decides — the console says what a change **can** make it do, because it cannot see what the app does. |
 | The Terms of Use and the privacy notice | Since `DL-186` (backend `0f1ffec`), each is served with its version, date and text, and **published by an administrator** through `terms` and `privacy_notice` — the text and a version the administrator chooses, always together; the API never bumps a version, and publishing sets `terms_version` or `privacy_version` to it (a different one beside it is 422). See section 4. The old version fields stay, and still warn when residents would be asked to accept a version whose text the API does not serve. |
-| Clearing | An emptied field is sent as `null`, which clears the setting; a deleted flag is sent as `null`, which deletes it. Only what changed is sent. |
+| Clearing | An emptied field is sent as `null`, which clears the setting; a flag ticked **Archive** is sent as `null`, which archives it with its value (`DL-225`), and a flag ticked **Restore** under Archived flags is sent with the value it was kept with, which restores it. Only what changed is sent. |
 | Audit | One entry, `app.config_updated`, saying a change was made and by whom — **not which setting**, and no reason, so none is asked for. |
 | Limits | Contact line as a hotline number; email up to 200; terms and privacy versions up to 32 characters; the oldest version as two to four dot-joined numbers, **up to 20 characters** (the column's check — a longer one passes the API's pattern and fails in the database); flag names `^[a-z][a-z0-9_]{0,39}$`, values 1–200 characters, at most 50 flag changes at once. All checked before the review opens. |
 
@@ -39,6 +39,16 @@ Read from the backend at `2736e28` (`src/modules/app-config/routes.ts`, `schemas
 
 `GET app/config` is public, so the screen says so above the flags: never put a password or a key in
 one. What each flag does is the app's, which this console cannot see; the effects say that much.
+
+**A flag is archived, never deleted** (`DL-225`). The **Archive** checkbox beside a flag sends it as
+`null`; the API stops giving it to the app and keeps its value. **Archived flags**, read from
+`GET admin/app/feature-flags`, lists each with its value and "Archived {date} by {name}", and a
+**Restore** checkbox gives it back with that value. Both happen inside the same review as every
+other change: the confirmation lists which flags it archives and which it restores, before its
+button. The API keeps no reason for a flag, so none is asked for. A new flag named like an archived
+one is refused before the review — it would restore that flag with a new value unseen — and the
+screen says to tick Restore instead. A flag's history is in the app audit trail, as
+`app.config_updated`.
 
 ### 4. The Terms of Use and the privacy notice (`DL-186`)
 

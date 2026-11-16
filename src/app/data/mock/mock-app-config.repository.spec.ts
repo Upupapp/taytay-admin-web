@@ -68,7 +68,7 @@ describe('MockAppConfigRepository (DL-170)', () => {
     expect(isPermissionDenied(refusal)).toBe(true);
   });
 
-  it('changes only what it is given: null clears a setting and deletes a flag', async () => {
+  it('changes only what it is given: null clears a setting and archives a flag', async () => {
     const settings = signedInAs('system-administrator');
 
     const changed = await firstValueFrom(
@@ -87,6 +87,70 @@ describe('MockAppConfigRepository (DL-170)', () => {
       { key: 'new_flag', value: 'on' },
       { key: 'tulong_catalogue', value: 'on' },
     ]);
+  });
+
+  describe('flags are archived, never deleted (DL-225)', () => {
+    it('starts with none archived, and shows the archived flags only to app-config.manage', async () => {
+      expect(await firstValueFrom(signedInAs('system-administrator').archivedFlags())).toEqual([]);
+      const refusal: unknown = await firstValueFrom(signedInAs('mswdo-head').archivedFlags()).catch(
+        (e: unknown) => e,
+      );
+      expect(isPermissionDenied(refusal)).toBe(true);
+    });
+
+    it('archives a flag set to null with its value, under the name of who did it, and no reason', async () => {
+      const settings = signedInAs('system-administrator');
+      const before = await firstValueFrom(settings.read());
+      const value = before.featureFlags.find((flag) => flag.key === 'show_digital_id')?.value;
+
+      await firstValueFrom(
+        settings.change({ featureFlags: [{ key: 'show_digital_id', value: null }] }),
+      );
+
+      const archived = await firstValueFrom(settings.archivedFlags());
+      expect(archived).toHaveLength(1);
+      expect(archived[0]).toMatchObject({
+        key: 'show_digital_id',
+        value,
+        archived: { byName: 'Test User', reason: null },
+      });
+      expect(
+        (await firstValueFrom(settings.read())).featureFlags.map((flag) => flag.key),
+      ).not.toContain('show_digital_id');
+    });
+
+    it('restores an archived flag when its key is given a value, with that value', async () => {
+      const settings = signedInAs('system-administrator');
+      await firstValueFrom(
+        settings.change({ featureFlags: [{ key: 'show_digital_id', value: null }] }),
+      );
+
+      const restored = await firstValueFrom(
+        settings.change({ featureFlags: [{ key: 'show_digital_id', value: 'false' }] }),
+      );
+      expect(restored.featureFlags).toContainEqual({ key: 'show_digital_id', value: 'false' });
+      expect(await firstValueFrom(settings.archivedFlags())).toEqual([]);
+    });
+
+    it('archives nothing for a key the app is not given, and keeps the archived flags in key order', async () => {
+      const settings = signedInAs('system-administrator');
+      await firstValueFrom(settings.change({ featureFlags: [{ key: 'never_set', value: null }] }));
+      expect(await firstValueFrom(settings.archivedFlags())).toEqual([]);
+
+      await firstValueFrom(
+        settings.change({
+          featureFlags: [
+            { key: 'tulong_catalogue', value: null },
+            { key: 'show_digital_id', value: null },
+          ],
+        }),
+      );
+      expect((await firstValueFrom(settings.archivedFlags())).map((flag) => flag.key)).toEqual([
+        'show_digital_id',
+        'tulong_catalogue',
+      ]);
+      expect((await firstValueFrom(settings.read())).featureFlags).toEqual([]);
+    });
   });
 
   describe('the review time (DL-205)', () => {

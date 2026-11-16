@@ -10705,3 +10705,87 @@ this makes lighter.
 Easiest to reverse: bind the ports with `useClass` again in `data-access.providers.ts`; the rest
 (the staff adapter's own file, the deep domain imports, the shared check helper) is harmless either
 way.
+
+## DL-225 — archive, never delete: nothing an office user does in this console removes a record
+
+**Status:** Settled (16 November 2026). Supersedes `DL-170`'s "deleting only through a
+confirmation" and the delete sentences of `OFFICE_EFFECTS`, `SERVICE_EFFECTS`, `HOTLINE_EFFECTS`
+and `HOME_EFFECTS` ("Nothing brings it back", "hide it instead", "make it inactive instead"),
+`DL-111`'s "removing" a saved view, and the flags' "a deleted flag is no longer given to the app".
+Contract pinned at `taytay-backend` `70c8b84` (the archive is `cc86189`; `ca71f23` and `70c8b84`
+make the hotline list whole or refused with `LIST_TOO_LONG`).
+
+**The policy.** An office, a Tulong page, a hotline, a home banner or link, a saved view and an app
+feature flag are **archived**: taken out of everything residents see, kept whole here under
+**Archived** with who archived it, when and (for the first five) why, read-only until **restored**,
+and restorable. The console has no Delete button, no `remove…` port method and sends no `DELETE`
+except taking a Balita article's pin away (`DELETE news/{id}/pin`, a flag on a kept article). The
+API refuses a delete in the database (migration `0063`), so this is the console holding the same
+line, not the only line.
+
+**Why.** RA 9470 (the National Archives of the Philippines Act of 2007), §18 "Disposal of Public
+Records", forbids a government agency to dispose of or destroy public records in its custody without
+the prior written authority of the National Archives' executive director, and §4 counts as a public
+record what an agency creates in the conduct of its affairs. What the municipality offered its
+residents — which offices, pages, numbers and notices, and when — is such a record. The wording is
+the backend's ADR `docs/adr/0002-archive-never-delete.md`, read from LawPhil's reproduction of the
+Act; the Senate PDF and the Official Gazette refused an automated fetch, so it is **not verified
+against the primary text**, and the office should confirm it and obtain its records disposition
+schedule before relying on it for anything beyond "do not delete" (CLAUDE.md §6).
+
+**The exceptions live outside this console.** What stays a deletion is a resident's own data in the
+residents' app under RA 10173 — closing their account, withdrawing the selfie consent, their own
+household and members, their device tokens — plus cleanup of a file no record ever named and
+technical state (rate-limit counters, used challenges). None of it is an act in this console, so
+`check:archive` lists no exception for it.
+
+**Why an archive is reversible and takes a reason.** An archive is a decision about what residents
+see, not a judgement on the record, so a mistaken one must cost a restore rather than a re-entry
+that nothing already written points to. The reason (1 to 500 characters, required for both acts)
+is kept with the record and in its append-only history (`GET admin/archive-events`), because an
+office reading "archived 3 March by M. Cruz" months later needs to know *why* before restoring.
+Two acts take none, because the API keeps none: a **feature flag** is archived (sent as `null`) and
+restored (its kept value sent again) inside App settings' existing review, whose effects list both;
+a **saved view** is a filter, archived from its bar without a confirmation and announced with how to
+restore it from **Archived views**.
+
+**What the screens do.**
+
+- The App directory's three sections and the Home screen's two lists read the administrator's own
+  lists (`GET admin/offices`, `admin/services`, `admin/hotlines`, `admin/home/banners`,
+  `admin/home/links`), **whole**, in use or `?archived=true`, with **In use | Archived** tabs held in
+  the URL (`archived`, `archivedBanners`, `archivedLinks`; `queryParamsHandling: merge`, so
+  `?section=` survives). Before this, offices and Tulong pages were read from the residents' public
+  cursor lists — and the public services list leaves out a page hidden from the catalogue, so a
+  hidden page that was not featured was in no list: the only way back to it was "Open a page by its
+  address", which needed the address. The admin list holds hidden pages, so that workaround is gone.
+- An in-use row has **Edit** and **Archive**; an archived row says "Archived {date} by {name}" and
+  the reason, with **History** and **Restore**, and no Edit: archived records are read-only.
+- Archive and Restore open the shared `ArchiveDialog`: the effects, from the domain, **before** the
+  button; a required reason; the confirm is `.btn--primary`, because the act is reversible —
+  `.btn--danger` says something cannot be undone, and the row buttons are plain `.btn` like Edit.
+- Every refusal is a plain sentence, never a code: archived or restored by somebody else first
+  (the list is read again), changed while archived (`ARCHIVED`), an office still used — with the
+  counts in words, the dialog left open — and anything put under an archived office (the service
+  form and restore, the account's office link, a document type, a Balita article). The adapters map
+  the API's 409 codes to the domain's `ArchiveRefusedError`; a hotline's `CONFLICT` alone is the
+  command center, where before every 409 was.
+- A record's edit dialog and its History dialog show its archive history with `ArchiveHistory`, an
+  ordered list like `CaseTimeline` (`DL-56`), whose case vocabulary it does not borrow.
+- Pickers keep reading the public office directory, which leaves archived offices out, so they offer
+  only offices in use; a record naming an office the directory no longer lists says "An archived
+  office" instead of an id.
+
+**Bugs found and fixed on the way.** The hotline adapter read every 409 as a second command center;
+the saved-views bar cleared the reader's filters when any of their views was taken away, not only
+the applied one, and said "could not be saved" for every failure the API sent; the effects said the
+server deletes a replaced office banner, Tulong picture and Balita cover, which it no longer does;
+the hotline list said a list of exactly 100 lines "may be missing some", which since `ca71f23` is
+whole — past 100 the API refuses with `LIST_TOO_LONG`, shown as the list's error with Try again.
+
+**Held by** `check:archive` (new), `check:directory`, `check:home` and `check:live`, each rule
+validated against a planted regression: 13, 14, 6 and 2, all caught, every file restored byte for
+byte.
+
+Easiest to reverse: nothing here deletes, so reversing means re-adding delete routes on the API
+first; the console side is the five sections' dialogs and the ports' `archive`/`restore`.

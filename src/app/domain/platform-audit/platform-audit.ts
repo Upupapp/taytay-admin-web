@@ -26,7 +26,9 @@ export interface PlatformAuditEntry {
 }
 
 /**
- * Every action the API records at `2fd0566`, in words. Read from the backend's
+ * Every action the API records at `2fd0566`, in words — and since `cc86189` the archive's acts
+ * (`DL-225`). The old `*.deleted` and `saved_view.removed` stay: rows written before the API stopped
+ * deleting still carry them. Read from the backend's
  * `audit.record(...)` calls; a code not here is shown as given and said to have no description in
  * this console, never dropped or guessed at.
  */
@@ -35,6 +37,8 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'app.config_updated': 'Changed the app’s settings',
   'banner.created': 'Added a home screen banner',
   'banner.deleted': 'Deleted a home screen banner',
+  'banner.archived': 'Archived a home screen banner, with a reason; it is kept and can be restored',
+  'banner.restored': 'Restored an archived home screen banner, with a reason',
   'banner.updated': 'Changed a home screen banner',
   'digital_id.issued': 'Issued a digital ID',
   'digital_id.reissued': 'Replaced a digital ID with a new one',
@@ -43,6 +47,8 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'digital_id.suspended': 'Suspended a digital ID',
   'hotline.created': 'Added a hotline',
   'hotline.deleted': 'Deleted a hotline',
+  'hotline.archived': 'Archived a hotline, with a reason; it is kept and can be restored',
+  'hotline.restored': 'Restored an archived hotline, with a reason',
   'hotline.updated': 'Changed a hotline',
   // Residents' document requests (`DL-184`), read from `taytay-backend` `2fd0566`: the catalogue's
   // three acts, and each act on a request — who did what to which request, never what it said.
@@ -65,6 +71,8 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'issuance_request.attachment_opened': 'Opened a file sent with a document request',
   'link.created': 'Added a home screen link',
   'link.deleted': 'Deleted a home screen link',
+  'link.archived': 'Archived a home screen link, with a reason; it is kept and can be restored',
+  'link.restored': 'Restored an archived home screen link, with a reason',
   'link.updated': 'Changed a home screen link',
   'news.created': 'Wrote a Balita article',
   'news.pinned': 'Pinned a Balita article',
@@ -72,6 +80,9 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'news.updated': 'Changed a Balita article',
   'office.created': 'Added an office to the directory',
   'office.deleted': 'Deleted an office from the directory',
+  'office.archived':
+    'Archived an office in the directory, with a reason; it is kept and can be restored',
+  'office.restored': 'Restored an archived office to the directory, with a reason',
   'office.updated': 'Changed an office in the directory',
   'office_family.formed': 'Recorded a family with the office',
   'office_family.role_changed': 'Changed a member’s role in a family',
@@ -179,8 +190,12 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'password.reset_completed': 'Reset their password',
   'saved_view.created': 'Saved a view of a list',
   'saved_view.removed': 'Took away a saved view of a list',
+  'saved_view.archived': 'Archived a saved view of a list; it can be restored',
+  'saved_view.restored': 'Restored an archived saved view of a list',
   'service.created': 'Added a Tulong page',
   'service.deleted': 'Deleted a Tulong page',
+  'service.archived': 'Archived a Tulong page, with a reason; it is kept and can be restored',
+  'service.restored': 'Restored an archived Tulong page, with a reason',
   'service.updated': 'Changed a Tulong page',
   'session.revoked': 'Signed out everywhere',
   'thread.closed': 'Closed a conversation with a resident',

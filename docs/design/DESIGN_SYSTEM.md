@@ -279,8 +279,8 @@ Defined once and never redefined in a feature stylesheet (`DL-120`, `check:harde
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `.btn`                                                                       | The secondary button: 38px pill, `--line2` border, glass fill.                                                                                                           |
 | `.btn--primary`                                                              | 44px, `--primary` fill, hover `--primary-hover`. Inside `app-page-header` or `.form-footer`: 48px.                                                                       |
-| `.btn--danger`                                                               | Filled red: the _confirming_ button of a destructive act, inside its dialog.                                                                                             |
-| `.btn--danger-outline`, `.btn--danger-soft`                                  | A destructive act that opens a confirmation (`_patterns.scss`).                                                                                                          |
+| `.btn--danger`                                                               | Filled red: the _confirming_ button of a destructive act, inside its dialog. Never an archive or a restore, which a restore undoes (`DL-225`, §7).                      |
+| `.btn--danger-outline`, `.btn--danger-soft`                                  | A destructive act that opens a confirmation (`_patterns.scss`). Not Archive: that row button is a plain `.btn`.                                                         |
 | `.btn--secondary`, `.btn--subtle`                                            | Explicit secondary; borderless text button.                                                                                                                              |
 | `.btn--small`                                                                | A row action in a table (never below `--target-min`).                                                                                                                    |
 | `.btn--arrow` + `.btn__arrow`                                                | A row action ending in a round primary arrow chip (`_patterns.scss`).                                                                                                    |
@@ -476,7 +476,10 @@ Inputs: `caption`, `rows` (required; `ChartRow`: `key`, `label`, `value`, `displ
 ### SavedViewsBar — `app-saved-views-bar`
 
 Named filters above a list whose filters live in the URL; drawn as the `.tabs` strip. Applying a view
-is a navigation.
+is a navigation. One's own personal view is archived from the strip (an icon button labelled
+"Archive the saved view …", no confirmation: a filter, reversible) and the outcome is announced with
+how to restore; **Archived views** beside **Save this view** lists the archived ones with Restore
+(`DL-225`).
 Inputs: `resource`, `currentParams` (required), `currentUserId`, and label overrides (`heading`,
 `allLabel`, `saveLabel`, `saveDescription`, `nameLabel`, `confirmLabel`). Guard it with the port:
 `@if (servesSavedViews) { … } @else { <app-not-connected port="saved-view" /> }`.
@@ -514,6 +517,9 @@ Usually reached through `AsyncContent` or `DataTable [loading]` rather than plac
 | `RelationshipGraph`                                                                  | `shared/families`   | Relationships; the graph is the list (`DL-50`).               |
 | `ImageFileField`                                                                     | `shared/media`      | An image picker with a preview and a refusal line.            |
 | `ListChangedNotice` (`app-list-changed-notice`)                                      | `shared/ui`         | A paged list changed under its reader: "Reload list" (`DL-222`). |
+| `ArchiveDialog` (`app-archive-dialog`)                                               | `shared/archive`    | Every archive and restore: effects, a reason, the confirm (§7). |
+| `ArchiveHistory` (`app-archive-history [source]`)                                    | `shared/archive`    | A record's archives and restores, newest first, in words.     |
+| `ArchiveTabs` (`app-archive-tabs`)                                                   | `shared/archive`    | "In use \| Archived" above a list, held in the URL.            |
 | `BrandMark`, `MunicipalSeal`, `SealPlaceholder`                                      | `shared/brand`      | The console's name and seal (`DL-199`).                       |
 | `NotConnected` (`app-not-connected [port]`)                                          | `core/access`       | A panel whose port the API does not serve (`DL-175`).         |
 | `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe`, `InitialsPipe` | `shared/pipes`      | Formatting; `{{ name \| initials }}` feeds `.avatar`.         |
@@ -767,6 +773,58 @@ protected readonly state = toSignal(
   every update on the page (WCAG 2.2.2), and is **never announced**: no live region, no
   `role="status"`. It is absent where live updates are off (the mock set, signed out).
 
+### Archive and restore (`DL-225`)
+
+Reference: `src/app/features/directory/offices-section.*` (the App directory's three sections and
+the Home screen's two lists are the same). Nothing an office user does deletes a record: a record is
+**archived** — out of the app, kept here, read-only — and **restored**.
+
+```angular-html
+<app-archive-tabs [archived]="archived()" [label]="copy.tabsLabel" />
+<!-- In use rows: Edit · Archive. Archived rows: "Archived 3 Mar 2026 by M. Cruz", the reason,
+     History · Restore — and no Edit: an archived record is read-only. -->
+<button type="button" class="btn" [attr.aria-label]="copy.archiveLabel(row.name)" (click)="askArchive(row)">
+  {{ listCopy.archive }}
+</button>
+
+@if (moving(); as move) {
+  <app-archive-dialog
+    [heading]="…"
+    [effects]="move.act === 'archive' ? archiveEffects : restoreEffects"
+    [confirmLabel]="move.act === 'archive' ? copy.archiveConfirm : copy.restoreConfirm"
+    [busy]="moveBusy()"
+    [problem]="moveProblem()"
+    [problemLines]="moveProblemLines()"
+    (confirmed)="confirmMove($event)"
+    (dismissed)="cancelMove()"
+  />
+}
+```
+
+- **The tabs** are the residents list's `.tabs` (`[queryParams]` + `queryParamsHandling="merge"`),
+  so the choice is in the URL and a page's own `?section=` survives it. Two lists on one page hold
+  their choice in two parameters (`archivedBanners`, `archivedLinks`).
+- **The button classes.** Archive is consequential but reversible, so it is drawn like the other
+  reversible acts: the row's **Archive** and **Restore** are plain `.btn`, beside **Edit**; the
+  dialog confirms with `.btn--primary`, as App settings' review does, and cancels with
+  `.btn--secondary`. Never `.btn--danger*`, which promises that something cannot be undone
+  (`check:directory`, `check:home`, `check:archive`).
+- **The dialog** says, in this order: the effects (`.effects`, from the domain's `…_EFFECTS.archive`
+  / `.restore`: what residents stop seeing, that it stays here under Archived with your name, the
+  date and your reason, that it can be restored), the required reason (a `.field` textarea with its
+  hint; the confirm stays disabled until a reason the server would take, 1 to 500 characters, and a
+  whitespace-only one is said beside the box), then the buttons. A refusal is a `.callout--danger`
+  `role="alert"` in plain words — never the API's code — and the dialog stays open; an office still
+  in use lists what uses it, one line per kind.
+- **The history** is `ArchiveHistory` under the form in the edit dialog, and in its own dialog from
+  an archived row's **History**: an ordered `.soft-list`, newest first, each line the act, the time,
+  who and why. Loading, the error with Try again and "never archived" are said.
+- **All four states** on both tabs: the skeleton, the empty Archived tab ("No archived …", saying
+  what archiving keeps), the error with Try again (a list too long to read whole says so), offline.
+- **Two acts with no dialog.** A feature flag is archived and restored inside App settings' review,
+  whose effects name each flag; a saved view is archived from its bar and announced. Neither has a
+  reason, because the API keeps none.
+
 ### Inbox (messaging)
 
 Mock-ups: [`OfficeInbox.dc.html`](./admin/screens/OfficeInbox.dc.html),
@@ -867,6 +925,7 @@ attachments open only after a warning, and nothing is logged (`check:inbox`).
 | `npm run check:brand`     | SCSS colour tokens and status tones equal `brand-palette.ts` in both themes; no unsupportable colour-system claim; brand images registered.                                                       |
 | `npm run check:shell`     | Target size, focus scroll margin, reduced motion, icon-only buttons, overflow rules in the frame.                                                                                                 |
 | `npm run check:hardening` | `.btn`, `.field`, `.card` are not redefined in a feature (`DL-120`); overlays trap focus.                                                                                                         |
+| `npm run check:archive`   | No Delete anywhere a person reads it; every archive and restore says what it does before its `.btn--primary`, never a `.btn--danger*` (`DL-225`).                                                |
 | `ng build`                | The component-style budget.                                                                                                                                                                       |
 
 All run in `npm run verify`.

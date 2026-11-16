@@ -1,5 +1,6 @@
 import type { Permission } from '../access/permission';
 import type { AuditStamp } from '../shared/audit';
+import type { ArchiveRecord } from '../shared/archive';
 import type { SavedViewId, StaffUserId } from '../shared/ids';
 
 /**
@@ -48,8 +49,8 @@ export const SAVED_VIEW_PERMISSIONS: Readonly<Record<SavedViewResource, Permissi
  *
  * A personal view is a preference. A shared one is a small piece of office
  * configuration: it appears for every colleague who opens that screen, its name
- * describes a population, and it outlives whoever wrote it. So creating or
- * removing one costs `view.share`, and everyone can still keep their own.
+ * describes a population, and it outlives whoever wrote it. So creating,
+ * archiving or restoring one costs `view.share`, and everyone can still keep their own.
  */
 export const SHARE_VIEW_PERMISSION: Permission = 'saved-view.share';
 
@@ -63,7 +64,20 @@ export interface SavedView {
   readonly isShared: boolean;
   readonly ownerId: StaffUserId | null;
   readonly audit: AuditStamp;
+  /**
+   * `null` while it is offered above its list; when once it is archived (`DL-225`). A view is put
+   * away rather than deleted, so one archived by mistake comes back. Its answer names nobody and
+   * keeps no reason: it is a filter, not a record residents see.
+   */
+  readonly archived: ArchiveRecord | null;
 }
+
+/**
+ * How many views of one list the API keeps in use: fifty of an account's own, fifty of the
+ * office's (`src/modules/saved-views/schemas.ts`). A restore past either is refused, and the
+ * refusal says to archive one first.
+ */
+export const SAVED_VIEW_CAP = 50;
 
 export interface SavedViewDraft {
   readonly resource: SavedViewResource;

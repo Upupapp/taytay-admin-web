@@ -56,7 +56,13 @@ export type ApiErrorCode =
   | 'code_locked'
   | 'RATE_LIMITED'
   | 'INTERNAL_ERROR'
-  | 'SERVICE_UNAVAILABLE';
+  | 'SERVICE_UNAVAILABLE'
+  | 'LIST_TOO_LONG'
+  | 'ALREADY_ARCHIVED'
+  | 'NOT_ARCHIVED'
+  | 'ARCHIVED'
+  | 'OFFICE_IN_USE'
+  | 'OFFICE_ARCHIVED';
 
 /**
  * The same vocabulary as a runtime value, because a union vanishes at build time and
@@ -79,6 +85,12 @@ const API_ERROR_CODES: readonly string[] = [
   'RATE_LIMITED',
   'INTERNAL_ERROR',
   'SERVICE_UNAVAILABLE',
+  'LIST_TOO_LONG',
+  'ALREADY_ARCHIVED',
+  'NOT_ARCHIVED',
+  'ARCHIVED',
+  'OFFICE_IN_USE',
+  'OFFICE_ARCHIVED',
 ];
 
 /**
@@ -375,32 +387,43 @@ export const API_ENDPOINTS = {
   /** A request's file for a grant: `POST` with the handle in the body, answered with the bytes. */
   officeIssuanceFiles: 'office/issuance-files',
   /**
-   * The office directory, written (`DL-170`, `office.manage`): `POST` and `PATCH {id}` as forms,
-   * because they carry the banner; `DELETE {id}`. Read through `offices`, which is public.
+   * The office directory as an administrator keeps it (`DL-170`, `office.manage`): `GET` whole, by
+   * name, in use or `?archived=true` (`DL-225`); `POST` and `PATCH {id}` as forms, because they carry
+   * the banner; `POST {id}/archive` and `{id}/restore` with `{ reason }`. Nothing deletes one.
    */
   adminOffices: 'admin/offices',
   /**
-   * Tulong pages as residents read them — public, cursor-paged, leaving out a page hidden from the
-   * catalogue — and one by `{slug}`, hidden or not (`DL-170`).
+   * Tulong pages (`service.manage`): `GET` whole, by name, hidden ones included, in use or
+   * `?archived=true`; written as JSON, except `POST {id}/media`, a form; `{id}/archive` and
+   * `{id}/restore` with `{ reason }` (`DL-225`).
    */
-  services: 'services',
-  /** Tulong pages, written (`service.manage`): JSON, except `POST {id}/media`, a form. */
   adminServices: 'admin/services',
-  /** Every hotline, shown and hidden, at most a hundred (`hotline.manage`); written as JSON. */
+  /**
+   * Every hotline in use — shown and hidden — or `?archived=true`, read whole or refused past a
+   * hundred (`hotline.manage`); written as JSON; `{id}/archive` and `{id}/restore` (`DL-225`).
+   */
   adminHotlines: 'admin/hotlines',
   /**
-   * The home screen's banners and links, admin only (`DL-170`, `home.manage`): every banner, shown
-   * and hidden, and every link, each answered whole; written as JSON. A banner's image is stored
+   * The home screen's banners and links, admin only (`DL-170`, `home.manage`): every banner in use,
+   * shown and hidden, and every link in use — or `?archived=true` — each answered whole; written as
+   * JSON; `{id}/archive` and `{id}/restore` with `{ reason }` (`DL-225`). A banner's image is stored
    * first through `POST media` (a form) and then named by its id.
    */
   adminBanners: 'admin/home/banners',
   adminLinks: 'admin/home/links',
+  /**
+   * A record's archive history (`DL-225`): `?entity_type=office|service|hotline|banner|link|
+   * feature_flag&entity_id=`, answered whole, newest first. Admin only.
+   */
+  adminArchiveEvents: 'admin/archive-events',
   /** The home screen as the app is given it — public, one object. */
   home: 'home',
   /** The residents' app's settings — public, one object, read by every app (`DL-170`). */
   appConfig: 'app/config',
   /** The same settings, changed (`app-config.manage`): one JSON `PATCH` of only what changed. */
   adminAppConfig: 'admin/app/config',
+  /** Every feature flag with where it stands in the archive (`DL-225`), answered whole. */
+  adminFeatureFlags: 'admin/app/feature-flags',
   /** Checks the card a resident's QR code names (`digital-id.verify`, `DL-171`). */
   digitalIdVerify: 'digital-id/verify',
   /**

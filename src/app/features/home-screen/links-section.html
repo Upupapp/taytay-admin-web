@@ -1,11 +1,18 @@
 <section class="card card--panel card--padded home-section" aria-labelledby="links-heading">
   <div class="home-section__head">
     <h2 id="links-heading" class="home-section__title">{{ copy.heading }}</h2>
-    <button type="button" class="btn btn--primary" (click)="add()">
-      <app-icon name="plus" class="home-section__plus" [stroke]="2.2" />{{ copy.add }}
-    </button>
+    @if (!archived()) {
+      <button type="button" class="btn btn--primary" (click)="add()">
+        <app-icon name="plus" class="home-section__plus" [stroke]="2.2" />{{ copy.add }}
+      </button>
+    }
   </div>
   <p class="home-section__note">{{ copy.lead }}</p>
+
+  <app-archive-tabs [archived]="archived()" param="archivedLinks" [label]="copy.tabsLabel" />
+  @if (archived()) {
+    <p class="home-section__note">{{ common.archivedNote }}</p>
+  }
 
   <p class="home-section__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
 
@@ -20,37 +27,67 @@
         [columns]="columns()"
         [rows]="rows()"
         [rowKey]="rowKey"
-        [caption]="copy.caption"
-        [emptyHeading]="copy.emptyHeading"
-        [emptyMessage]="copy.emptyMessage"
+        [caption]="archived() ? copy.archivedCaption : copy.caption"
+        [emptyHeading]="archived() ? copy.archivedEmptyHeading : copy.emptyHeading"
+        [emptyMessage]="archived() ? copy.archivedEmptyMessage : copy.emptyMessage"
       />
       @if (rows().length > 0) {
         <p class="status-line home-section__count" role="status">
-          {{ copy.count(rows().length) }}
+          {{ copy.count(rows().length, archived()) }}
         </p>
       }
     </ng-template>
   </app-async-content>
 </section>
 
+<ng-template #archivedCell let-link>
+  @if (link.archived; as archived) {
+    <span class="home-section__label">
+      <span>{{ rowCopy.archivedOn((archived.at | date: 'd MMM y') ?? '', archived.byName) }}</span>
+      <span class="home-section__secondary">
+        {{ archived.reason ? rowCopy.reason(archived.reason) : rowCopy.noReason }}
+      </span>
+    </span>
+  }
+</ng-template>
+
 <ng-template #actionCell let-link>
   <div class="home-section__actions">
-    <button
-      type="button"
-      class="btn"
-      [attr.aria-label]="copy.editLabel(link.label)"
-      (click)="edit(link)"
-    >
-      {{ common.edit }}
-    </button>
-    <button
-      type="button"
-      class="btn btn--danger-soft"
-      [attr.aria-label]="copy.removeLabel(link.label)"
-      (click)="askRemove(link)"
-    >
-      {{ common.remove }}
-    </button>
+    @if (link.archived === null) {
+      <button
+        type="button"
+        class="btn"
+        [attr.aria-label]="copy.editLabel(link.label)"
+        (click)="edit(link)"
+      >
+        {{ common.edit }}
+      </button>
+      <button
+        type="button"
+        class="btn"
+        [attr.aria-label]="copy.archiveLabel(link.label)"
+        (click)="askArchive(link)"
+      >
+        {{ common.archive }}
+      </button>
+    } @else {
+      <button
+        type="button"
+        class="btn"
+        [attr.aria-label]="copy.historyLabel(link.label)"
+        (click)="showHistory(link)"
+      >
+        {{ common.history }}
+      </button>
+      <button
+        type="button"
+        class="btn"
+        [attr.aria-label]="copy.restoreLabel(link.label)"
+        (click)="askRestore(link)"
+      >
+        {{ common.restore }}
+      </button>
+    }
   </div>
 </ng-template>
 
@@ -60,36 +97,38 @@
     [heading]="drawerLink() === null ? copy.createHeading : copy.editHeading"
     (dismissed)="closeDrawer()"
   >
-    <div modal-body>
+    <div modal-body class="stack">
       <app-link-form [link]="drawerLink()" (saved)="onSaved($event)" />
+      @if (drawerLink() !== null) {
+        <app-archive-history [source]="historySource()" />
+      }
     </div>
   </app-modal>
 }
 
-@if (removing(); as link) {
-  <app-modal [open]="true" [heading]="copy.removeHeading(link.label)" (dismissed)="cancelRemove()">
-    <div modal-body class="home-section__warning">
-      <p>{{ common.effectsLead }}</p>
-      <ul>
-        @for (effect of removeEffects; track $index) {
-          <li>{{ effect }}</li>
-        }
-      </ul>
-      @if (removeProblem(); as problem) {
-        <p class="home-section__problem" role="alert">{{ problem }}</p>
-      }
+@if (historyOf(); as link) {
+  <app-modal [open]="true" [heading]="copy.historyHeading(link.label)" (dismissed)="closeHistory()">
+    <div modal-body>
+      <app-archive-history [source]="historySource()" />
     </div>
-    <button type="button" modal-actions class="btn" (click)="cancelRemove()">
-      {{ common.cancel }}
-    </button>
-    <button
-      type="button"
-      modal-actions
-      class="btn btn--danger"
-      [disabled]="removeBusy()"
-      (click)="confirmRemove()"
-    >
-      {{ copy.removeConfirm }}
+    <button type="button" modal-actions class="btn btn--secondary" (click)="closeHistory()">
+      {{ common.close }}
     </button>
   </app-modal>
+}
+
+@if (moving(); as move) {
+  <app-archive-dialog
+    [heading]="
+      move.act === 'archive'
+        ? copy.archiveHeading(move.link.label)
+        : copy.restoreHeading(move.link.label)
+    "
+    [effects]="move.act === 'archive' ? archiveEffects : restoreEffects"
+    [confirmLabel]="move.act === 'archive' ? copy.archiveConfirm : copy.restoreConfirm"
+    [busy]="moveBusy()"
+    [problem]="moveProblem()"
+    (confirmed)="confirmMove($event)"
+    (dismissed)="cancelMove()"
+  />
 }

@@ -10,6 +10,7 @@ import { APP_VISIBILITY_CATALOG, APP_VISIBILITY_TRANSITIONS, visibilityOf } from
 import {
   OFFICE_EFFECTS,
   officeChangeProblems,
+  officeInUseWords,
   officeDraftProblems,
   slugProblems,
   type OfficeDraft,
@@ -141,13 +142,58 @@ describe('offices (DL-170)', () => {
     ]);
   });
 
-  it('says a delete is refused while anything names the office, and cannot be undone', () => {
-    const words = OFFICE_EFFECTS.remove.join(' ');
+  it('says an office is archived, refused while anything uses it, and can be restored (DL-225)', () => {
+    const words = OFFICE_EFFECTS.archive.join(' ');
 
-    expect(words).toContain('a staff account assigned to it');
-    expect(words).toContain('a Tulong page');
-    expect(words).toContain('Nothing brings it back');
-    expect(words).toContain('banner image stays stored');
+    expect(words).toContain('a staff account linked to it');
+    expect(words).toContain('a Tulong page or a document type');
+    expect(words).toContain('It says how many of each');
+    expect(words).toContain('your name, the date and your reason');
+    expect(words).toContain('its address stays reserved');
+    expect(words).toContain('It can be restored');
+    expect(OFFICE_EFFECTS.restore.join(' ')).toContain('returns to the app’s directory');
+    expect(OFFICE_EFFECTS.restore.join(' ')).toContain('Its archive history keeps both acts');
+    // A replaced banner is kept too: nothing an administrator does deletes a stored file.
+    expect(OFFICE_EFFECTS.bannerReplaced.join(' ')).toContain('nothing deletes it');
+  });
+
+  it('says what still uses an office in words, one sentence per kind it counted (DL-225)', () => {
+    expect(officeInUseWords({ staffAccounts: 2, services: 3, issuanceTypes: 4 })).toEqual([
+      '2 staff accounts are linked to it. Link them to another office in Users and roles.',
+      '3 Tulong pages in use are under it. Archive them under Tulong pages.',
+      '4 document types in use are under it. Retire them in the Document catalogue.',
+    ]);
+    expect(officeInUseWords({ staffAccounts: 1, services: 1, issuanceTypes: 1 })).toEqual([
+      '1 staff account is linked to it. Link them to another office in Users and roles.',
+      '1 Tulong page in use is under it. Archive them under Tulong pages.',
+      '1 document type in use is under it. Retire them in the Document catalogue.',
+    ]);
+    // A kind at zero is not mentioned, so the sentence names only what must move.
+    expect(officeInUseWords({ staffAccounts: 0, services: 2, issuanceTypes: 0 })).toEqual([
+      '2 Tulong pages in use are under it. Archive them under Tulong pages.',
+    ]);
+    expect(officeInUseWords({ staffAccounts: 0, services: 0, issuanceTypes: 0 })).toEqual([]);
+  });
+});
+
+describe('nothing an administrator does here deletes a record (DL-225)', () => {
+  const said = [
+    ...Object.values(OFFICE_EFFECTS).flat(),
+    ...Object.values(SERVICE_EFFECTS).flat(),
+    ...Object.values(HOTLINE_EFFECTS).flat(),
+  ].join(' ');
+
+  it('never says a record is deleted, or that nothing brings it back', () => {
+    expect(said).not.toMatch(/\bis deleted\b|\bdeletes the\b|deleted it/i);
+    expect(said).not.toContain('Nothing brings it back');
+    expect(said).not.toContain('The server deletes');
+  });
+
+  it('offers an archive and a restore for every record the directory keeps', () => {
+    for (const effects of [OFFICE_EFFECTS, SERVICE_EFFECTS, HOTLINE_EFFECTS]) {
+      expect(effects.archive.join(' ')).toContain('The server records that you archived it');
+      expect(effects.restore.join(' ')).toContain('The server records that you restored it');
+    }
   });
 });
 
@@ -173,8 +219,9 @@ describe('Tulong pages (DL-170)', () => {
     expect(serviceProblems({ featured: true })).toEqual([]);
   });
 
-  it('says hiding a page takes it out of this list too, and featuring one may push another off', () => {
-    expect(SERVICE_EFFECTS.hide.join(' ')).toContain('leaves this list as well');
+  it('says a hidden page stays in this list, and featuring one may push another off', () => {
+    expect(SERVICE_EFFECTS.hide.join(' ')).toContain('It stays in this list');
+    expect(SERVICE_EFFECTS.hide.join(' ')).not.toContain('Open a page by its address');
     expect(SERVICE_EFFECTS.feature.join(' ')).toContain('six newest featured pages');
     expect(SERVICE_EFFECTS.create.join(' ')).toContain('nothing in the app lets them apply');
   });
@@ -197,8 +244,14 @@ describe('hotlines (DL-170)', () => {
     expect(hotlineProblems({ sortOrder: 0 })).toEqual([]);
   });
 
-  it('offers making a line inactive before deleting it', () => {
-    expect(HOTLINE_EFFECTS.remove.join(' ')).toContain('make it inactive instead');
+  it('says an archived line leaves the app whether active or not, and a restore may be refused (DL-225)', () => {
+    expect(HOTLINE_EFFECTS.archive.join(' ')).toContain('whether it is active or not');
+    expect(HOTLINE_EFFECTS.restore.join(' ')).toContain('another active line holds that role');
+  });
+
+  it('says an archived page leaves the app and keeps its address, and waits on its office (DL-225)', () => {
+    expect(SERVICE_EFFECTS.archive.join(' ')).toContain('its address stays reserved');
+    expect(SERVICE_EFFECTS.restore.join(' ')).toContain('restore the office first');
   });
 
   it('says shown and hidden one way, for hotlines and banners alike', () => {
@@ -218,6 +271,7 @@ describe('a hotline’s kind (DL-217)', () => {
     sortOrder: 0,
     active,
     updatedAt: asIsoDateTime('2026-11-01T00:00:00.000Z'),
+    archived: null,
   });
 
   it('knows the API’s kinds, each in words', () => {

@@ -4,12 +4,14 @@ import { of, throwError, type Observable } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
 import {
+  APP_CONFIG_EFFECTS,
   APP_CONFIG_REPOSITORY,
   AppConfigRefusedError,
   asIsoDateTime,
   type AppConfig,
   type AppConfigChanges,
   type AppConfigRepository,
+  type ArchivedFeatureFlag,
 } from '@domain/index';
 
 import { AppSettingsPage } from './app-settings-page';
@@ -49,6 +51,10 @@ class RecordingConfig implements AppConfigRepository {
   refuseWith: string | null = null;
   /** A refusal to answer with, as the adapter raises it. */
   refusal: Error | null = null;
+  /** The flags the app is no longer given (`DL-225`). */
+  archived: readonly ArchivedFeatureFlag[] = [];
+  archivedReads = 0;
+  archivedRefusal: Error | null = null;
 
   private readonly config: AppConfig;
 
@@ -73,6 +79,28 @@ class RecordingConfig implements AppConfigRepository {
     this.changes.push(changes);
     return of(this.config);
   }
+
+  archivedFlags(): Observable<readonly ArchivedFeatureFlag[]> {
+    this.archivedReads++;
+    const refusal = this.archivedRefusal;
+    return refusal === null ? of(this.archived) : throwError(() => refusal);
+  }
+}
+
+/** An archived flag, archived at midday UTC so its date reads the same in any zone. */
+function archivedFlag(key: string, value: string): ArchivedFeatureFlag {
+  return {
+    key,
+    value,
+    archived: { at: asIsoDateTime('2026-11-03T12:00:00.000Z'), byName: 'Ana Reyes', reason: null },
+  };
+}
+
+function tickBox(label: string, checked: boolean): void {
+  const box = document.querySelector<HTMLInputElement>(`input[aria-label="${label}"]`);
+  if (box === null) throw new Error(`No box labelled ${label}.`);
+  box.checked = checked;
+  box.dispatchEvent(new Event('change'));
 }
 
 function configure(config: AppConfig = CONFIG): RecordingConfig {
@@ -190,10 +218,11 @@ describe('AppSettingsPage (DL-170)', () => {
     expect(dialog?.querySelector('input[type="checkbox"]')).not.toBeNull();
   });
 
-  it('deletes a flag as null, and refuses a flag name the API would refuse', async () => {
+  it('archives a flag as null, says what that does first, and refuses a flag name the API would refuse', async () => {
     const repository = configure();
     const fixture = TestBed.createComponent(AppSettingsPage);
-    await settle(fixture);
+    const element = await settle(fixture);
+    expect(element.textContent).not.toMatch(/delete/i);
 
     buttonNamed('Add a flag')?.click();
     await settle(fixture);
@@ -206,14 +235,19 @@ describe('AppSettingsPage (DL-170)', () => {
     );
 
     type('#settings-new-flag-key-0', 'new_flag');
-    const remove = document.querySelector<HTMLInputElement>(
-      'input[aria-label="Delete the flag show_digital_id"]',
-    );
-    if (remove === null) throw new Error('No delete box.');
-    remove.checked = true;
-    remove.dispatchEvent(new Event('change'));
+    tickBox('Archive the flag show_digital_id', true);
     await settle(fixture);
-    await review(fixture);
+    const dialog = await review(fixture);
+    expect(dialog?.textContent).toContain(
+      'show_digital_id will be archived. The app is no longer given it.',
+    );
+    expect(dialog?.textContent).toContain(
+      'It stays here under Archived flags with its value, your name and the date, and can be ' +
+        'restored. The server keeps no reason for a flag, so none is asked for.',
+    );
+    // The new flag is a change of its own, and says so.
+    expect(dialog?.textContent).toContain(APP_CONFIG_EFFECTS.flags[0]);
+    expect(repository.changes).toEqual([]);
     buttonNamed('Save the settings')?.click();
     await settle(fixture);
 
@@ -225,6 +259,124 @@ describe('AppSettingsPage (DL-170)', () => {
         ],
       },
     ]);
+    // Read again with the settings, so the flag shows under Archived flags.
+    expect(repository.archivedReads).toBe(2);
+  });
+
+  it('lists the archived flags with their value and who archived each, and when (DL-225)', async () => {
+    const repository = configure();
+    repository.archived = [archivedFlag('old_banner', 'v2')];
+    const element = await settle(TestBed.createComponent(AppSettingsPage));
+
+    const legend = [...element.querySelectorAll('legend')].find(
+      (candidate) => candidate.textContent?.trim() === 'Archived flags',
+    );
+    const group = legend?.closest('fieldset');
+    const row = group?.querySelector('tbody tr')?.textContent?.replace(/\s+/g, ' ');
+    expect(row).toContain('old_banner');
+    expect(row).toContain('v2');
+    expect(row).toContain('Archived 3 Nov 2026 by Ana Reyes');
+    expect(group?.querySelector('input[aria-label="Restore the flag old_banner"]')).not.toBeNull();
+  });
+
+  it('restores an archived flag with the value it was kept with, after saying so (DL-225)', async () => {
+    const repository = configure();
+    repository.archived = [archivedFlag('old_banner', 'v2')];
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    tickBox('Restore the flag old_banner', true);
+    await settle(fixture);
+    const dialog = await review(fixture);
+    expect(dialog?.textContent).toContain(
+      'old_banner will be restored. The app is given it again, with the value it had when archived.',
+    );
+    expect(dialog?.textContent).not.toContain('will be archived');
+    expect(dialog?.textContent).not.toContain(APP_CONFIG_EFFECTS.flags[0]);
+    expect(repository.changes).toEqual([]);
+    buttonNamed('Save the settings')?.click();
+    await settle(fixture);
+
+    expect(repository.changes).toEqual([{ featureFlags: [{ key: 'old_banner', value: 'v2' }] }]);
+  });
+
+  it('lists an archive and a restore in one review, each in its own words', async () => {
+    const repository = configure();
+    repository.archived = [archivedFlag('old_banner', 'v2'), archivedFlag('old_tile', 'blue')];
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    tickBox('Archive the flag show_digital_id', true);
+    tickBox('Restore the flag old_banner', true);
+    tickBox('Restore the flag old_tile', true);
+    await settle(fixture);
+    const dialog = await review(fixture);
+    const effects = [...(dialog?.querySelectorAll('li') ?? [])].map((li) => li.textContent?.trim());
+    expect(effects).toContain('show_digital_id will be archived. The app is no longer given it.');
+    expect(effects).toContain(
+      'old_banner and old_tile will be restored. The app is given them again, with the value each ' +
+        'had when archived.',
+    );
+    buttonNamed('Save the settings')?.click();
+    await settle(fixture);
+
+    expect(repository.changes).toEqual([
+      {
+        featureFlags: [
+          { key: 'show_digital_id', value: null },
+          { key: 'old_banner', value: 'v2' },
+          { key: 'old_tile', value: 'blue' },
+        ],
+      },
+    ]);
+  });
+
+  it('sends nothing when a restore is ticked and unticked again', async () => {
+    const repository = configure();
+    repository.archived = [archivedFlag('old_banner', 'v2')];
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    const element = await settle(fixture);
+
+    tickBox('Restore the flag old_banner', true);
+    await settle(fixture);
+    tickBox('Restore the flag old_banner', false);
+    await settle(fixture);
+
+    expect(await review(fixture)).toBeNull();
+    expect(element.textContent).toContain('Nothing has changed yet.');
+    expect(repository.changes).toEqual([]);
+  });
+
+  it('refuses a new flag named as an archived one, and points to its Restore', async () => {
+    const repository = configure();
+    repository.archived = [archivedFlag('old_banner', 'v2')];
+    const fixture = TestBed.createComponent(AppSettingsPage);
+    await settle(fixture);
+
+    buttonNamed('Add a flag')?.click();
+    await settle(fixture);
+    type('#settings-new-flag-key-0', 'old_banner');
+    type('#settings-new-flag-value-0', 'v3');
+    await settle(fixture);
+
+    expect(await review(fixture)).toBeNull();
+    expect(document.querySelector('.settings__problems')?.textContent).toContain(
+      'A new flag has the name of an archived flag; tick Restore beside that one instead.',
+    );
+    expect(repository.changes).toEqual([]);
+  });
+
+  it('says when no flag is archived, and when the archived flags could not be read', async () => {
+    configure();
+    const element = await settle(TestBed.createComponent(AppSettingsPage));
+    expect(element.textContent).toContain('No flag is archived.');
+
+    const failing = configure();
+    failing.archivedRefusal = new Error('The server did not answer.');
+    const second = await settle(TestBed.createComponent(AppSettingsPage));
+    expect(second.textContent).toContain('The archived flags could not be read');
+    // The rest of the settings still stand.
+    expect(second.querySelector('#settings-contact-line')).not.toBeNull();
   });
 
   it('keeps the confirmation open and says why when the server refuses', async () => {

@@ -355,7 +355,7 @@
                   <tr>
                     <th scope="col">{{ copy.flagName }}</th>
                     <th scope="col">{{ copy.flagValue }}</th>
-                    <th scope="col">{{ copy.flagDelete }}</th>
+                    <th scope="col">{{ copy.flagArchive }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -370,16 +370,16 @@
                           autocomplete="off"
                           [attr.aria-label]="copy.flagValueLabel(flag.key)"
                           [value]="flagValues().get(flag.key) ?? flag.value"
-                          [disabled]="deletedFlags().has(flag.key)"
+                          [disabled]="archivingFlags().has(flag.key)"
                           (input)="setFlag(flag.key, text($event))"
                         />
                       </td>
                       <td>
                         <input
                           type="checkbox"
-                          [attr.aria-label]="copy.flagDeleteLabel(flag.key)"
-                          [checked]="deletedFlags().has(flag.key)"
-                          (change)="toggleDelete(flag.key, checked($event))"
+                          [attr.aria-label]="copy.flagArchiveLabel(flag.key)"
+                          [checked]="archivingFlags().has(flag.key)"
+                          (change)="toggleArchive(flag.key, checked($event))"
                         />
                       </td>
                     </tr>
@@ -430,6 +430,70 @@
             <app-icon name="plus" [size]="16" [stroke]="2.2" />
             {{ copy.addFlag }}
           </button>
+        </fieldset>
+
+        <!-- DL-225: a flag is archived with its value, never deleted, and restored in this review. -->
+        <fieldset class="form-section settings__group">
+          <legend class="form-section__legend">{{ copy.archivedFlagsHeading }}</legend>
+          <p class="settings__note">{{ copy.archivedFlagsLead }}</p>
+          <app-async-content
+            [state]="archivedState()"
+            [content]="archivedFlagsList"
+            [skeletonLines]="2"
+            [errorHeading]="copy.archivedFlagsFailed"
+          >
+            <ng-template #archivedFlagsList let-archived>
+              @if (archived.length === 0) {
+                <p class="settings__note">{{ copy.noArchivedFlags }}</p>
+              } @else {
+                <div class="table-scroll">
+                  <table class="simple-table settings__flags">
+                    <caption class="visually-hidden">
+                      {{
+                        copy.archivedFlagsCaption
+                      }}
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">{{ copy.flagName }}</th>
+                        <th scope="col">{{ copy.flagValue }}</th>
+                        <th scope="col">{{ copy.flagArchived }}</th>
+                        <th scope="col">{{ copy.flagRestore }}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (flag of archived; track flag.key) {
+                        <tr>
+                          <th scope="row">
+                            <code>{{ flag.key }}</code>
+                          </th>
+                          <td>
+                            <code>{{ flag.value }}</code>
+                          </td>
+                          <td>
+                            {{
+                              copy.flagArchivedOn(
+                                (flag.archived.at | date: 'd MMM y') ?? '',
+                                flag.archived.byName
+                              )
+                            }}
+                          </td>
+                          <td>
+                            <input
+                              type="checkbox"
+                              [attr.aria-label]="copy.flagRestoreLabel(flag.key)"
+                              [checked]="restoringFlags().has(flag.key)"
+                              (change)="toggleRestore(flag.key, checked($event))"
+                            />
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </ng-template>
+          </app-async-content>
         </fieldset>
 
         @if (attempted() && problems().length > 0) {

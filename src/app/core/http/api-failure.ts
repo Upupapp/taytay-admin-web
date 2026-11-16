@@ -40,6 +40,12 @@ export interface ApiFailure {
    * `X-Request-Id` across origins, so `Retry-After` is invisible to a browser client.
    */
   readonly retryAfterSeconds: number | null;
+  /**
+   * The counts the API reports beside a refusal, by name — `OFFICE_IN_USE` says how many staff
+   * accounts, Tulong pages and document types still use an office (`DL-225`). `null` when there are
+   * none. Kept apart from `details`, which a form renders as field messages.
+   */
+  readonly counts: Readonly<Record<string, number>> | null;
 }
 
 /**
@@ -60,6 +66,7 @@ export function readApiError(error: HttpErrorResponse): ApiFailure {
     details: envelope?.details ?? null,
     requestId: envelope?.request_id ?? error.headers.get('X-Request-Id'),
     retryAfterSeconds: envelope?.retryAfter ?? readRetryAfterHeader(error),
+    counts: envelope?.counts ?? null,
   };
 }
 
@@ -104,6 +111,7 @@ interface WireError {
   readonly details?: ApiFieldErrors;
   readonly request_id?: string;
   readonly retryAfter: number | null;
+  readonly counts: Readonly<Record<string, number>> | null;
 }
 
 function readEnvelope(body: unknown): WireError | null {
@@ -133,6 +141,7 @@ function readEnvelope(body: unknown): WireError | null {
     details: fieldErrorsIn(details) ?? undefined,
     request_id: typeof requestId === 'string' ? requestId : undefined,
     retryAfter: secondsIn(details),
+    counts: countsIn(details),
   };
 }
 
@@ -159,6 +168,23 @@ function fieldErrorsIn(value: unknown): ApiFieldErrors | null {
   }
 
   return Object.keys(kept).length > 0 ? kept : null;
+}
+
+/**
+ * The whole, non-negative numbers in `details` — the counts beside a refusal (`DL-225`) — or `null`
+ * when there are none. Anything else in `details` is not a count, and is left to `fieldErrorsIn`.
+ */
+function countsIn(details: unknown): Readonly<Record<string, number>> | null {
+  if (details === null || typeof details !== 'object' || Array.isArray(details)) {
+    return null;
+  }
+  const counts: Record<string, number> = {};
+  for (const [name, value] of Object.entries(details)) {
+    if (typeof value === 'number' && Number.isInteger(value) && value >= 0) {
+      counts[name] = value;
+    }
+  }
+  return Object.keys(counts).length > 0 ? counts : null;
 }
 
 function secondsIn(details: unknown): number | null {

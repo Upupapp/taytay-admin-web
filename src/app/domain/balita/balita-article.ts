@@ -132,7 +132,7 @@ export const BALITA_EFFECTS: Readonly<Record<BalitaAct, readonly string[]>> = {
 /** Said beside the cover, because the API keeps no description of it (`DL-125`, `DL-171`). */
 export const BALITA_COVER_EFFECTS: readonly string[] = [
   'The API keeps no description of the cover, so the app has none to give a resident who cannot see it. Say what matters in the words.',
-  'Choosing a new cover deletes the old image from storage. A cover cannot be removed, only replaced.',
+  'Choosing a new cover replaces it in the app. The old image stays stored on the server; nothing deletes it. A cover cannot be removed, only replaced.',
 ];
 
 /** Who may write, as the API decides it (`officeForWrite`, `canEdit`). */

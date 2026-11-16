@@ -1,5 +1,6 @@
 import type { DirectoryOffice, OfficeChanges, OfficeDraft, OfficeId } from '@domain/index';
 
+import { toArchiveState } from './archive.mapper';
 import { dateTime, field, id, str } from './wire';
 
 /** A coordinate, or `null`: any finite number, which `int` would refuse for having a fraction. */
@@ -18,13 +19,14 @@ function coordinate(value: unknown): number | null {
  * | `updated_at`      | `updatedAt`   | the office is not readable |
  * | `short_name` …    | as named      | not given                  |
  * | `banner_media_id` | `hasBanner`   | no banner                  |
+ * | `archived_at` …   | `archived`    | in use (`toArchiveState`)  |
  *
  * **Not read**: `hero_url`, an absolute address of the banner's bytes on the API's host — a template
  * bound to it would load an image from another origin, which the console's image policy refuses;
  * `service_lines`, which the published contract offers no way to write; `created_at`, which only
  * orders the server's cursor.
  *
- * @consumes GET offices
+ * @consumes GET admin/offices
  * @consumes POST admin/offices
  * @consumes PATCH admin/offices/{id}
  */
@@ -33,8 +35,12 @@ export function toDirectoryOffice(wire: unknown): DirectoryOffice | null {
   const name = str(field(wire, 'name'));
   const slug = str(field(wire, 'slug'));
   const updatedAt = dateTime(field(wire, 'updated_at'));
+  const archived = toArchiveState(wire);
 
   if (officeId === null || name === null || slug === null || updatedAt === null) {
+    return null;
+  }
+  if (archived === undefined) {
     return null;
   }
 
@@ -54,6 +60,7 @@ export function toDirectoryOffice(wire: unknown): DirectoryOffice | null {
     longitude: coordinate(field(wire, 'longitude')),
     hasBanner: str(field(wire, 'banner_media_id')) !== null,
     updatedAt,
+    archived,
   };
 }
 

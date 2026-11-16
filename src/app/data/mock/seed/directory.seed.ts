@@ -41,8 +41,16 @@ export const MOCK_DIRECTORY_OFFICES: readonly DirectoryOffice[] = MOCK_OFFICES.m
     longitude: null,
     hasBanner: index === 0,
     updatedAt: STAMP,
+    archived: null,
   }),
 );
+
+/** An archive as the sample administrator left it (`DL-225`): sample words, a fixed date. */
+const SAMPLE_ARCHIVE = {
+  at: asIsoDateTime('2026-10-15T02:00:00.000Z'),
+  byName: 'Sample administrator',
+  reason: 'The 2025 distribution has ended; kept for reference (sample).',
+} as const;
 
 const service = (
   key: string,
@@ -67,6 +75,7 @@ const service = (
   schedule: null,
   hasImage: false,
   updatedAt: STAMP,
+  archived: null,
   ...values,
 });
 
@@ -116,6 +125,7 @@ export const MOCK_TULONG_SERVICES: readonly TulongService[] = [
     summary:
       'Sample summary. A past distribution, kept for reference and hidden from the catalogue.',
     hiddenFromList: true,
+    archived: SAMPLE_ARCHIVE,
   }),
 ];
 
@@ -126,6 +136,7 @@ const hotline = (
   category: string,
   sortOrder: number,
   active = true,
+  archived: Hotline['archived'] = null,
 ): Hotline => ({
   id: asId<HotlineId>(`hotline-${key}`),
   name,
@@ -137,6 +148,7 @@ const hotline = (
   sortOrder,
   active,
   updatedAt: STAMP,
+  archived,
 });
 
 export const MOCK_HOTLINES: readonly Hotline[] = [
@@ -145,4 +157,13 @@ export const MOCK_HOTLINES: readonly Hotline[] = [
   hotline('fire', 'Fire station (sample)', '(02) 8000 0113', 'Emergency', 3),
   hotline('mswdo', 'MSWDO (sample)', '(02) 8000 0101', 'Social services', 10),
   hotline('old-line', 'Former health line (sample)', '(02) 8000 0199', 'Health', 20, false),
+  hotline(
+    'relief',
+    'Relief hotline, 2025 (sample)',
+    '(02) 8000 0125',
+    'Relief',
+    30,
+    true,
+    SAMPLE_ARCHIVE,
+  ),
 ];

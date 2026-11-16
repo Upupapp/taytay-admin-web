@@ -1,7 +1,7 @@
 import { HttpErrorResponse, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, type Observable } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
@@ -16,6 +16,7 @@ import {
   describeMembershipChange,
   HOTLINE_LIST_CAP,
   isAppConfigRefusal,
+  isArchiveRefusal,
   isCommandCenterTaken,
   isInPersonRefused,
   isFamilyDraftInvalid,
@@ -74,12 +75,13 @@ import USER_OFFICE_ASSIGNED from './fixtures/user-office-assigned.json';
 import USER_OFFICE_ROLE_CHANGED from './fixtures/user-office-role-changed.json';
 import USER_ROLE_CHANGED from './fixtures/user-role-changed.json';
 import USERS_PAGE from './fixtures/users-page.json';
-import DELETED from './fixtures/deleted.json';
 import HOTLINE from './fixtures/hotline.json';
 import HOTLINES from './fixtures/hotlines.json';
 import OFFICE from './fixtures/office.json';
+import OFFICE_ARCHIVED from './fixtures/office-archived.json';
+import ARCHIVE_EVENTS from './fixtures/archive-events.json';
+import FEATURE_FLAGS from './fixtures/feature-flags.json';
 import SERVICE from './fixtures/service.json';
-import SERVICES_PAGE from './fixtures/services-page.json';
 import BANNER from './fixtures/banner.json';
 import BANNERS from './fixtures/banners.json';
 import HOME from './fixtures/home.json';
@@ -127,6 +129,7 @@ import {
   HttpHomeScreenRepository,
   HttpHotlineRepository,
   HttpHouseholdRepository,
+  HttpIssuanceRepository,
   HttpNotificationRepository,
   HttpOfficeInboxRepository,
   HttpOfficeRepository,
@@ -156,6 +159,18 @@ const REFRESH = 'https://securetoken.googleapis.com/v1/token';
 const CREDENTIALS = { email: 'staff.member@example.invalid', password: 'a-password-of-sufficient-length' };
 const UNIFORM_REFUSAL =
   'Those sign-in details were not recognised. Check the email address and password, then try again.';
+
+/** A `409` as the API sends it — the error envelope with its code — ready to spread into `flush`. */
+function conflict(
+  code: string,
+  message: string,
+  details: Readonly<Record<string, number>> = {},
+): [object, { status: number; statusText: string }] {
+  return [
+    { error: { code, message, details, request_id: 'fixture-request' } },
+    { status: 409, statusText: 'Conflict' },
+  ];
+}
 
 /**
  * The two ports the Node API serves, exercised against fixtures composed from the vendored spec
@@ -199,6 +214,7 @@ describe('the Node adapters', () => {
         HttpFamilyRepository,
         HttpProgramRepository,
         HttpSavedViewRepository,
+        HttpIssuanceRepository,
       ],
     });
 
@@ -2324,22 +2340,48 @@ describe('the Node adapters', () => {
     });
 
     it('reads one list’s views whole, saying whose each is', async () => {
-      const listed = firstValueFrom(views.listFor('residents'));
+      const listed = firstValueFrom(views.listFor('residents', false));
       const request = http.expectOne((r) => r.url === `${BASE}/office/saved-views`);
       expect(request.request.params.get('resource')).toBe('residents');
-      expect(request.request.params.keys()).toEqual(['resource']);
+      expect(request.request.params.get('archived')).toBe('false');
+      expect(request.request.params.keys()).toEqual(['resource', 'archived']);
       request.flush(SAVED_VIEWS);
 
       const [shared, own] = await listed;
       expect(shared?.isShared).toBe(true);
       expect(shared?.params).toEqual({ barangay: 'brgy-dolores', ageGroup: 'senior' });
+      expect(shared?.archived).toBeNull();
       expect(own?.isShared).toBe(false);
       expect(own?.ownerId).toBe(SAVED_VIEWS.data[1]?.owner_id);
       expect(own?.audit.createdAt).toBe(SAVED_VIEWS.data[1]?.created_at);
     });
 
+    it('reads the archived views it could restore, each with when it was put away (DL-225)', async () => {
+      const listed = firstValueFrom(views.listFor('households', true));
+      const request = http.expectOne((r) => r.url === `${BASE}/office/saved-views`);
+      expect(request.request.params.get('resource')).toBe('households');
+      expect(request.request.params.get('archived')).toBe('true');
+      request.flush({
+        ...SAVED_VIEWS,
+        data: [{ ...SAVED_VIEW.data, archived_at: '2026-11-10T01:00:00.000Z' }],
+      });
+
+      // A view's archive names nobody and keeps no reason.
+      expect((await listed)[0]?.archived).toEqual({
+        at: '2026-11-10T01:00:00.000Z',
+        byName: null,
+        reason: null,
+      });
+
+      const unreadable = firstValueFrom(views.listFor('households', true));
+      http
+        .expectOne((r) => r.url === `${BASE}/office/saved-views`)
+        .flush({ ...SAVED_VIEWS, data: [{ ...SAVED_VIEW.data, archived_at: 'last week' }] });
+      await expect(unreadable).rejects.toThrow(/could not be read/);
+    });
+
     it('refuses the list rather than guess whose a view is', async () => {
-      const listed = firstValueFrom(views.listFor('residents'));
+      const listed = firstValueFrom(views.listFor('residents', false));
       http
         .expectOne((r) => r.url === `${BASE}/office/saved-views`)
         .flush({ ...SAVED_VIEWS, data: [{ ...SAVED_VIEWS.data[0], is_shared: 'yes' }] });
@@ -2372,13 +2414,59 @@ describe('the Node adapters', () => {
       ).rejects.toThrow(/name of 1 to 60/);
     });
 
-    it('takes a view away at its address', async () => {
+    it('archives and restores a view with an empty body, and reads the answer (DL-225)', async () => {
       const id = asId<SavedViewId>(SAVED_VIEW.data.id);
-      const removed = firstValueFrom(views.remove(id));
+      const archived = firstValueFrom(views.archive(id));
+      const archive = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/saved-views/${id}/archive`,
+      });
+      expect(archive.request.body).toEqual({});
+      archive.flush({
+        ...SAVED_VIEW,
+        data: { ...SAVED_VIEW.data, archived_at: '2026-11-10T01:00:00.000Z' },
+      });
+      expect((await archived).archived?.at).toBe('2026-11-10T01:00:00.000Z');
+
+      const restored = firstValueFrom(views.restore(id));
+      const restore = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/office/saved-views/${id}/restore`,
+      });
+      expect(restore.request.body).toEqual({});
+      restore.flush(SAVED_VIEW);
+      expect((await restored).archived).toBeNull();
+    });
+
+    it('hands what somebody already did back as the domain’s refusal, and the cap as it came', async () => {
+      const id = asId<SavedViewId>(SAVED_VIEW.data.id);
+      const twice = firstValueFrom(views.archive(id)).catch((failure: unknown) => failure);
       http
-        .expectOne({ method: 'DELETE', url: `${BASE}/office/saved-views/${id}` })
-        .flush({ data: { id, deleted: true }, meta: {} });
-      await expect(removed).resolves.toBeUndefined();
+        .expectOne(`${BASE}/office/saved-views/${id}/archive`)
+        .flush(...conflict('ALREADY_ARCHIVED', 'That saved view is archived already.'));
+      const already = await twice;
+      expect(isArchiveRefusal(already) ? already.kind : null).toBe('already-archived');
+
+      const notArchived = firstValueFrom(views.restore(id)).catch((failure: unknown) => failure);
+      http
+        .expectOne(`${BASE}/office/saved-views/${id}/restore`)
+        .flush(...conflict('NOT_ARCHIVED', 'That saved view is not archived.'));
+      const refusal = await notArchived;
+      expect(isArchiveRefusal(refusal) ? refusal.kind : null).toBe('not-archived');
+      expect(refusal instanceof Error ? refusal.message : null).toBe(
+        'That saved view is not archived.',
+      );
+
+      // The server's own words already say what to do, so the cap is passed on as it came.
+      const capped = firstValueFrom(views.restore(id)).catch((failure: unknown) => failure);
+      http
+        .expectOne(`${BASE}/office/saved-views/${id}/restore`)
+        .flush(
+          ...conflict('CONFLICT', 'You already keep 50 views of this list. Archive one first.'),
+        );
+      const cap = await capped;
+      expect(isArchiveRefusal(cap)).toBe(false);
+      expect(cap).toBeInstanceOf(HttpErrorResponse);
     });
   });
 
@@ -2402,15 +2490,39 @@ describe('the Node adapters', () => {
       return fields;
     }
 
-    it('reads the office directory a page at a time, from the public list', async () => {
+    it('reads the offices in use whole, from the administrator’s list', async () => {
       const offices = TestBed.inject(HttpDirectoryOfficeRepository);
-      const page = firstValueFrom(offices.list({ limit: 20, cursor: null }));
+      const listed = firstValueFrom(offices.list(false));
 
-      const request = http.expectOne((r) => r.url === `${BASE}/offices`);
-      expect(request.request.params.get('limit')).toBe('20');
-      request.flush(OFFICES_PAGE);
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/offices`);
+      expect(request.request.method).toBe('GET');
+      expect(request.request.params.get('archived')).toBe('false');
+      expect(request.request.params.keys()).toEqual(['archived']);
+      request.flush({ data: [OFFICE.data], meta: {} });
 
-      expect((await page).items.map((office) => office.slug)).toEqual(['mswdo', 'mho']);
+      expect((await listed).map((office) => [office.slug, office.archived])).toEqual([
+        ['pdao', null],
+      ]);
+    });
+
+    it('reads the archived offices with when, by whom and why, and refuses one it cannot place (DL-225)', async () => {
+      const offices = TestBed.inject(HttpDirectoryOfficeRepository);
+      const listed = firstValueFrom(offices.list(true));
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/offices`);
+      expect(request.request.params.get('archived')).toBe('true');
+      request.flush({ data: [OFFICE_ARCHIVED.data], meta: {} });
+
+      expect((await listed)[0]?.archived).toEqual({
+        at: OFFICE_ARCHIVED.data.archived_at,
+        byName: 'Fixture Administrator',
+        reason: 'Merged into the MSWDO.',
+      });
+
+      const unreadable = firstValueFrom(offices.list(true));
+      http
+        .expectOne((r) => r.url === `${BASE}/admin/offices`)
+        .flush({ data: [{ ...OFFICE_ARCHIVED.data, archived_at: 'recently' }], meta: {} });
+      await expect(unreadable).rejects.toThrow();
     });
 
     it('creates an office as a form, leaving out what was not given, with the banner as a file', async () => {
@@ -2463,56 +2575,148 @@ describe('the Node adapters', () => {
       expect((await changed).id).toBe(officeId);
     });
 
-    it('deletes an office, and passes the server’s refusal on in its own words', async () => {
+    it('archives and restores an office with the reason trimmed, and reads the answer (DL-225)', async () => {
       const offices = TestBed.inject(HttpDirectoryOfficeRepository);
-      const removed = firstValueFrom(offices.remove(officeId));
-      http.expectOne({ method: 'DELETE', url: `${BASE}/admin/offices/${officeId}` }).flush(DELETED);
-      await expect(removed).resolves.toBeUndefined();
+      const archived = firstValueFrom(offices.archive(officeId, '  Merged into the MSWDO. '));
+      const archive = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/offices/${officeId}/archive`,
+      });
+      expect(archive.request.body).toEqual({ reason: 'Merged into the MSWDO.' });
+      archive.flush(OFFICE_ARCHIVED);
+      expect((await archived).archived?.reason).toBe('Merged into the MSWDO.');
 
-      const refused = firstValueFrom(offices.remove(officeId));
+      const restored = firstValueFrom(offices.restore(officeId, 'Reopened.'));
+      const restore = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/offices/${officeId}/restore`,
+      });
+      expect(restore.request.body).toEqual({ reason: 'Reopened.' });
+      restore.flush(OFFICE);
+      expect((await restored).archived).toBeNull();
+    });
+
+    it('reads an office’s archive history, newest first, and refuses a history with a line it cannot read', async () => {
+      const offices = TestBed.inject(HttpDirectoryOfficeRepository);
+      const history = firstValueFrom(offices.history(officeId));
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/archive-events`);
+      expect(request.request.method).toBe('GET');
+      expect(request.request.params.get('entity_type')).toBe('office');
+      expect(request.request.params.get('entity_id')).toBe(officeId);
+      request.flush(ARCHIVE_EVENTS);
+
+      expect((await history).map((event) => [event.act, event.actorName])).toEqual([
+        ['restored', 'Fixture Administrator'],
+        ['archived', 'An account since closed'],
+      ]);
+
+      const gap = firstValueFrom(offices.history(officeId));
+      const [line] = ARCHIVE_EVENTS.data;
       http
-        .expectOne({ method: 'DELETE', url: `${BASE}/admin/offices/${officeId}` })
-        .flush(
+        .expectOne((r) => r.url === `${BASE}/admin/archive-events`)
+        .flush({ ...ARCHIVE_EVENTS, data: [line, { ...line, act: 'deleted' }] });
+      await expect(gap).rejects.toThrow(/could not be read/);
+    });
+
+    it('hands each of the API’s archive refusals back as the domain’s, never by its code (DL-225)', async () => {
+      const offices = TestBed.inject(HttpDirectoryOfficeRepository);
+      const cases = [
+        ['ALREADY_ARCHIVED', 'already-archived', () => offices.archive(officeId, 'Merged.')],
+        ['NOT_ARCHIVED', 'not-archived', () => offices.restore(officeId, 'Reopened.')],
+        ['ARCHIVED', 'read-only', () => offices.update(officeId, { name: 'Renamed' }, null)],
+      ] as const;
+
+      for (const [code, kind, act] of cases) {
+        const refused = firstValueFrom(act()).catch((failure: unknown) => failure);
+        http
+          .expectOne((r) => r.url.startsWith(`${BASE}/admin/offices/${officeId}`))
+          .flush(...conflict(code, 'The server’s own sentence.'));
+        const refusal = await refused;
+        expect(isArchiveRefusal(refusal) ? [refusal.kind, refusal.inUse] : null).toEqual([
+          kind,
+          null,
+        ]);
+        expect(refusal instanceof Error ? refusal.message : null).toBe(
+          'The server’s own sentence.',
+        );
+      }
+    });
+
+    it('says what still uses an office, by the counts the server sent with its refusal (DL-225)', async () => {
+      const offices = TestBed.inject(HttpDirectoryOfficeRepository);
+      const refused = firstValueFrom(offices.archive(officeId, 'Merged.')).catch(
+        (failure: unknown) => failure,
+      );
+      http.expectOne(`${BASE}/admin/offices/${officeId}/archive`).flush(
+        ...conflict('OFFICE_IN_USE', 'That office is still in use.', {
+          staff_accounts: 2,
+          services: 0,
+          issuance_types: 3,
+        }),
+      );
+
+      const refusal = await refused;
+      expect(isArchiveRefusal(refusal) ? refusal.kind : null).toBe('office-in-use');
+      expect(isArchiveRefusal(refusal) ? refusal.inUse : null).toEqual({
+        staffAccounts: 2,
+        services: 0,
+        issuanceTypes: 3,
+      });
+
+      // A count the server left out is none, never a guess.
+      const partial = firstValueFrom(offices.archive(officeId, 'Merged.')).catch(
+        (failure: unknown) => failure,
+      );
+      http
+        .expectOne(`${BASE}/admin/offices/${officeId}/archive`)
+        .flush(...conflict('OFFICE_IN_USE', 'That office is still in use.', { services: 1 }));
+      const counted = await partial;
+      expect(isArchiveRefusal(counted) ? counted.inUse : null).toEqual({
+        staffAccounts: 0,
+        services: 1,
+        issuanceTypes: 0,
+      });
+    });
+
+    it('passes a taken address and any other refusal on as it came', async () => {
+      const offices = TestBed.inject(HttpDirectoryOfficeRepository);
+      const refused = firstValueFrom(offices.update(officeId, { slug: 'mswdo' }, null)).catch(
+        (failure: unknown) => failure,
+      );
+      http
+        .expectOne(`${BASE}/admin/offices/${officeId}`)
+        .flush(...conflict('CONFLICT', 'An archived office holds that slug.'));
+      const refusal = await refused;
+      expect(isArchiveRefusal(refusal)).toBe(false);
+      expect(refusal).toBeInstanceOf(HttpErrorResponse);
+    });
+
+    it('reads every Tulong page in use, hidden ones included, from the administrator’s list (DL-225)', async () => {
+      const services = TestBed.inject(HttpTulongServiceRepository);
+      const listed = firstValueFrom(services.list(false));
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/services`);
+      expect(request.request.method).toBe('GET');
+      expect(request.request.params.get('archived')).toBe('false');
+      request.flush({ data: [SERVICE.data], meta: {} });
+      expect((await listed).map((page) => [page.hiddenFromList, page.archived])).toEqual([
+        [true, null],
+      ]);
+
+      const archived = firstValueFrom(services.list(true));
+      const archivedRequest = http.expectOne((r) => r.url === `${BASE}/admin/services`);
+      expect(archivedRequest.request.params.get('archived')).toBe('true');
+      archivedRequest.flush({
+        data: [
           {
-            error: {
-              code: 'CONFLICT',
-              message: 'That office still has staff or other records.',
-              details: {},
-              request_id: 'req-1',
-            },
+            ...SERVICE.data,
+            archived_at: '2026-11-10T01:00:00.000Z',
+            archive_reason: 'The distribution has ended.',
+            archived_by_name: 'Fixture Administrator',
           },
-          { status: 409, statusText: 'Conflict' },
-        );
-      await expect(refused).rejects.toBeTruthy();
-    });
-
-    it('reads the Tulong catalogue a page at a time, and one page by its address', async () => {
-      const services = TestBed.inject(HttpTulongServiceRepository);
-      const page = firstValueFrom(services.list({ limit: 20, cursor: null }));
-      http.expectOne((r) => r.url === `${BASE}/services`).flush(SERVICES_PAGE);
-      const answer = await page;
-      expect(answer.hasMore).toBe(true);
-      expect(answer.items).toHaveLength(2);
-
-      const hidden = firstValueFrom(services.find('typhoon-relief-2025'));
-      http.expectOne({ method: 'GET', url: `${BASE}/services/typhoon-relief-2025` }).flush(SERVICE);
-      expect((await hidden)?.hiddenFromList).toBe(true);
-    });
-
-    it('says a missing page is missing, and a failure is a failure', async () => {
-      const services = TestBed.inject(HttpTulongServiceRepository);
-      const missing = firstValueFrom(services.find('nothing-here'));
-      http
-        .expectOne(`${BASE}/services/nothing-here`)
-        .flush(
-          { error: { code: 'NOT_FOUND', message: 'Not found.', details: {}, request_id: 'r' } },
-          { status: 404, statusText: 'Not Found' },
-        );
-      expect(await missing).toBeNull();
-
-      const failed = firstValueFrom(services.find('pwd-id'));
-      http.expectOne(`${BASE}/services/pwd-id`).flush(null, { status: 500, statusText: 'Error' });
-      await expect(failed).rejects.toBeTruthy();
+        ],
+        meta: {},
+      });
+      expect((await archived)[0]?.archived?.reason).toBe('The distribution has ended.');
     });
 
     it('sends a Tulong change as JSON with only what changed, and the picture as a form', async () => {
@@ -2534,31 +2738,129 @@ describe('the Node adapters', () => {
       expect(formOf(upload.request.body)).toEqual({ file: 'file:image/png' });
       upload.flush(SERVICE);
       await pictured;
-
-      const removed = firstValueFrom(services.remove(serviceId));
-      http.expectOne({ method: 'DELETE', url: `${BASE}/admin/services/${serviceId}` }).flush(DELETED);
-      await expect(removed).resolves.toBeUndefined();
     });
 
-    it('reads every hotline, and says when the answer is as long as the cap', async () => {
-      const hotlines = TestBed.inject(HttpHotlineRepository);
-      const listing = firstValueFrom(hotlines.list());
-      http.expectOne({ method: 'GET', url: `${BASE}/admin/hotlines` }).flush(HOTLINES);
-      expect(await listing).toMatchObject({ mayBeIncomplete: false });
-
-      const capped = firstValueFrom(hotlines.list());
-      const [line] = HOTLINES.data;
-      http.expectOne(`${BASE}/admin/hotlines`).flush({
-        ...HOTLINES,
-        data: Array.from({ length: HOTLINE_LIST_CAP }, (_, index) => ({
-          ...line,
-          id: `9b8a7c6d-5e4f-4a3b-8c2d-${String(index).padStart(12, '0')}`,
-        })),
+    it('archives, restores and reads the history of a Tulong page (DL-225)', async () => {
+      const services = TestBed.inject(HttpTulongServiceRepository);
+      const archived = firstValueFrom(services.archive(serviceId, ' The distribution has ended. '));
+      const archive = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/services/${serviceId}/archive`,
       });
-      expect((await capped).mayBeIncomplete).toBe(true);
+      expect(archive.request.body).toEqual({ reason: 'The distribution has ended.' });
+      archive.flush({
+        ...SERVICE,
+        data: {
+          ...SERVICE.data,
+          archived_at: '2026-11-10T01:00:00.000Z',
+          archive_reason: 'The distribution has ended.',
+          archived_by_name: 'Fixture Administrator',
+        },
+      });
+      expect((await archived).archived?.byName).toBe('Fixture Administrator');
+
+      const restored = firstValueFrom(services.restore(serviceId, 'It runs again.'));
+      http
+        .expectOne({ method: 'POST', url: `${BASE}/admin/services/${serviceId}/restore` })
+        .flush(SERVICE);
+      expect((await restored).archived).toBeNull();
+
+      const history = firstValueFrom(services.history(serviceId));
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/archive-events`);
+      expect(request.request.params.get('entity_type')).toBe('service');
+      expect(request.request.params.get('entity_id')).toBe(serviceId);
+      request.flush({ data: [], meta: {} });
+      expect(await history).toEqual([]);
     });
 
-    it('creates, changes and deletes a hotline with the body the API reads', async () => {
+    it('says a page under an archived office, or an archived page, is refused (DL-225)', async () => {
+      const services = TestBed.inject(HttpTulongServiceRepository);
+      const restore = firstValueFrom(services.restore(serviceId, 'Back.')).catch(
+        (failure: unknown) => failure,
+      );
+      http
+        .expectOne(`${BASE}/admin/services/${serviceId}/restore`)
+        .flush(...conflict('OFFICE_ARCHIVED', 'That service’s office is archived.'));
+      const office = await restore;
+      expect(isArchiveRefusal(office) ? office.kind : null).toBe('office-archived');
+
+      const picture = firstValueFrom(services.replaceImage(serviceId, png())).catch(
+        (failure: unknown) => failure,
+      );
+      http
+        .expectOne(`${BASE}/admin/services/${serviceId}/media`)
+        .flush(...conflict('ARCHIVED', 'That service is archived.'));
+      const readOnly = await picture;
+      expect(isArchiveRefusal(readOnly) ? readOnly.kind : null).toBe('read-only');
+    });
+
+    it('reads every hotline in use, and the archived ones apart, whole (DL-225)', async () => {
+      const hotlines = TestBed.inject(HttpHotlineRepository);
+      const listed = firstValueFrom(hotlines.list(false));
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/hotlines`);
+      expect(request.request.method).toBe('GET');
+      expect(request.request.params.get('archived')).toBe('false');
+      request.flush(HOTLINES);
+      expect((await listed).map((line) => [line.active, line.archived])).toEqual([
+        [true, null],
+        [false, null],
+      ]);
+
+      const archived = firstValueFrom(hotlines.list(true));
+      const archivedRequest = http.expectOne((r) => r.url === `${BASE}/admin/hotlines`);
+      expect(archivedRequest.request.params.get('archived')).toBe('true');
+      archivedRequest.flush({
+        ...HOTLINES,
+        data: [
+          {
+            ...HOTLINE.data,
+            archived_at: '2026-11-10T01:00:00.000Z',
+            archive_reason: 'Replaced by 911.',
+            archived_by_name: 'Fixture Administrator',
+          },
+        ],
+      });
+      expect((await archived)[0]?.archived?.reason).toBe('Replaced by 911.');
+    });
+
+    it('takes a hundred lines as the whole list, and a list too long as an error, never a short list', async () => {
+      const hotlines = TestBed.inject(HttpHotlineRepository);
+      const [line] = HOTLINES.data;
+      const full = firstValueFrom(hotlines.list(false));
+      http
+        .expectOne((r) => r.url === `${BASE}/admin/hotlines`)
+        .flush({
+          ...HOTLINES,
+          data: Array.from({ length: HOTLINE_LIST_CAP }, (_, index) => ({
+            ...line,
+            id: `9b8a7c6d-5e4f-4a3b-8c2d-${String(index).padStart(12, '0')}`,
+          })),
+        });
+      expect(await full).toHaveLength(HOTLINE_LIST_CAP);
+
+      const tooLong = firstValueFrom(hotlines.list(false)).catch((failure: unknown) => failure);
+      http
+        .expectOne((r) => r.url === `${BASE}/admin/hotlines`)
+        .flush(
+          {
+            error: {
+              code: 'LIST_TOO_LONG',
+              message: 'There are more hotlines than this list reads whole.',
+              details: {},
+              request_id: 'fixture-request',
+            },
+          },
+          { status: 503, statusText: 'Service Unavailable' },
+        );
+      const failure = await tooLong;
+      expect(Array.isArray(failure)).toBe(false);
+      expect(failure).toBeInstanceOf(HttpErrorResponse);
+      expect(failure instanceof HttpErrorResponse ? readApiError(failure).message : null).toBe(
+        'There are more hotlines than this list reads whole.',
+      );
+    });
+
+    it('creates and changes a hotline with the body the API reads', async () => {
       const hotlines = TestBed.inject(HttpHotlineRepository);
       const created = firstValueFrom(
         hotlines.create({
@@ -2588,10 +2890,108 @@ describe('the Node adapters', () => {
       expect(JSON.parse(JSON.stringify(patch.request.body))).toEqual({ active: false });
       patch.flush(HOTLINE);
       await changed;
+    });
 
-      const removed = firstValueFrom(hotlines.remove(hotlineId));
-      http.expectOne({ method: 'DELETE', url: `${BASE}/admin/hotlines/${hotlineId}` }).flush(DELETED);
-      await expect(removed).resolves.toBeUndefined();
+    it('archives, restores and reads the history of a hotline (DL-225)', async () => {
+      const hotlines = TestBed.inject(HttpHotlineRepository);
+      const archived = firstValueFrom(hotlines.archive(hotlineId, ' Replaced by 911. '));
+      const archive = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/hotlines/${hotlineId}/archive`,
+      });
+      expect(archive.request.body).toEqual({ reason: 'Replaced by 911.' });
+      archive.flush({
+        ...HOTLINE,
+        data: {
+          ...HOTLINE.data,
+          archived_at: '2026-11-10T01:00:00.000Z',
+          archive_reason: 'Replaced by 911.',
+          archived_by_name: 'Fixture Administrator',
+        },
+      });
+      expect((await archived).archived?.reason).toBe('Replaced by 911.');
+
+      const restored = firstValueFrom(hotlines.restore(hotlineId, 'Back in use.'));
+      const restore = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/hotlines/${hotlineId}/restore`,
+      });
+      expect(restore.request.body).toEqual({ reason: 'Back in use.' });
+      restore.flush(HOTLINE);
+      expect((await restored).archived).toBeNull();
+
+      const history = firstValueFrom(hotlines.history(hotlineId));
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/archive-events`);
+      expect(request.request.params.get('entity_type')).toBe('hotline');
+      expect(request.request.params.get('entity_id')).toBe(hotlineId);
+      request.flush(ARCHIVE_EVENTS);
+      expect(await history).toHaveLength(2);
+    });
+
+    it('reads only CONFLICT as a second command center, and every archive 409 as the archive’s (DL-225)', async () => {
+      const hotlines = TestBed.inject(HttpHotlineRepository);
+
+      // The bug this guards: every 409 used to read as the command center, so an administrator
+      // whose line had just been archived was told to change a different line.
+      const restore = firstValueFrom(hotlines.restore(hotlineId, 'Back.')).catch(
+        (failure: unknown) => failure,
+      );
+      http
+        .expectOne(`${BASE}/admin/hotlines/${hotlineId}/restore`)
+        .flush(...conflict('CONFLICT', 'An active command-center hotline already exists.'));
+      const taken = await restore;
+      expect(isCommandCenterTaken(taken)).toBe(true);
+      expect(isArchiveRefusal(taken)).toBe(false);
+
+      const cases = [
+        ['ARCHIVED', 'read-only', () => hotlines.update(hotlineId, { name: 'Renamed' }), ''],
+        [
+          'ALREADY_ARCHIVED',
+          'already-archived',
+          () => hotlines.archive(hotlineId, 'x'),
+          '/archive',
+        ],
+        ['NOT_ARCHIVED', 'not-archived', () => hotlines.restore(hotlineId, 'x'), '/restore'],
+      ] as const;
+      for (const [code, kind, act, path] of cases) {
+        const refused = firstValueFrom(act()).catch((failure: unknown) => failure);
+        http
+          .expectOne(`${BASE}/admin/hotlines/${hotlineId}${path}`)
+          .flush(...conflict(code, 'The server’s own sentence.'));
+        const refusal = await refused;
+        expect(isCommandCenterTaken(refusal)).toBe(false);
+        expect(isArchiveRefusal(refusal) ? refusal.kind : null).toBe(kind);
+      }
+    });
+
+    it('sends no DELETE: every record here is archived, never deleted (DL-225)', async () => {
+      const offices = TestBed.inject(HttpDirectoryOfficeRepository);
+      const services = TestBed.inject(HttpTulongServiceRepository);
+      const hotlines = TestBed.inject(HttpHotlineRepository);
+      const home = TestBed.inject(HttpHomeScreenRepository);
+      const views = TestBed.inject(HttpSavedViewRepository);
+      const bannerId = asId<HomeBannerId>(BANNER.data.id);
+      const linkId = asId<QuickLinkId>(LINK.data.id);
+      const viewId = asId<SavedViewId>(SAVED_VIEW.data.id);
+
+      const acts: readonly Observable<unknown>[] = [
+        offices.archive(officeId, 'r'),
+        services.archive(serviceId, 'r'),
+        hotlines.archive(hotlineId, 'r'),
+        home.archiveBanner(bannerId, 'r'),
+        home.archiveLink(linkId, 'r'),
+        views.archive(viewId),
+      ];
+      const settled = acts.map((act) => firstValueFrom(act).catch(() => undefined));
+
+      const sent = http.match(() => true);
+      expect(sent).toHaveLength(acts.length);
+      expect(sent.map((request) => request.request.method)).toEqual(acts.map(() => 'POST'));
+      expect(sent.every((request) => request.request.url.endsWith('/archive'))).toBe(true);
+      for (const request of sent) {
+        request.flush(null, { status: 500, statusText: 'Server Error' });
+      }
+      await Promise.all(settled);
     });
   });
 
@@ -2602,13 +3002,13 @@ describe('the Node adapters', () => {
 
     it('reads each line’s kind, and refuses a line whose kind it does not know', async () => {
       const hotlines = TestBed.inject(HttpHotlineRepository);
-      const listing = firstValueFrom(hotlines.list());
-      http.expectOne(`${BASE}/admin/hotlines`).flush(HOTLINES);
-      expect((await listing).hotlines.map((line) => line.kind)).toEqual(['disaster', 'medical']);
+      const listing = firstValueFrom(hotlines.list(false));
+      http.expectOne(`${BASE}/admin/hotlines?archived=false`).flush(HOTLINES);
+      expect((await listing).map((line) => line.kind)).toEqual(['disaster', 'medical']);
 
       const [line] = HOTLINES.data;
-      const unknown = firstValueFrom(hotlines.list()).catch((failure: unknown) => failure);
-      http.expectOne(`${BASE}/admin/hotlines`).flush({
+      const unknown = firstValueFrom(hotlines.list(false)).catch((failure: unknown) => failure);
+      http.expectOne(`${BASE}/admin/hotlines?archived=false`).flush({
         ...HOTLINES,
         data: [{ ...line, kind: 'ambulance' }],
       });
@@ -2659,21 +3059,128 @@ describe('the Node adapters', () => {
     });
   });
 
+  describe('nothing new under an archived office (DL-225)', () => {
+    const office = asId<OfficeId>(OFFICE.data.id);
+    const OFFICE_ARCHIVED_WORDS = 'That office is archived. Restore it first.';
+
+    beforeEach(() => tokens.hold('fixture-token', null));
+
+    async function kindOf(refused: Promise<unknown>): Promise<string | null> {
+      const failure = await refused;
+      return isArchiveRefusal(failure) ? failure.kind : null;
+    }
+
+    it('says linking a staff account to an archived office is refused', async () => {
+      const accounts = TestBed.inject(HttpAppAccountRepository);
+      const account = asId<AppAccountId>(USER_OFFICE_ASSIGNED.data.id);
+      const refused = firstValueFrom(accounts.assignOffice(account, office)).catch(
+        (failure: unknown) => failure,
+      );
+      http
+        .expectOne({ method: 'PATCH', url: `${BASE}/admin/users/${account}/office` })
+        .flush(...conflict('OFFICE_ARCHIVED', OFFICE_ARCHIVED_WORDS));
+      expect(await kindOf(refused)).toBe('office-archived');
+    });
+
+    it('says a document type under an archived office is refused', async () => {
+      const issuance = TestBed.inject(HttpIssuanceRepository);
+      const refused = firstValueFrom(
+        issuance.createType({
+          name: 'Certificate of disability',
+          description: null,
+          requirements: [],
+          fee: null,
+          processingDays: null,
+          claimInstructions: null,
+          officeId: office,
+          reason: 'The office now issues this certificate.',
+        }),
+      ).catch((failure: unknown) => failure);
+      http
+        .expectOne({ method: 'POST', url: `${BASE}/office/issuance-types` })
+        .flush(...conflict('OFFICE_ARCHIVED', OFFICE_ARCHIVED_WORDS));
+      expect(await kindOf(refused)).toBe('office-archived');
+    });
+
+    it('says an article in an archived office’s name is refused', async () => {
+      const news = TestBed.inject(HttpBalitaRepository);
+      const refused = firstValueFrom(
+        news.create(
+          { title: 'Advisory', body: 'Words.', category: null, officeId: office, status: 'draft' },
+          null,
+        ),
+      ).catch((failure: unknown) => failure);
+      http
+        .expectOne({ method: 'POST', url: `${BASE}/news` })
+        .flush(...conflict('OFFICE_ARCHIVED', OFFICE_ARCHIVED_WORDS));
+      const failure = await refused;
+      expect(isArchiveRefusal(failure) ? failure.kind : null).toBe('office-archived');
+      expect(failure instanceof Error ? failure.message : null).toBe(OFFICE_ARCHIVED_WORDS);
+    });
+
+    it('passes a refusal that is not about the archive on as it came', async () => {
+      const accounts = TestBed.inject(HttpAppAccountRepository);
+      const account = asId<AppAccountId>(USER_OFFICE_ASSIGNED.data.id);
+      const refused = firstValueFrom(accounts.assignOffice(account, office)).catch(
+        (failure: unknown) => failure,
+      );
+      http
+        .expectOne(`${BASE}/admin/users/${account}/office`)
+        .flush(...conflict('CONFLICT', 'Only a staff account can be linked to an office.'));
+      const failure = await refused;
+      expect(isArchiveRefusal(failure)).toBe(false);
+      expect(failure).toBeInstanceOf(HttpErrorResponse);
+    });
+  });
+
   describe('the home screen (DL-170)', () => {
     const png = () => new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: 'image/png' });
     const DRAFT = { title: 'Supplementary feeding resumes', href: null, sortOrder: 2, active: true };
 
     beforeEach(() => tokens.hold('fixture-token', null));
 
-    it('reads every banner and link whole, from the admin lists', async () => {
+    it('reads every banner and link in use whole, from the admin lists', async () => {
       const home = TestBed.inject(HttpHomeScreenRepository);
-      const banners = firstValueFrom(home.banners());
-      http.expectOne({ method: 'GET', url: `${BASE}/admin/home/banners` }).flush(BANNERS);
-      expect((await banners).map((banner) => banner.active)).toEqual([true, false]);
+      const banners = firstValueFrom(home.banners(false));
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/admin/home/banners?archived=false` })
+        .flush(BANNERS);
+      expect((await banners).map((banner) => [banner.active, banner.archived])).toEqual([
+        [true, null],
+        [false, null],
+      ]);
 
-      const links = firstValueFrom(home.links());
-      http.expectOne({ method: 'GET', url: `${BASE}/admin/home/links` }).flush(LINKS);
+      const links = firstValueFrom(home.links(false));
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/admin/home/links?archived=false` })
+        .flush(LINKS);
       expect((await links).map((link) => link.label)).toEqual(['Tulong']);
+    });
+
+    it('reads the archived banners and links apart, each with when, by whom and why (DL-225)', async () => {
+      const home = TestBed.inject(HttpHomeScreenRepository);
+      const archive = {
+        archived_at: '2026-11-10T01:00:00.000Z',
+        archive_reason: 'The campaign has ended.',
+        archived_by_name: 'Fixture Administrator',
+      };
+      const record = {
+        at: archive.archived_at,
+        byName: archive.archived_by_name,
+        reason: archive.archive_reason,
+      };
+
+      const banners = firstValueFrom(home.banners(true));
+      http
+        .expectOne(`${BASE}/admin/home/banners?archived=true`)
+        .flush({ ...BANNERS, data: [{ ...BANNER.data, ...archive }] });
+      expect((await banners)[0]?.archived).toEqual(record);
+
+      const links = firstValueFrom(home.links(true));
+      http
+        .expectOne(`${BASE}/admin/home/links?archived=true`)
+        .flush({ ...LINKS, data: [{ ...LINK.data, ...archive }] });
+      expect((await links)[0]?.archived).toEqual(record);
     });
 
     it('stores the image first, as a form, and then the banner naming it', async () => {
@@ -2720,12 +3227,81 @@ describe('the Node adapters', () => {
       expect(remove.request.body).toMatchObject({ title: DRAFT.title, media_id: null });
       remove.flush(BANNER);
       await removed;
+    });
 
-      const deleted = firstValueFrom(home.removeBanner(bannerId));
+    it('archives, restores and reads the history of a banner, the reason trimmed (DL-225)', async () => {
+      const home = TestBed.inject(HttpHomeScreenRepository);
+      const bannerId = asId<HomeBannerId>(BANNER.data.id);
+
+      const archived = firstValueFrom(home.archiveBanner(bannerId, ' The campaign has ended. '));
+      const archive = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/home/banners/${bannerId}/archive`,
+      });
+      expect(archive.request.body).toEqual({ reason: 'The campaign has ended.' });
+      archive.flush({
+        ...BANNER,
+        data: {
+          ...BANNER.data,
+          archived_at: '2026-11-10T01:00:00.000Z',
+          archive_reason: 'The campaign has ended.',
+        },
+      });
+      // An archived banner keeps its image and whether it is shown, for when it is restored.
+      expect(await archived).toMatchObject({ mediaId: BANNER.data.media_id, active: true });
+
+      const restored = firstValueFrom(home.restoreBanner(bannerId, 'It runs again.'));
+      const restore = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/home/banners/${bannerId}/restore`,
+      });
+      expect(restore.request.body).toEqual({ reason: 'It runs again.' });
+      restore.flush(BANNER);
+      expect((await restored).archived).toBeNull();
+
+      const history = firstValueFrom(home.bannerHistory(bannerId));
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/archive-events`);
+      expect(request.request.params.get('entity_type')).toBe('banner');
+      expect(request.request.params.get('entity_id')).toBe(bannerId);
+      request.flush(ARCHIVE_EVENTS);
+      expect((await history).map((event) => event.act)).toEqual(['restored', 'archived']);
+    });
+
+    it('says a change to an archived banner or link is refused as read-only (DL-225)', async () => {
+      const home = TestBed.inject(HttpHomeScreenRepository);
+      const bannerId = asId<HomeBannerId>(BANNER.data.id);
+      const linkId = asId<QuickLinkId>(LINK.data.id);
+
+      const banner = firstValueFrom(home.updateBanner(bannerId, DRAFT, { kind: 'keep' })).catch(
+        (failure: unknown) => failure,
+      );
       http
-        .expectOne({ method: 'DELETE', url: `${BASE}/admin/home/banners/${bannerId}` })
-        .flush(DELETED);
-      await expect(deleted).resolves.toBeUndefined();
+        .expectOne(`${BASE}/admin/home/banners/${bannerId}`)
+        .flush(...conflict('ARCHIVED', 'That banner is archived.'));
+      const bannerRefusal = await banner;
+      expect(isArchiveRefusal(bannerRefusal) ? bannerRefusal.kind : null).toBe('read-only');
+
+      const link = firstValueFrom(
+        home.updateLink(linkId, {
+          label: 'Hotlines',
+          href: 'https://home.example.test/x',
+          sortOrder: 1,
+        }),
+      ).catch((failure: unknown) => failure);
+      http
+        .expectOne(`${BASE}/admin/home/links/${linkId}`)
+        .flush(...conflict('ARCHIVED', 'That link is archived.'));
+      const linkRefusal = await link;
+      expect(isArchiveRefusal(linkRefusal) ? linkRefusal.kind : null).toBe('read-only');
+
+      const twice = firstValueFrom(home.archiveLink(linkId, 'Again.')).catch(
+        (failure: unknown) => failure,
+      );
+      http
+        .expectOne(`${BASE}/admin/home/links/${linkId}/archive`)
+        .flush(...conflict('ALREADY_ARCHIVED', 'That link is archived already.'));
+      const already = await twice;
+      expect(isArchiveRefusal(already) ? already.kind : null).toBe('already-archived');
     });
 
     it('does not save the banner when the image is refused', async () => {
@@ -2783,9 +3359,27 @@ describe('the Node adapters', () => {
       http.expectOne({ method: 'PATCH', url: `${BASE}/admin/home/links/${linkId}` }).flush(LINK);
       await changed;
 
-      const removed = firstValueFrom(home.removeLink(linkId));
-      http.expectOne({ method: 'DELETE', url: `${BASE}/admin/home/links/${linkId}` }).flush(DELETED);
-      await expect(removed).resolves.toBeUndefined();
+      const archived = firstValueFrom(home.archiveLink(linkId, ' Replaced. '));
+      const archive = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/home/links/${linkId}/archive`,
+      });
+      expect(archive.request.body).toEqual({ reason: 'Replaced.' });
+      archive.flush({ ...LINK, data: { ...LINK.data, archived_at: '2026-11-10T01:00:00.000Z' } });
+      expect((await archived).archived?.at).toBe('2026-11-10T01:00:00.000Z');
+
+      const restored = firstValueFrom(home.restoreLink(linkId, 'Back.'));
+      http
+        .expectOne({ method: 'POST', url: `${BASE}/admin/home/links/${linkId}/restore` })
+        .flush(LINK);
+      expect((await restored).archived).toBeNull();
+
+      const history = firstValueFrom(home.linkHistory(linkId));
+      const request = http.expectOne((r) => r.url === `${BASE}/admin/archive-events`);
+      expect(request.request.params.get('entity_type')).toBe('link');
+      expect(request.request.params.get('entity_id')).toBe(linkId);
+      request.flush({ data: [], meta: {} });
+      expect(await history).toEqual([]);
     });
 
     it('previews the home screen as the app is given it', async () => {
@@ -2811,7 +3405,7 @@ describe('the Node adapters', () => {
       ]);
     });
 
-    it('sends only what changed, with null to clear and to delete a flag', async () => {
+    it('sends only what changed, with null to clear and to archive a flag (DL-225)', async () => {
       const settings = TestBed.inject(HttpAppConfigRepository);
       const changed = firstValueFrom(
         settings.change({
@@ -2910,6 +3504,36 @@ describe('the Node adapters', () => {
       const refusal = await changed;
       expect(isAppConfigRefusal(refusal)).toBe(false);
       expect(refusal).toBeInstanceOf(HttpErrorResponse);
+    });
+
+    it('reads the archived flags from the administrator’s list, leaving out those in use (DL-225)', async () => {
+      const settings = TestBed.inject(HttpAppConfigRepository);
+      const archived = firstValueFrom(settings.archivedFlags());
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/admin/app/feature-flags` })
+        .flush(FEATURE_FLAGS);
+
+      expect(await archived).toEqual([
+        {
+          key: 'typhoon_banner',
+          value: 'on',
+          archived: {
+            at: '2026-11-10T01:00:00.000Z',
+            byName: 'Fixture Administrator',
+            reason: null,
+          },
+        },
+      ]);
+    });
+
+    it('refuses the archived flags when one cannot be read, rather than leave it out', async () => {
+      const settings = TestBed.inject(HttpAppConfigRepository);
+      const archived = firstValueFrom(settings.archivedFlags());
+      const [inUse, gone] = FEATURE_FLAGS.data;
+      http
+        .expectOne(`${BASE}/admin/app/feature-flags`)
+        .flush({ ...FEATURE_FLAGS, data: [inUse, { ...gone, archived_at: 'last week' }] });
+      await expect(archived).rejects.toThrow(/could not be read/);
     });
   });
 

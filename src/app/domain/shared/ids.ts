@@ -92,6 +92,8 @@ export type HotlineId = Branded<string, 'HotlineId'>;
 export type HomeBannerId = Branded<string, 'HomeBannerId'>;
 /** A link on the residents' app's home screen (`DL-170`). */
 export type QuickLinkId = Branded<string, 'QuickLinkId'>;
+/** One entry in a record's archive history: an archive or a restore, never edited (`DL-225`). */
+export type ArchiveEventId = Branded<string, 'ArchiveEventId'>;
 /** A file of the office's own list, held for checking before it reaches the registry (`DL-214`). */
 export type ResidentImportId = Branded<string, 'ResidentImportId'>;
 /** A resident's application from the app to be recorded in a sector (`DL-215`). */

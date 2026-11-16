@@ -28,7 +28,7 @@ import {
   type Office,
   type OfficeId,
 } from '@domain/index';
-import { failureReason } from '@shared/state/failure-reason';
+import { plainRefusal } from '@shared/archive/archive.copy';
 import { valueOf, type ViewState } from '@shared/state/view-state';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -183,7 +183,7 @@ export class AccountPanel {
       },
       error: (failure: unknown) => {
         this.busy.set(false);
-        this.outcome.set(this.copy.notDone(failureReason(failure) ?? this.copy.failed));
+        this.outcome.set(this.copy.notDone(plainRefusal(failure, 'office', this.copy.failed)));
       },
     });
   }

@@ -9,6 +9,7 @@ import {
   workingDayRangeProblems,
   type AppConfig,
   type AppConfigChanges,
+  type ArchivedFeatureFlag,
   type AppConfigRepository,
   type LegalText,
   type LegalTextDraft,
@@ -61,7 +62,8 @@ export const MOCK_APP_CONFIG: AppConfig = {
 
 /**
  * In memory, as the API keeps them: the read is public, a change re-checks `app-config.manage`
- * (rule 4), `null` clears a setting, and a flag set to `null` is deleted.
+ * (rule 4), `null` clears a setting, a flag set to `null` is archived with its value, and a value on
+ * an archived flag's key restores it (`DL-225`).
  */
 @Injectable()
 export class MockAppConfigRepository implements AppConfigRepository {
@@ -69,13 +71,23 @@ export class MockAppConfigRepository implements AppConfigRepository {
   private readonly access = inject(ACCESS_CONTEXT);
 
   private config: AppConfig = MOCK_APP_CONFIG;
+  private archived: readonly ArchivedFeatureFlag[] = [];
 
   read(): Observable<AppConfig> {
     return this.latency.respond(this.config);
   }
 
+  archivedFlags(): Observable<readonly ArchivedFeatureFlag[]> {
+    const denied = denyUnless<readonly ArchivedFeatureFlag[]>(
+      this.access.currentUser(),
+      'app-config.manage',
+    );
+    return denied ?? this.latency.respond(this.archived);
+  }
+
   change(changes: AppConfigChanges): Observable<AppConfig> {
-    const denied = denyUnless<AppConfig>(this.access.currentUser(), 'app-config.manage');
+    const user = this.access.currentUser();
+    const denied = denyUnless<AppConfig>(user, 'app-config.manage');
     if (denied) return denied;
     // The review time is refused as the API refuses it, each sentence by the end it is about.
     const range = changes.verificationReviewWorkingDays;
@@ -99,10 +111,25 @@ export class MockAppConfigRepository implements AppConfigRepository {
           };
 
     const flags = new Map(this.config.featureFlags.map((flag) => [flag.key, flag.value]));
+    const archived = new Map(this.archived.map((flag) => [flag.key, flag]));
     for (const flag of changes.featureFlags ?? []) {
-      if (flag.value === null) flags.delete(flag.key);
-      else flags.set(flag.key, flag.value);
+      const value = flags.get(flag.key);
+      if (flag.value === null) {
+        // Archived with its value, never deleted; a key the app is not given is left as it is.
+        if (value !== undefined) {
+          flags.delete(flag.key);
+          archived.set(flag.key, {
+            key: flag.key,
+            value,
+            archived: { at: now, byName: user?.displayName ?? null, reason: null },
+          });
+        }
+      } else {
+        archived.delete(flag.key);
+        flags.set(flag.key, flag.value);
+      }
     }
+    this.archived = [...archived.values()].sort((a, b) => a.key.localeCompare(b.key));
     const pick = (value: string | null | undefined, current: string | null) =>
       value === undefined ? current : value;
 

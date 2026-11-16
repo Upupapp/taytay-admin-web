@@ -19,6 +19,7 @@ import { isApiFailure, isNotFound, readApiError } from '@core/http/api-failure';
 import type { ChangeFeed, ChangeFeedEvent } from '@core/live/change-feed';
 import {
   AppConfigRefusedError,
+  ArchiveRefusedError,
   DIGITAL_ID_SEARCH_MIN_LENGTH,
   mediaFor,
   selfieErased,
@@ -50,7 +51,6 @@ import {
   type OfficeId,
   type NameCorrection,
   type OfficeRoleChange,
-  HOTLINE_LIST_CAP,
   HotlineCommandCenterTakenError,
   InPersonRefusedError,
   type InPersonCheck,
@@ -61,7 +61,6 @@ import {
   type HotlineChanges,
   type HotlineDraft,
   type HotlineId,
-  type HotlineListing,
   type HotlineRepository,
   type OfficeChanges,
   type OfficeDraft,
@@ -72,6 +71,9 @@ import {
   type TulongServiceRepository,
   type BannerDraft,
   type BannerImageChange,
+  type ArchivedFeatureFlag,
+  type ArchiveEvent,
+  type ArchiveRefusalKind,
   type HomeBanner,
   type HomeBannerId,
   type HomePreview,
@@ -448,9 +450,11 @@ import {
   toWireOfficeDraft,
 } from './mappers/directory-office.mapper';
 import { toHotline } from './mappers/hotline.mapper';
+import { toArchiveEvent, toWireArchiveReason } from './mappers/archive.mapper';
 import {
   fromWireReviewTimeRefusal,
   toAppConfig,
+  toArchivedFeatureFlag,
   toWireAppConfigChanges,
 } from './mappers/app-config.mapper';
 import {
@@ -946,7 +950,7 @@ export class HttpAppAccountRepository implements AppAccountRepository {
   assignOffice(id: AppAccountId, office: OfficeId | null): Observable<AppAccount> {
     return this.api
       .patch(`${API_ENDPOINTS.adminUsers}/${id}/office`, { office_id: office })
-      .pipe(map(readAccount));
+      .pipe(map(readAccount), catchError(withArchiveRefusal));
   }
 
   /** The reason travels with the change; the server keeps it in the office-role history (`DL-173`). */
@@ -1054,20 +1058,21 @@ function readOffice(wire: unknown): Office {
 /* ── the residents' app directory (`DL-170`) ─────────────────────────────── */
 
 /**
- * The office directory, written. Admin only on the server (`office.manage`); read through the public
- * `GET offices`, a page at a time. A create or a change is a **form**, because it may carry the
- * banner — and the server refuses a form whose banner is too large or not an image, as
- * `APP_IMAGE_POLICY` says before anything is sent.
+ * The office directory as an administrator keeps it (`office.manage`): read whole through
+ * `GET admin/offices`, in use or archived (`DL-225`). A create or a change is a **form**, because it
+ * may carry the banner — and the server refuses a form whose banner is too large or not an image, as
+ * `APP_IMAGE_POLICY` says before anything is sent. Nothing deletes an office: it is archived and
+ * restored with a reason, and the server's refusals come back as the domain's `ArchiveRefusedError`.
  */
 @Injectable()
 export class HttpDirectoryOfficeRepository implements DirectoryOfficeRepository {
   private readonly api = inject(ApiClient);
 
-  /** One page, read whole or not at all: an office the mapper cannot read refuses the page. */
-  list(page: CursorRequest): Observable<CursorPage<DirectoryOffice>> {
+  /** Whole, or not at all: an office the mapper cannot read refuses the list. */
+  list(archived: boolean): Observable<readonly DirectoryOffice[]> {
     return this.api
-      .cursorPage(API_ENDPOINTS.offices, page)
-      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readDirectoryOffice) })));
+      .list(API_ENDPOINTS.adminOffices, { archived: String(archived) })
+      .pipe(map((items) => items.map(readDirectoryOffice)));
   }
 
   create(draft: OfficeDraft, banner: Blob | null): Observable<DirectoryOffice> {
@@ -1079,75 +1084,92 @@ export class HttpDirectoryOfficeRepository implements DirectoryOfficeRepository 
   update(id: OfficeId, changes: OfficeChanges, banner: Blob | null): Observable<DirectoryOffice> {
     return this.api
       .patchForm(`${API_ENDPOINTS.adminOffices}/${id}`, toWireOfficeChanges(changes, banner))
-      .pipe(map(readDirectoryOffice));
+      .pipe(map(readDirectoryOffice), catchError(withArchiveRefusal));
   }
 
-  remove(id: OfficeId): Observable<void> {
-    return this.api.delete(`${API_ENDPOINTS.adminOffices}/${id}`).pipe(map(() => undefined));
+  archive(id: OfficeId, reason: string): Observable<DirectoryOffice> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminOffices}/${id}/archive`, toWireArchiveReason(reason))
+      .pipe(map(readDirectoryOffice), catchError(withArchiveRefusal));
+  }
+
+  restore(id: OfficeId, reason: string): Observable<DirectoryOffice> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminOffices}/${id}/restore`, toWireArchiveReason(reason))
+      .pipe(map(readDirectoryOffice), catchError(withArchiveRefusal));
+  }
+
+  history(id: OfficeId): Observable<readonly ArchiveEvent[]> {
+    return this.api
+      .list(API_ENDPOINTS.adminArchiveEvents, { entity_type: 'office', entity_id: id })
+      .pipe(map(readArchiveEvents));
   }
 }
 
 /**
- * Tulong pages (`service.manage`). The list is the residents' own — `GET services`, which leaves out
- * a page hidden from the catalogue — because the API has no other; one page is read by its address,
- * which answers hidden ones too.
+ * Tulong pages (`service.manage`), read whole through `GET admin/services`, in use or archived —
+ * hidden pages included, which the residents' own list leaves out (`DL-225`).
  */
 @Injectable()
 export class HttpTulongServiceRepository implements TulongServiceRepository {
   private readonly api = inject(ApiClient);
 
-  list(page: CursorRequest): Observable<CursorPage<TulongService>> {
+  list(archived: boolean): Observable<readonly TulongService[]> {
     return this.api
-      .cursorPage(API_ENDPOINTS.services, page)
-      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readTulongService) })));
-  }
-
-  /** A `404` is "no page at that address"; anything else is a failure, never an absence. */
-  find(slug: string): Observable<TulongService | null> {
-    return this.api
-      .optionalItem(`${API_ENDPOINTS.services}/${encodeURIComponent(slug)}`)
-      .pipe(map((wire) => (wire === null ? null : readTulongService(wire))));
+      .list(API_ENDPOINTS.adminServices, { archived: String(archived) })
+      .pipe(map((items) => items.map(readTulongService)));
   }
 
   create(draft: ServiceDraft): Observable<TulongService> {
     return this.api
       .post(API_ENDPOINTS.adminServices, toWireServiceDraft(draft))
-      .pipe(map(readTulongService));
+      .pipe(map(readTulongService), catchError(withArchiveRefusal));
   }
 
   update(id: TulongServiceId, changes: ServiceChanges): Observable<TulongService> {
     return this.api
       .patch(`${API_ENDPOINTS.adminServices}/${id}`, toWireServiceChanges(changes))
-      .pipe(map(readTulongService));
+      .pipe(map(readTulongService), catchError(withArchiveRefusal));
   }
 
   replaceImage(id: TulongServiceId, image: Blob): Observable<TulongService> {
     return this.api
       .postForm(`${API_ENDPOINTS.adminServices}/${id}/media`, toWireServiceImage(image))
-      .pipe(map(readTulongService));
+      .pipe(map(readTulongService), catchError(withArchiveRefusal));
   }
 
-  remove(id: TulongServiceId): Observable<void> {
-    return this.api.delete(`${API_ENDPOINTS.adminServices}/${id}`).pipe(map(() => undefined));
+  archive(id: TulongServiceId, reason: string): Observable<TulongService> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminServices}/${id}/archive`, toWireArchiveReason(reason))
+      .pipe(map(readTulongService), catchError(withArchiveRefusal));
+  }
+
+  restore(id: TulongServiceId, reason: string): Observable<TulongService> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminServices}/${id}/restore`, toWireArchiveReason(reason))
+      .pipe(map(readTulongService), catchError(withArchiveRefusal));
+  }
+
+  history(id: TulongServiceId): Observable<readonly ArchiveEvent[]> {
+    return this.api
+      .list(API_ENDPOINTS.adminArchiveEvents, { entity_type: 'service', entity_id: id })
+      .pipe(map(readArchiveEvents));
   }
 }
 
 /**
- * Hotlines (`hotline.manage`). The admin list is every line, shown and hidden, answered whole and
- * capped by the server at `HOTLINE_LIST_CAP` with no word of more — so an answer that long says it
- * may be incomplete rather than presenting itself as the whole.
+ * Hotlines (`hotline.manage`). The admin list is every line in use, shown and hidden, or every
+ * archived one, answered whole — or refused with a 503 past `HOTLINE_LIST_CAP`, never cut short
+ * (`ca71f23`).
  */
 @Injectable()
 export class HttpHotlineRepository implements HotlineRepository {
   private readonly api = inject(ApiClient);
 
-  list(): Observable<HotlineListing> {
-    return this.api.list(API_ENDPOINTS.adminHotlines).pipe(
-      map((items) => ({
-        hotlines: items.map(readHotline),
-        mayBeIncomplete: items.length >= HOTLINE_LIST_CAP,
-      })),
-    );
+  list(archived: boolean): Observable<readonly Hotline[]> {
+    return this.api
+      .list(API_ENDPOINTS.adminHotlines, { archived: String(archived) })
+      .pipe(map((items) => items.map(readHotline)));
   }
 
   create(draft: HotlineDraft): Observable<Hotline> {
@@ -1177,23 +1199,88 @@ export class HttpHotlineRepository implements HotlineRepository {
       .pipe(map(readHotline), catchError(withCommandCenterRefusal));
   }
 
-  remove(id: HotlineId): Observable<void> {
-    return this.api.delete(`${API_ENDPOINTS.adminHotlines}/${id}`).pipe(map(() => undefined));
+  archive(id: HotlineId, reason: string): Observable<Hotline> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminHotlines}/${id}/archive`, toWireArchiveReason(reason))
+      .pipe(map(readHotline), catchError(withCommandCenterRefusal));
+  }
+
+  restore(id: HotlineId, reason: string): Observable<Hotline> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminHotlines}/${id}/restore`, toWireArchiveReason(reason))
+      .pipe(map(readHotline), catchError(withCommandCenterRefusal));
+  }
+
+  history(id: HotlineId): Observable<readonly ArchiveEvent[]> {
+    return this.api
+      .list(API_ENDPOINTS.adminArchiveEvents, { entity_type: 'hotline', entity_id: id })
+      .pipe(map(readArchiveEvents));
   }
 }
 
 /**
- * A 409 on a hotline write is the one conflict the API has there: a second active command center
- * (`ebd7aeb`). It comes back as the domain's refusal, in the server's words, so the form can put it
- * beside the kind (`DL-217`); any other failure exactly as it came.
+ * A `409 CONFLICT` on a hotline write is a second active command center (`ebd7aeb`), on a save or
+ * a restore. It comes back as the domain's refusal, in the server's words, so the form can put it
+ * beside the kind (`DL-217`). Since `DL-225` a hotline has other 409s — archived already, not
+ * archived, archived and so read-only — and each comes back as the domain's `ArchiveRefusedError`:
+ * reading every 409 as the command center would tell an administrator to change the wrong line.
  */
 function withCommandCenterRefusal(failure: unknown): Observable<never> {
   const read = failure instanceof HttpErrorResponse ? readApiError(failure) : failure;
-  return throwError(() =>
-    isApiFailure(read) && read.status === 409
-      ? new HotlineCommandCenterTakenError(read.message)
-      : failure,
-  );
+  if (isApiFailure(read) && read.status === 409 && read.code === 'CONFLICT') {
+    return throwError(() => new HotlineCommandCenterTakenError(read.message));
+  }
+  return withArchiveRefusal(failure);
+}
+
+/** The API's archive codes, as the domain names them (`DL-225`). */
+const ARCHIVE_REFUSALS: Readonly<Record<string, ArchiveRefusalKind>> = {
+  ALREADY_ARCHIVED: 'already-archived',
+  NOT_ARCHIVED: 'not-archived',
+  ARCHIVED: 'read-only',
+  OFFICE_IN_USE: 'office-in-use',
+  OFFICE_ARCHIVED: 'office-archived',
+};
+
+/**
+ * A `409` about the archive, as the domain's `ArchiveRefusedError` — with the counts when an office
+ * is still in use — so a screen says a plain sentence of its own and never the API's code. Any other
+ * failure exactly as it came: a `CONFLICT` keeps the server's words, which already say what to do
+ * (a slug an archived record holds, a list of views at its cap).
+ */
+function withArchiveRefusal(failure: unknown): Observable<never> {
+  const read = failure instanceof HttpErrorResponse ? readApiError(failure) : failure;
+  if (!isApiFailure(read) || read.status !== 409 || read.code === null) {
+    return throwError(() => failure);
+  }
+  const kind = ARCHIVE_REFUSALS[read.code];
+  if (kind === undefined) {
+    return throwError(() => failure);
+  }
+  const counts = read.counts ?? {};
+  const inUse =
+    kind === 'office-in-use'
+      ? {
+          staffAccounts: counts['staff_accounts'] ?? 0,
+          services: counts['services'] ?? 0,
+          issuanceTypes: counts['issuance_types'] ?? 0,
+        }
+      : null;
+  return throwError(() => new ArchiveRefusedError(kind, read.message, inUse));
+}
+
+/** A record's archive history, whole and newest first; a line the mapper cannot read refuses it. */
+function readArchiveEvents(items: readonly unknown[]): readonly ArchiveEvent[] {
+  return items.map((item) => {
+    const event = toArchiveEvent(item);
+    if (event === null) {
+      throw new Error(
+        'A line of the archive history could not be read, so none is shown rather than a history ' +
+          'with a gap in it.',
+      );
+    }
+    return event;
+  });
 }
 
 function readDirectoryOffice(wire: unknown): DirectoryOffice {
@@ -1250,9 +1337,11 @@ function readHotline(wire: unknown): Hotline {
 export class HttpHomeScreenRepository implements HomeScreenRepository {
   private readonly api = inject(ApiClient);
 
-  /** Every banner, shown and hidden, answered whole; one the mapper cannot read refuses the list. */
-  banners(): Observable<readonly HomeBanner[]> {
-    return this.api.list(API_ENDPOINTS.adminBanners).pipe(map((items) => items.map(readBanner)));
+  /** Every banner in use or archived, answered whole; one the mapper cannot read refuses the list. */
+  banners(archived: boolean): Observable<readonly HomeBanner[]> {
+    return this.api
+      .list(API_ENDPOINTS.adminBanners, { archived: String(archived) })
+      .pipe(map((items) => items.map(readBanner)));
   }
 
   createBanner(draft: BannerDraft, image: Blob | null): Observable<HomeBanner> {
@@ -1290,11 +1379,26 @@ export class HttpHomeScreenRepository implements HomeScreenRepository {
         }),
       ),
       map(readBanner),
+      catchError(withArchiveRefusal),
     );
   }
 
-  removeBanner(id: HomeBannerId): Observable<void> {
-    return this.api.delete(`${API_ENDPOINTS.adminBanners}/${id}`).pipe(map(() => undefined));
+  archiveBanner(id: HomeBannerId, reason: string): Observable<HomeBanner> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminBanners}/${id}/archive`, toWireArchiveReason(reason))
+      .pipe(map(readBanner), catchError(withArchiveRefusal));
+  }
+
+  restoreBanner(id: HomeBannerId, reason: string): Observable<HomeBanner> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminBanners}/${id}/restore`, toWireArchiveReason(reason))
+      .pipe(map(readBanner), catchError(withArchiveRefusal));
+  }
+
+  bannerHistory(id: HomeBannerId): Observable<readonly ArchiveEvent[]> {
+    return this.api
+      .list(API_ENDPOINTS.adminArchiveEvents, { entity_type: 'banner', entity_id: id })
+      .pipe(map(readArchiveEvents));
   }
 
   /**
@@ -1307,8 +1411,10 @@ export class HttpHomeScreenRepository implements HomeScreenRepository {
       : this.api.blob(`${API_ENDPOINTS.media}/${banner.mediaId}/content`);
   }
 
-  links(): Observable<readonly QuickLink[]> {
-    return this.api.list(API_ENDPOINTS.adminLinks).pipe(map((items) => items.map(readLink)));
+  links(archived: boolean): Observable<readonly QuickLink[]> {
+    return this.api
+      .list(API_ENDPOINTS.adminLinks, { archived: String(archived) })
+      .pipe(map((items) => items.map(readLink)));
   }
 
   createLink(draft: LinkDraft): Observable<QuickLink> {
@@ -1328,11 +1434,25 @@ export class HttpHomeScreenRepository implements HomeScreenRepository {
         href: draft.href,
         sort_order: draft.sortOrder,
       })
-      .pipe(map(readLink));
+      .pipe(map(readLink), catchError(withArchiveRefusal));
   }
 
-  removeLink(id: QuickLinkId): Observable<void> {
-    return this.api.delete(`${API_ENDPOINTS.adminLinks}/${id}`).pipe(map(() => undefined));
+  archiveLink(id: QuickLinkId, reason: string): Observable<QuickLink> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminLinks}/${id}/archive`, toWireArchiveReason(reason))
+      .pipe(map(readLink), catchError(withArchiveRefusal));
+  }
+
+  restoreLink(id: QuickLinkId, reason: string): Observable<QuickLink> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminLinks}/${id}/restore`, toWireArchiveReason(reason))
+      .pipe(map(readLink), catchError(withArchiveRefusal));
+  }
+
+  linkHistory(id: QuickLinkId): Observable<readonly ArchiveEvent[]> {
+    return this.api
+      .list(API_ENDPOINTS.adminArchiveEvents, { entity_type: 'link', entity_id: id })
+      .pipe(map(readArchiveEvents));
   }
 
   preview(): Observable<HomePreview> {
@@ -1400,7 +1520,8 @@ function readLink(wire: unknown): QuickLink {
 
 /**
  * The residents' app's settings: read where every app reads them (`GET app/config`, public), changed
- * through `PATCH admin/app/config` (`app-config.manage`) with only what changed.
+ * through `PATCH admin/app/config` (`app-config.manage`) with only what changed; the flags the app is
+ * no longer given read from `GET admin/app/feature-flags` (`DL-225`).
  */
 @Injectable()
 export class HttpAppConfigRepository implements AppConfigRepository {
@@ -1414,6 +1535,24 @@ export class HttpAppConfigRepository implements AppConfigRepository {
     return this.api.patch(API_ENDPOINTS.adminAppConfig, toWireAppConfigChanges(changes)).pipe(
       map(readAppConfig),
       catchError((failure: unknown) => throwError(() => withReviewTimeRefusal(failure))),
+    );
+  }
+
+  /** The archived ones of every flag, read whole; a flag the mapper cannot read refuses the list. */
+  archivedFlags(): Observable<readonly ArchivedFeatureFlag[]> {
+    return this.api.list(API_ENDPOINTS.adminFeatureFlags).pipe(
+      map((items) =>
+        items.flatMap((item) => {
+          const flag = toArchivedFeatureFlag(item);
+          if (flag === null) {
+            throw new Error(
+              'A feature flag from the server could not be read, so the archived flags are not ' +
+                'shown rather than shown without it.',
+            );
+          }
+          return flag === 'in-use' ? [] : [flag];
+        }),
+      ),
     );
   }
 }
@@ -1633,7 +1772,7 @@ export class HttpBalitaRepository implements BalitaRepository {
   create(draft: BalitaDraft, cover: Blob | null): Observable<BalitaArticle> {
     return this.api
       .postForm(API_ENDPOINTS.news, toWireNewsWrite(draft, cover))
-      .pipe(map(readArticle));
+      .pipe(map(readArticle), catchError(withArchiveRefusal));
   }
 
   update(id: BalitaArticleId, changes: BalitaChanges, cover: Blob | null): Observable<BalitaArticle> {
@@ -2435,9 +2574,9 @@ function readRelationshipEvent(wire: unknown): RelationshipEvent {
 export class HttpSavedViewRepository implements SavedViewRepository {
   private readonly api = inject(ApiClient);
 
-  listFor(resource: SavedViewResource): Observable<readonly SavedView[]> {
+  listFor(resource: SavedViewResource, archived: boolean): Observable<readonly SavedView[]> {
     return this.api
-      .list(API_ENDPOINTS.officeSavedViews, { resource })
+      .list(API_ENDPOINTS.officeSavedViews, { resource, archived: String(archived) })
       .pipe(map((rows) => rows.map(readSavedView)));
   }
 
@@ -2454,10 +2593,18 @@ export class HttpSavedViewRepository implements SavedViewRepository {
       .pipe(map(readSavedView));
   }
 
-  remove(id: SavedViewId): Observable<void> {
+  /** No body: a view is put away without a reason (`DL-225`). */
+  archive(id: SavedViewId): Observable<SavedView> {
     return this.api
-      .delete(`${API_ENDPOINTS.officeSavedViews}/${id}`)
-      .pipe(map((): void => undefined));
+      .post(`${API_ENDPOINTS.officeSavedViews}/${id}/archive`, {})
+      .pipe(map(readSavedView), catchError(withArchiveRefusal));
+  }
+
+  /** Refused past the list's cap with the server's own words, which say to archive one first. */
+  restore(id: SavedViewId): Observable<SavedView> {
+    return this.api
+      .post(`${API_ENDPOINTS.officeSavedViews}/${id}/restore`, {})
+      .pipe(map(readSavedView), catchError(withArchiveRefusal));
   }
 }
 
@@ -4711,13 +4858,13 @@ export class HttpIssuanceRepository implements IssuanceRepository {
   createType(draft: IssuanceTypeDraft): Observable<IssuanceType> {
     return this.api
       .post(API_ENDPOINTS.officeIssuanceTypes, toWireIssuanceTypeCreate(draft))
-      .pipe(map(readIssuanceType));
+      .pipe(map(readIssuanceType), catchError(withArchiveRefusal));
   }
 
   updateType(id: IssuanceTypeId, changes: IssuanceTypeChanges): Observable<IssuanceType> {
     return this.api
       .patch(`${API_ENDPOINTS.officeIssuanceTypes}/${id}`, toWireIssuanceTypeUpdate(changes))
-      .pipe(map(readIssuanceType));
+      .pipe(map(readIssuanceType), catchError(withArchiveRefusal));
   }
 
   retireType(id: IssuanceTypeId, reason: string): Observable<IssuanceType> {

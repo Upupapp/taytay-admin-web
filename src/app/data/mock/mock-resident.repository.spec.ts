@@ -11,10 +11,12 @@ import {
   type HouseholdComposition,
   type HouseholdMemberView,
   asIsoDate,
+  isArchiveRefusal,
   isResidentDraftInvalid,
   PermissionDeniedError,
   pesos,
   ROLE_DEFINITIONS,
+  SAVED_VIEW_CAP,
   type AccessContext,
   type AuthenticatedUser,
   type BarangayId,
@@ -468,17 +470,18 @@ describe('writes are permission- and scope-checked in the adapter', () => {
 
 describe('saved views cost the same permission as the list they describe', () => {
   const views = () => TestBed.inject(MockSavedViewRepository);
+  const ids = (list: readonly { readonly id: string }[]) => list.map((view) => view.id);
 
   it('lists the office views to anyone who may read residents', async () => {
     signedInAs(authenticated('barangay-link', SAN_JUAN));
-    const saved = await firstValueFrom(views().listFor('residents'));
+    const saved = await firstValueFrom(views().listFor('residents', false));
     expect(saved.length).toBeGreaterThan(0);
-    expect(saved.every((view) => view.isShared)).toBe(true);
+    expect(saved.every((view) => view.isShared && view.archived === null)).toBe(true);
   });
 
   it('refuses the list to someone with no permission at all', async () => {
     signedInAs(null);
-    await expect(firstValueFrom(views().listFor('residents'))).rejects.toThrow(
+    await expect(firstValueFrom(views().listFor('residents', false))).rejects.toThrow(
       PermissionDeniedError,
     );
   });
@@ -500,7 +503,7 @@ describe('saved views cost the same permission as the list they describe', () =>
     ).rejects.toThrow(PermissionDeniedError);
   });
 
-  it('lets the head save and remove a view for the office', async () => {
+  it('lets the head save, archive and restore a view for the office (DL-225)', async () => {
     signedInAs(authenticated('mswdo-head'));
     const created = await firstValueFrom(
       views().create({
@@ -510,9 +513,18 @@ describe('saved views cost the same permission as the list they describe', () =>
         isShared: true,
       }),
     );
+    expect(created).toMatchObject({ isShared: true, archived: null });
 
-    expect(created.isShared).toBe(true);
-    await expect(firstValueFrom(views().remove(created.id))).resolves.toBeUndefined();
+    const archived = await firstValueFrom(views().archive(created.id));
+    // A view's archive names nobody and keeps no reason: it is a filter, not a public record.
+    expect(archived.archived).toMatchObject({ byName: null, reason: null });
+    expect(ids(await firstValueFrom(views().listFor('residents', false)))).not.toContain(
+      created.id,
+    );
+    expect(ids(await firstValueFrom(views().listFor('residents', true)))).toContain(created.id);
+
+    expect((await firstValueFrom(views().restore(created.id))).archived).toBeNull();
+    expect(ids(await firstValueFrom(views().listFor('residents', false)))).toContain(created.id);
   });
 
   it('keeps a personal view out of everyone else’s list', async () => {
@@ -525,23 +537,96 @@ describe('saved views cost the same permission as the list they describe', () =>
         isShared: false,
       }),
     );
-    const mine = await firstValueFrom(views().listFor('residents'));
+    const mine = await firstValueFrom(views().listFor('residents', false));
     expect(mine.some((view) => view.name === 'My follow-ups')).toBe(true);
   });
 
-  it('will not let somebody without the share grant remove the office’s view', async () => {
-    // Changed in TAB 20: a shared view is office configuration, so removing one
-    // costs the same grant as creating one (`DL-111`). An intake officer holds
-    // neither.
+  it('will not let somebody without the share grant archive the office’s view', async () => {
+    // Changed in TAB 20: a shared view is office configuration, so putting one
+    // away costs the same grant as creating one (`DL-111`). An intake officer
+    // holds neither.
     signedInAs(authenticated('intake-officer'));
-    const saved = await firstValueFrom(views().listFor('residents'));
+    const saved = await firstValueFrom(views().listFor('residents', false));
     const shared = saved.find((view) => view.isShared);
     expect(shared).toBeDefined();
     if (shared) {
-      await expect(firstValueFrom(views().remove(shared.id))).rejects.toThrow(
+      await expect(firstValueFrom(views().archive(shared.id))).rejects.toThrow(
         PermissionDeniedError,
       );
     }
+  });
+
+  it('lets anybody put their own view away, and lists only the archived views they could restore (DL-225)', async () => {
+    // Two people at one office, one after the other, so the head's archive is there for the next.
+    let current = authenticated('mswdo-head');
+    const context: AccessContext = { currentUser: () => current };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
+        { provide: ACCESS_CONTEXT, useValue: context },
+        MockSavedViewRepository,
+      ],
+    });
+    const office = (await firstValueFrom(views().listFor('residents', false))).find(
+      (view) => view.isShared,
+    );
+    if (office === undefined) throw new Error('The seed has no shared residents view.');
+    await firstValueFrom(views().archive(office.id));
+
+    current = authenticated('intake-officer');
+    const own = await firstValueFrom(
+      views().create({ resource: 'residents', name: 'Mine', params: {}, isShared: false }),
+    );
+    await firstValueFrom(views().archive(own.id));
+
+    // The office's archived view is one the intake officer could not restore, so it is not offered.
+    expect(ids(await firstValueFrom(views().listFor('residents', true)))).toEqual([own.id]);
+    expect(await firstValueFrom(views().restore(own.id))).toMatchObject({ archived: null });
+  });
+
+  it('refuses what somebody already did, in the domain’s words', async () => {
+    signedInAs(authenticated('intake-officer'));
+    const own = await firstValueFrom(
+      views().create({ resource: 'residents', name: 'Mine', params: {}, isShared: false }),
+    );
+
+    const notArchived: unknown = await firstValueFrom(views().restore(own.id)).catch(
+      (failure: unknown) => failure,
+    );
+    expect(isArchiveRefusal(notArchived) ? notArchived.kind : null).toBe('not-archived');
+    await firstValueFrom(views().archive(own.id));
+    const already: unknown = await firstValueFrom(views().archive(own.id)).catch(
+      (failure: unknown) => failure,
+    );
+    expect(isArchiveRefusal(already) ? already.kind : null).toBe('already-archived');
+  });
+
+  it('refuses a restore past the list’s cap, and says to archive one first (DL-225)', async () => {
+    signedInAs(authenticated('intake-officer'));
+    const kept = await firstValueFrom(
+      views().create({ resource: 'residents', name: 'Kept aside', params: {}, isShared: false }),
+    );
+    await firstValueFrom(views().archive(kept.id));
+    for (let index = 0; index < SAVED_VIEW_CAP; index++) {
+      await firstValueFrom(
+        views().create({
+          resource: 'residents',
+          name: `View ${index}`,
+          params: {},
+          isShared: false,
+        }),
+      );
+    }
+
+    await expect(firstValueFrom(views().restore(kept.id))).rejects.toThrow(
+      `You already keep ${SAVED_VIEW_CAP} views of this list. Archive one first.`,
+    );
+    await expect(
+      firstValueFrom(
+        views().create({ resource: 'residents', name: 'One more', params: {}, isShared: false }),
+      ),
+    ).rejects.toThrow('Archive one first.');
   });
 });
 

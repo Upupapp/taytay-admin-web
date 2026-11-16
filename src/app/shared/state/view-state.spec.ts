@@ -35,6 +35,7 @@ describe('toViewState', () => {
       details: null,
       requestId: null,
       retryAfterSeconds: null,
+      counts: null,
     };
     const states = await collect(toViewState<number>(throwError(() => refusal)), 2);
     const failure = states[1];

@@ -41,12 +41,18 @@ fails the build if a description field, a mapper read, a body key or a free-text
 | Add or replace an image | **Stored first**, then the banner saved naming it. If the banner is refused, the image stays stored, unused — nothing removes it. |
 | Replace or remove an image | The banner shows the new one, or none. **The old image stays stored**; nothing removes it. |
 | Hide / show a banner | It leaves, or returns to, the home screen; it is kept either way. |
-| Delete a banner | Deleted; nothing brings it back; its image stays stored. The confirmation offers hiding instead. |
-| Add a link | It appears on the home screen. **Every link is shown**, by order — there is no hidden link, so deleting is the only way to take one off. |
+| Archive a banner | It leaves the home screen, shown or hidden; kept under Archived with its image, who archived it, when and why; restorable as it was (`DL-225`). |
+| Add a link | It appears on the home screen. **Every link in use is shown**, by order — there is no hidden link, so archiving is the way to take one off, and it can be restored. |
+| Archive a link | It leaves the home screen; kept under Archived, restorable in its place in the order. |
 | Any link or banner address | The app opens it when tapped; the API checks only its length, not that it opens anything. |
 
-Every act is audited (`banner.*`, `link.*`) with no reason, so none is asked for. Deletes are
-reachable only through a confirmation listing the effects before its button.
+Adding and changing are audited (`banner.*`, `link.*`) with no reason, so none is asked for.
+**Nothing is deleted** (`DL-225`): archiving and restoring are audited (`banner.archived`,
+`link.restored`, …) with a reason, required in the shared archive dialog — effects before its
+`.btn--primary` button — and kept in the record's archive history, shown in its edit dialog and from
+an archived row's **History**. Each list has **In use | Archived** tabs held in the URL
+(`?archivedBanners=true`, `?archivedLinks=true`), is live on the `home` topic (`DL-222`), and an
+archived row is read-only: no Edit.
 
 ## Images
 
@@ -73,17 +79,19 @@ alone, held by holding every key, named by no role, mutating. The route and the 
 ## Checks
 
 `check:home` (in `verify`): the title says residents see it; effects before each form's button;
-deletes only through the confirmation, effects before its button; the effects still say an image
-outlives what replaces or deletes it and offer hiding before deleting; no description invented, read,
+nothing deleted — archive and restore only through the archive dialog, handed the domain's
+effects, no destructive button; the effects still say an image outlives what replaces or archives it
+and that an archived banner or link can be restored; no description invented, read,
 sent or collected, and the absence said on both screens; images bound only from template variables,
 held by `ObjectUrls` and given back on destroy; nothing logged or stored; the key the administrator's.
-Eighteen planted regressions, each caught, every file restored byte for byte.
+Eighteen planted regressions, each caught, every file restored byte for byte; the archive rules
+(`DL-225`) were validated by six more, all caught.
 
 ## Known gaps
 
 - **No description of a banner's image** on the API. Backend item.
 - **Images are never removed from storage** — not when a banner's image is replaced or removed, not
-  when a banner is deleted, not when an upload is left unused because the banner was refused.
+  when a banner is archived, not when an upload is left unused because the banner was refused.
 - **The spec's `PATCH admin/home/banners/{id}` body is `BannerWrite`, which requires `title`**, while
   the handler takes a partial body; the console sends the title on every change, which both accept.
   `LinkWrite` declares nothing required, while the handler requires `label` and `href` on a create;

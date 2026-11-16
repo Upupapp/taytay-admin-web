@@ -12,9 +12,14 @@ export const HOME_SCREEN_COPY = {
 
   common: {
     edit: 'Edit',
-    remove: 'Delete',
-    cancel: 'Keep it',
+    archive: 'Archive',
+    restore: 'Restore',
+    history: 'History',
+    close: 'Close',
     effectsLead: 'What this does:',
+    archivedNote:
+      'Archived here means taken off the home screen and kept: nothing here is deleted. Each ' +
+      'archived entry says who archived it, when and why, and can be restored.',
     notDone: (reason: string) => `Not done. ${reason}`,
     failed: 'The server did not answer.',
     problemsLead: 'Not sent — the app would refuse it:',
@@ -43,14 +48,32 @@ export const HOME_SCREEN_COPY = {
     noLink: 'Opens nothing',
     emptyHeading: 'No banners',
     emptyMessage: 'The app’s home screen shows no banner. Add one.',
-    count: (count: number) => `${count} ${count === 1 ? 'banner' : 'banners'}, shown and hidden.`,
+    count: (count: number, archived: boolean) =>
+      archived
+        ? `${count} archived ${count === 1 ? 'banner' : 'banners'}.`
+        : `${count} ${count === 1 ? 'banner' : 'banners'} in use, shown and hidden.`,
+    tabsLabel: 'Banners: in use or archived',
+    archivedCaption: 'Archived banners',
+    columnArchived: 'Archived',
+    archivedEmptyHeading: 'No archived banners',
+    archivedEmptyMessage:
+      'A banner you archive is kept here, with its image, who archived it, when and why, and can ' +
+      'be restored.',
     editLabel: (title: string) => `Edit the banner ${title}`,
-    removeLabel: (title: string) => `Delete the banner ${title}`,
+    archiveLabel: (title: string) => `Archive the banner ${title}`,
+    restoreLabel: (title: string) => `Restore the banner ${title}`,
+    historyLabel: (title: string) => `History of the banner ${title}`,
     createHeading: 'Add a banner',
     editHeading: 'Edit banner',
-    removeHeading: (title: string) => `Delete the banner ${title}?`,
-    removeConfirm: 'Delete the banner',
-    removed: (title: string) => `The banner ${title} was deleted.`,
+    archiveHeading: (title: string) => `Archive the banner ${title}?`,
+    restoreHeading: (title: string) => `Restore the banner ${title}?`,
+    historyHeading: (title: string) => `The banner ${title}: archive history`,
+    archiveConfirm: 'Archive the banner',
+    restoreConfirm: 'Restore the banner',
+    archived: (title: string) =>
+      `The banner ${title} was archived. It is under Archived, with your reason, and can be ` +
+      'restored there.',
+    restored: (title: string) => `The banner ${title} was restored.`,
     created: (title: string) => `The banner ${title} was added.`,
     saved: (title: string) => `The banner ${title} was saved.`,
   },
@@ -72,13 +95,14 @@ export const HOME_SCREEN_COPY = {
     removeImage: 'Remove the image from this banner',
     create: 'Add the banner',
     save: 'Save changes',
+    noun: 'banner',
   },
 
   links: {
     heading: 'Quick links',
     lead:
-      'The links on the app’s home screen. Every link is shown, by order, lowest first; there is no ' +
-      'hidden link — deleting is the only way to take one off.',
+      'The links on the app’s home screen. Every link in use is shown, by order, lowest first; there ' +
+      'is no hidden link — archiving is the way to take one off, and it can be restored.',
     add: 'Add a link',
     caption: 'Quick links on the app’s home screen',
     columnOrder: 'Order',
@@ -87,14 +111,31 @@ export const HOME_SCREEN_COPY = {
     columnActions: 'Actions',
     emptyHeading: 'No quick links',
     emptyMessage: 'The app’s home screen shows no link. Add one.',
-    count: (count: number) => `${count} ${count === 1 ? 'link' : 'links'}, every one shown.`,
+    count: (count: number, archived: boolean) =>
+      archived
+        ? `${count} archived ${count === 1 ? 'link' : 'links'}.`
+        : `${count} ${count === 1 ? 'link' : 'links'} in use, every one shown.`,
+    tabsLabel: 'Quick links: in use or archived',
+    archivedCaption: 'Archived quick links',
+    columnArchived: 'Archived',
+    archivedEmptyHeading: 'No archived links',
+    archivedEmptyMessage:
+      'A link you archive is kept here, with who archived it, when and why, and can be restored.',
     editLabel: (label: string) => `Edit the link ${label}`,
-    removeLabel: (label: string) => `Delete the link ${label}`,
+    archiveLabel: (label: string) => `Archive the link ${label}`,
+    restoreLabel: (label: string) => `Restore the link ${label}`,
+    historyLabel: (label: string) => `History of the link ${label}`,
     createHeading: 'Add a link',
     editHeading: 'Edit link',
-    removeHeading: (label: string) => `Delete the link ${label}?`,
-    removeConfirm: 'Delete the link',
-    removed: (label: string) => `The link ${label} was deleted.`,
+    archiveHeading: (label: string) => `Archive the link ${label}?`,
+    restoreHeading: (label: string) => `Restore the link ${label}?`,
+    historyHeading: (label: string) => `The link ${label}: archive history`,
+    archiveConfirm: 'Archive the link',
+    restoreConfirm: 'Restore the link',
+    archived: (label: string) =>
+      `The link ${label} was archived. It is under Archived, with your reason, and can be ` +
+      'restored there.',
+    restored: (label: string) => `The link ${label} was restored.`,
     created: (label: string) => `The link ${label} was added.`,
     saved: (label: string) => `The link ${label} was saved.`,
   },
@@ -104,13 +145,15 @@ export const HOME_SCREEN_COPY = {
     href: 'Opens',
     create: 'Add the link',
     save: 'Save changes',
+    noun: 'link',
   },
 
   preview: {
     heading: 'What the app shows now',
     lead:
-      'The home screen as the app is given it at this moment — shown banners and every link, in the ' +
-      'app’s order, with the featured Tulong pages, hotlines and Balita it carries beside them.',
+      'The home screen as the app is given it at this moment — shown banners and every link in use, ' +
+      'in the app’s order, with the featured Tulong pages, hotlines and Balita it carries beside ' +
+      'them.',
     reload: 'Read it again',
     banners: 'Banners',
     noBanners: 'No banner is shown.',

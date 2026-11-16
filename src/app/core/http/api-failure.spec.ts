@@ -162,6 +162,52 @@ describe('readApiError', () => {
     );
 
     expect(failure.details).toBeNull();
+    expect(failure.counts).toBeNull();
+  });
+
+  /** `OFFICE_IN_USE` says how much still uses an office; the screen says it in words (`DL-225`). */
+  it('keeps the counts beside a refusal apart from the field messages', () => {
+    const failure = readApiError(
+      errorResponse(
+        {
+          error: {
+            code: 'OFFICE_IN_USE',
+            message: 'That office is still in use.',
+            details: { staff_accounts: 2, services: 0, issuance_types: 1 },
+            request_id: 'req-fixture-0004',
+          },
+        },
+        409,
+      ),
+    );
+
+    expect(failure.code).toBe('OFFICE_IN_USE');
+    expect(failure.counts).toEqual({ staff_accounts: 2, services: 0, issuance_types: 1 });
+    expect(failure.details).toBeNull();
+  });
+
+  it('counts only whole, non-negative numbers, and nothing for field messages or none', () => {
+    const mixed = readApiError(
+      errorResponse({
+        error: {
+          code: 'VALIDATION_FAILED',
+          message: 'The request could not be validated.',
+          details: { name: ['Required'], services: 3, ratio: 0.5, debt: -1, label: '4' },
+        },
+      }),
+    );
+    expect(mixed.counts).toEqual({ services: 3 });
+    expect(mixed.details).toEqual({ name: ['Required'] });
+
+    expect(readApiError(errorResponse(VALIDATION_FAILED)).counts).toBeNull();
+    expect(
+      readApiError(errorResponse({ error: { code: 'X', message: 'No details.' } })).counts,
+    ).toBeNull();
+    expect(
+      readApiError(errorResponse({ error: { code: 'X', message: 'A list.', details: [1, 2] } }))
+        .counts,
+    ).toBeNull();
+    expect(readApiError(errorResponse('<html>502</html>', 502)).counts).toBeNull();
   });
 });
 

@@ -15,6 +15,7 @@ import {
   reviewTimePhrase,
   workingDayRangeProblems,
   type AppConfig,
+  type ArchivedFeatureFlag,
 } from './app-config';
 
 const CONFIG: AppConfig = {
@@ -77,6 +78,15 @@ describe('the app’s settings (DL-170)', () => {
       'featureFlags',
       'featureFlags',
     ]);
+    // An empty value is refused, and the sentence points to archiving, never to deleting (DL-225).
+    expect(
+      problems.some((problem) =>
+        problem.message.endsWith('To take a flag out of the app, archive it.'),
+      ),
+    ).toBe(true);
+    expect(
+      appConfigProblems({ featureFlags: [{ key: 'ok_flag', value: '' }] })[0]?.message,
+    ).not.toMatch(/delete/i);
     expect(
       appConfigProblems({ minimumAppVersion: null, featureFlags: [{ key: 'old', value: null }] }),
     ).toEqual([]);
@@ -101,6 +111,79 @@ describe('the app’s settings (DL-170)', () => {
     expect(effects[0]).toContain('can force every resident whose app is older than 2.0 to update');
     expect(effects).toContain(APP_CONFIG_EFFECTS.contact[0]);
     expect(effects.at(-1)).toContain('not which setting');
+  });
+
+  describe('flags are archived and restored, never deleted (DL-225)', () => {
+    const ARCHIVED: readonly ArchivedFeatureFlag[] = [
+      {
+        key: 'typhoon_banner',
+        value: 'on',
+        archived: {
+          at: asIsoDateTime('2026-11-10T01:00:00.000Z'),
+          byName: 'Sample administrator',
+          reason: null,
+        },
+      },
+    ];
+
+    it('says a flag set to null is archived with its value, and asks no reason', () => {
+      const effects = appConfigEffects(CONFIG, {
+        featureFlags: [{ key: 'show_digital_id', value: null }],
+      });
+
+      expect(effects).toEqual([
+        ...APP_CONFIG_EFFECTS.flagsArchived(['show_digital_id']),
+        ...APP_CONFIG_EFFECTS.always,
+      ]);
+      expect(effects.join(' ')).toContain(
+        'show_digital_id will be archived. The app is no longer given it.',
+      );
+      expect(effects.join(' ')).toContain('It stays here under Archived flags with its value');
+      expect(effects.join(' ')).toContain('none is asked for');
+      expect(effects.join(' ')).not.toMatch(/delete/i);
+    });
+
+    it('says a value on an archived key restores it, and lists several flags in one sentence', () => {
+      const effects = appConfigEffects(
+        CONFIG,
+        {
+          featureFlags: [
+            { key: 'typhoon_banner', value: 'on' },
+            { key: 'show_digital_id', value: null },
+            { key: 'old_menu', value: null },
+          ],
+        },
+        ARCHIVED,
+      );
+
+      expect(effects.join(' ')).toContain(
+        'show_digital_id and old_menu will be archived. The app is no longer given them.',
+      );
+      expect(effects.join(' ')).toContain('They stay here under Archived flags with their values');
+      expect(effects.join(' ')).toContain(
+        'typhoon_banner will be restored. The app is given it again, with the value it had when ' +
+          'archived.',
+      );
+      // Only archives and restores: the plain sentence about a changed flag is not said.
+      expect(effects).not.toContain(APP_CONFIG_EFFECTS.flags[0]);
+    });
+
+    it('says a new or changed flag as a change, and a value on a key not archived as no restore', () => {
+      const effects = appConfigEffects(
+        CONFIG,
+        { featureFlags: [{ key: 'new_flag', value: 'on' }] },
+        ARCHIVED,
+      );
+      expect(effects).toEqual([...APP_CONFIG_EFFECTS.flags, ...APP_CONFIG_EFFECTS.always]);
+      expect(APP_CONFIG_EFFECTS.flags.join(' ')).not.toMatch(/delete/i);
+    });
+
+    it('lists three flags with commas, the last with “and”', () => {
+      expect(APP_CONFIG_EFFECTS.flagsRestored(['a', 'b', 'c'])[0]).toBe(
+        'a, b and c will be restored. The app is given them again, with the value each had when ' +
+          'archived.',
+      );
+    });
   });
 
   it('warns when residents would be asked to accept a notice the API does not serve', () => {

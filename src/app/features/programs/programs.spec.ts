@@ -631,6 +631,7 @@ class ServerRefuses extends MockProgramRepository {
       details: { requirement_template_code: [SERVER_SENTENCE] },
       requestId: 'req-1',
       retryAfterSeconds: null,
+      counts: null,
     }));
   }
 }

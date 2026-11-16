@@ -20,7 +20,7 @@ import {
   type QuickLink,
 } from '@domain/index';
 import { readText, wholeNumberOf } from '@shared/forms/form-values';
-import { failureReason } from '@shared/state/failure-reason';
+import { plainRefusal } from '@shared/archive/archive.copy';
 
 import { HOME_SCREEN_COPY } from './home-screen.copy';
 
@@ -118,7 +118,9 @@ export class LinkForm {
       },
       error: (failure: unknown) => {
         this.busy.set(false);
-        this.outcome.set(this.common.notDone(failureReason(failure) ?? this.common.failed));
+        this.outcome.set(
+          this.common.notDone(plainRefusal(failure, this.copy.noun, this.common.failed)),
+        );
       },
     });
   }

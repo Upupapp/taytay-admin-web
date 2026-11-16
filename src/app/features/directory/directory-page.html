@@ -21,13 +21,13 @@
 
 @switch (current()) {
   @case ('offices') {
-    <app-offices-section />
+    <app-offices-section [archived]="showArchived()" />
   }
   @case ('services') {
-    <app-services-section />
+    <app-services-section [archived]="showArchived()" />
   }
   @case ('hotlines') {
-    <app-hotlines-section />
+    <app-hotlines-section [archived]="showArchived()" />
   }
   @default {
     <p class="card card--padded">{{ copy.noSection }}</p>

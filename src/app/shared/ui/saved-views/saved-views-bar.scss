@@ -53,20 +53,30 @@
   color: var(--on-primary);
 }
 
-.views__remove {
+.views__archive {
   inline-size: 32px;
   block-size: 32px;
   border-radius: var(--r-pill);
   color: var(--muted);
 }
 
-.views__remove:hover:not(:disabled) {
+.views__archive:hover:not(:disabled) {
   background: var(--soft);
   color: var(--ink);
 }
 
-.views__save {
+.views__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
   margin-inline-start: auto;
+}
+
+/* An archived view in its list: the name, then when it was put away. */
+.views__archived-name {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
 }
 
 .views__error {

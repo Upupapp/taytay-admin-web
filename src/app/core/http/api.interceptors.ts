@@ -102,6 +102,7 @@ const SESSION_LAPSED: ApiFailure = {
   details: null,
   requestId: null,
   retryAfterSeconds: null,
+  counts: null,
 };
 
 /**

@@ -29,7 +29,7 @@ import {
   type HotlineKind,
 } from '@domain/index';
 import { readChecked, readText, wholeNumberOf } from '@shared/forms/form-values';
-import { failureReason } from '@shared/state/failure-reason';
+import { plainRefusal } from '@shared/archive/archive.copy';
 
 import { DIRECTORY_COPY } from './directory.copy';
 
@@ -244,7 +244,9 @@ export class HotlineForm {
           return;
         }
         this.outcome.set(
-          DIRECTORY_COPY.list.notDone(failureReason(failure) ?? DIRECTORY_COPY.list.failed),
+          DIRECTORY_COPY.list.notDone(
+            plainRefusal(failure, DIRECTORY_COPY.hotlines.noun, DIRECTORY_COPY.list.failed),
+          ),
         );
       },
     });

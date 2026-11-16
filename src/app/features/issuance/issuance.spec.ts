@@ -1,11 +1,12 @@
 import { signal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of, type Observable } from 'rxjs';
+import { of, throwError, type Observable } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SessionStore } from '@core/auth/session.store';
 import {
+  ArchiveRefusedError,
   asId,
   asIsoDateTime,
   ISSUANCE_BOUNDARIES,
@@ -116,6 +117,8 @@ class RecordingIssuance implements IssuanceRepository {
   readonly created: IssuanceTypeDraft[] = [];
   readonly updated: IssuanceTypeChanges[] = [];
   readonly retired: string[] = [];
+  /** A refusal to answer a type's save with, as the adapter raises it. */
+  typeRefusal: unknown = null;
   current = request('approved', ['ready-for-pickup']);
 
   catalogue(): Observable<readonly IssuanceType[]> {
@@ -125,6 +128,8 @@ class RecordingIssuance implements IssuanceRepository {
     return of([TYPE]);
   }
   createType(draft: IssuanceTypeDraft): Observable<IssuanceType> {
+    const refusal = this.typeRefusal;
+    if (refusal !== null) return throwError(() => refusal);
     this.created.push(draft);
     return of({ ...TYPE, name: draft.name });
   }
@@ -508,6 +513,30 @@ describe('IssuanceCataloguePage (DL-184)', () => {
       processingDays: 3,
       officeId: null,
     });
+  });
+
+  it('says in words, never the code, that the office was archived meanwhile (DL-225)', async () => {
+    const repository = configure();
+    repository.typeRefusal = new ArchiveRefusedError('office-archived', 'OFFICE_ARCHIVED');
+    const fixture = TestBed.createComponent(IssuanceCataloguePage);
+    const element = await settle(fixture);
+
+    buttonNamed(element, ISSUANCE_COPY.catalogue.add)?.click();
+    await settle(fixture);
+    type(document.body.querySelector('#issuance-type-name'), 'Certificate of residency');
+    type(document.body.querySelector('#issuance-type-fee'), '50');
+    type(document.body.querySelector('#issuance-type-days'), '3');
+    type(document.body.querySelector('#issuance-type-reason'), 'Offered from this month.');
+    await settle(fixture);
+    buttonNamed(document.body, ISSUANCE_COPY.catalogue.save)?.click();
+    await settle(fixture);
+
+    expect(document.body.textContent).toContain(
+      'Not saved. That office has been archived, so nothing was put under it. Choose an office in ' +
+        'use, or restore that office first under App directory, Offices, Archived.',
+    );
+    expect(document.body.textContent).not.toContain('OFFICE_ARCHIVED');
+    expect(repository.created).toEqual([]);
   });
 
   it('refuses a fee with a third decimal place rather than rounding it', async () => {

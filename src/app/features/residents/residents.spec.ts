@@ -136,6 +136,7 @@ const REFUSAL = {
   details: null,
   requestId: null,
   retryAfterSeconds: null,
+  counts: null,
 };
 
 /** The registry as an API that refuses every save would answer it. */

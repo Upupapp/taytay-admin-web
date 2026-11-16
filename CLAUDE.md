@@ -119,7 +119,7 @@ The repository checks are `check:brand`, `check:shell`, `check:access`,
 `check:mapper-adoption`, `check:permission-parity`, `check:environments`,
 `check:bundle`, `check:routes`, `check:response-shape`, `check:wire-adoption`,
 `check:port-adoption`, `check:scanners`, `check:unserved`, `check:verification`,
-`check:inbox`, `check:accounts`, `check:directory`, `check:home`,
+`check:inbox`, `check:accounts`, `check:directory`, `check:home`, `check:archive`,
 `check:app-settings`, `check:digital-ids`, `check:balita`,
 `check:platform-audit`, `check:styles` and `check:live`.
 `check:unserved` keeps a module whose primary port the active adapter set cannot
@@ -138,10 +138,15 @@ every app account — with what a role or office change does shown before its bu
 no reason collected, and one's own role never offered (`DL-168`), and a verified name
 corrected only against an ID seen, with the statement before the button (`DL-198`);
 `check:directory` holds the residents' app directory to saying what each act does
-before its button, deleting only through a confirmation, refusing an image before
-it is sent, and never treating a Tulong page as a programme (`DL-170`);
+before its button, archiving and restoring only through the archive dialog — never
+deleting (`DL-225`) — refusing an image before it is sent, reading each list whole
+from its admin endpoint, and never treating a Tulong page as a programme (`DL-170`);
 `check:home` holds the app's home screen to the same, and to saying — rather than
 collecting — that the API keeps no description of a banner's image (`DL-170`, `DL-125`);
+`check:archive` holds the whole console to deleting nothing — no port named
+delete/remove/destroy/purge/erase, no `DELETE` sent but the Balita unpin, no screen
+that says "Delete", and every archive and restore saying what it does before its
+button, or through App settings' review, or announcing how to restore (`DL-225`);
 `check:app-settings` sends a change to the app's settings only from a confirmation
 that lists what it does, and only once the administrator has acknowledged a change
 that can make every resident update the app or accept again (`DL-170`);
@@ -515,6 +520,19 @@ an event, register. A resident may **never** publish, see a registration list or
 mark attendance, and never holds `news.write`: the municipality speaks in its
 own name and residents answer. `ResidentEventView` reports a registration state
 rather than how many neighbours signed up.
+
+### Archive, never delete
+
+Nothing an office user does in this console removes a record (`DL-225`; RA 9470 §18 as the
+backend's ADR 0002 reads it, unverified against the primary text). An office, a Tulong page, a
+hotline, a home banner or link, a saved view and a feature flag are **archived** — out of what
+residents see, kept under Archived with who, when and why, read-only — and **restored**. Archive and
+restore take a required reason (1 to 500), except a flag (through App settings' review) and a saved
+view (a filter, announced with how to restore). The dialog is the shared `ArchiveDialog`: effects
+before a `.btn--primary` button, never `.btn--danger`, because a restore undoes it. Every 409 is a
+plain sentence, never a code. No port method is named delete, remove, destroy, purge or erase, and
+no adapter sends a `DELETE` but the Balita unpin; `check:archive` fails the build otherwise. What
+stays a deletion — a resident's own data under RA 10173 — lives in the residents' app and the API.
 
 ### The newsfeed is retired; Balita is the one news channel
 
@@ -918,6 +936,7 @@ All but the last two rows live in `src/app/shared/` and are exported from
 | `ToastHost`                                                                          | Mounted once by `App`. Never place toast markup in a feature.                                    |
 | `ConnectionBanner`, `RouteProgress`                                                  | Mounted once by the shell. Never place them in a feature.                                        |
 | `ListChangedNotice`                                                                  | "This list has changed. Reload list" — a paged list's live hint, held (`DL-222`).                |
+| `ArchiveDialog`, `ArchiveHistory`, `ArchiveTabs`                                     | Every archive and restore, a record's archive history, "In use \| Archived" (`DL-225`).          |
 | `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe`, `InitialsPipe` | Formatting. `InitialsPipe` feeds an `.avatar` from the name already shown.                       |
 | `NotConnected` (`@core/access/`)                                                     | `<app-not-connected port="…">` where a panel whose port is unserved would be.                    |
 | `HasPermissionDirective` (`@core/access/`)                                           | `*appHasPermission="'request.approve'"`.                                                         |

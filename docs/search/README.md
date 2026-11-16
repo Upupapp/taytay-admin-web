@@ -135,9 +135,21 @@ cases and households.
 wrote it, and its *name* describes a population — "VAWC survivors, Santa Ana"
 discloses who the office is looking at while holding no records at all.
 
-So creating or removing a shared view costs `view.share`, held by the
-administrator **and the MSWDO head**: a supervisor standardising the team's
+So creating, archiving or restoring a shared view costs `view.share`, held by
+the administrator **and the MSWDO head**: a supervisor standardising the team's
 queues is exactly who this is for.
+
+**A view is archived, never deleted** (`DL-225`). One's own personal view is
+archived from its bar — the icon button beside it, labelled "Archive the saved
+view …" — with no confirmation, because a view is a filter and an archive is
+undone by a restore; the outcome is announced through the notification store,
+saying it can be restored from **Archived views**. That control, beside **Save
+this view**, lists the archived views of the list (`?archived=true`: the
+account's own, and the office's with `view.share`) with a **Restore** beside
+each; a restore past the list's cap of fifty is refused in the API's words,
+which say to archive one first. Archiving the applied view clears the filters,
+since no chip would explain them; archiving another leaves the reader's own
+filters alone — before `DL-225` any removal cleared them.
 
 Before TAB 20, `isShared` existed and nothing checked it — any account that
 could read a list could publish a named view of it to the whole office. The

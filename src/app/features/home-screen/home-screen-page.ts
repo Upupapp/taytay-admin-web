@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
@@ -23,6 +23,15 @@ import { PreviewSection } from './preview-section';
   styleUrl: './home-screen.scss',
 })
 export class HomeScreenPage {
+  /**
+   * `?archivedBanners=true` and `?archivedLinks=true`: each list's archived records rather than
+   * those in use (`DL-225`) — two choices, because the two lists share the page.
+   */
+  readonly archivedBanners = input<string | undefined>(undefined);
+  readonly archivedLinks = input<string | undefined>(undefined);
+  protected readonly showArchivedBanners = computed(() => this.archivedBanners() === 'true');
+  protected readonly showArchivedLinks = computed(() => this.archivedLinks() === 'true');
+
   protected readonly copy = HOME_SCREEN_COPY.page;
   protected readonly previewGeneration = signal(0);
 

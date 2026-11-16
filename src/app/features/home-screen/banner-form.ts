@@ -24,7 +24,7 @@ import {
 import { blankToNull, readChecked, readText, wholeNumberOf } from '@shared/forms/form-values';
 import { ImageFileField } from '@shared/media/image-file-field';
 import { ObjectUrls } from '@shared/media/object-urls';
-import { failureReason } from '@shared/state/failure-reason';
+import { plainRefusal } from '@shared/archive/archive.copy';
 
 import { HOME_SCREEN_COPY } from './home-screen.copy';
 
@@ -203,7 +203,9 @@ export class BannerForm {
       },
       error: (failure: unknown) => {
         this.busy.set(false);
-        this.outcome.set(this.common.notDone(failureReason(failure) ?? this.common.failed));
+        this.outcome.set(
+          this.common.notDone(plainRefusal(failure, this.copy.noun, this.common.failed)),
+        );
       },
     });
   }

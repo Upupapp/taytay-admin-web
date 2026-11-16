@@ -7,6 +7,7 @@ import type {
   QuickLinkId,
 } from '@domain/index';
 
+import { toArchiveState } from './archive.mapper';
 import { dateTime, field, id, int, str } from './wire';
 
 /** A boolean, or `null` for anything that is not one. */
@@ -33,6 +34,8 @@ function flag(value: unknown): boolean | null {
  * @consumes GET admin/home/banners
  * @consumes POST admin/home/banners
  * @consumes PATCH admin/home/banners/{id}
+ * @consumes POST admin/home/banners/{id}/archive
+ * @consumes POST admin/home/banners/{id}/restore
  */
 export function toHomeBanner(wire: unknown): HomeBanner | null {
   const bannerId = id<HomeBannerId>(field(wire, 'id'));
@@ -40,13 +43,15 @@ export function toHomeBanner(wire: unknown): HomeBanner | null {
   const sortOrder = int(field(wire, 'sort_order'));
   const active = flag(field(wire, 'active'));
   const createdAt = dateTime(field(wire, 'created_at'));
+  const archived = toArchiveState(wire);
 
   if (
     bannerId === null ||
     title === null ||
     sortOrder === null ||
     active === null ||
-    createdAt === null
+    createdAt === null ||
+    archived === undefined
   ) {
     return null;
   }
@@ -59,6 +64,7 @@ export function toHomeBanner(wire: unknown): HomeBanner | null {
     sortOrder,
     active,
     createdAt,
+    archived,
   };
 }
 
@@ -68,6 +74,8 @@ export function toHomeBanner(wire: unknown): HomeBanner | null {
  * @consumes GET admin/home/links
  * @consumes POST admin/home/links
  * @consumes PATCH admin/home/links/{id}
+ * @consumes POST admin/home/links/{id}/archive
+ * @consumes POST admin/home/links/{id}/restore
  */
 export function toQuickLink(wire: unknown): QuickLink | null {
   const linkId = id<QuickLinkId>(field(wire, 'id'));
@@ -75,18 +83,20 @@ export function toQuickLink(wire: unknown): QuickLink | null {
   const href = str(field(wire, 'href'));
   const sortOrder = int(field(wire, 'sort_order'));
   const createdAt = dateTime(field(wire, 'created_at'));
+  const archived = toArchiveState(wire);
 
   if (
     linkId === null ||
     label === null ||
     href === null ||
     sortOrder === null ||
-    createdAt === null
+    createdAt === null ||
+    archived === undefined
   ) {
     return null;
   }
 
-  return { id: linkId, label, href, sortOrder, createdAt };
+  return { id: linkId, label, href, sortOrder, createdAt, archived };
 }
 
 /** Every element read, or `null` — a preview with a banner left out is not what residents see. */

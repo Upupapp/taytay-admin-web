@@ -32,19 +32,22 @@ read from the backend at `2736e28` (the vendored spec's commit; the modules are 
 | --- | --- |
 | Add an office | It appears in the app's directory. Its description, head, hours, phone, email, address and map position can be set only now (below). |
 | Change an office's address | The app opens the office's page by it; anything that kept the old one stops finding it. |
-| Give an office a banner | Replaces the banner on its page; **the server deletes the old image**. A banner cannot be removed — the API has no way to take one away. |
-| Delete an office | It leaves the directory. **Refused while anything names it** — a staff account assigned to it, a Balita article, a Tulong page, a conversation — and the refusal does not say which. Nothing brings it back. Its banner stays stored. |
-| Hide a Tulong page | It leaves the app's catalogue, but still opens from a link and still shows on the home screen while featured. **It leaves this screen's list too** (below). |
+| Give an office a banner | Replaces the banner on its page; the old image stays stored (`cc86189`). A banner cannot be removed — the API has no way to take one away. |
+| Archive an office | It leaves the directory: residents can no longer find it, open its page or start a conversation with it, and nothing new is published, filed or linked under it. **Refused while anything still uses it** — a linked staff account, a Tulong page or a document type in use — and the refusal says how many of each, in words, in the dialog. Kept under Archived, its address reserved; restorable. |
+| Hide a Tulong page | It leaves the app's catalogue, but still opens from a link and still shows on the home screen while featured. It stays in this screen's list, marked hidden. |
 | Feature a Tulong page | It joins the home screen's featured pages, which shows the **six newest**; a seventh pushes the oldest off. |
-| Upload a Tulong picture | Applied at once, a separate act; the server deletes the old one. |
-| Delete a Tulong page | Deleted with its picture. Nothing refers to a page, so the server never refuses. |
+| Upload a Tulong picture | Applied at once, a separate act; the old one stays stored. |
+| Archive a Tulong page | It leaves the app — the catalogue, the featured pages, its address. Kept under Archived with its picture; restorable, **unless its office is archived**: then the office is restored first. |
 | Change a hotline's number | A resident who taps it calls the new number. The form reads the old and new numbers back, in full, before the button. |
 | Make a hotline inactive | It leaves the app's hotline list and home screen, and is kept here. |
-| Delete a hotline | Gone for good; the confirmation offers making it inactive instead. |
+| Archive a hotline | It leaves the app's hotline list and home screen, active or not; kept under Archived, restorable. Restoring an active command center while another line holds the role is refused (`DL-217`). |
 
-Every act is audited against the administrator (`office.updated`, `service.deleted`, …) with **no
-reason**, so none is asked for. Deletes are reachable only through a confirmation that lists the
-effects before its button; a refusal is shown inside it in the server's words.
+Creating and changing is audited against the administrator (`office.updated`, …) with **no reason**,
+so none is asked for. **Nothing is deleted** (`DL-225`): archiving and restoring are audited
+(`office.archived`, `service.restored`, …) **with a reason**, required in the dialog and kept in the
+record's archive history. Each is reachable only through the shared archive dialog, which lists the
+effects before its `.btn--primary` button; a refusal is a plain sentence inside it, never the API's
+code.
 
 ### 3. A Tulong page is not a programme
 
@@ -83,21 +86,23 @@ present or absent.
 - **Removing a banner.** The API has no way.
 - **A Tulong page's address, category, who it is for, places and office after creation.** Same as
   offices: `ServicePatch` does not declare them, though the handler accepts them.
-- **Listing a hidden page.** `GET services` leaves out a page hidden from the catalogue unless it is
-  featured, and there is no admin list. The section says so and offers **Open a page by its
-  address** (`GET services/{slug}`, which answers hidden pages), and hiding a page says beforehand
-  that it will leave this list.
 - **Featuring a page as it is created.** The create schema is strict and refuses `featured`; the
   form offers it once the page exists, as it does the picture.
 
 ## The lists
 
-Offices and Tulong pages are browsed a page at a time, newest first as the server sends them, with
-"more are available", never "page 1 of N" (`DL-161`). A record the mapper cannot read refuses the page
-rather than dropping out of it; a Tulong page with one contact of a kind the console does not know is
-unreadable rather than shorter, because a save sends the list back and would delete the contact.
-Hotlines come whole, in the app's order, **capped at a hundred with no word of more**: a list that
-long says it may be missing lines, to this screen and the app alike.
+Each section reads the administrator's own list (`GET admin/offices`, `admin/services`,
+`admin/hotlines`) **whole**, in use or archived (`?archived=true`, the **In use | Archived** tabs, held
+in the URL beside `?section=`). Offices and Tulong pages are by name; hotlines in the app's order.
+Before `DL-225` offices and pages were read a page at a time from the residents' public lists, and
+`GET services` left out a page hidden from the catalogue unless featured — so a hidden page was in no
+list, and the only way back to it was **Open a page by its address**. The admin list holds hidden
+pages, and that workaround is gone. A list too long to read whole is refused by the API (offices past
+500, pages past 1,000, hotlines past 100 with `LIST_TOO_LONG`) and shown as the section's error with
+Try again — never cut short. A record the mapper cannot read refuses the list rather than dropping
+out of it; a Tulong page with one contact of a kind the console does not know is unreadable rather
+than shorter, because a save sends the list back and would lose the contact. An archived row says
+when, by whom and why, offers **History** and **Restore**, and no Edit: it is read-only.
 
 ## Access
 
@@ -110,17 +115,19 @@ protection: the API refuses anybody else.
 ## Checks
 
 `check:directory` (in `verify`): the title says residents see it; effects before each form's button
-and the picture's upload; deletes only through the confirmation, which lists the effects first; the
-effects still say what somebody would regret not being told; no programme type in the directory and
+and the picture's upload; nothing deleted — archive and restore only through the archive dialog,
+handed the domain's effects, no destructive button (`DL-225`); the effects still say what somebody
+would regret not being told; no programme type in the directory and
 no Tulong type in programmes; no image address on a model, in a mapper or a template; no feature file
-input but the shared field, which refuses first; the API's image policy; a capped hotline list said
-so; nothing logged or stored; the three keys the administrator's. Twenty-six planted regressions,
-each caught, every file restored byte for byte.
+input but the shared field, which refuses first; the API's image policy; each list read whole from its admin endpoint, and no "may be incomplete";
+nothing logged or stored; the three keys the administrator's. Twenty-six planted regressions, each
+caught, every file restored byte for byte; the archive rules (`DL-225`) were validated by fourteen
+more, all caught, and `check:archive` holds the whole console to the same line (thirteen).
 
 ## Known gaps
 
-- The spec's `OfficePatch` and `ServicePatch` under-declare what the handlers accept; a hidden page has
-  no admin list; the hotline list is capped silently; an office's delete refusal does not say what
-  names it; a deleted office's banner is never removed from storage. All in
-  `docs/integration/node-api-migration.md`.
+- The spec's `OfficePatch` and `ServicePatch` under-declare what the handlers accept
+  (`docs/integration/node-api-migration.md`). The other gaps listed here before — no admin list for
+  hidden pages, a silently capped hotline list, a delete refusal that did not say what used the
+  office — were closed by the API's archive (`cc86189`, `ca71f23`, `DL-225`).
 - **Not run against a live API.** Built and tested against the vendored spec and composed fixtures.

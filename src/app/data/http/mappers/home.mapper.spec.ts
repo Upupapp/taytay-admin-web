@@ -32,6 +32,27 @@ describe('the home screen mappers (DL-170)', () => {
     expect(toQuickLink({ ...LINK.data, href: '' })).toBeNull();
   });
 
+  it('reads where a banner and a link stand in the archive, and refuses one it cannot place (DL-225)', () => {
+    const archive = {
+      archived_at: '2026-11-10T01:00:00.000Z',
+      archive_reason: 'The campaign has ended.',
+      archived_by_name: 'Fixture Administrator',
+    };
+    const record = {
+      at: archive.archived_at,
+      byName: archive.archived_by_name,
+      reason: archive.archive_reason,
+    };
+
+    expect(BANNERS.data.map((wire) => toHomeBanner(wire)?.archived)).toEqual([null, null]);
+    expect(toQuickLink(LINK.data)?.archived).toBeNull();
+    expect(toHomeBanner({ ...BANNERS.data[0], ...archive })?.archived).toEqual(record);
+    expect(toQuickLink({ ...LINK.data, ...archive })?.archived).toEqual(record);
+    // Not knowing whether residents see it, the record is not read at all.
+    expect(toHomeBanner({ ...BANNERS.data[0], archived_at: 'soon' })).toBeNull();
+    expect(toQuickLink({ ...LINK.data, archived_at: 'soon' })).toBeNull();
+  });
+
   it('reads the home screen as names and counts, never the words of an article', () => {
     const preview = toHomePreview(HOME.data);
 

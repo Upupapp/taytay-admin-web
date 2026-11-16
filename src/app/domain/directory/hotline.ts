@@ -1,3 +1,4 @@
+import type { ArchiveRecord } from '../shared/archive';
 import type { HotlineId, IsoDateTime } from '../shared/ids';
 
 import type { FieldProblem } from './directory-office';
@@ -28,6 +29,11 @@ export interface Hotline {
   /** Shown in the app. An inactive hotline is kept here and shown nowhere else. */
   readonly active: boolean;
   readonly updatedAt: IsoDateTime;
+  /**
+   * `null` while it is in use, active or not; when, by whom and why once it is archived (`DL-225`).
+   * An archived line is in no list the app reads, whatever `active` says.
+   */
+  readonly archived: ArchiveRecord | null;
 }
 
 export interface HotlineDraft {
@@ -43,9 +49,10 @@ export interface HotlineDraft {
 export type HotlineChanges = Partial<HotlineDraft>;
 
 /**
- * The most hotlines the API sends, to this console and to the app alike — `HOTLINE_LIST_CAP` in
- * `src/modules/hotlines/repository.ts` at `2736e28`. The answer carries no "more": a list of exactly
- * this many may be missing some, and the screen says so rather than presenting it as the whole.
+ * The most hotlines the API reads whole — `HOTLINE_LIST_CAP` in `src/modules/hotlines/repository.ts`.
+ * Since `ca71f23` a longer list is **refused** with a 503 rather than cut short, so an answer is the
+ * whole list, however long, and the console no longer says one as long as the cap may be missing
+ * lines (`DL-225`).
  */
 export const HOTLINE_LIST_CAP = 100;
 
@@ -111,9 +118,12 @@ export function hotlineProblems(
  * What each act on a hotline does in the residents' app, shown **before** the button (`DL-170`).
  *
  * Read from `taytay-backend` `2736e28`: `src/modules/hotlines/routes.ts` (audited as
- * `hotline.created`, `hotline.updated`, `hotline.deleted`, with no reason), `repository.ts` (the
- * app's list is active lines only, by order then name, at most a hundred; a delete removes the row),
- * and `src/modules/home/routes.ts` (the home screen carries every active line).
+ * `hotline.created`, `hotline.updated`, with no reason), `repository.ts` (the app's list is active
+ * lines only, by order then name), and `src/modules/home/routes.ts` (the home screen carries every
+ * active line) — and `cc86189` (`DL-225`): nothing deletes a line; it is archived and restored
+ * (`hotline.archived`, `hotline.restored`, each with a reason kept in its archive history); an
+ * archived line is in no public read and takes no change until it is restored; the one-command-center
+ * rule ignores archived lines, so a restore that would make a second active one is refused.
  */
 export const HOTLINE_EFFECTS = {
   createShown: [
@@ -134,11 +144,17 @@ export const HOTLINE_EFFECTS = {
       'again.',
   ],
   show: ['The number appears in the app’s hotline list and on its home screen again.'],
-  remove: [
-    'The number is deleted. It leaves the app’s hotline list and home screen.',
-    'Nothing brings it back: adding it again makes a new entry. To take it out of the app for a ' +
-      'while, make it inactive instead.',
-    'The server records that you deleted it, and when.',
+  archive: [
+    'The number leaves the app’s hotline list and home screen, whether it is active or not.',
+    'It stays here under Archived, with your name, the date and your reason, and can be restored.',
+    'The server records that you archived it, when, and why.',
+  ],
+  restore: [
+    'The line returns as it was: in the app’s hotline list and on its home screen if it is active, ' +
+      'and kept here only if it is not.',
+    'If it is an active command center and another active line holds that role now, the server ' +
+      'refuses: change that line first.',
+    'The server records that you restored it, when, and why.',
   ],
 } as const;
 

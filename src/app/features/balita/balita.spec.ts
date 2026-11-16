@@ -1,9 +1,10 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, type Observable } from 'rxjs';
+import { of, throwError, type Observable } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
 import {
+  ArchiveRefusedError,
   asId,
   asIsoDateTime,
   BALITA_EFFECTS,
@@ -45,6 +46,8 @@ class RecordingNews implements BalitaRepository {
   readonly calls: string[] = [];
   readonly drafts: BalitaDraft[] = [];
   readonly changes: BalitaChanges[] = [];
+  /** A refusal to answer a save with, as the adapter raises it. */
+  refusal: unknown = null;
 
   list(page: CursorRequest): Observable<CursorPage<BalitaArticle>> {
     this.calls.push(`list:${page.cursor ?? 'first'}`);
@@ -62,6 +65,8 @@ class RecordingNews implements BalitaRepository {
     return of([{ slug: 'advisory', label: 'Advisory' }]);
   }
   create(draft: BalitaDraft): Observable<BalitaArticle> {
+    const refusal = this.refusal;
+    if (refusal !== null) return throwError(() => refusal);
     this.calls.push('create');
     this.drafts.push(draft);
     return of({ ...article('new-1', draft.status), title: draft.title });
@@ -191,6 +196,27 @@ describe('BalitaPage (DL-171)', () => {
     expect(drafts).toContain('A draft');
     expect(drafts).toContain(COPY.drafts.id('new-1'));
     expect(element.textContent).toContain(COPY.drafts.lead);
+  });
+
+  it('says in words, never the code, that the office was archived meanwhile (DL-225)', async () => {
+    const news = configure();
+    news.refusal = new ArchiveRefusedError('office-archived', 'OFFICE_ARCHIVED');
+    const fixture = TestBed.createComponent(BalitaPage);
+    const element = await settle(fixture);
+    button(element, COPY.page.write)?.click();
+    await settle(fixture);
+    type(document.body, '#balita-title', 'A draft');
+    type(document.body, '#balita-body', 'Words');
+    await settle(fixture);
+    button(document.body, COPY.editor.saveDraft)?.click();
+    await settle(fixture);
+
+    expect(document.body.textContent).toContain(
+      'That office has been archived, so nothing was put under it. Choose an office in use, or ' +
+        'restore that office first under App directory, Offices, Archived.',
+    );
+    expect(document.body.textContent).not.toContain('OFFICE_ARCHIVED');
+    expect(news.drafts).toEqual([]);
   });
 
   it('opens a draft by its ID, and says plainly when there is none to open', async () => {

@@ -1,5 +1,6 @@
 import type { FieldProblem } from '../directory/directory-office';
 import { isDialable } from '../directory/hotline';
+import type { ArchiveRecord } from '../shared/archive';
 import type { IsoDateTime } from '../shared/ids';
 
 /**
@@ -105,14 +106,27 @@ export function refusesEverySelfie(config: AppConfig): boolean {
   return config.biometricConsent !== undefined && isPlaceholderText(config.biometricConsent);
 }
 
+/** A flag the app is given now (`GET app/config`, which leaves archived flags out). */
 export interface FeatureFlag {
   readonly key: string;
   readonly value: string;
 }
 
 /**
+ * A flag the app is no longer given (`DL-225`): archived by a change that set it to `null`, its value
+ * kept so a restore can give it back as it was (`GET admin/app/feature-flags`). Archived through
+ * the settings' own review, so it carries no reason.
+ */
+export interface ArchivedFeatureFlag {
+  readonly key: string;
+  readonly value: string;
+  readonly archived: ArchiveRecord;
+}
+
+/**
  * A change, as `AppConfigPatch` declares it. `undefined` leaves a setting; `null` clears it. A flag
- * set to `null` is deleted.
+ * set to `null` is archived with its value; a value on an archived flag's key restores it with that
+ * value (`DL-225`).
  */
 export interface AppConfigChanges {
   readonly contactLine?: string | null;
@@ -385,7 +399,7 @@ export function appConfigProblems(
   ) {
     problems.push({
       field: 'featureFlags',
-      message: `A flag's value is 1 to ${APP_CONFIG_LIMITS.flagValue} characters. To remove a flag, delete it.`,
+      message: `A flag's value is 1 to ${APP_CONFIG_LIMITS.flagValue} characters. To take a flag out of the app, archive it.`,
     });
   }
   if (new Set(flags.map((flag) => flag.key)).size !== flags.length) {
@@ -440,7 +454,8 @@ function legalTextProblems(
  *
  * Read from `taytay-backend` `2736e28`: `src/modules/app-config/routes.ts` (one audit entry,
  * `app.config_updated`, naming no setting and keeping no reason; the read is public),
- * `repository.ts` (a `null` flag deletes it), and `src/modules/users/routes.ts` (a resident's
+ * `repository.ts` (a `null` flag is archived with its value since `cc86189`, `DL-225`, and a value
+ * on an archived key restores it), and `src/modules/users/routes.ts` (a resident's
  * acceptance is recorded by version through `POST me/consents`; nothing on the server compares it
  * with these versions, and nothing refuses an old app). What the app does with each setting is the
  * app's, which this console cannot see — so the sentences say what the app is given and what that
@@ -558,8 +573,20 @@ export const APP_CONFIG_EFFECTS = {
     APP_TOO_OLD_FOR_REVIEW_TIME,
   ],
   flags: [
-    'The app reads each flag and decides what it does; this console cannot see what that is. A ' +
-      'deleted flag is no longer given to the app at all.',
+    'The app reads each flag and decides what it does; this console cannot see what that is.',
+  ],
+  flagsArchived: (keys: readonly string[]) => {
+    const one = keys.length === 1;
+    return [
+      `${listWords(keys)} will be archived. The app is no longer given ${one ? 'it' : 'them'}.`,
+      `${one ? 'It stays' : 'They stay'} here under Archived flags with ` +
+        `${one ? 'its value' : 'their values'}, your name and the date, and can be restored. The ` +
+        'server keeps no reason for a flag, so none is asked for.',
+    ];
+  },
+  flagsRestored: (keys: readonly string[]) => [
+    `${listWords(keys)} will be restored. The app is given ${keys.length === 1 ? 'it' : 'them'} ` +
+      `again, with the value ${keys.length === 1 ? 'it' : 'each'} had when archived.`,
   ],
   always: [
     'Applies to every resident the next time the app reads its settings.',
@@ -594,7 +621,11 @@ export function asksEveryResident(current: AppConfig, changes: AppConfigChanges)
 }
 
 /** Every consequence of saving this change, the ones that reach every resident first. */
-export function appConfigEffects(current: AppConfig, changes: AppConfigChanges): readonly string[] {
+export function appConfigEffects(
+  current: AppConfig,
+  changes: AppConfigChanges,
+  archivedFlags: readonly ArchivedFeatureFlag[] = [],
+): readonly string[] {
   const effects: string[] = [];
   // The texts first: a new version reaches every resident before they can go on (`DL-186`).
   if (changes.terms !== undefined) {
@@ -682,8 +713,22 @@ export function appConfigEffects(current: AppConfig, changes: AppConfigChanges):
   if (changes.contactLine !== undefined || changes.supportEmail !== undefined) {
     effects.push(...APP_CONFIG_EFFECTS.contact);
   }
-  if (changes.featureFlags !== undefined && changes.featureFlags.length > 0) {
+  const flags = changes.featureFlags ?? [];
+  const archivedKeys = new Set(archivedFlags.map((flag) => flag.key));
+  const archiving = flags.filter((flag) => flag.value === null).map((flag) => flag.key);
+  const restoring = flags
+    .filter((flag) => flag.value !== null && archivedKeys.has(flag.key))
+    .map((flag) => flag.key);
+  if (flags.length > archiving.length + restoring.length) {
     effects.push(...APP_CONFIG_EFFECTS.flags);
   }
+  if (archiving.length > 0) effects.push(...APP_CONFIG_EFFECTS.flagsArchived(archiving));
+  if (restoring.length > 0) effects.push(...APP_CONFIG_EFFECTS.flagsRestored(restoring));
   return [...effects, ...APP_CONFIG_EFFECTS.always];
+}
+
+/** `a`, `a and b`, `a, b and c` — flag names in a sentence. */
+function listWords(keys: readonly string[]): string {
+  if (keys.length <= 1) return keys.join('');
+  return `${keys.slice(0, -1).join(', ')} and ${keys.at(-1) ?? ''}`;
 }
