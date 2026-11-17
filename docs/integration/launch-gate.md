@@ -181,6 +181,24 @@ That is one browser check of the staging console, not the recorded inspection of
 line asks for. **Production origins do not exist**, so the line cannot be met yet; the
 production console host still has no way to mint a nonce (`DL-172`, GL-14).
 
+**Update 2026-11-17: every staging origin inspected and recorded; production still does not
+exist.** The response headers of the three deployed origins were fetched and read on 17 November
+2026. The inspection found the API sending none of the companion headers and the Linode console
+without the Permissions-Policy; both were fixed and deployed the same day (backend `103f1b3`), and
+the origins inspected again:
+
+| Origin | CSP | nosniff | Framing | Referrer | Permissions | Indexing | Shell / answer caching | HSTS |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Linode console `taytay.139-162-51-165.sslip.io` | the policy above, style nonce per request (`DL-172`) | yes | `frame-ancestors 'none'` + `X-Frame-Options: DENY` | `no-referrer` | camera, microphone, location, payment … all `()` | `noindex, nofollow` | shell `no-store` | absent on purpose |
+| Netlify console `taytayadmin.netlify.app` | the same, nonce per request from the edge function (`DL-206`) | yes | `frame-ancestors 'none'` | `strict-origin-when-cross-origin` | the same | `noindex, nofollow` | shell `max-age=0, must-revalidate` | set by Netlify for its own domain |
+| API `taytay-api.139-162-51-165.sslip.io` | `default-src 'none'; frame-ancestors 'none'` | yes | `frame-ancestors 'none'` + `X-Frame-Options: DENY` | `no-referrer` | — (no document) | — | `no-store` on every answer to a credentialed request, refusals included | absent on purpose |
+
+HSTS is withheld from both repositories' own configuration until the production domain and its
+certificate chain exist, because it cannot be withdrawn from the server (`netlify.toml`,
+`check:headers`, backend `src/http/security-headers.ts`). The line stays **NO-GO** only because
+production origins do not exist: when they do, the same inspection is repeated against them, with
+HSTS added after the certificate chain is confirmed.
+
 ### 14 — DPO appointed and reading the trail; retention approved and applied; access request answerable
 **NO-GO. Release-gate blocker 1.** No DPO is appointed. No retention schedule exists — every period
 is `null` and the screen says "No schedule recorded" rather than inventing one. This has the longest
