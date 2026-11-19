@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -48,6 +47,7 @@ import {
   type TransitionGuidance,
 } from '@shared/cases/status-transition';
 import { ObjectUrls } from '@shared/media/object-urls';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { failureReason } from '@shared/state/failure-reason';
 import { liveViewState } from '@shared/state/live-view-state';
@@ -134,7 +134,7 @@ interface OpenedFile {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncContent,
-    DatePipe,
+    DisplayDatePipe,
     Icon,
     Modal,
     PageHeader,

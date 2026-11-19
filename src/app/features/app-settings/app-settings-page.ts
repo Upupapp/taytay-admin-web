@@ -8,7 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
+
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs';
 
@@ -35,12 +35,14 @@ import {
   type WorkingDayRange,
 } from '@domain/index';
 import { blankToNull, readChecked, readText } from '@shared/forms/form-values';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { failureReason } from '@shared/state/failure-reason';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Icon } from '@shared/ui/icon/icon';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 
 import { APP_SETTINGS_COPY } from './app-settings.copy';
 
@@ -104,7 +106,7 @@ const LEGAL_GROUPS = [
 @Component({
   selector: 'app-app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, Icon, Modal, PageHeader],
+  imports: [ScrollRegion, AsyncContent, DisplayDatePipe, Icon, Modal, PageHeader],
   templateUrl: './app-settings-page.html',
   styleUrl: './app-settings-page.scss',
 })

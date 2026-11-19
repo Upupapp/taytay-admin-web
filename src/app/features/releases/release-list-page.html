@@ -209,7 +209,7 @@
             </span>
           }
           @if (release.scheduledFor) {
-            <span class="release-rows__date">{{ release.scheduledFor }}</span>
+            <span class="release-rows__date">{{ release.scheduledFor | displayDate }}</span>
           } @else {
             <span class="release-rows__muted">{{ copy.notScheduled }}</span>
           }

@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
@@ -25,6 +24,7 @@ import {
   type ProgramUtilizationReading,
   type RequirementTemplate,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { PROGRAM_COPY } from '@shared/programs/program.copy';
 import { ResponsibilityNotice } from '@shared/programs/responsibility-notice';
 import { liveViewState } from '@shared/state/live-view-state';
@@ -67,7 +67,7 @@ export const PROGRAM_DETAIL_TOPICS: readonly LiveTopic[] = ['programs', 'release
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncContent,
-    DatePipe,
+    DisplayDatePipe,
     PageHeader,
     PesoPipe,
     ResponsibilityNotice,

@@ -394,7 +394,7 @@
             @if (profile.history.history.lastActivityAt; as last) {
               <dt>{{ copy.lastActivity }}</dt>
               <dd>
-                <time [attr.datetime]="last">{{ last | date: 'd MMM y' }}</time>
+                <time [attr.datetime]="last">{{ last | displayDate }}</time>
               </dd>
             }
           </dl>

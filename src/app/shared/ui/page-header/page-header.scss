@@ -28,7 +28,7 @@
   font-weight: var(--fw-medium);
   line-height: var(--lh-display);
   letter-spacing: var(--ls-display);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .page-header__subtitle {

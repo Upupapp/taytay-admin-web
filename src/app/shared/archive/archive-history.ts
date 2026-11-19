@@ -1,9 +1,9 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { of, switchMap, type Observable } from 'rxjs';
 
 import { actorInSentence, type ArchiveEvent } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 
 import { IDLE, toViewState, type ViewState } from '../state/view-state';
 import { AsyncContent } from '../ui/async-content/async-content';
@@ -23,7 +23,7 @@ let histories = 0;
 @Component({
   selector: 'app-archive-history',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe],
+  imports: [AsyncContent, DisplayDatePipe],
   template: `
     <section class="stack" [attr.aria-labelledby]="headingId">
       <h3 class="section-title" [id]="headingId">{{ copy.heading }}</h3>
@@ -44,7 +44,7 @@ let histories = 0;
                   <span>
                     <strong>{{ event.act === 'archived' ? copy.archived : copy.restored }}</strong>
                     <time [attr.datetime]="event.occurredAt">
-                      {{ event.occurredAt | date: 'd MMM y, HH:mm' }}</time
+                      {{ event.occurredAt | displayDate: 'date-time' }}</time
                     >
                     {{ copy.by }} {{ actor(event.actorName) }}
                   </span>

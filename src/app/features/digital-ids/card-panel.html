@@ -38,9 +38,9 @@
               <dt>{{ copy.status }}</dt>
               <dd><app-status-badge [catalog]="catalog" [status]="current.status" /></dd>
               <dt>{{ copy.issued }}</dt>
-              <dd>{{ current.issuedAt | date: 'd MMM y' }}</dd>
+              <dd>{{ current.issuedAt | displayDate }}</dd>
               <dt>{{ copy.expires }}</dt>
-              <dd>{{ current.expiresAt | date: 'd MMM y' }}</dd>
+              <dd>{{ current.expiresAt | displayDate }}</dd>
             </dl>
             @if (pastExpiry(current)) {
               <p class="status-line digital-ids__note">{{ copy.pastExpiry }}</p>
@@ -92,7 +92,7 @@
               (change)="photoChoice.set(photo)"
             />
             <span class="choice__text">
-              {{ copy.photoCard((photo.takenAt | date: 'd MMM y, h:mm a') ?? '') }}
+              {{ copy.photoCard((photo.takenAt | displayDate: 'date-time') ?? '') }}
               <span class="choice__hint">{{ copy.photoCardHint }}</span>
             </span>
           </label>

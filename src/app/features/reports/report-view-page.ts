@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -29,6 +28,7 @@ import {
   type ReportSeries,
 } from '@domain/index';
 import { ObjectUrls } from '@shared/media/object-urls';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { ChartTable } from '@shared/ui/chart-table/chart-table';
@@ -61,7 +61,7 @@ import { REPORTS_COPY } from './reports.copy';
 @Component({
   selector: 'app-report-view-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, ChartTable, DatePipe, PageHeader, RouterLink],
+  imports: [AsyncContent, ChartTable, DisplayDatePipe, PageHeader, RouterLink],
   templateUrl: './report-view-page.html',
   styleUrl: './report-view-page.scss',
 })
@@ -97,9 +97,7 @@ export class ReportViewPage {
 
   protected readonly state = toSignal(
     toObservable(this.query).pipe(
-      switchMap((query) =>
-        toViewState(this.repository.run(query.id as ReportId, query.filter)),
-      ),
+      switchMap((query) => toViewState(this.repository.run(query.id as ReportId, query.filter))),
     ),
     { initialValue: LOADING as ViewState<ReportResult | null> },
   );

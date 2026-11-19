@@ -55,7 +55,7 @@
             @if (request.submittedAt; as filed) {
               <dt>{{ copy.filedOn }}</dt>
               <dd>
-                <time [attr.datetime]="filed">{{ filed | date: 'd MMM y, HH:mm' }}</time>
+                <time [attr.datetime]="filed">{{ filed | displayDate: 'date-time' }}</time>
               </dd>
             }
             <dt>{{ copy.channel }}</dt>
@@ -99,7 +99,7 @@
                   <p class="history__move">{{ copy.assignedLine(assignment.assigneeName) }}</p>
                   <p class="soft-row__meta history__who">
                     <time [attr.datetime]="assignment.occurredAt">
-                      {{ assignment.occurredAt | date: 'd MMM y, HH:mm' }}
+                      {{ assignment.occurredAt | displayDate: 'date-time' }}
                     </time>
                     · {{ assignment.actorName }}
                   </p>
@@ -244,7 +244,7 @@
                   <p class="status-line assessment__note">
                     {{ applicabilityLabel(requirement) }}
                     @if (rulingWhen(requirement); as when) {
-                      · <time [attr.datetime]="when">{{ when | date: 'd MMM y' }}</time>
+                      · <time [attr.datetime]="when">{{ when | displayDate }}</time>
                     }
                     —
                     @if (withheld(request, 'requirementRemarks')) {
@@ -302,13 +302,13 @@
                               {{ channelLabels[entry.channel] }}
                               @if (entry.neededBy) {
                                 &middot; {{ documentCopy.neededByLabel }}
-                                {{ entry.neededBy | date: 'd MMM y' }}
+                                {{ entry.neededBy | displayDate }}
                               }
                             </p>
                             <p class="soft-row__meta asked__meta">
                               {{ documentCopy.requestedOn }}
                               <time [attr.datetime]="entry.requestedAt">
-                                {{ entry.requestedAt | date: 'd MMM y' }}
+                                {{ entry.requestedAt | displayDate }}
                               </time>
                               · {{ entry.requestedByName }}
                             </p>
@@ -540,9 +540,7 @@
               <dt>{{ copy.studyBy }}</dt>
               <dd>
                 {{ study.assessedByName }} ·
-                <time [attr.datetime]="study.assessedAt">{{
-                  study.assessedAt | date: 'd MMM y'
-                }}</time>
+                <time [attr.datetime]="study.assessedAt">{{ study.assessedAt | displayDate }}</time>
               </dd>
               <dt>{{ copy.recommendation }}</dt>
               <dd>{{ recommendationLabel(study) }}</dd>
@@ -811,7 +809,7 @@
                     <li class="soft-row soft-row--stacked history__item">
                       <p class="soft-row__meta history__who">
                         <time [attr.datetime]="note.createdAt">
-                          {{ note.createdAt | date: 'd MMM y, HH:mm' }}
+                          {{ note.createdAt | displayDate: 'date-time' }}
                         </time>
                         · {{ note.authorName }} · {{ copy.noteSensitivityLabels[note.sensitivity] }}
                       </p>
@@ -1094,7 +1092,7 @@
                   <p class="history__move">{{ moveLabel(change) }}</p>
                   <p class="soft-row__meta history__who">
                     <time [attr.datetime]="change.occurredAt">
-                      {{ change.occurredAt | date: 'd MMM y, HH:mm' }}
+                      {{ change.occurredAt | displayDate: 'date-time' }}
                     </time>
                     · {{ change.actorName }}
                   </p>

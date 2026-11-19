@@ -23,6 +23,7 @@ import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { ADMIN_COPY } from './administration.copy';
@@ -54,7 +55,7 @@ export const GOVERNANCE_CORRECTION_TOPICS: readonly LiveTopic[] = ['governance']
 @Component({
   selector: 'app-governance-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, PageHeader, RouterLink, StatusBadge],
+  imports: [ScrollRegion, AsyncContent, PageHeader, RouterLink, StatusBadge],
   templateUrl: './governance-page.html',
   styleUrl: './governance-page.scss',
 })

@@ -71,7 +71,7 @@
                   <dd>
                     {{
                       account.lastSignInAt
-                        ? (account.lastSignInAt | date: 'd MMM y, HH:mm')
+                        ? (account.lastSignInAt | displayDate: 'date-time')
                         : account.lastSignInRecorded
                           ? copy.never
                           : copy.notRecorded

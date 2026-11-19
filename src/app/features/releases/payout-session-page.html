@@ -99,7 +99,7 @@
               <dl class="facts">
                 <div class="facts__item">
                   <dt>{{ copy.scheduledFor }}</dt>
-                  <dd>{{ batch.scheduledFor }}</dd>
+                  <dd>{{ batch.scheduledFor | displayDate }}</dd>
                 </div>
                 <div class="facts__item">
                   <dt>{{ copy.venue }}</dt>
@@ -140,9 +140,11 @@
         <button type="button" class="btn" (click)="print()">{{ copy.print }}</button>
       </div>
 
-      <p class="manifest__meta">{{ sheet.title }} · {{ sheet.scheduledFor }} · {{ sheet.venue }}</p>
+      <p class="manifest__meta">
+        {{ sheet.title }} · {{ sheet.scheduledFor | displayDate }} · {{ sheet.venue }}
+      </p>
 
-      <div class="table-scroll">
+      <div class="table-scroll" [appScrollRegion]="sheet.title">
         <table class="manifest__table">
           <caption class="manifest__caption">
             {{

@@ -36,6 +36,7 @@ import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Drawer } from '@shared/ui/drawer/drawer';
 import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 
 import { BENEFICIARIES_COPY } from './beneficiaries.copy';
 
@@ -65,6 +66,7 @@ export const DUPLICATE_QUEUE_TOPICS: readonly LiveTopic[] = ['beneficiaries', 'r
   selector: 'app-duplicate-review-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ScrollRegion,
     AsyncContent,
     Drawer,
     FormsModule,

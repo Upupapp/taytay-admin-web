@@ -22,6 +22,7 @@ import {
   type ResidentImportId,
 } from '@domain/index';
 import { failureReason } from '@shared/state/failure-reason';
+import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 
 import { RESIDENT_IMPORT_COPY } from './resident-import.copy';
 
@@ -36,6 +37,7 @@ import { RESIDENT_IMPORT_COPY } from './resident-import.copy';
 @Component({
   selector: 'app-import-mapping-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ScrollRegion],
   templateUrl: './import-mapping-form.html',
 })
 export class ImportMappingForm {

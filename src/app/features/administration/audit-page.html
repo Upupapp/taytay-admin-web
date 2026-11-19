@@ -71,7 +71,7 @@
                   <!-- The word, not only the border. -->
                   <span class="chip chip--danger entry__sensitive">{{ copy.sensitiveBadge }}</span>
                 }
-                <time class="entry__time">{{ row.occurredAt | date: 'd MMM y, HH:mm' }}</time>
+                <time class="entry__time">{{ row.occurredAt | displayDate: 'date-time' }}</time>
               </p>
 
               <p class="entry__summary">{{ row.summary }}</p>

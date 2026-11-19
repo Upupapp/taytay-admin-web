@@ -72,7 +72,7 @@
                 <dt>{{ copy.filed }}</dt>
                 <dd>
                   <time [attr.datetime]="request.filedAt">
-                    {{ request.filedAt | date: 'd MMM y, HH:mm' }}
+                    {{ request.filedAt | displayDate: 'date-time' }}
                   </time>
                 </dd>
               </div>
@@ -139,7 +139,7 @@
                             {{ copy.kind(attachment.mimeType) }} ·
                             {{ copy.size(attachment.byteSize) }} · {{ copy.sent }}
                             <time [attr.datetime]="attachment.sentAt">
-                              {{ attachment.sentAt | date: 'd MMM y, HH:mm' }}
+                              {{ attachment.sentAt | displayDate: 'date-time' }}
                             </time>
                             <span class="request__aside">
                               {{ attachment.current ? copy.currentVersion : copy.replaced }}
@@ -237,7 +237,9 @@
                 <li class="soft-row soft-row--stacked request__event">
                   <p class="request__event-what">
                     <strong>{{ eventLabel(event) }}</strong>
-                    <time [attr.datetime]="event.at">{{ event.at | date: 'd MMM y, HH:mm' }}</time>
+                    <time [attr.datetime]="event.at">{{
+                      event.at | displayDate: 'date-time'
+                    }}</time>
                   </p>
                   <p class="status-line request__aside">
                     {{ actorLabel(request, event) }} · {{ copy.account }}

@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -62,6 +61,7 @@ import { CaseTimeline } from '@shared/cases/case-timeline';
 import { CASE_COPY } from '@shared/cases/case.copy';
 import { StatusTransition, type StatusTransitionRequest } from '@shared/cases/status-transition';
 import { VulnerabilitySnapshotPanel } from '@shared/households/vulnerability-snapshot';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
 import { liveViewState } from '@shared/state/live-view-state';
@@ -69,6 +69,7 @@ import { LOADING, toViewState, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { CASES_COPY } from './cases.copy';
@@ -120,9 +121,10 @@ interface OwerChoice {
   selector: 'app-case-workspace-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ScrollRegion,
     AsyncContent,
     CaseTimeline,
-    DatePipe,
+    DisplayDatePipe,
     Modal,
     NotConnected,
     PageHeader,

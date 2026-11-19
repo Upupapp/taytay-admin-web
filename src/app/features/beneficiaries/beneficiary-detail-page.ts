@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -24,6 +23,7 @@ import {
   type ResidentId,
 } from '@domain/index';
 import { AssistanceHistoryTimeline } from '@shared/beneficiaries/assistance-history-timeline';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
@@ -70,7 +70,7 @@ export type FindingStanding = 'kept' | 'superseded' | 'distinct';
   imports: [
     AssistanceHistoryTimeline,
     AsyncContent,
-    DatePipe,
+    DisplayDatePipe,
     PageHeader,
     PesoPipe,
     RouterLink,

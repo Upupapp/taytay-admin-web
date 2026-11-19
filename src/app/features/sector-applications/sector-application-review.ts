@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -32,6 +31,7 @@ import {
   type SectorCardDetails,
 } from '@domain/index';
 import { ObjectUrls } from '@shared/media/object-urls';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { PersonPicker } from '@shared/residents/person-picker';
 import { failureReason } from '@shared/state/failure-reason';
 import { LOADING, toViewState, type ViewState } from '@shared/state/view-state';
@@ -65,7 +65,7 @@ interface OpenedProof {
 @Component({
   selector: 'app-sector-application-review',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, Icon, Modal, PersonPicker, RouterLink, StatusBadge],
+  imports: [AsyncContent, DisplayDatePipe, Icon, Modal, PersonPicker, RouterLink, StatusBadge],
   templateUrl: './sector-application-review.html',
   styleUrl: './sector-applications.scss',
 })

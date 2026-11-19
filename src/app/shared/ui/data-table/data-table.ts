@@ -7,6 +7,7 @@ import { EmptyState, type EmptyStateVariant } from '../empty-state/empty-state';
 import { Icon } from '../icon/icon';
 import type { IconName } from '../icon/icons';
 import { Skeleton } from '../loading/skeleton';
+import { ScrollRegion } from '../scroll-region/scroll-region';
 import { columnText, type TableColumn } from './table-column';
 
 /**
@@ -15,12 +16,14 @@ import { columnText, type TableColumn } from './table-column';
  * Deliberately presentational: it receives rows, columns and a page descriptor
  * and emits intent. It never fetches, so it is identical against mock and HTTP
  * adapters, and every list screen inherits the same sorting affordance,
- * loading skeleton, empty state and pager.
+ * loading skeleton, empty state and pager — and the same phone layout, where
+ * each row becomes a block of header–value lines instead of columns squeezed
+ * to a word apiece (DL-227).
  */
 @Component({
   selector: 'app-data-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, EmptyState, Icon, Skeleton],
+  imports: [NgTemplateOutlet, EmptyState, Icon, ScrollRegion, Skeleton],
   templateUrl: './data-table.html',
   styleUrl: './data-table.scss',
 })

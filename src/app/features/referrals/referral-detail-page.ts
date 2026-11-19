@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -34,6 +33,7 @@ import {
   type SharedField,
   referralWordsWithheld,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { liveRead, liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -57,7 +57,7 @@ export const REFERRAL_DETAIL_TOPICS: readonly LiveTopic[] = ['referrals'];
 @Component({
   selector: 'app-referral-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, DisplayDatePipe, PageHeader, RouterLink, StatusBadge],
   templateUrl: './referral-detail-page.html',
   styleUrl: './referral-detail-page.scss',
 })

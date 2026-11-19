@@ -105,7 +105,7 @@
                 <dl class="event__facts">
                   <div class="event__fact">
                     <dt>{{ copy.when }}</dt>
-                    <dd>{{ event.startsAt | date: 'EEE d MMM y, HH:mm' }}</dd>
+                    <dd>{{ event.startsAt | displayDate: 'weekday-date-time' }}</dd>
                   </div>
                   <div class="event__fact">
                     <dt>{{ copy.venue }}</dt>
@@ -126,7 +126,7 @@
                   </div>
                   <div class="event__fact">
                     <dt>{{ copy.updated }}</dt>
-                    <dd>{{ event.audit.updatedAt | date: 'd MMM y, HH:mm' }}</dd>
+                    <dd>{{ event.audit.updatedAt | displayDate: 'date-time' }}</dd>
                   </div>
                 </dl>
               </div>

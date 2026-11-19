@@ -36,6 +36,7 @@ import {
   type ReleaseStatusGroup,
   type ReleaseKind,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
@@ -76,6 +77,7 @@ export const RELEASE_LIST_TOPICS: readonly LiveTopic[] = ['releases'];
   selector: 'app-release-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DisplayDatePipe,
     AsyncContent,
     Icon,
     ListChangedNotice,

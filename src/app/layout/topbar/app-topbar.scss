@@ -45,7 +45,8 @@
 }
 
 .topbar__search {
-  flex: 0 1 380px;
+  /* Wide enough for the search pill's whole prompt and its shortcut (DL-227). */
+  flex: 0 1 400px;
   min-inline-size: 0;
 }
 

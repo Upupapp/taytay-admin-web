@@ -516,7 +516,7 @@ describe('VerificationReview', () => {
       const element = await settle(fixture);
 
       expect(element.querySelector('.review__erased')?.textContent).toMatch(
-        /^\s*Selfie erased on 3 Nov 2026, \d\d:\d\d \(consent withdrawn or replaced\)\.\s*$/,
+        /^\s*Selfie erased on 3 Nov 2026, \d{1,2}:\d\d [AP]M \(consent withdrawn or replaced\)\.\s*$/,
       );
       expect(buttonNamed(element, VERIFICATION_COPY.review.openImages)).toBeNull();
       buttonNamed(element, VERIFICATION_COPY.review.openIdOnly)?.click();

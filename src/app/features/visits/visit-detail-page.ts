@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -27,6 +26,7 @@ import {
   type VisitStatus,
   visitWordsWithheld,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -49,7 +49,7 @@ export const VISIT_DETAIL_TOPICS: readonly LiveTopic[] = ['visits'];
 @Component({
   selector: 'app-visit-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, DisplayDatePipe, PageHeader, RouterLink, StatusBadge],
   templateUrl: './visit-detail-page.html',
   styleUrl: './visit-detail-page.scss',
 })

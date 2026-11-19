@@ -4,6 +4,7 @@ import {
   computed,
   DestroyRef,
   inject,
+  LOCALE_ID,
   signal,
   TemplateRef,
   viewChild,
@@ -25,6 +26,7 @@ import {
 } from '@domain/index';
 import { readText } from '@shared/forms/form-values';
 import { officeDirectory } from '@shared/offices/office-directory';
+import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
 import { failureReason } from '@shared/state/failure-reason';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
@@ -67,6 +69,7 @@ export class BalitaPage {
   private readonly repository = inject(BALITA_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
   private readonly live = inject(LiveUpdates);
+  private readonly locale = inject(LOCALE_ID);
 
   protected readonly copy = BALITA_COPY;
   protected readonly rules = BALITA_OFFICE_RULES;
@@ -148,7 +151,7 @@ export class BalitaPage {
     {
       key: 'published',
       header: this.copy.list.columnPublished,
-      value: (article) => (article.publishedAt ?? '').slice(0, 10),
+      value: (article) => formatDisplayDate(article.publishedAt, 'date', this.locale) ?? '',
     },
     {
       key: 'open',

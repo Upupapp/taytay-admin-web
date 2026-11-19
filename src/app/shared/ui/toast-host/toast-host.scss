@@ -65,7 +65,7 @@
   margin-block-start: 2px;
   color: var(--text2);
   font-size: var(--fs-sm);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .toast__action {

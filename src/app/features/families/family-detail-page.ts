@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -33,6 +32,7 @@ import {
   type EndRelationshipRequest,
 } from '@shared/families/relationship-graph';
 import { RELATIONSHIP_COPY } from '@shared/families/relationship.copy';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { PersonPicker } from '@shared/residents/person-picker';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
@@ -61,7 +61,7 @@ export const FAMILY_DETAIL_TOPICS: readonly LiveTopic[] = ['families', 'resident
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncContent,
-    DatePipe,
+    DisplayDatePipe,
     HasPermissionDirective,
     Modal,
     PageHeader,

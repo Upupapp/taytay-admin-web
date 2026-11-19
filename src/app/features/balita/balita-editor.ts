@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -34,6 +33,7 @@ import { readText } from '@shared/forms/form-values';
 import { ImageFileField } from '@shared/media/image-file-field';
 import { ObjectUrls } from '@shared/media/object-urls';
 import { plainRefusal } from '@shared/archive/archive.copy';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { valueOf, type ViewState } from '@shared/state/view-state';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -58,7 +58,7 @@ type Outcome = keyof typeof BALITA_COPY.editor.outcome;
 @Component({
   selector: 'app-balita-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ImageFileField, StatusBadge],
+  imports: [DisplayDatePipe, ImageFileField, StatusBadge],
   templateUrl: './balita-editor.html',
   styleUrl: './balita.scss',
 })

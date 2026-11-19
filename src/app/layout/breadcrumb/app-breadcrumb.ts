@@ -4,7 +4,7 @@ import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 
 import { ServedPorts } from '@core/access/served-ports';
-import { NAVIGATION } from '@core/navigation/navigation';
+import { activeNavRoute, NAVIGATION, pathOf, type NavItem } from '@core/navigation/navigation';
 
 import { LAYOUT_COPY } from '../layout.copy';
 
@@ -93,18 +93,21 @@ export class AppBreadcrumb {
  * to the audit entry rather than to a parent that merely shares a prefix.
  */
 export function buildCrumbs(url: string, home: Crumb | null = HOME_CRUMB): readonly Crumb[] {
-  const path = url.split('?')[0]?.split('#')[0] ?? '/';
+  const path = pathOf(url) || '/';
 
+  // The same longest-route rule the menu marks its current entry by, so the two always agree.
+  const route = activeNavRoute(
+    path,
+    NAVIGATION.flatMap((section) => section.items.map((item) => item.route)),
+  );
   let bestSection: string | null = null;
-  let bestItem: { label: string; route: string } | null = null;
-
+  let bestItem: NavItem | null = null;
   for (const section of NAVIGATION) {
-    for (const item of section.items) {
-      const matches = path === item.route || path.startsWith(`${item.route}/`);
-      if (matches && (bestItem === null || item.route.length > bestItem.route.length)) {
-        bestSection = section.title;
-        bestItem = { label: item.label, route: item.route };
-      }
+    const item = section.items.find((candidate) => candidate.route === route);
+    if (item !== undefined) {
+      bestSection = section.title;
+      bestItem = item;
+      break;
     }
   }
 
@@ -122,5 +125,14 @@ export function buildCrumbs(url: string, home: Crumb | null = HOME_CRUMB): reado
     trail.push({ label: bestSection, route: null });
   }
   trail.push({ label: bestItem.label, route: bestItem.route });
+  // A page under the entry with a heading of its own ends the trail with that heading.
+  const pageRoute = activeNavRoute(
+    path,
+    (bestItem.pages ?? []).map((page) => page.path),
+  );
+  const page = bestItem.pages?.find((candidate) => candidate.path === pageRoute);
+  if (page !== undefined) {
+    trail.push({ label: page.label, route: page.path });
+  }
   return trail;
 }

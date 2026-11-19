@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -24,6 +23,7 @@ import {
   type OfficeThread,
 } from '@domain/index';
 import { officeDirectory } from '@shared/offices/office-directory';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
@@ -63,7 +63,7 @@ export const INBOX_TOPICS: readonly LiveTopic[] = ['threads'];
   imports: [
     AsyncContent,
     DataTable,
-    DatePipe,
+    DisplayDatePipe,
     Icon,
     ListChangedNotice,
     PageHeader,

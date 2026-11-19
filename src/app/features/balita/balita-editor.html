@@ -10,7 +10,7 @@
     </dd>
     @if (current.publishedAt; as published) {
       <dt>{{ copy.published }}</dt>
-      <dd>{{ published | date: 'd MMM y, h:mm a' }}</dd>
+      <dd>{{ published | displayDate: 'date-time' }}</dd>
     }
   </dl>
 }

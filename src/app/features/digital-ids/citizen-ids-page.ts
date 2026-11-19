@@ -10,7 +10,6 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { formatDate } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink, type ParamMap } from '@angular/router';
 import { EMPTY, map, switchMap, tap } from 'rxjs';
 
@@ -29,6 +28,7 @@ import {
   type DigitalIdListPage,
   type DigitalIdListStatus,
 } from '@domain/index';
+import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
 import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
@@ -291,7 +291,7 @@ export class CitizenIdsPage {
   }
 
   private date(value: string): string {
-    return formatDate(value, 'd MMM y', this.locale);
+    return formatDisplayDate(value, 'date', this.locale) ?? '';
   }
 }
 

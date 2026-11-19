@@ -28,7 +28,9 @@ export const LAYOUT_COPY = {
   // holds every word it shows, the shortcut included, so a speech user can say what they see
   // (WCAG 2.5.3).
   searchLabel: 'Search residents, requests, programmes, Ctrl K',
-  searchPlaceholder: 'Search residents, requests, programmes…',
+  // No closing ellipsis: the pill is wide enough for the whole prompt (DL-227), and a typed "…"
+  // read as text cut off.
+  searchPlaceholder: 'Search residents, requests, programmes',
   searchShortcutHint: 'Ctrl K',
 
   // Notifications

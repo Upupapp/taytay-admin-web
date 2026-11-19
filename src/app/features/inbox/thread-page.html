@@ -31,7 +31,7 @@
               <dt>{{ copy.started }}</dt>
               <dd>
                 <time [attr.datetime]="conversation.createdAt">
-                  {{ conversation.createdAt | date: 'd MMM y, HH:mm' }}
+                  {{ conversation.createdAt | displayDate: 'date-time' }}
                 </time>
               </dd>
             </div>
@@ -110,7 +110,7 @@
                     <p class="thread__meta">
                       <strong>{{ authorLabel(conversation, message) }}</strong>
                       <time [attr.datetime]="message.sentAt">
-                        {{ message.sentAt | date: 'd MMM y, HH:mm' }}
+                        {{ message.sentAt | displayDate: 'date-time' }}
                       </time>
                     </p>
                     <p class="thread__body">{{ message.body }}</p>

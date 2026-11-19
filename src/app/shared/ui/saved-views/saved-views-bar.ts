@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -21,6 +20,7 @@ import {
   type SavedViewId,
   type SavedViewResource,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { plainRefusal } from '../../archive/archive.copy';
 import { IDLE, toViewState, type ViewState } from '../../state/view-state';
 import { AsyncContent } from '../async-content/async-content';
@@ -49,7 +49,7 @@ import { SAVED_VIEWS_COPY } from './saved-views.copy';
 @Component({
   selector: 'app-saved-views-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, Icon, Modal, RouterLink],
+  imports: [AsyncContent, DisplayDatePipe, Icon, Modal, RouterLink],
   template: `
     <section class="views" [attr.aria-label]="heading()">
       <h2 class="visually-hidden">{{ heading() }}</h2>
@@ -164,7 +164,7 @@ import { SAVED_VIEWS_COPY } from './saved-views.copy';
                             {{ copy.shared }} ·
                           }
                           @if (view.archived; as when) {
-                            {{ copy.archivedOn((when.at | date: 'd MMM y') ?? '') }}
+                            {{ copy.archivedOn((when.at | displayDate) ?? '') }}
                           }
                         </span>
                       </span>

@@ -29,6 +29,7 @@ import {
   type VisitPurpose,
   type VisitStatus,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { debouncedTerm } from '@shared/state/debounced';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
@@ -65,6 +66,7 @@ export const VISIT_LIST_TOPICS: readonly LiveTopic[] = ['visits'];
   selector: 'app-visit-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DisplayDatePipe,
     AsyncContent,
     Icon,
     ListChangedNotice,

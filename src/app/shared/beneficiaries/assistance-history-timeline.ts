@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import {
@@ -11,6 +10,7 @@ import {
   type AssistanceTimelineEntry,
   type StatusDescriptor,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 
 import { PesoPipe } from '../pipes/peso.pipe';
 
@@ -34,7 +34,7 @@ import { PesoPipe } from '../pipes/peso.pipe';
 @Component({
   selector: 'app-assistance-history-timeline',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, PesoPipe],
+  imports: [DisplayDatePipe, PesoPipe],
   template: `
     <section class="history" [attr.aria-labelledby]="headingId()">
       <header class="history__header">
@@ -66,7 +66,7 @@ import { PesoPipe } from '../pipes/peso.pipe';
 
                 <p class="history__meta">
                   <time class="history__when" [attr.datetime]="entry.occurredAt">
-                    {{ entry.occurredAt | date: 'd MMM y' }}
+                    {{ entry.occurredAt | displayDate }}
                   </time>
                   <!-- The reference is what makes a line checkable: every row on
                        this list names a record somebody can open. -->

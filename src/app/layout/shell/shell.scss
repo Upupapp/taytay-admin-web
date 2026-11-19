@@ -132,7 +132,7 @@
   color: var(--ink);
   font-size: var(--fs-control);
   font-weight: var(--fw-semibold);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .shell__account-meta {

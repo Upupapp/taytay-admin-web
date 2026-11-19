@@ -124,6 +124,13 @@ import { PROGRAMS_COPY } from './programs.copy';
       grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
       gap: var(--space-3) var(--space-4);
     }
+
+    /* The shared .field + .field spacing is replaced by the gap, not redefined: in a row it
+       would drop the second field below the first (DL-227). */
+    .documents-editor__grid > .field + .field {
+      margin-block-start: 0;
+    }
+
     .documents-editor__none {
       margin: 0;
       font-size: var(--fs-label);

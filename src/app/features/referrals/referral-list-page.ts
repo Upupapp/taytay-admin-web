@@ -57,6 +57,7 @@ import {
   type ServiceProvider,
   type ServiceProviderId,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
@@ -153,6 +154,7 @@ const NO_CHOICES: LinkChoices = { cases: [], requests: [], more: false };
   selector: 'app-referral-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DisplayDatePipe,
     DataTable,
     HasPermissionDirective,
     Icon,

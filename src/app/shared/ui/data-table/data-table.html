@@ -1,17 +1,23 @@
 <!-- aria-busy so the whole table region reads as in-flight rather than empty
-     while rows are loading — DL-16, superseded by DL-25. -->
-<div class="table-wrap" [attr.aria-busy]="loading() ? 'true' : null">
-  <table class="table">
+     while rows are loading — DL-16, superseded by DL-25. The wrapper becomes a
+     focusable, labelled region only while the table is wider than it (DL-227).
+     The explicit roles keep the table a table to assistive technology when a
+     phone lays its rows out as stacked blocks, and each cell's data-label is the
+     header a phone prints beside its value, drawn by CSS with empty alternative
+     text so a reader hears the header once, from the header cell (DL-227). -->
+<div class="table-wrap" [appScrollRegion]="caption()" [attr.aria-busy]="loading() ? 'true' : null">
+  <table class="table" role="table">
     <caption class="visually-hidden">
       {{
         caption()
       }}
     </caption>
-    <thead>
-      <tr>
+    <thead role="rowgroup">
+      <tr role="row">
         @for (column of columns(); track column.key) {
           <th
             scope="col"
+            role="columnheader"
             [style.width]="column.width"
             [class.table__cell--end]="column.align === 'end'"
             [attr.aria-sort]="column.sortField ? ariaSortFor(column) : null"
@@ -36,9 +42,10 @@
     </thead>
 
     @if (!loading() && rows().length > 0) {
-      <tbody>
+      <tbody role="rowgroup">
         @for (row of rows(); track rowKey()(row)) {
           <tr
+            role="row"
             class="table__row"
             [class.table__row--selectable]="selectable()"
             [attr.tabindex]="selectable() ? 0 : null"
@@ -48,16 +55,20 @@
           >
             @for (column of columns(); track column.key) {
               <td
+                role="cell"
                 [class.table__cell--end]="column.align === 'end'"
                 [class.table__cell--nowrap]="column.nowrap === true"
+                [attr.data-label]="column.hideHeader ? null : column.header"
               >
-                @if (column.cell) {
-                  <ng-container
-                    *ngTemplateOutlet="column.cell; context: { $implicit: row }"
-                  ></ng-container>
-                } @else {
-                  {{ text(column, row) }}
-                }
+                <div class="table__value">
+                  @if (column.cell) {
+                    <ng-container
+                      *ngTemplateOutlet="column.cell; context: { $implicit: row }"
+                    ></ng-container>
+                  } @else {
+                    {{ text(column, row) }}
+                  }
+                </div>
               </td>
             }
           </tr>

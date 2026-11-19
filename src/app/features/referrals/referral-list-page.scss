@@ -7,6 +7,12 @@
   margin-block-end: var(--space-4);
 }
 
+/* The shared `.field + .field` spacing is replaced by the gap, not redefined: in a row it
+   would drop the second field below the first (DL-227). */
+.referrals__compose > .field + .field {
+  margin-block-start: 0;
+}
+
 /* Headings, notes, the person picker and the button take the whole row; fields pair up. */
 .referrals__compose > :not(.field) {
   grid-column: 1 / -1;

@@ -75,7 +75,7 @@
 
 <ng-template #submittedCell let-request>
   <time class="queue__sent" [attr.datetime]="request.submittedAt">
-    {{ request.submittedAt | date: 'd MMM y, HH:mm' }}
+    {{ request.submittedAt | displayDate: 'date-time' }}
   </time>
 </ng-template>
 

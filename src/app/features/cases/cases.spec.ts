@@ -310,6 +310,15 @@ describe('a protected note never reaches the screen', () => {
 /* ── The status transition control ────────────────────────────────────────── */
 
 describe('moving a case requires a reason', () => {
+  it('says the current status and what it means as separate words (DL-227)', async () => {
+    const current = html(await openWorkspace(MERCADO)).querySelector('.transition__current');
+    const label = current?.querySelector('strong')?.textContent?.trim() ?? '';
+    const meaning = current?.querySelector('.transition__describes')?.textContent?.trim() ?? '';
+    expect(label).not.toBe('');
+    expect(meaning).not.toBe('');
+    expect(current?.textContent).toContain(`${label} ${meaning}`);
+  });
+
   it('offers the moves the lifecycle allows', async () => {
     const element = html(await openWorkspace(MERCADO));
     const options = [...element.querySelectorAll('.transition__select option')].map((option) =>

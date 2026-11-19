@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -16,6 +15,7 @@ import {
   ROLE_DEFINITIONS,
   type StaffAccount,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { debouncedTerm } from '@shared/state/debounced';
 import { liveViewState } from '@shared/state/live-view-state';
@@ -45,7 +45,7 @@ export const STAFF_TOPICS: readonly LiveTopic[] = ['users'];
 @Component({
   selector: 'app-staff-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, EmptyState, Icon, InitialsPipe, PageHeader, RouterLink],
+  imports: [AsyncContent, DisplayDatePipe, EmptyState, Icon, InitialsPipe, PageHeader, RouterLink],
   templateUrl: './staff-page.html',
   styleUrl: './staff-page.scss',
 })

@@ -133,8 +133,8 @@
         }
 
         @for (day of closedByDay(); track day.date) {
-          <section class="bucket" [attr.aria-label]="day.date">
-            <h2 class="section-title bucket__heading">{{ day.date }}</h2>
+          <section class="bucket" [attr.aria-label]="day.date | displayDate">
+            <h2 class="section-title bucket__heading">{{ day.date | displayDate }}</h2>
             <ng-container
               [ngTemplateOutlet]="rows"
               [ngTemplateOutletContext]="{ $implicit: day.visits }"
@@ -175,7 +175,7 @@
           <span class="chip visit-rows__purpose">{{ purposeLabel(visit.purpose) }}</span>
         </p>
         <p class="visit-rows__meta">
-          <span class="visit-rows__date">{{ visit.scheduledFor }}</span>
+          <span class="visit-rows__date">{{ visit.scheduledFor | displayDate }}</span>
           @if (visit.scheduledWindow) {
             <span>{{ visit.scheduledWindow }}</span>
           }

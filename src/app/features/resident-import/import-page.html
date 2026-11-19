@@ -17,7 +17,9 @@
     <p class="status-line">{{ copy.record.file(record.fileName, record.rowCount) }}</p>
 
     @if (problem(); as message) {
-      <div class="callout callout--danger" role="alert"><p>{{ message }}</p></div>
+      <div class="callout callout--danger" role="alert">
+        <p>{{ message }}</p>
+      </div>
     }
 
     @switch (current()) {
@@ -34,7 +36,9 @@
         <section class="card card--panel card--padded stack" aria-labelledby="import-check">
           <h2 id="import-check" class="section-title">{{ copy.check.heading }}</h2>
           <p class="status-line">{{ copy.check.lead }}</p>
-          <p class="status-line" role="status">{{ copy.check.unresolved(record.counts.unresolved) }}</p>
+          <p class="status-line" role="status">
+            {{ copy.check.unresolved(record.counts.unresolved) }}
+          </p>
 
           <ul class="tabs tabs--scroll" [attr.aria-label]="copy.check.tabsLabel">
             @for (group of groups; track group) {
@@ -60,9 +64,13 @@
               @if (rowsOf(record, 'new').length === 0) {
                 <p class="note-box">{{ copy.check.none }}</p>
               } @else {
-                <div class="table-scroll">
+                <div class="table-scroll" [appScrollRegion]="copy.check.groups.new">
                   <table class="simple-table">
-                    <caption class="visually-hidden">{{ copy.check.groups.new }}</caption>
+                    <caption class="visually-hidden">
+                      {{
+                        copy.check.groups.new
+                      }}
+                    </caption>
                     <thead>
                       <tr>
                         <th scope="col">{{ copy.done.columnRow }}</th>
@@ -185,7 +193,12 @@
         <section class="card card--panel card--padded stack" aria-labelledby="import-done">
           <h2 id="import-done" class="section-title">{{ copy.done.heading }}</h2>
           <p class="status-line">
-            {{ copy.done.lead(when(record.committedAt), record.committedBy ?? copy.recent.unknownPerson) }}
+            {{
+              copy.done.lead(
+                when(record.committedAt),
+                record.committedBy ?? copy.recent.unknownPerson
+              )
+            }}
           </p>
 
           <dl class="tally-row">
@@ -198,9 +211,13 @@
           </dl>
 
           @if (record.outcomes.length > 0) {
-            <div class="table-scroll">
+            <div class="table-scroll" [appScrollRegion]="copy.done.caption">
               <table class="simple-table">
-                <caption class="visually-hidden">{{ copy.done.caption }}</caption>
+                <caption class="visually-hidden">
+                  {{
+                    copy.done.caption
+                  }}
+                </caption>
                 <thead>
                   <tr>
                     <th scope="col">{{ copy.done.columnRow }}</th>
@@ -217,7 +234,9 @@
                       <td>{{ copy.done.tally[outcome.outcome] }}</td>
                       <td>
                         @if (outcome.residentId; as id) {
-                          <a class="record-link" [routerLink]="['/residents', id]">{{ copy.done.open }}</a>
+                          <a class="record-link" [routerLink]="['/residents', id]">{{
+                            copy.done.open
+                          }}</a>
                         } @else {
                           {{ copy.done.noRecord }}
                         }

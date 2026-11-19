@@ -15,7 +15,7 @@
       [skeletonLines]="5"
     >
       <ng-template #classificationContent>
-        <div class="table-scroll table__scroll">
+        <div class="table-scroll table__scroll" [appScrollRegion]="copy.classificationHeading">
           <table class="simple-table table">
             <caption class="table__caption">
               {{

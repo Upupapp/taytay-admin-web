@@ -55,12 +55,12 @@
             }
             <div class="facts__item">
               <dt>{{ copy.scheduled }}</dt>
-              <dd>{{ release.scheduledFor ?? '—' }}</dd>
+              <dd>{{ (release.scheduledFor | displayDate) ?? '—' }}</dd>
             </div>
             @if (release.releasedAt) {
               <div class="facts__item">
                 <dt>{{ copy.releasedAt }}</dt>
-                <dd>{{ release.releasedAt | date: 'd MMM y' }}</dd>
+                <dd>{{ release.releasedAt | displayDate }}</dd>
               </div>
             }
           </dl>

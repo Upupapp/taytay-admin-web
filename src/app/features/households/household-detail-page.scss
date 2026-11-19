@@ -11,7 +11,7 @@
 
 .trail__summary {
   font-weight: var(--fw-semibold);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .trail__reason {

@@ -88,9 +88,11 @@ export interface TransitionGuidance {
     <section class="transition" [attr.aria-labelledby]="headingId()">
       <h3 class="transition__heading" [id]="headingId()">{{ heading() }}</h3>
 
+      <!-- The space is written out: Angular drops the whitespace between two elements, and the
+           label and its description ran together ("AssessmentA social worker…", DL-227). -->
       <p class="transition__current">
-        {{ copy.current }}: <strong>{{ currentLabel() }}</strong>
-        <span class="transition__describes">{{ currentDescription() }}</span>
+        {{ copy.current }}: <strong>{{ currentLabel() }}</strong
+        >{{ ' ' }}<span class="transition__describes">{{ currentDescription() }}</span>
       </p>
 
       @if (options().length === 0) {

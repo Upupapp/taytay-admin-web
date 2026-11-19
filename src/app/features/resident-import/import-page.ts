@@ -1,4 +1,3 @@
-import { formatDate } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -29,11 +28,13 @@ import {
   type ResidentImport,
   type ResidentImportId,
 } from '@domain/index';
+import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
 import { failureReason } from '@shared/state/failure-reason';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 
 import { ImportMappingForm } from './import-mapping-form';
 import { ImportRowFinding } from './import-row-finding';
@@ -61,7 +62,15 @@ export const IMPORT_TOPICS: readonly LiveTopic[] = ['imports', 'residents'];
 @Component({
   selector: 'app-import-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, ImportMappingForm, ImportRowFinding, ImportSteps, PageHeader, RouterLink],
+  imports: [
+    ScrollRegion,
+    AsyncContent,
+    ImportMappingForm,
+    ImportRowFinding,
+    ImportSteps,
+    PageHeader,
+    RouterLink,
+  ],
   templateUrl: './import-page.html',
   styleUrl: './resident-import.scss',
 })
@@ -154,7 +163,7 @@ export class ImportPage {
   }
 
   protected when(value: string | null): string {
-    return value === null ? '' : formatDate(value, 'd MMM y, h:mm a', this.locale);
+    return value === null ? '' : (formatDisplayDate(value, 'date-time', this.locale) ?? '');
   }
 
   protected goTo(step: ImportStep): void {

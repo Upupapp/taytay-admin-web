@@ -20,7 +20,7 @@
           <app-list-changed-notice (reload)="reloadList()" />
         }
 
-        <div class="table-scroll">
+        <div class="table-scroll" [appScrollRegion]="copy.caption">
           <table class="simple-table review__table">
             <caption class="review__caption">
               {{

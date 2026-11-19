@@ -1,4 +1,3 @@
-import { formatDate } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -23,6 +22,7 @@ import {
   type SectorApplication,
   type SectorApplicationStatus,
 } from '@domain/index';
+import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -144,7 +144,7 @@ export class SectorApplicationsPage {
     {
       key: 'submitted',
       header: this.copy.columnSubmitted,
-      value: (row) => formatDate(row.submittedAt, 'd MMM y, HH:mm', this.locale),
+      value: (row) => formatDisplayDate(row.submittedAt, 'date-time', this.locale) ?? '',
     },
     {
       key: 'proofs',

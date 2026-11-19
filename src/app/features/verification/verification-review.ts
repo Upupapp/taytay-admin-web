@@ -1,4 +1,3 @@
-import { DatePipe, formatDate } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -40,6 +39,8 @@ import {
   type TransitionGuidance,
 } from '@shared/cases/status-transition';
 import { ObjectUrls } from '@shared/media/object-urls';
+import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { failureReason } from '@shared/state/failure-reason';
 import { failed, IDLE, LOADING, ready, type ViewState } from '@shared/state/view-state';
 import { Icon } from '@shared/ui/icon/icon';
@@ -98,7 +99,7 @@ interface OpenedImage {
 @Component({
   selector: 'app-verification-review',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, Icon, Modal, RouterLink, StatusBadge, StatusTransition],
+  imports: [DisplayDatePipe, Icon, Modal, RouterLink, StatusBadge, StatusTransition],
   templateUrl: './verification-review.html',
   styleUrl: './verification-review.scss',
 })
@@ -160,7 +161,7 @@ export class VerificationReview {
   /** When the selfie was erased, in words, or `null` while it is still held. */
   protected readonly erasedOn = computed(() => {
     const at = this.request().selfieErasedAt;
-    return at === null ? null : formatDate(at, 'd MMM y, HH:mm', this.locale);
+    return formatDisplayDate(at, 'date-time', this.locale);
   });
   /** The warning names what is about to appear: an ID alone once the selfie is gone. */
   protected readonly warningSentences = computed(() =>
@@ -268,7 +269,7 @@ export class VerificationReview {
       ? this.copy.confirmName(identity.name)
       : this.copy.confirmNameAndBirthDate(
           identity.name,
-          formatDate(identity.birthDate, 'd MMMM y', this.locale),
+          formatDisplayDate(identity.birthDate, 'date', this.locale) ?? '',
         );
   }
 

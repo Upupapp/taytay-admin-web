@@ -156,4 +156,50 @@ describe('DataTable', () => {
     await fixture.whenStable();
     expect(emitted).toEqual([ROWS[0]]);
   });
+
+  /* ── The phone layout (DL-227) ─────────────────────────────────────────── */
+
+  it('gives each cell its column header, for a phone to print beside the value', async () => {
+    const element = (await render()).nativeElement as HTMLElement;
+    const cells = [...element.querySelectorAll('tbody tr:first-child td')];
+    expect(cells.map((cell) => cell.getAttribute('data-label'))).toEqual(['Name', 'Amount']);
+    // The label is drawn by CSS, so the cell's own text is only its value.
+    expect(cells[0]?.textContent?.trim()).toBe('Aurora Mercado');
+  });
+
+  it('leaves a column with a hidden header (the row actions) unlabelled, across the row', async () => {
+    const columns: readonly TableColumn<Row>[] = [
+      { key: 'name', header: 'Name', value: (row) => row.name },
+      { key: 'actions', header: 'Actions', hideHeader: true, value: () => 'Open' },
+    ];
+    const element = (await render({ columns })).nativeElement as HTMLElement;
+    const cells = element.querySelectorAll('tbody tr:first-child td');
+    expect(cells[0]?.getAttribute('data-label')).toBe('Name');
+    expect(cells[1]?.hasAttribute('data-label')).toBe(false);
+  });
+
+  it('keeps its table roles explicit, so a stacked row is still read as a table row', async () => {
+    const element = (await render()).nativeElement as HTMLElement;
+    expect(element.querySelector('table')?.getAttribute('role')).toBe('table');
+    expect(element.querySelector('thead')?.getAttribute('role')).toBe('rowgroup');
+    expect(element.querySelector('tbody')?.getAttribute('role')).toBe('rowgroup');
+    expect(
+      [...element.querySelectorAll('th')].every((th) => th.getAttribute('role') === 'columnheader'),
+    ).toBe(true);
+    expect(
+      [...element.querySelectorAll('tbody tr')].every((tr) => tr.getAttribute('role') === 'row'),
+    ).toBe(true);
+    expect(
+      [...element.querySelectorAll('td')].every((td) => td.getAttribute('role') === 'cell'),
+    ).toBe(true);
+    // A sortable header keeps its sort state for the sort buttons a phone shows above the rows.
+    expect(element.querySelector('th')?.getAttribute('aria-sort')).toBe('none');
+  });
+
+  it('is no focusable region while the table fits its card', async () => {
+    const element = (await render()).nativeElement as HTMLElement;
+    const wrap = element.querySelector('.table-wrap') as HTMLElement;
+    expect(wrap.hasAttribute('tabindex')).toBe(false);
+    expect(wrap.hasAttribute('role')).toBe(false);
+  });
 });

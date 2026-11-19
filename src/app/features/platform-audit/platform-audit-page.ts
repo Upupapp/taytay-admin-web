@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -21,6 +20,7 @@ import {
   type CursorPage,
   type PlatformAuditEntry,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -53,7 +53,7 @@ export const PLATFORM_AUDIT_TOPICS: readonly LiveTopic[] = ['audit'];
 @Component({
   selector: 'app-platform-audit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DataTable, DatePipe, Icon, ListChangedNotice, PageHeader],
+  imports: [AsyncContent, DataTable, DisplayDatePipe, Icon, ListChangedNotice, PageHeader],
   templateUrl: './platform-audit-page.html',
   styleUrl: './platform-audit-page.scss',
 })

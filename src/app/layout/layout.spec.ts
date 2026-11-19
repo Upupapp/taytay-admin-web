@@ -5,7 +5,7 @@ import { firstValueFrom, of, type Observable } from 'rxjs';
 
 import { ViewportService, FakeViewportService } from '@core/layout/viewport.service';
 import { SessionStore } from '@core/auth/session.store';
-import { NAVIGATION } from '@core/navigation/navigation';
+import { activeNavRoute, NAVIGATION } from '@core/navigation/navigation';
 import {
   asId,
   emptyPage,
@@ -213,6 +213,51 @@ describe('navigation reachability', () => {
     );
     expect(current?.getAttribute('href')).toBe('/residents');
   });
+
+  it('marks exactly one entry current when one entry’s route sits under another’s (DL-227)', async () => {
+    await configure('system-administrator');
+    await TestBed.inject(Router).navigateByUrl('/residents/overview');
+    const fixture = TestBed.createComponent(AppNav);
+    await fixture.whenStable();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const current = element.querySelectorAll('a.nav__link[aria-current="page"]');
+    expect(current).toHaveLength(1);
+    expect(current[0]?.getAttribute('href')).toBe('/residents/overview');
+    expect(element.querySelectorAll('a.nav__link--active')).toHaveLength(1);
+  });
+
+  it('keeps a record with no entry of its own under the entry it belongs to', async () => {
+    await configure('system-administrator');
+    await TestBed.inject(Router).navigateByUrl('/residents/res-0001?tab=history');
+    const fixture = TestBed.createComponent(AppNav);
+    await fixture.whenStable();
+
+    const current = (fixture.nativeElement as HTMLElement).querySelectorAll(
+      'a.nav__link[aria-current="page"]',
+    );
+    expect(current).toHaveLength(1);
+    expect(current[0]?.getAttribute('href')).toBe('/residents');
+  });
+});
+
+describe('activeNavRoute', () => {
+  const routes = ['/residents', '/residents/overview', '/residents/sectors/pwd', '/work'];
+
+  it('takes the longest route the path falls under', () => {
+    expect(activeNavRoute('/residents/overview', routes)).toBe('/residents/overview');
+    expect(activeNavRoute('/residents/sectors/pwd', routes)).toBe('/residents/sectors/pwd');
+    expect(activeNavRoute('/residents/R-1/edit', routes)).toBe('/residents');
+  });
+
+  it('matches whole segments only, and ignores the query, fragment and matrix parameters', () => {
+    expect(activeNavRoute('/workshops', routes)).toBeNull();
+    expect(activeNavRoute('/work;view=team?x=1#top', routes)).toBe('/work');
+  });
+
+  it('marks nothing on a page no entry covers', () => {
+    expect(activeNavRoute('/sign-in', routes)).toBeNull();
+  });
 });
 
 /* ── modules the API cannot serve (DL-167) ──────────────────────────────────── */
@@ -358,6 +403,22 @@ describe('buildCrumbs', () => {
 
   it('ignores query strings and fragments', () => {
     expect(buildCrumbs('/residents?page=2#top').map((c) => c.label)).toContain('Citizen registry');
+  });
+
+  it('ends with the page’s own heading on a page under an entry (DL-227)', () => {
+    const crumbs = buildCrumbs('/work/team');
+    expect(crumbs.map((c) => c.label)).toEqual([
+      LAYOUT_COPY.breadcrumbHome,
+      'Casework',
+      'My work',
+      'The team’s work',
+    ]);
+    expect(crumbs[2]?.route).toBe('/work');
+  });
+
+  it('calls each entry what its page heading calls it', () => {
+    expect(buildCrumbs('/administration/settings').at(-1)?.label).toBe('Data governance');
+    expect(buildCrumbs('/programs/P-1').at(-1)?.label).toBe('Programmes');
   });
 
   it('falls back to home for an unknown route', () => {

@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -30,6 +29,7 @@ import {
   type AuditRow,
   type CursorPage,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { debouncedTerm } from '@shared/state/debounced';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
@@ -65,7 +65,15 @@ export const AUDIT_TOPICS: readonly LiveTopic[] = ['audit'];
 @Component({
   selector: 'app-audit-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, EmptyState, Icon, ListChangedNotice, PageHeader, RouterLink],
+  imports: [
+    AsyncContent,
+    DisplayDatePipe,
+    EmptyState,
+    Icon,
+    ListChangedNotice,
+    PageHeader,
+    RouterLink,
+  ],
   templateUrl: './audit-page.html',
   styleUrl: './audit-page.scss',
 })

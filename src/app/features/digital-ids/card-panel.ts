@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -27,6 +26,7 @@ import {
   type MediaId,
   type TakenCardPhoto,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { failureReason } from '@shared/state/failure-reason';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { Modal } from '@shared/ui/modal/modal';
@@ -51,7 +51,15 @@ import { DIGITAL_IDS_COPY } from './digital-ids.copy';
 @Component({
   selector: 'app-card-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CardPhoto, CardPhotoTake, DatePipe, IdCardFace, Modal, NotConnected, StatusBadge],
+  imports: [
+    CardPhoto,
+    CardPhotoTake,
+    DisplayDatePipe,
+    IdCardFace,
+    Modal,
+    NotConnected,
+    StatusBadge,
+  ],
   templateUrl: './card-panel.html',
   styleUrl: './digital-ids.scss',
 })

@@ -8,6 +8,8 @@ import {
   type MatchSignal,
 } from '@domain/index';
 
+import { ScrollRegion } from '../ui/scroll-region/scroll-region';
+
 /**
  * What two records have in common — and nothing about what they contain.
  *
@@ -27,6 +29,7 @@ import {
 @Component({
   selector: 'app-identity-comparison',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ScrollRegion],
   template: `
     <section class="comparison" [attr.aria-labelledby]="headingId()">
       <h3 class="comparison__heading" [id]="headingId()">{{ heading() }}</h3>
@@ -43,7 +46,7 @@ import {
         </p>
       }
 
-      <div class="table-scroll">
+      <div class="table-scroll" [appScrollRegion]="heading()">
         <table class="simple-table comparison__table">
           <caption class="visually-hidden comparison__caption">
             {{

@@ -80,7 +80,7 @@
   text-decoration: underline;
   text-decoration-color: var(--line2);
   text-underline-offset: 3px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .graph__name-link:hover {

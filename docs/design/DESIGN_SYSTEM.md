@@ -304,18 +304,18 @@ Use the class; do not re-type the mock-up's inline styles.
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Cards             | `.card--padded` (20/22 padding), `.card--panel` (r28, big panels), `.card--deep` (navy record card), `.stack` (column, gap 14).                                                                                                                                                                                                                                                                                                           |
 | Headings          | `.section-title` (15/700), `.section-title--display` (20, Inter Tight), `.eyebrow` (11px capitals), `.status-line` (the count line under a list; give it `role="status"` when it changes).                                                                                                                                                                                                                                                |
-| Filters           | `.toolbar` (a row of `.field`s, labels above), `.filter-bar` + `__field` / `__note` (the dashboard's single glass pill), `.search-field` / `.icon-field` + `__icon` (a field with a leading glyph), `.check-pill` (a checkbox filter).                                                                                                                                                                                                    |
-| Tables            | `app-data-table` for any list (§5); `.table-scroll` + `.simple-table` (+ `__num`) for a plain table in feature markup; `.table-scroll--simple` when a check reads the table's own class. Every scrolling box is `position: relative`.                                                                                                                                                                                                     |
+| Filters           | `.toolbar` (a row of `.field`s, labels above), `.filter-bar` + `__field` / `__note` (the dashboard's single glass pill), `.search-field` / `.icon-field` + `__icon` (a field with a leading glyph), `.check-pill` (a checkbox filter). On a phone (≤640px) each `.toolbar` field takes the whole row and a `.filter-bar__field` puts its label above its select; a select's chosen text that does not fit ends in an ellipsis (`DL-227`). |
+| Tables            | `app-data-table` for any list (§5); `.table-scroll` + `.simple-table` (+ `__num`) for a plain table in feature markup; `.table-scroll--simple` when a check reads the table's own class. Every scrolling box is `position: relative`. Give every `.table-scroll` `[appScrollRegion]="<its caption>"` (`shared/ui/scroll-region`): while the table is wider than its card the box becomes a focusable region named by that label, so its hidden columns are reachable from the keyboard (axe `scrollable-region-focusable`, `DL-227`). |
 | Chips             | `.chip` + `--info                                                                                                                                                                                                                                                                                                                                                                                                                         | progress                 | success                                                                                                                                                  | warning                                      | danger`, `ul.chip-list`. Sectors and categories only — **a status is always `app-status-badge`**. |
-| Tabs              | `ul.tabs` of `.tab` (+ `.tab--active` or `aria-current` / `aria-selected`), `.tab__count`, `.step-number` (numbered steps). `.tabs--fill`: the tabs share the box's width (a short choice in a narrow column). Hover never outranks a chosen tab. A radio group drawn as tabs (reference: the relationship graph's view): a `.choice-list` fieldset whose legend names the group, a `.tabs` of `<label class="tab">`, each around a `.visually-hidden` radio; the chosen tab is read from its radio (`.tab:has(> input:checked)`, no class), filled and underlined, so it is marked without colour; the tab draws the focused radio's ring (`.tab:has(> input:focus-visible)`). In forced colours a chosen tab takes `Highlight`. |
+| Tabs              | `ul.tabs` of `.tab` (+ `.tab--active` or `aria-current` / `aria-selected`), `.tab__count`, `.step-number` (numbered steps). `.tabs--fill`: the tabs share the box's width (a short choice in a narrow column). Hover never outranks a chosen tab. A radio group drawn as tabs (reference: the relationship graph's view): a `.choice-list` fieldset whose legend names the group, a `.tabs` of `<label class="tab">`, each around a `.visually-hidden` radio; the chosen tab is read from its radio (`.tab:has(> input:checked)`, no class), filled and underlined, so it is marked without colour; the tab draws the focused radio's ring (`.tab:has(> input:focus-visible)`). In forced colours a chosen tab takes `Highlight`. On a phone (≤640px) every strip but `.tabs--fill` stays on one line across the row and scrolls sideways inside itself, as `.tabs--scroll` does at every width — never a wrapped lozenge (`DL-227`). |
 | Figures           | `.kpi` / `a.kpi` (+ `__label`, `__value`, `__value--long`, `__hint`, `__arrow`): a link KPI fills primary on hover and focus. `.tally-row` + `.tally` (+ `--primary                                                                                                                                                                                                                                                                       | gold                     | red                                                                                                                                                      | soft`, `--figure-first`): a record's totals. |
-| Grids             | `.bento` + `.span-3` … `.span-9` (12 columns; halves ≤1100px, full ≤700px; no page uses it yet), `.record-grid` (+ `__wide`): auto-fit two columns of panels, `.split` + `__main` / `__side` (3fr/2fr work page with a context column, one column ≤1100px).                                                                                                                                                                               |
+| Grids             | `.bento` + `.span-3` … `.span-9` (12 columns; halves ≤1100px, full ≤700px; each panel or tile is as tall as its own content, never stretched to its tallest neighbour, `DL-227`), `.record-grid` (+ `__wide`): auto-fit two columns of panels, `.split` + `__main` / `__side` (3fr/2fr work page with a context column, one column ≤1100px).                                                                                                                                                                               |
 | Records           | `dl.facts` (+ `.facts__row` or `.facts__item`, `.facts__row--wide`, `.facts--pairs`), `.soft-list` of `.soft-row` (+ `--stacked`, `__meta`), `.subpanel` (+ `--soft`, `--deep`; a preview of what a change will look like is a `.subpanel.subpanel--soft` headed by a `.section-title`), `.record-link`, `.withheld` (words withheld from this reader).                                                                                                                                                                                                             |
 | Icons and people  | `.icon-tile` (+ `--sm                                                                                                                                                                                                                                                                                                                                                                                                                     | lg`, `--round`, `--green | gold                                                                                                                                                     | red                                          | navy                                                                                              | sky | soft | blue-soft | red-soft`), `.avatar`/`.avatar--lg`(initials from`InitialsPipe`, always `aria-hidden`). |
 | Notices           | `.callout` (+ `--warning                                                                                                                                                                                                                                                                                                                                                                                                                  | danger                   | success`, `__title`, an inner `ul`), `.effects`(+`__lead`): "what this does", always **before** its button; `.note-box` (a quiet note with a left rule: nothing here, not built, a count that decides nothing; never a preview). |
 | Forms             | `.form-panel`, `.form-section` (+ `__legend`, `__note`): a hairline fieldset with its legend in the edge; `.choice-list` + `.choice` (+ `__text`, `__hint`): radio/checkbox tiles; `.form-footer` (Cancel + submit, end-aligned 48px pills); `.form-problem:empty` hides an empty alert line (never on a live region); `.field-row`: short `.field`s side by side (a range's two ends), each up to 240px, wrapping when narrow; each field's label, input, hint and error sit on four shared tracks (subgrid), so the inputs stay level whatever a label or hint wraps to and an error under one leaves the other in place. `.field input[type='file']` is styled globally. |
 | Navigation        | `.action-link` (+ `--primary`, `__label`, `__arrow`): a quick action with a leading tile; `.back-link` + `__arrow`; `.list-more` (count line + Show more).                                                                                                                                                                                                                                                                                |
-| Whole-page notice | `.notice-page` (+ `--under-header`): not found, no access, not built yet — an `app-empty-state` in one centred 720px panel.                                                                                                                                                                                                                                                                                                               |
+| Whole-page notice | `.notice-page` (+ `--under-header`): not found, no access, not built yet — an `app-empty-state` in one centred 720px panel; the empty state draws no panel of its own inside it (one frame, `DL-227`). |
 
 ---
 
@@ -377,6 +377,14 @@ protected readonly columns = computed<readonly TableColumn<ResidentView>[]>(() =
   (emptyActionSelected)="clearFilters()"
 />
 ```
+
+**On a phone (≤640px) each row is a block** of header–value lines: every cell carries its column's
+header as `data-label`, which CSS prints beside the value with empty alternative text (a reader
+hears the header once, from the header cell); a column with `hideHeader` (the row's actions) runs
+across the row under the values, so no action falls off the card; sortable headers stay above the
+rows as sort buttons, the others are hidden only visually; the table keeps explicit `role`s so a
+stacked row is still read as a row. Wider, a table that does not fit scrolls inside `.table-wrap`,
+which then becomes a focusable region named by the caption (`ScrollRegion`, `DL-227`).
 
 Put it inside a `.card.card--panel.card--padded` (it has no padding of its own). The API sends no
 totals: say "N shown, more available" in a `.status-line`, never "page 1 of N" (`DL-161`).
@@ -524,7 +532,7 @@ Usually reached through `AsyncContent` or `DataTable [loading]` rather than plac
 | `ArchiveTabs` (`app-archive-tabs`)                                                   | `shared/archive`    | "In use \| Archived" above a list, held in the URL.            |
 | `BrandMark`, `MunicipalSeal`, `SealPlaceholder`                                      | `shared/brand`      | The console's name and seal (`DL-199`).                       |
 | `NotConnected` (`app-not-connected [port]`)                                          | `core/access`       | A panel whose port the API does not serve (`DL-175`).         |
-| `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe`, `InitialsPipe` | `shared/pipes`      | Formatting; `{{ name \| initials }}` feeds `.avatar`.         |
+| `PesoPipe`, `BarangayNamePipe`, `PersonNamePipe`, `RelativeTimePipe`, `InitialsPipe`, `DisplayDatePipe` | `shared/pipes` | Formatting; `{{ name \| initials }}` feeds `.avatar`; every date goes through `displayDate` (§8 rule 12). |
 | `HasPermissionDirective` (`*appHasPermission`)                                       | `core/access`       | Hide what the reader cannot do (usability, not security).     |
 
 ---
@@ -539,7 +547,11 @@ toggle `app-live-indicator` and the notification inbox button; then `main#main-c
 
 Settled for the frame (`DL-201`): navigation sections are always open (their titles are `h2`, not
 toggles); the topbar scrolls with the page; the sidebar is the one glass element with a backdrop
-filter; at ≤900px it becomes a solid drawer. A new module's route needs a nav icon in
+filter; at ≤900px it becomes a solid drawer. Exactly one menu entry is current — the longest route
+the URL falls under (`activeNavRoute`, which the breadcrumb uses too) — and it is scrolled into the
+menu's view after each navigation. A page under an entry with a heading of its own (`/work/team`) is
+named in the entry's `pages`, so the breadcrumb ends with that heading; an entry's label is the term
+its page heading uses (`DL-227`). A new module's route needs a nav icon in
 `nav-icons.ts`, and its route guard mirrors the permissions of its `NAVIGATION` entry (CLAUDE.md
 rule 8).
 
@@ -689,7 +701,10 @@ it.
 fields that belong together in a `.field-row`; it does not add a grid of its own. The household,
 family and programme forms keep the local `__grid` (240px auto-fit columns, a full-row `__wide`)
 they had before `.field-row` existed: their sections mix fields, checkboxes and full-width rows, so
-moving them would change how they look, not only where the rule lives.
+moving them would change how they look, not only where the rule lives. A grid or row that holds
+fields resets the stacked margin for its own children (`.my-grid > .field + .field { margin-block-start: 0; }`,
+as `.field-row` and `.toolbar` do): left in place, it drops the second field of a row 16px below the
+first (`DL-227`).
 
 **A preview** of what a change will look like (what the app will say, the record a finding will
 leave) is a `.subpanel.subpanel--soft` headed by a `.section-title`, beside the inputs it follows.
@@ -898,7 +913,9 @@ attachments open only after a warning, and nothing is logged (`check:inbox`).
    `.icon-button` with a label. `check:shell` and `check:hardening` hold the contract.
 7. **Widths.** Check every page at **1280** and **1440** wide: no horizontal page scroll; a wide
    table scrolls inside its own `.table-scroll` (positioned) or wraps. The frame also adapts at
-   narrow widths (the sidebar becomes a drawer at ≤900px).
+   narrow widths (the sidebar becomes a drawer at ≤900px). At **390** a `DataTable` stacks its rows
+   (§5) and no word is broken to fit a column: wrapping is `overflow-wrap: break-word`, never
+   `anywhere`, which splits "Mendoza" and "FAM-2026-000001" to make a column narrower (`DL-227`).
 8. **Checks win over a mock-up.** Privacy, access and domain checks (`check:verification`,
    `check:inbox`, `check:directory`, `check:balita`, …) and the decision log outrank any drawing.
    Where they read a class or an exact attribute, keep it beside the new classes.
@@ -914,6 +931,12 @@ attachments open only after a warning, and nothing is logged (`check:inbox`).
     attributes (the CSP is `style-src 'self'`); `[style.x]` bindings are fine.
 11. **Presentation never changes behaviour.** A restyle keeps every selector, input, output, route,
     guard, live region and required sentence.
+12. **One way to write a date.** Every date on screen goes through `displayDate`
+    (`shared/pipes/display-date.pipe`), or `formatDisplayDate` in a class: `date` 21 Nov 2026,
+    `date-time` 21 Nov 2026, 7:17 PM, `time` 7:17 PM; `date-time-seconds` only where the order
+    within a minute matters (an audit trail, a count's "as of"), `weekday-date-time` when the day of
+    the week is the answer (an event). Never Angular's `date` pipe with a pattern of its own, never an
+    ISO string as it came from the API. A `<time>` keeps its machine-readable `datetime` (`DL-227`).
 
 ---
 
@@ -982,7 +1005,7 @@ computed styles instead.
 - KPI rows, trend charts and per-section counts drawn in the mock-ups wait for API fields (counts,
   totals, per-week series, office category); they are listed in the redesign's notes and are not
   drawn until the API sends them.
-- `.bento` has no user yet; the dashboard uses its own grids.
+- `.bento`'s one user is the citizens overview; the dashboard uses its own grids.
 - Closed (November 2026): a whole-page notice without a page header (`errors/forbidden-page`,
   `errors/not-found-page`) had no `h1` (axe `page-has-heading-one`). `EmptyState` now takes
   `[headingLevel]` (1, 2 or 3; default 3, looking the same at every level), and those two notices

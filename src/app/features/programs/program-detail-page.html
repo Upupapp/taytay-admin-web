@@ -35,7 +35,7 @@
             <dt>{{ copy.effectiveFrom }}</dt>
             <dd>
               <time [attr.datetime]="view.program.effectiveFrom">
-                {{ view.program.effectiveFrom | date: 'd MMM y' }}
+                {{ view.program.effectiveFrom | displayDate }}
               </time>
             </dd>
             <dt>{{ copy.description }}</dt>

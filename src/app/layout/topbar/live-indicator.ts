@@ -1,4 +1,3 @@
-import { formatDate } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -11,6 +10,7 @@ import { NavigationStart, Router } from '@angular/router';
 import { filter } from 'rxjs';
 
 import { LiveUpdates } from '@core/live/live-updates';
+import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
 
 import { LAYOUT_COPY } from '../layout.copy';
 
@@ -92,7 +92,7 @@ export class LiveIndicator {
     }
     const at = this.live.lastUpdatedAt();
     if (at !== null) {
-      parts.push(this.copy.liveUpdatedAt(formatDate(at, 'shortTime', this.locale)));
+      parts.push(this.copy.liveUpdatedAt(formatDisplayDate(at, 'time', this.locale) ?? ''));
     }
     if (this.live.refreshFailed()) {
       parts.push(this.copy.liveRefreshFailed);

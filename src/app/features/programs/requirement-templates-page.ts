@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -31,6 +30,7 @@ import {
   type RequirementTemplate,
   type RequirementTemplateDraft,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
@@ -78,7 +78,7 @@ function emptyTemplateDraft(): RequirementTemplateDraft {
 @Component({
   selector: 'app-requirement-templates-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, DatePipe, PageHeader, RequirementListEditor, RouterLink, StatusBadge],
+  imports: [DataTable, DisplayDatePipe, PageHeader, RequirementListEditor, RouterLink, StatusBadge],
   templateUrl: './requirement-templates-page.html',
   // The form's layout is the new-programme form's; the list's own few classes are beside it.
   styleUrls: ['./program-form-page.scss', './requirement-templates-page.scss'],

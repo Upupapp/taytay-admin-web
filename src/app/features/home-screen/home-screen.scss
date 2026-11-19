@@ -74,7 +74,7 @@
 .home-section__secondary {
   color: var(--muted);
   font-size: var(--fs-xs);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 /* Wraps in a narrow cell, so the table does not scroll at 1280px. */

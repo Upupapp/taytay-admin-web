@@ -300,5 +300,7 @@
     </section>
   </div>
 
-  <p class="generated">{{ copy.generatedAt }} {{ summary.generatedAt | date: 'medium' }}</p>
+  <p class="generated">
+    {{ copy.generatedAt }} {{ summary.generatedAt | displayDate: 'date-time' }}
+  </p>
 </ng-template>

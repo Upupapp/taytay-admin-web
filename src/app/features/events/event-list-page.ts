@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -21,6 +20,7 @@ import {
   type RegistrationAvailability,
 } from '@domain/index';
 import { EVENT_REPOSITORY } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { debouncedTerm } from '@shared/state/debounced';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
@@ -52,7 +52,7 @@ export const EVENT_LIST_TOPICS: readonly LiveTopic[] = ['events', 'event-registr
 @Component({
   selector: 'app-event-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, Icon, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, DisplayDatePipe, Icon, PageHeader, RouterLink, StatusBadge],
   templateUrl: './event-list-page.html',
   styleUrl: './event-list-page.scss',
 })

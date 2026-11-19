@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -28,6 +27,7 @@ import { ArchiveDialog } from '@shared/archive/archive-dialog';
 import { ArchiveHistory } from '@shared/archive/archive-history';
 import { ArchiveTabs } from '@shared/archive/archive-tabs';
 import { ARCHIVE_COPY, archiveRefusalWords, movedByOthers } from '@shared/archive/archive.copy';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { failureReason } from '@shared/state/failure-reason';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
@@ -66,7 +66,7 @@ interface Move {
     AsyncContent,
     BannerForm,
     DataTable,
-    DatePipe,
+    DisplayDatePipe,
     Icon,
     Modal,
     StatusBadge,

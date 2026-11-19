@@ -1,4 +1,3 @@
-import { formatDate } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -23,6 +22,7 @@ import {
   type ResidentImportSummary,
 } from '@domain/index';
 import { DataFileField } from '@shared/media/data-file-field';
+import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
 import { failureReason } from '@shared/state/failure-reason';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
@@ -231,6 +231,6 @@ export class ImportStartPage {
   }
 
   private when(value: string): string {
-    return formatDate(value, 'd MMM y', this.locale);
+    return formatDisplayDate(value, 'date', this.locale) ?? '';
   }
 }

@@ -136,7 +136,7 @@
   color: var(--text);
   font-size: var(--fs-label);
   white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .settings__legal-input {

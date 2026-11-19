@@ -1,15 +1,33 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import {
+  afterRenderEffect,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  output,
+} from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { filter, map } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
 import { ServedPorts, UNSERVED_ROUTE } from '@core/access/served-ports';
 import { SessionStore } from '@core/auth/session.store';
-import { NAVIGATION, type NavItem, type NavSection } from '@core/navigation/navigation';
+import {
+  activeNavRoute,
+  NAVIGATION,
+  type NavItem,
+  type NavSection,
+} from '@core/navigation/navigation';
 import { Icon } from '@shared/ui/icon/icon';
 import type { IconName } from '@shared/ui/icon/icons';
 
 import { LAYOUT_COPY } from '../layout.copy';
 import { NAV_ICONS } from './nav-icons';
+
+/** Room left above or below the current entry when it is scrolled into view, in pixels. */
+const REVEAL_MARGIN = 24;
 
 /**
  * The sidebar navigation list.
@@ -34,11 +52,16 @@ import { NAV_ICONS } from './nav-icons';
  * even when every module is served, as it is since the newsfeed was retired
  * (`DL-194`): that page is where the account is told why it has no office inbox
  * and who can fix it, and with nothing withheld it would otherwise be unreachable.
+ *
+ * Exactly one entry is current: the longest route the URL falls under (`activeNavRoute`), so a
+ * page nested under another entry's path lights its own entry only. The current entry is
+ * scrolled into the menu's view after each navigation, because on a laptop screen the lower
+ * entries sit below the fold of the menu's own scroll (DL-227).
  */
 @Component({
   selector: 'app-nav',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon, RouterLink, RouterLinkActive],
+  imports: [Icon, RouterLink],
   template: `
     <nav class="nav" [attr.aria-label]="copy.navLandmark">
       @for (section of sections(); track section.title) {
@@ -50,9 +73,8 @@ import { NAV_ICONS } from './nav-icons';
                 <a
                   class="nav__link"
                   [routerLink]="item.route"
-                  routerLinkActive="nav__link--active"
-                  #active="routerLinkActive"
-                  [attr.aria-current]="active.isActive ? 'page' : null"
+                  [class.nav__link--active]="item.route === activeRoute()"
+                  [attr.aria-current]="item.route === activeRoute() ? 'page' : null"
                   [title]="item.description"
                   (click)="navigated.emit()"
                 >
@@ -78,9 +100,8 @@ import { NAV_ICONS } from './nav-icons';
             <a
               class="nav__link"
               [routerLink]="unservedRoute"
-              routerLinkActive="nav__link--active"
-              #unservedActive="routerLinkActive"
-              [attr.aria-current]="unservedActive.isActive ? 'page' : null"
+              [class.nav__link--active]="unservedRoute === activeRoute()"
+              [attr.aria-current]="unservedRoute === activeRoute() ? 'page' : null"
               [title]="
                 withholding ? copy.navUnservedDescription : copy.navAwaitingOfficeDescription
               "
@@ -100,6 +121,8 @@ export class AppNav {
   private readonly permissions = inject(PermissionService);
   private readonly served = inject(ServedPorts);
   private readonly session = inject(SessionStore);
+  private readonly router = inject(Router);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Emitted after a link is chosen, so a mobile shell can close its drawer. */
   readonly navigated = output<void>();
@@ -126,8 +149,52 @@ export class AppNav {
     })).filter((section) => section.items.length > 0),
   );
 
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+
+  /** The route of the one entry marked current, among the entries this reader is shown. */
+  protected readonly activeRoute = computed(() => {
+    const routes = this.sections().flatMap((section) => section.items.map((item) => item.route));
+    if (this.withholding || this.awaitingOffice()) {
+      routes.push(this.unservedRoute);
+    }
+    return activeNavRoute(this.url(), routes);
+  });
+
+  constructor() {
+    afterRenderEffect(() => {
+      if (this.activeRoute() !== null) {
+        this.revealActive();
+      }
+    });
+  }
+
   protected iconFor(route: string): IconName | undefined {
     return NAV_ICONS[route];
+  }
+
+  /**
+   * Scrolls the menu — only the menu, never the page — just far enough to show the current
+   * entry. Nothing moves when it is already in view.
+   */
+  private revealActive(): void {
+    const menu = this.host.nativeElement;
+    const link = menu.querySelector<HTMLElement>('a.nav__link[aria-current="page"]');
+    if (link === null || menu.scrollHeight <= menu.clientHeight) {
+      return;
+    }
+    const view = menu.getBoundingClientRect();
+    const entry = link.getBoundingClientRect();
+    if (entry.top < view.top) {
+      menu.scrollTop -= view.top - entry.top + REVEAL_MARGIN;
+    } else if (entry.bottom > view.bottom) {
+      menu.scrollTop += entry.bottom - view.bottom + REVEAL_MARGIN;
+    }
   }
 
   /** The route's `scopeGuard` would refuse this reader, whatever the role holds (`DL-185`). */

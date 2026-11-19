@@ -27,7 +27,7 @@
 .documents__label {
   color: var(--ink);
   font-weight: var(--fw-semibold);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .history__reason--absent {

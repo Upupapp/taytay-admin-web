@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -51,12 +50,14 @@ import {
   type RegistrationStatus,
 } from '@domain/index';
 import { ObjectUrls } from '@shared/media/object-urls';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { debouncedTerm } from '@shared/state/debounced';
 import { liveViewState } from '@shared/state/live-view-state';
 import { IDLE, LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { EventCheckIn } from './event-check-in';
@@ -96,7 +97,16 @@ export const EVENT_HISTORY_TOPICS: readonly LiveTopic[] = ['events'];
 @Component({
   selector: 'app-event-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, EventCheckIn, Modal, PageHeader, RouterLink, StatusBadge],
+  imports: [
+    ScrollRegion,
+    AsyncContent,
+    DisplayDatePipe,
+    EventCheckIn,
+    Modal,
+    PageHeader,
+    RouterLink,
+    StatusBadge,
+  ],
   templateUrl: './event-detail-page.html',
   styleUrl: './event-detail-page.scss',
 })

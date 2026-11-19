@@ -56,7 +56,7 @@
 </section>
 
 <ng-template #whenCell let-entry>
-  {{ entry.at | date: 'd MMM y, h:mm:ss a' }}
+  {{ entry.at | displayDate: 'date-time-seconds' }}
 </ng-template>
 
 <ng-template #actionCell let-entry>

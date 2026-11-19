@@ -53,9 +53,9 @@ describe('ArchiveHistory (DL-225)', () => {
       li.textContent?.replace(/\s+/g, ' ').trim(),
     );
     expect(lines).toHaveLength(2);
-    expect(lines[0]).toMatch(/^Restored 4 Nov 2026, \d\d:\d\d by an account since closed/);
+    expect(lines[0]).toMatch(/^Restored 4 Nov 2026, \d{1,2}:\d\d [AP]M by an account since closed/);
     expect(lines[0]).toContain('No reason was recorded.');
-    expect(lines[1]).toMatch(/^Archived 3 Nov 2026, \d\d:\d\d by Ana Reyes/);
+    expect(lines[1]).toMatch(/^Archived 3 Nov 2026, \d{1,2}:\d\d [AP]M by Ana Reyes/);
     expect(lines[1]).toContain('Reason given: Merged into the MSWDO.');
     expect(element.querySelector('time')?.getAttribute('datetime')).toBe(
       '2026-11-04T12:00:00.000Z',

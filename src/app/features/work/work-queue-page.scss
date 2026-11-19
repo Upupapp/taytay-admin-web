@@ -181,6 +181,12 @@
   gap: var(--space-3);
 }
 
+/* The shared `.field + .field` spacing is replaced by the gap, not redefined: in a row it
+   would drop the second field below the first (DL-227). */
+.task-panel__fields > .field + .field {
+  margin-block-start: 0;
+}
+
 .task-panel__reason {
   flex: 1 1 200px;
 }

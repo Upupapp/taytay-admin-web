@@ -77,7 +77,7 @@
             </div>
             <div class="facts__row">
               <dt>{{ copy.updated }}</dt>
-              <dd>{{ detail.household.audit.updatedAt | date: 'medium' }}</dd>
+              <dd>{{ detail.household.audit.updatedAt | displayDate: 'date-time' }}</dd>
             </div>
           </dl>
           @if (detail.isProtected) {
@@ -138,7 +138,7 @@
                 <li class="soft-row soft-row--stacked trail__entry">
                   <p class="trail__summary">{{ entry.summary }}</p>
                   <p class="soft-row__meta trail__meta">
-                    {{ entry.actorName }} · {{ entry.occurredAt | date: 'medium' }}
+                    {{ entry.actorName }} · {{ entry.occurredAt | displayDate: 'date-time' }}
                   </p>
                   @if (entry.reason; as reason) {
                     <p class="trail__reason">{{ copy.auditReason }}: “{{ reason }}”</p>

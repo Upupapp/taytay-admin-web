@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 
 import {
@@ -19,6 +18,7 @@ import {
   type DocumentVersionDraft,
   type UploadPolicy,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 
 import { REQUIREMENTS_COPY } from './requirements.copy';
 
@@ -44,7 +44,7 @@ let nextPanelId = 0;
 @Component({
   selector: 'app-document-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
+  imports: [DisplayDatePipe],
   template: `
     <section class="document">
       @if (current(); as version) {
@@ -77,19 +77,19 @@ let nextPanelId = 0;
           @if (version.issuedOn) {
             <div class="document__fact">
               <dt>{{ copy.issuedOn }}</dt>
-              <dd>{{ version.issuedOn }}</dd>
+              <dd>{{ version.issuedOn | displayDate }}</dd>
             </div>
           }
           @if (version.expiresOn) {
             <div class="document__fact">
               <dt>{{ copy.expiresOn }}</dt>
-              <dd>{{ version.expiresOn }}</dd>
+              <dd>{{ version.expiresOn | displayDate }}</dd>
             </div>
           }
           <div class="document__fact">
             <dt>{{ copy.received }}</dt>
             <dd>
-              {{ version.receivedAt | date: 'd MMM y' }}
+              {{ version.receivedAt | displayDate }}
               {{ copy.receivedBy(version.receivedByName) }}
             </dd>
           </div>
@@ -118,7 +118,7 @@ let nextPanelId = 0;
                     {{ copy.versionLabel(version.version) }}
                   </span>
                   <span class="document__history-date">
-                    {{ version.receivedAt | date: 'd MMM y' }}
+                    {{ version.receivedAt | displayDate }}
                     {{ copy.receivedBy(version.receivedByName) }}
                   </span>
                 </p>

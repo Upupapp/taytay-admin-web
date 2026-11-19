@@ -15,7 +15,7 @@
           <dt>{{ copy.submitted }}</dt>
           <dd>
             <time [attr.datetime]="request().submittedAt">
-              {{ request().submittedAt | date: 'd MMM y, HH:mm' }}
+              {{ request().submittedAt | displayDate: 'date-time' }}
             </time>
           </dd>
         </div>
@@ -23,7 +23,7 @@
           <div>
             <dt>{{ copy.reviewed }}</dt>
             <dd>
-              <time [attr.datetime]="reviewedAt">{{ reviewedAt | date: 'd MMM y, HH:mm' }}</time>
+              <time [attr.datetime]="reviewedAt">{{ reviewedAt | displayDate: 'date-time' }}</time>
             </dd>
           </div>
         }
@@ -72,7 +72,7 @@
               <dt>{{ copy.accountBirthDate }}</dt>
               @if (claimed.birthDate; as birthDate) {
                 <dd class="review__claim">
-                  <time [attr.datetime]="birthDate">{{ birthDate | date: 'd MMMM y' }}</time>
+                  <time [attr.datetime]="birthDate">{{ birthDate | displayDate }}</time>
                 </dd>
               } @else {
                 <dd>{{ copy.noBirthDate }}</dd>

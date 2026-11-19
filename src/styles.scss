@@ -699,6 +699,11 @@ select.field__input {
     6px 6px,
     6px 6px;
   background-repeat: no-repeat;
+  /* A chosen option longer than the select ends in an ellipsis rather than a
+     letter cut in half ("All barang", DL-227). */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -709,7 +714,10 @@ option {
 
 /* Stacked fields space themselves, so a screen does not re-declare `.field`
    just to add a margin — which is how five feature stylesheets came to
-   redefine the shared control slightly differently (`DL-120`). */
+   redefine the shared control slightly differently (`DL-120`). Inside a grid
+   or a row the container's gap spaces them instead, and the container resets
+   this margin (`.field-row`, `.toolbar`, each form grid): left in place it
+   drops the second field of a row below the first (`DL-227`). */
 .field + .field {
   margin-block-start: var(--space-4);
 }

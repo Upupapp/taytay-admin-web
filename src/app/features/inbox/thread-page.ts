@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -37,6 +36,7 @@ import {
 } from '@domain/index';
 import { ObjectUrls } from '@shared/media/object-urls';
 import { officeDirectory } from '@shared/offices/office-directory';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { failureReason } from '@shared/state/failure-reason';
 import { liveViewState } from '@shared/state/live-view-state';
 import { failed, LOADING, ready, valueOf, type ViewState } from '@shared/state/view-state';
@@ -108,7 +108,7 @@ interface ImageRequest {
 @Component({
   selector: 'app-thread-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DatePipe, Modal, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, DisplayDatePipe, Modal, PageHeader, RouterLink, StatusBadge],
   templateUrl: './thread-page.html',
   styleUrl: './thread-page.scss',
 })

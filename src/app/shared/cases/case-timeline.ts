@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import {
@@ -6,6 +5,7 @@ import {
   CASE_STATUS_CATALOG,
   type CaseTimelineEntry,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 
 import { CASE_COPY } from './case.copy';
 
@@ -27,7 +27,7 @@ import { CASE_COPY } from './case.copy';
 @Component({
   selector: 'app-case-timeline',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe],
+  imports: [DisplayDatePipe],
   template: `
     <section class="timeline" aria-labelledby="case-timeline-heading">
       <header class="timeline__header">
@@ -51,7 +51,7 @@ import { CASE_COPY } from './case.copy';
 
               <p class="timeline__who">
                 <time class="timeline__when" [attr.datetime]="entry.occurredAt">
-                  {{ entry.occurredAt | date: 'd MMM y, HH:mm' }}
+                  {{ entry.occurredAt | displayDate: 'date-time' }}
                 </time>
                 <span class="timeline__by">{{ copy.by }} {{ entry.actorName }}</span>
                 @if (entry.reference) {

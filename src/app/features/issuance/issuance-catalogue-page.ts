@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -26,6 +25,7 @@ import {
   type IssuanceType,
 } from '@domain/index';
 import { officeDirectory } from '@shared/offices/office-directory';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { failureReason } from '@shared/state/failure-reason';
 import { liveViewState } from '@shared/state/live-view-state';
@@ -65,7 +65,7 @@ export const ISSUANCE_CATALOGUE_TOPICS: readonly LiveTopic[] = ['issuance-reques
   imports: [
     AsyncContent,
     DataTable,
-    DatePipe,
+    DisplayDatePipe,
     Drawer,
     Icon,
     IssuanceTypeEditor,

@@ -1,8 +1,8 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 import { DIGITAL_ID_STATUS_CATALOG, type DigitalIdStatus, type IsoDateTime } from '@domain/index';
 import { MunicipalSeal } from '@shared/brand/municipal-seal';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { DIGITAL_IDS_COPY } from './digital-ids.copy';
@@ -19,7 +19,7 @@ import { DIGITAL_IDS_COPY } from './digital-ids.copy';
 @Component({
   selector: 'app-id-card-face',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, MunicipalSeal, StatusBadge],
+  imports: [DisplayDatePipe, MunicipalSeal, StatusBadge],
   styleUrl: './id-card-face.scss',
   template: `
     <section class="id-card" [attr.aria-label]="copy.label(number())">
@@ -50,11 +50,11 @@ import { DIGITAL_IDS_COPY } from './digital-ids.copy';
           </div>
           <div class="id-card__field">
             <dt>{{ copy.issued }}</dt>
-            <dd>{{ issuedAt() | date: 'd MMM y' }}</dd>
+            <dd>{{ issuedAt() | displayDate }}</dd>
           </div>
           <div class="id-card__field">
             <dt>{{ copy.expires }}</dt>
-            <dd>{{ expiresAt() | date: 'd MMM y' }}</dd>
+            <dd>{{ expiresAt() | displayDate }}</dd>
           </div>
         </dl>
       </div>

@@ -97,7 +97,7 @@
   /* Long labels wrap rather than widening the sidebar. */
   min-inline-size: 0;
   padding-block: var(--space-2);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .nav__empty {

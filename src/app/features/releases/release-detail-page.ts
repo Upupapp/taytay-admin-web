@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -31,6 +30,7 @@ import {
   WriteIntent,
 } from '@domain/index';
 import { StatusTransition, type StatusTransitionRequest } from '@shared/cases/status-transition';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { liveRead, liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
@@ -61,7 +61,7 @@ export const RELEASE_DETAIL_TOPICS: readonly LiveTopic[] = ['releases'];
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncContent,
-    DatePipe,
+    DisplayDatePipe,
     PageHeader,
     PesoPipe,
     RouterLink,

@@ -71,7 +71,7 @@
             }
             <div class="facts__row">
               <dt>{{ copy.updated }}</dt>
-              <dd>{{ detail.family.audit.updatedAt | date: 'medium' }}</dd>
+              <dd>{{ detail.family.audit.updatedAt | displayDate: 'date-time' }}</dd>
             </div>
           </dl>
         </section>
@@ -159,7 +159,7 @@
                 <li class="soft-row soft-row--stacked history__entry">
                   <p class="history__what">{{ eventLabel(event) }}</p>
                   <p class="soft-row__meta history__meta">
-                    {{ event.actorName }} · {{ event.occurredAt | date: 'medium' }}
+                    {{ event.actorName }} · {{ event.occurredAt | displayDate: 'date-time' }}
                   </p>
                   <p class="history__reason">{{ graphCopy.historyReason }}: “{{ event.reason }}”</p>
                 </li>

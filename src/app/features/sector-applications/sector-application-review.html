@@ -31,7 +31,7 @@
               <dt>{{ copy.sent }}</dt>
               <dd>
                 <time [attr.datetime]="detail.submittedAt">{{
-                  detail.submittedAt | date: 'd MMM y, HH:mm'
+                  detail.submittedAt | displayDate: 'date-time'
                 }}</time>
               </dd>
             </div>
@@ -43,7 +43,7 @@
               <div class="facts__row">
                 <dt>{{ copy.decided }}</dt>
                 <dd>
-                  {{ decidedAt | date: 'd MMM y, HH:mm' }}
+                  {{ decidedAt | displayDate: 'date-time' }}
                   @if (detail.decidedBy; as by) {
                     {{ copy.decidedBy }} {{ by }}
                   }
@@ -130,7 +130,9 @@
                   [value]="linkReason()"
                   (input)="linkReason.set(text($event))"
                 ></textarea>
-                <span class="field__hint" id="application-link-hint">{{ copy.linkReasonHint }}</span>
+                <span class="field__hint" id="application-link-hint">{{
+                  copy.linkReasonHint
+                }}</span>
               </label>
             }
           }
@@ -165,7 +167,9 @@
                     [value]="idLastFour()"
                     (input)="idLastFour.set(text($event))"
                   />
-                  <span class="field__hint" id="application-id-hint">{{ copy.idLastFourHint }}</span>
+                  <span class="field__hint" id="application-id-hint">{{
+                    copy.idLastFourHint
+                  }}</span>
                   @if (lastFourInvalid()) {
                     <span class="field__error">{{ copy.idLastFourInvalid }}</span>
                   }
@@ -316,7 +320,12 @@
           </span>
           <p>{{ detail.proofWarning }}</p>
         </div>
-        <button type="button" modal-actions class="btn btn--secondary" (click)="warningOpen.set(false)">
+        <button
+          type="button"
+          modal-actions
+          class="btn btn--secondary"
+          (click)="warningOpen.set(false)"
+        >
           {{ copy.warningCancel }}
         </button>
         <button type="button" modal-actions class="btn btn--primary" (click)="confirmOpen(detail)">

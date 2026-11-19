@@ -1,4 +1,8 @@
-<form class="card card--panel card--padded form-panel" novalidate (submit)="$event.preventDefault(); save()">
+<form
+  class="card card--panel card--padded form-panel"
+  novalidate
+  (submit)="$event.preventDefault(); save()"
+>
   <fieldset class="form-section">
     <legend class="form-section__legend">{{ copy.heading }}</legend>
     <p class="form-section__note">{{ copy.lead }}</p>
@@ -7,7 +11,7 @@
       <p class="callout callout--warning">{{ copy.locked }}</p>
     }
 
-    <div class="table-scroll">
+    <div class="table-scroll" [appScrollRegion]="copy.heading">
       <table class="simple-table">
         <thead>
           <tr>
@@ -35,7 +39,10 @@
                     {{ copy.notInFile }}
                   </option>
                   @for (column of record().columns; track column.index) {
-                    <option [value]="column.index" [selected]="columnOf(spec.field) === column.index">
+                    <option
+                      [value]="column.index"
+                      [selected]="columnOf(spec.field) === column.index"
+                    >
                       {{ optionLabel(column) }}
                     </option>
                   }
@@ -53,7 +60,9 @@
   </fieldset>
 
   @if (problem(); as message) {
-    <div class="callout callout--danger" role="alert"><p>{{ message }}</p></div>
+    <div class="callout callout--danger" role="alert">
+      <p>{{ message }}</p>
+    </div>
   }
   @if (outcome(); as message) {
     <p class="callout callout--success" role="status">{{ message }}</p>

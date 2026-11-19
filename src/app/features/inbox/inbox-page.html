@@ -93,7 +93,7 @@
 
 <ng-template #latestCell let-thread>
   @if (thread.lastMessageAt; as at) {
-    <time class="inbox__latest" [attr.datetime]="at">{{ at | date: 'd MMM y, HH:mm' }}</time>
+    <time class="inbox__latest" [attr.datetime]="at">{{ at | displayDate: 'date-time' }}</time>
   } @else {
     {{ copy.noMessageYet }}
   }

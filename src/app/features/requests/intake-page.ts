@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -50,6 +49,7 @@ import {
 } from '@domain/index';
 import { AdvisoryPanel } from '@shared/intake/advisory-panel';
 import { INTAKE_COPY } from '@shared/intake/intake.copy';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { PersonPicker } from '@shared/residents/person-picker';
 import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
 import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
@@ -83,7 +83,7 @@ import { REQUESTS_COPY } from './requests.copy';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AdvisoryPanel,
-    DatePipe,
+    DisplayDatePipe,
     PageHeader,
     PersonPicker,
     PesoPipe,

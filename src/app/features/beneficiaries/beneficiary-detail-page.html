@@ -194,7 +194,8 @@
                         <span class="soft-row__meta">{{ line }}</span>
                       }
                       <span class="soft-row__meta">
-                        {{ copy.findingRecorded }} {{ finding.decidedAt | date: 'd MMM y, HH:mm' }}
+                        {{ copy.findingRecorded }}
+                        {{ finding.decidedAt | displayDate: 'date-time' }}
                         ·
                         <a [routerLink]="'/beneficiaries/' + otherRecord(finding)">
                           {{ copy.openOther }}

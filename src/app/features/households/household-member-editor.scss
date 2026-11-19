@@ -39,7 +39,7 @@
   color: var(--ink);
   font-size: var(--fs-sm);
   font-weight: var(--fw-semibold);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .editor__pending-tag {

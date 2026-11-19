@@ -10898,3 +10898,68 @@ button, and the tests read the button.
 
 Easiest to reverse: A is one `@if` and two copy lines over a server flag; B is one preview line, one
 notice and one findings line over a field the API keeps sending.
+
+## DL-227 — the visual audit's shared defects are fixed once, where they are shared
+
+**Status:** Settled (20 November 2026). The first of two passes over the full visual audit of the
+console (188 findings at 1440, 1024 and 390 wide, light and dark, plus the automatic measurements).
+This pass fixes what one shared change clears on many screens; the second fixes single pages.
+Presentation only: no route, guard, port, model or required sentence changed.
+
+- **A table on a phone stacks its rows.** At ≤640px `DataTable` lays each row out as a block of
+  header–value lines: the header comes from the cell's `data-label`, drawn by CSS with empty
+  alternative text so a reader hears it once, from the header cell; a column with `hideHeader` (the
+  row's actions) runs across the row, so no action is left off the card; sortable headers stay above
+  the rows as sort buttons. The table keeps explicit `role`s, which a browser may drop when a table's
+  parts stop being displayed as a table. Squeezed into 360px, the columns had wrapped a word per line
+  on thirteen screens, with Review, Edit and Archive past the card's edge. Chosen over a sideways
+  scroll, which the audit found on the screens that already had one: half a column showing and the
+  actions out of reach.
+- **A box that scrolls sideways is a focusable, labelled region while it scrolls** (`ScrollRegion`,
+  `[appScrollRegion]`): the `DataTable` wrapper, every `.table-scroll`, and the import steps. Not
+  always: a tab stop and a landmark on every table that fits would cost a keyboard user more than it
+  gave (axe `scrollable-region-focusable`, WCAG 2.1.1).
+- **No word is broken to fit a column.** `overflow-wrap: anywhere` counts every letter as a place to
+  break when a table or grid works out how narrow a column may be, which is how "Mendoza" became
+  "Mendoz / a" and "FAM-2026-000001" "FAM-2026-00000 / 1". Every use is now `break-word`, which
+  breaks only a word that cannot fit its line at all — except the ID card face, whose fields must stay
+  inside the card.
+- **Fields in a row stay level.** The stacked spacing `.field + .field` dropped the second field of
+  a grid row 12–16px below the first on the resident, household, family, programme, referral and
+  task forms; each grid that holds fields now resets it for its own children, as `.field-row` and
+  `.toolbar` do.
+- **One way to write a date.** `displayDate` (`formatDisplayDate` in a class) replaces every
+  pattern the screens had picked for themselves (`2026-11-21`, `Nov 21, 2026`, `21 Nov 2026, 19:17`,
+  `11/21/26, 7:17 PM`) and every ISO string shown as it came: `21 Nov 2026`; `21 Nov 2026, 7:17 PM`;
+  `7:17 PM`; with seconds only for an audit row or a count's "as of"; with the weekday only for when
+  an event is on. The month in words so 03/11 is never read either way, and the 12-hour clock with
+  AM and PM. A bare calendar date is read as that day, never shifted by a timezone.
+- **One current menu entry.** `/residents` matched every `/residents/*` page by prefix, so "Citizen
+  registry" lit up beside "Citizen overview", each sector and "Sector applications". The menu now
+  marks the longest route the URL falls under (`activeNavRoute`), the breadcrumb uses the same rule,
+  and the current entry is scrolled into the menu's view after each navigation: on a 900px-tall
+  screen the lower entries sat below the menu's fold with nothing lit.
+- **The menu and the breadcrumb use the page's words**: "Programmes" (the console's spelling, 137
+  uses to 3), "Data governance" for the page so headed, and "The team's work" as the last crumb on
+  that page (a `pages` entry under My work, which is not a menu entry).
+- **Phones**: a tab strip stays on one line and scrolls inside itself, taking the row's width, so
+  six tabs never wrap into a lozenge nor push the page wider than the screen; a toolbar field takes
+  the row; a filter-bar label goes above its select; a select's chosen text ends in an ellipsis.
+- **Smaller things**: the status control said "AssessmentA social worker…" (Angular drops the space
+  between two elements; the description now has its own line and a written space); `.bento` panels
+  are as tall as their content; a whole-page notice has one frame; the search pill is wide enough for
+  its whole prompt, which lost its typed "…".
+
+Left for the page pass, and said there: the raw tables of the duplicate review, the permission matrix,
+the governance classification and the events registrants (made scroll regions here, not re-laid out);
+one back-navigation style (`.back-link` exists; the pages that use a header pill or a bare arrow are
+each a page change); card heading fonts, empty-state heading sizes and nested boxes, which come from
+each page's own markup rather than a shared rule; a fade on a scrolling tab strip's edge.
+
+Tests: the phone layout's labels and roles, the scroll region coming and going with the overflow,
+every date kind and the timezone-free calendar day, exactly one current menu entry on a nested page
+and on a record, the shared matching rule, the team page's crumb and the renamed crumbs, and the
+status control's space. Two archive-history and one verification expectation now read the 12-hour
+clock.
+
+Easiest to reverse: each is a rule in one stylesheet, one pipe, or one function in the navigation.

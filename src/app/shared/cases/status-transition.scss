@@ -29,6 +29,12 @@
   color: var(--ink);
 }
 
+/* What the status means, on its own line under the status. */
+.transition__describes {
+  display: block;
+  margin-block-start: var(--space-1);
+}
+
 .transition__describes,
 .transition__hint,
 .transition__none {

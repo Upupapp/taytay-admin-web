@@ -59,7 +59,7 @@
           </span>
           <span>
             {{ copy.nextActionDue }}
-            <time [attr.datetime]="action.dueOn">{{ action.dueOn | date: 'd MMM y' }}</time>
+            <time [attr.datetime]="action.dueOn">{{ action.dueOn | displayDate }}</time>
           </span>
           <span>{{ taskKindLabel(action.kind) }}</span>
           <span>{{ copy.nextActionOwner }}: {{ taskOwner(action) }}</span>
@@ -181,7 +181,7 @@
             <p class="workspace__none">{{ copy.noRequests }}</p>
           }
           @if (workspace.requests.length > 0) {
-            <div class="table-scroll">
+            <div class="table-scroll" [appScrollRegion]="copy.requestsHeading">
               <table class="simple-table workspace__table">
                 <caption class="visually-hidden">
                   {{
@@ -273,14 +273,14 @@
             <dt>{{ copy.opened }}</dt>
             <dd>
               <time [attr.datetime]="workspace.record.openedOn">
-                {{ workspace.record.openedOn | date: 'd MMM y' }}
+                {{ workspace.record.openedOn | displayDate }}
               </time>
             </dd>
             @if (workspace.record.closedOn) {
               <dt>{{ copy.closed }}</dt>
               <dd>
                 <time [attr.datetime]="workspace.record.closedOn">
-                  {{ workspace.record.closedOn | date: 'd MMM y' }}
+                  {{ workspace.record.closedOn | displayDate }}
                 </time>
               </dd>
             }
@@ -404,7 +404,7 @@
                     }}</span>
                     <span>{{ note.authorName }}</span>
                     <time [attr.datetime]="note.createdAt">
-                      {{ note.createdAt | date: 'd MMM y, HH:mm' }}
+                      {{ note.createdAt | displayDate: 'date-time' }}
                     </time>
                   </p>
                   <!-- The body is absent, not hidden: the data layer never sent

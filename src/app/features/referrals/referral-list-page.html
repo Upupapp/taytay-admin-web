@@ -290,7 +290,7 @@
   @if (referral.status === 'draft') {
     <span class="referrals__muted">{{ copy.awaitingSend }}</span>
   } @else if (referral.followUpOn) {
-    <span class="referrals__date">{{ referral.followUpOn }}</span>
+    <span class="referrals__date">{{ referral.followUpOn | displayDate }}</span>
     <!-- Said in words, not by colour alone: an overdue row has to announce
          itself to every reader (WCAG 1.4.1). -->
     @if (isOverdue(referral)) {

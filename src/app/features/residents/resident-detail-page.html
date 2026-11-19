@@ -103,7 +103,7 @@
           <div class="tally">
             <dt class="tally__label">{{ copy.lastActivity }}</dt>
             <dd class="tally__value">
-              {{ totals.lastActivityAt ? (totals.lastActivityAt | date: 'mediumDate') : '—' }}
+              {{ totals.lastActivityAt ? (totals.lastActivityAt | displayDate) : '—' }}
             </dd>
           </div>
         </dl>
@@ -116,7 +116,7 @@
           <dl class="facts">
             <div class="facts__row">
               <dt>{{ copy.born }}</dt>
-              <dd>{{ profile.view.resident.birthDate | date: 'longDate' }}</dd>
+              <dd>{{ profile.view.resident.birthDate | displayDate }}</dd>
             </div>
             <div class="facts__row">
               <dt>{{ copy.age }}</dt>
@@ -267,7 +267,7 @@
                 <li class="panel__item">
                   <a [routerLink]="['/visits', visit.id]">{{ visit.referenceNumber }}</a>
                   <span class="panel__meta">
-                    {{ visit.scheduledFor | date: 'mediumDate' }} · {{ visit.purpose }}
+                    {{ visit.scheduledFor | displayDate }} · {{ visit.purpose }}
                   </span>
                 </li>
               }
@@ -327,9 +327,7 @@
                 @for (event of kinship.items; track event.id) {
                   <li class="panel__event">
                     <span class="panel__event-kind">{{ eventLabel(event) }}</span>
-                    <span class="panel__event-when">{{
-                      event.occurredAt | date: 'mediumDate'
-                    }}</span>
+                    <span class="panel__event-when">{{ event.occurredAt | displayDate }}</span>
                     <!--
                       The reason is shown, not just the fact. An event nobody can account for is one
                       a later reader treats as an unexplained change to a family (DL-48).
@@ -366,7 +364,7 @@
               </h2>
 
               @if (history.cases.length > 0) {
-                <div class="table-scroll">
+                <div class="table-scroll" [appScrollRegion]="copy.casesHeading">
                   <table class="simple-table history">
                     <caption class="visually-hidden">
                       {{
@@ -402,7 +400,7 @@
                           <td class="simple-table__num history__amount">
                             {{ entry.approvedAmount | peso }}
                           </td>
-                          <td>{{ entry.updatedAt | date: 'mediumDate' }}</td>
+                          <td>{{ entry.updatedAt | displayDate }}</td>
                         </tr>
                       }
                     </tbody>
@@ -419,7 +417,7 @@
                 {{ copy.payoutsHeading }}
               </h2>
               @if (history.payouts.length > 0) {
-                <div class="table-scroll">
+                <div class="table-scroll" [appScrollRegion]="copy.payoutsHeading">
                   <table class="simple-table history">
                     <caption class="visually-hidden">
                       {{
@@ -454,7 +452,7 @@
                             {{ payout.amount | peso }}
                           </td>
                           <td>
-                            {{ payout.releasedAt ? (payout.releasedAt | date: 'mediumDate') : '—' }}
+                            {{ payout.releasedAt ? (payout.releasedAt | displayDate) : '—' }}
                           </td>
                         </tr>
                       }
@@ -475,7 +473,7 @@
                 {{ copy.referralsHeading }}
               </h2>
               @if (history.referrals.length > 0) {
-                <div class="table-scroll">
+                <div class="table-scroll" [appScrollRegion]="copy.referralsHeading">
                   <table class="simple-table history">
                     <caption class="visually-hidden">
                       {{
@@ -508,7 +506,7 @@
                               [status]="referral.status"
                             />
                           </td>
-                          <td>{{ referral.referredAt | date: 'mediumDate' }}</td>
+                          <td>{{ referral.referredAt | displayDate }}</td>
                         </tr>
                       }
                     </tbody>
@@ -527,11 +525,11 @@
           <dl class="facts">
             <div class="facts__row">
               <dt>{{ copy.created }}</dt>
-              <dd>{{ profile.view.resident.audit.createdAt | date: 'medium' }}</dd>
+              <dd>{{ profile.view.resident.audit.createdAt | displayDate: 'date-time' }}</dd>
             </div>
             <div class="facts__row">
               <dt>{{ copy.updated }}</dt>
-              <dd>{{ profile.view.resident.audit.updatedAt | date: 'medium' }}</dd>
+              <dd>{{ profile.view.resident.audit.updatedAt | displayDate: 'date-time' }}</dd>
             </div>
           </dl>
         </section>

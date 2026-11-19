@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -48,6 +47,8 @@ import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { RELATIONSHIP_COPY } from '@shared/families/relationship.copy';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
+import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 import { RESIDENTS_COPY } from './residents.copy';
 
 /**
@@ -107,8 +108,9 @@ function panelRead<TItem>(source: Observable<readonly TItem[]>): Observable<Pane
   selector: 'app-resident-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ScrollRegion,
     AsyncContent,
-    DatePipe,
+    DisplayDatePipe,
     HasPermissionDirective,
     Icon,
     Modal,

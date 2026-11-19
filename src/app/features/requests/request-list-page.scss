@@ -24,7 +24,7 @@
 .drafts__reason {
   flex: 1 1 240px;
   color: var(--text2);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .requests__search {

@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -102,6 +101,7 @@ import { AdvisoryPanel } from '@shared/intake/advisory-panel';
 import { INTAKE_COPY } from '@shared/intake/intake.copy';
 import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
 import { StatusTransition, type StatusTransitionRequest } from '@shared/cases/status-transition';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -169,7 +169,7 @@ export const ASSESSMENT_PROGRAM_TOPICS: readonly LiveTopic[] = ['programs'];
     AdvisoryPanel,
     AsyncContent,
     DocumentPanel,
-    DatePipe,
+    DisplayDatePipe,
     Modal,
     PageHeader,
     PesoPipe,

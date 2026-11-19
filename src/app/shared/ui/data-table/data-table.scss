@@ -42,6 +42,16 @@
   border-block-end: 1px solid var(--soft);
   color: var(--text);
   vertical-align: middle;
+  /* Breaks a word only when it cannot fit its line at all (a long link). Unlike
+     `anywhere`, it leaves the column's minimum width at its longest word, so a
+     name or a reference is never split to make a narrow column narrower. */
+  overflow-wrap: break-word;
+}
+
+/* The cell's content, wrapped so a phone can set it beside its header. On a
+   wide screen it adds no box. */
+.table__value {
+  display: contents;
 }
 
 .table__cell--end {
@@ -103,6 +113,93 @@
 .table-wrap > app-skeleton {
   display: block;
   margin-block-start: var(--space-3);
+}
+
+/* ── Phone: each row a block of header–value lines (DL-227) ────────────────
+   Columns squeezed into 360px wrap a word per line and push the row's actions
+   off the card. Instead each row stacks: the header in small capitals beside
+   its value, and an unlabelled column (the row's actions) across the full
+   width, so every action stays on screen. The table keeps its roles (set in
+   the template), so a reader still hears a table. Sortable headers stay as a
+   row of sort buttons above the list; the others are hidden only visually. */
+@media (width <= 640px) {
+  .table,
+  .table > thead,
+  .table > tbody,
+  .table > tbody > tr,
+  .table td {
+    display: block;
+  }
+
+  .table > thead > tr {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .table th,
+  .table th:first-child,
+  .table th:last-child {
+    padding: 0 var(--space-3);
+    border-radius: var(--r-pill);
+  }
+
+  .table th:not([aria-sort]) {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .table > tbody > tr {
+    padding-block: var(--space-3);
+    border-block-end: 1px solid var(--soft);
+  }
+
+  .table > tbody > tr:last-child {
+    border-block-end: none;
+  }
+
+  .table td,
+  .table td.table__cell--end {
+    padding: var(--space-1) 0;
+    border-block-end: none;
+    text-align: start;
+  }
+
+  .table td[data-label] {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: var(--space-3);
+    align-items: baseline;
+  }
+
+  /* The empty alternative text keeps a reader from hearing the header twice:
+     it already has it from the header cell. The first declaration is for a
+     browser that cannot read the second. */
+  .table td[data-label]::before {
+    content: attr(data-label);
+    content: attr(data-label) / '';
+    color: var(--muted2);
+    font-size: var(--fs-caption);
+    font-weight: var(--fw-semibold);
+    letter-spacing: var(--ls-caps);
+    text-transform: uppercase;
+  }
+
+  .table__value {
+    display: block;
+    min-inline-size: 0;
+  }
+
+  /* The actions column: its buttons in one wrapping row under the values. */
+  .table td:not([data-label]) {
+    padding-block-start: var(--space-2);
+  }
 }
 
 .pager {

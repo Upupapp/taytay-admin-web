@@ -1,4 +1,3 @@
-import { DatePipe, formatDate } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -26,6 +25,8 @@ import {
   type VerificationFilter,
   type VerificationRequest,
 } from '@domain/index';
+import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -78,7 +79,7 @@ function readFilter(params: ParamMap): VerificationFilter {
   imports: [
     AsyncContent,
     DataTable,
-    DatePipe,
+    DisplayDatePipe,
     Icon,
     ListChangedNotice,
     Modal,
@@ -262,6 +263,8 @@ export class VerificationQueuePage {
   }
 
   protected reviewLabel(request: VerificationRequest): string {
-    return this.copy.reviewLabel(formatDate(request.submittedAt, 'd MMM y, HH:mm', this.locale));
+    return this.copy.reviewLabel(
+      formatDisplayDate(request.submittedAt, 'date-time', this.locale) ?? '',
+    );
   }
 }

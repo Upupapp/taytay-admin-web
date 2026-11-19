@@ -28,6 +28,18 @@ export interface NavItem {
    */
   readonly closedTo?: readonly DataScope[];
   readonly description: string;
+  /**
+   * Pages under this entry's route with a title of their own, which the breadcrumb names after
+   * the entry so its last crumb says what the page heading says (DL-227). Not menu entries.
+   */
+  readonly pages?: readonly NavPage[];
+}
+
+/** A page reached from inside an entry rather than from the menu. */
+export interface NavPage {
+  readonly label: string;
+  /** Named `path`, not `route`: it is not a menu entry, and the menu checks read every `route`. */
+  readonly path: string;
 }
 
 export interface NavSection {
@@ -54,6 +66,7 @@ export const NAVIGATION: readonly NavSection[] = [
         glyph: 'WK',
         permissions: ['dashboard.view'],
         description: 'What you owe today, across every module.',
+        pages: [{ label: 'The team’s work', path: '/work/team' }],
       },
       {
         label: 'Cases',
@@ -200,7 +213,8 @@ export const NAVIGATION: readonly NavSection[] = [
         glyph: 'IC',
         permissions: ['resident.import'],
         closedTo: ['assigned-cases'],
-        description: 'Bring in a list the office keeps, checking every row before the registry changes.',
+        description:
+          'Bring in a list the office keeps, checking every row before the registry changes.',
       },
       {
         // `DL-215`. Residents ask in the app to be recorded in a sector; the office decides.
@@ -219,7 +233,7 @@ export const NAVIGATION: readonly NavSection[] = [
     title: 'Delivery',
     items: [
       {
-        label: 'Programs',
+        label: 'Programmes',
         route: '/programs',
         reads: ['program'],
         glyph: 'PG',
@@ -374,7 +388,7 @@ export const NAVIGATION: readonly NavSection[] = [
         description: 'Who accessed or changed what, and when.',
       },
       {
-        label: 'Settings',
+        label: 'Data governance',
         route: '/administration/settings',
         reads: ['governance'],
         glyph: 'SE',
@@ -384,3 +398,26 @@ export const NAVIGATION: readonly NavSection[] = [
     ],
   },
 ];
+
+/** A URL's path, without its query, fragment or matrix parameters. */
+export function pathOf(url: string): string {
+  return url.split(/[?#;]/, 1)[0] ?? '';
+}
+
+/**
+ * The one entry a URL belongs to: the longest route that is the path itself, or a prefix of it
+ * at a segment boundary. `/residents/overview` is "Citizen overview" and not also "Citizen
+ * registry", while `/residents/R-1` — a record with no entry of its own — is still the
+ * registry's. Two entries lit at once leave a reader unsure which page they are on (DL-227).
+ */
+export function activeNavRoute(url: string, routes: readonly string[]): string | null {
+  const path = pathOf(url);
+  let active: string | null = null;
+  for (const route of routes) {
+    const matches = path === route || path.startsWith(`${route}/`);
+    if (matches && (active === null || route.length > active.length)) {
+      active = route;
+    }
+  }
+  return active;
+}

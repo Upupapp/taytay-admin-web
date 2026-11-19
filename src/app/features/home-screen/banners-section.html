@@ -55,7 +55,7 @@
 <ng-template #archivedCell let-banner>
   @if (banner.archived; as archived) {
     <span class="home-section__label">
-      <span>{{ rowCopy.archivedOn((archived.at | date: 'd MMM y') ?? '', archived.byName) }}</span>
+      <span>{{ rowCopy.archivedOn((archived.at | displayDate) ?? '', archived.byName) }}</span>
       <span class="home-section__secondary">
         {{ archived.reason ? rowCopy.reason(archived.reason) : rowCopy.noReason }}
       </span>

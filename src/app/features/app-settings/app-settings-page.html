@@ -17,7 +17,7 @@
         (submit)="$event.preventDefault(); review()"
       >
         <p class="settings__note">
-          {{ copy.lastChanged((current.updatedAt | date: 'medium') ?? '') }}
+          {{ copy.lastChanged((current.updatedAt | displayDate: 'date-time') ?? '') }}
         </p>
 
         <!-- DL-216: said at the top, because the editor that ends it is far down the page. -->
@@ -95,7 +95,7 @@
                 {{
                   copy.noticeServed(
                     current.privacyNotice.version,
-                    (current.privacyNotice.updatedAt | date: 'mediumDate') ?? ''
+                    (current.privacyNotice.updatedAt | displayDate) ?? ''
                   )
                 }}
               </p>
@@ -234,7 +234,7 @@
                       {{
                         copy.legalCurrent(
                           published.version,
-                          (published.updatedAt | date: 'medium') ?? ''
+                          (published.updatedAt | displayDate: 'date-time') ?? ''
                         )
                       }}
                     </p>
@@ -344,7 +344,7 @@
           @if (current.featureFlags.length === 0) {
             <p class="settings__note">{{ copy.noFlags }}</p>
           } @else {
-            <div class="table-scroll">
+            <div class="table-scroll" [appScrollRegion]="copy.flagsCaption">
               <table class="simple-table settings__flags">
                 <caption class="visually-hidden">
                   {{
@@ -446,7 +446,7 @@
               @if (archived.length === 0) {
                 <p class="settings__note">{{ copy.noArchivedFlags }}</p>
               } @else {
-                <div class="table-scroll">
+                <div class="table-scroll" [appScrollRegion]="copy.archivedFlagsCaption">
                   <table class="simple-table settings__flags">
                     <caption class="visually-hidden">
                       {{
@@ -473,7 +473,7 @@
                           <td>
                             {{
                               copy.flagArchivedOn(
-                                (flag.archived.at | date: 'd MMM y') ?? '',
+                                (flag.archived.at | displayDate) ?? '',
                                 flag.archived.byName
                               )
                             }}

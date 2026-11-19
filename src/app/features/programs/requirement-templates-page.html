@@ -195,7 +195,7 @@
   @if (template.retiredAt) {
     <span class="templates__retired">
       {{ copy.retiredOn }}
-      <time [attr.datetime]="template.retiredAt">{{ template.retiredAt | date: 'd MMM y' }}</time>
+      <time [attr.datetime]="template.retiredAt">{{ template.retiredAt | displayDate }}</time>
     </span>
   }
 </ng-template>

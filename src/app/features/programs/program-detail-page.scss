@@ -72,7 +72,7 @@
 .documents__applies {
   color: var(--muted);
   font-size: var(--fs-xs);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .guidance__label,

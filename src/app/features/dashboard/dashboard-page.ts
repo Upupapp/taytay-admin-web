@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { DatePipe } from '@angular/common';
+
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap } from 'rxjs';
 
@@ -25,6 +25,7 @@ import {
   type DashboardSummary,
   type ProgramCategory,
 } from '@domain/index';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -81,7 +82,7 @@ export const DASHBOARD_TOPICS: readonly LiveTopic[] = [
     AsyncContent,
     ChartTable,
     DashboardAttention,
-    DatePipe,
+    DisplayDatePipe,
     HasPermissionDirective,
     Icon,
     PageHeader,

@@ -56,18 +56,16 @@
             }
             <div class="facts__item">
               <dt>{{ copy.referredOn }}</dt>
-              <dd>{{ referral.referredAt | date: 'd MMM y' }}</dd>
+              <dd>{{ referral.referredAt | displayDate }}</dd>
             </div>
             <div class="facts__item">
               <dt>{{ copy.followUp }}</dt>
-              <dd>{{ referral.followUpOn ?? '—' }}</dd>
+              <dd>{{ (referral.followUpOn | displayDate) ?? '—' }}</dd>
             </div>
             <div class="facts__item">
               <dt>{{ copy.responded }}</dt>
               <dd>
-                {{
-                  referral.respondedAt ? (referral.respondedAt | date: 'd MMM y') : copy.noResponse
-                }}
+                {{ referral.respondedAt ? (referral.respondedAt | displayDate) : copy.noResponse }}
               </dd>
             </div>
           </dl>
@@ -349,7 +347,7 @@
                   <p class="soft-row__meta notes__meta">
                     {{ note.authorName }} ·
                     <time [attr.datetime]="note.recordedAt">
-                      {{ note.recordedAt | date: 'd MMM y, HH:mm' }}
+                      {{ note.recordedAt | displayDate: 'date-time' }}
                     </time>
                   </p>
                 </li>

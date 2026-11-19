@@ -362,6 +362,32 @@
   padding-inline: 0;
 }
 
+/* On a phone every strip stays on one line and scrolls sideways inside itself:
+   wrapped, a pill of six tabs became a lozenge whose second row did not line up
+   with the first (DL-227). It takes the row's width (inline size 0, at least
+   100%), so its tabs never count towards how wide the page must be and push it
+   past the screen. The tabs are links, buttons or radios, so moving through them
+   from the keyboard scrolls the strip. */
+@media (width <= 640px) {
+  .tabs:not(.tabs--fill) {
+    position: relative;
+    flex-wrap: nowrap;
+    inline-size: 0;
+    min-inline-size: 100%;
+    max-inline-size: none;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .tabs:not(.tabs--fill) > * {
+    flex: 0 0 auto;
+  }
+
+  .tabs:not(.tabs--fill) .tab {
+    white-space: nowrap;
+  }
+}
+
 /* A radio group drawn as tabs: each `.tab` is a <label> around a radio with
    `.visually-hidden`. The chosen tab is read from the radio
    (`:has(> input:checked)`), never from a class that could disagree with it,
@@ -417,6 +443,16 @@ select.field__input.field__input--pill {
   padding-inline-end: 46px;
 }
 
+/* On a phone each filter takes the whole row: side by side at their desktop
+   widths they left a ragged right edge and cut their own text (DL-227). */
+@media (width <= 640px) {
+  .toolbar > .field,
+  .toolbar > .field.field--narrow {
+    flex: 1 1 100%;
+    max-inline-size: none;
+  }
+}
+
 /* A glass pill of filters whose labels sit inline (the dashboard's): one row
    at console widths, a rounded box when it wraps on a narrow screen. Its
    note line says what the filter governs, after a gold dot. */
@@ -468,6 +504,18 @@ select.field__input.field__input--pill {
 @media (width <= 700px) {
   .filter-bar {
     border-radius: var(--r-card);
+  }
+}
+
+/* On a phone the label goes above its select and the select takes the row, so
+   the selects line up instead of starting wherever their label ends (DL-227). */
+@media (width <= 640px) {
+  .filter-bar__field {
+    flex: 1 1 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+    padding-inline: var(--space-2);
   }
 }
 
@@ -672,7 +720,7 @@ a.kpi:focus-visible .kpi__arrow {
   font-weight: var(--fw-medium);
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .tally__hint {
@@ -957,7 +1005,7 @@ a.kpi:focus-visible .kpi__arrow {
   margin: 2px 0 0;
   color: var(--ink);
   font-weight: var(--fw-semibold);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 /* ── Dashboard grid ───────────────────────────────────────────────────────
@@ -966,6 +1014,9 @@ a.kpi:focus-visible .kpi__arrow {
 .bento {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
+  /* A panel or a tile is as tall as what it holds: stretched to its tallest
+     neighbour it ended in a band of empty card (DL-227). */
+  align-items: start;
   gap: var(--space-4);
 }
 
@@ -1160,7 +1211,7 @@ a.kpi:focus-visible .kpi__arrow {
   text-decoration: underline;
   text-decoration-color: var(--line2);
   text-underline-offset: 3px;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .record-link:hover {
@@ -1397,4 +1448,11 @@ a.kpi:focus-visible .kpi__arrow {
 
 .notice-page--under-header {
   margin-block-start: 0;
+}
+
+/* One frame: the card. The empty state inside draws no panel of its own, which
+   at phone width cost the words 45px a side (DL-227). */
+.notice-page app-empty-state .empty {
+  padding-inline: 0;
+  background: none;
 }

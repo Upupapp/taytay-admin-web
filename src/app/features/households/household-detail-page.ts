@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -37,6 +36,7 @@ import {
   type FactorCorrectionRequest,
 } from '@shared/households/vulnerability-snapshot';
 import { VULNERABILITY_COPY } from '@shared/households/vulnerability.copy';
+import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -67,7 +67,7 @@ export const HOUSEHOLD_DETAIL_TOPICS: readonly LiveTopic[] = ['households', 'res
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AsyncContent,
-    DatePipe,
+    DisplayDatePipe,
     HasPermissionDirective,
     HouseholdMemberEditor,
     Modal,

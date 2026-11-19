@@ -1,4 +1,3 @@
-import { formatDate } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -39,6 +38,7 @@ import {
   type SummaryDelta,
   type VulnerabilitySector,
 } from '@domain/index';
+import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -220,14 +220,14 @@ export class CitizensOverviewPage {
 
   protected asOf(summary: ResidentSummary): string {
     return this.copy.asOf(
-      formatDate(summary.asOf, 'd MMM y, h:mm a', this.locale),
-      formatDate(summary.period.from, 'd MMM y', this.locale),
-      formatDate(summary.period.to, 'd MMM y', this.locale),
+      formatDisplayDate(summary.asOf, 'date-time', this.locale) ?? '',
+      formatDisplayDate(summary.period.from, 'date', this.locale) ?? '',
+      formatDisplayDate(summary.period.to, 'date', this.locale) ?? '',
     );
   }
 
   protected when(value: string): string {
-    return formatDate(value, 'd MMM y, h:mm a', this.locale);
+    return formatDisplayDate(value, 'date-time', this.locale) ?? '';
   }
 
   protected sectorLabel(sector: VulnerabilitySector): string {
