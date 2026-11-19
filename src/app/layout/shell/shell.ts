@@ -22,7 +22,6 @@ import { ConnectionBanner } from '@shared/ui/connection-banner/connection-banner
 import { Drawer } from '@shared/ui/drawer/drawer';
 import { Icon } from '@shared/ui/icon/icon';
 import { RouteProgress } from '@shared/ui/route-progress/route-progress';
-import { ThemeToggle } from '@shared/ui/theme-toggle/theme-toggle';
 
 import { AppNav } from '../navigation/app-nav';
 import { NotificationList } from '../notifications/notification-list';
@@ -55,7 +54,6 @@ import { initialsOf } from '@shared/pipes/initials.pipe';
     Icon,
     NotificationList,
     RouteProgress,
-    ThemeToggle,
   ],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
