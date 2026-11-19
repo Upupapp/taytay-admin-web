@@ -53,8 +53,10 @@
   text-wrap: balance;
 }
 
-.chart__value {
-  padding-inline-start: var(--space-3);
+/* `.chart td` above sets every cell's padding, and outranks a lone class: without the table in the
+   selector the space before the figure was lost and the count sat on the end of its bar. */
+.chart td.chart__value {
+  padding-inline-start: var(--space-4);
   color: var(--ink);
   font-weight: var(--fw-semibold);
 }

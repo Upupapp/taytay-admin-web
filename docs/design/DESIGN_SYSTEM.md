@@ -254,8 +254,10 @@ either.
 (`shared/ui/theme-toggle/theme-toggle.ts`): a `.btn.btn--secondary.btn--small` toggle button with
 `aria-pressed`, a moon icon while the console is light and a sun while it is dark, and a label that
 never changes, so a screen reader hears "Dark mode, pressed" or "not pressed". It sits in the
-sidebar's account footer beside the identity and sign-out, so it is there at every width, and at the
-top of the sign-in page beside the seal, so the theme can be changed before signing in.
+topbar beside the live-updates toggle, at the top right of every page (above a page's own actions,
+such as the dashboard's Refresh), where it stays at every width — on a phone-width screen it narrows
+to its icon and keeps "Dark mode" as its name — and at the top of the sign-in page beside the seal,
+so the theme can be changed before signing in.
 `ThemeService` (`shared/state/theme.service.ts`) sets `data-theme="dark"` on `<html>`, or removes it
 for light. Light is the default and needs no script, so nothing flashes before the app starts — and
 the CSP (`script-src 'self'`) refuses the inline snippet a stored choice would need.

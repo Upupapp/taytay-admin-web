@@ -474,12 +474,14 @@ describe('Shell', () => {
     expect(account?.querySelector('.shell__sign-out')?.textContent).toContain(LAYOUT_COPY.signOut);
   });
 
-  it('offers the dark-mode button in the account footer, reachable at every width (DL-207)', async () => {
+  it('offers the dark-mode button once, in the topbar beside live updates (DL-207)', async () => {
     const { element } = await render(true);
-    const buttons = element.querySelectorAll(
-      '#app-sidebar .shell__account app-theme-toggle button[aria-pressed]',
-    );
+    const buttons = element.querySelectorAll('app-theme-toggle button[aria-pressed]');
     expect(buttons.length).toBe(1);
+    expect(element.querySelector('.topbar app-theme-toggle.topbar__theme')).not.toBeNull();
+    expect(element.querySelector('#app-sidebar app-theme-toggle')).toBeNull();
+    // The topbar hides none of its controls at any width, so the button is never stranded.
+    expect(buttons[0]?.textContent).toContain('Dark mode');
   });
 
   it('draws the account’s initials as decoration beside the printed name', async () => {

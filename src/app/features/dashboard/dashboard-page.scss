@@ -1,5 +1,12 @@
 // Main mock-up: a glass filter pill, then a twelve-column grid of panels.
 
+/* The header, the filter pill, its note and the grid stand apart by the grid's own gap, as on the
+   citizens overview: without it the pill ran straight into the first panel. */
+:host {
+  display: grid;
+  gap: var(--space-4);
+}
+
 /* ── Filter (the .filter-bar pattern) ─────────────────────────────────────── */
 .filters__wide {
   flex-basis: 230px;

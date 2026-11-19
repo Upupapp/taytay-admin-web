@@ -55,6 +55,13 @@
   min-inline-size: 0;
 }
 
+/* Beside the live-updates toggle at the top right of every page, above a page's own actions
+   (Refresh on the dashboard). The topbar hides none of its controls at any width, so the button
+   stays reachable on a phone; there it narrows to its icon (see ThemeToggle). */
+.topbar__theme {
+  flex: none;
+}
+
 /* The count is in the button's accessible name; this repeats it for the eye.
    White on the danger fill, ringed in --ring (white, or the page colour in
    the dark theme) so it reads over the glass. */

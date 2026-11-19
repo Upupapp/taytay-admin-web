@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { ServedPorts } from '@core/access/served-ports';
 import { NotificationStore } from '@core/notifications/notification.store';
 import { Icon } from '@shared/ui/icon/icon';
+import { ThemeToggle } from '@shared/ui/theme-toggle/theme-toggle';
 
 import { AppBreadcrumb } from '../breadcrumb/app-breadcrumb';
 import { GlobalSearchTrigger } from '../search/global-search-trigger';
@@ -11,7 +12,7 @@ import { LiveIndicator } from './live-indicator';
 
 /**
  * The topbar: navigation toggle, breadcrumb, global-search trigger, the live-updates
- * toggle (`DL-222`) and the notification inbox. It scrolls with the page, as the console mock-ups draw
+ * toggle (`DL-222`), the Dark mode button (`DL-207`) and the notification inbox. It scrolls with the page, as the console mock-ups draw
  * it (`DL-201`): a row on the page wash, not a bar over the content.
  *
  * Identity and sign-out deliberately live in the sidebar footer instead. Put
@@ -24,7 +25,7 @@ import { LiveIndicator } from './live-indicator';
 @Component({
   selector: 'app-topbar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppBreadcrumb, GlobalSearchTrigger, Icon, LiveIndicator],
+  imports: [AppBreadcrumb, GlobalSearchTrigger, Icon, LiveIndicator, ThemeToggle],
   template: `
     <header class="topbar">
       <button
@@ -45,6 +46,8 @@ import { LiveIndicator } from './live-indicator';
       }
 
       <app-live-indicator class="topbar__live" />
+
+      <app-theme-toggle class="topbar__theme" />
 
       <button
         type="button"

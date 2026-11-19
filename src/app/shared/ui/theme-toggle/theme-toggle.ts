@@ -16,8 +16,10 @@ export const THEME_TOGGLE_COPY = {
  * name that swaps with the state. The icon shows what the button turns the
  * console into, and is decorative.
  *
- * In the sidebar's account footer, reachable at every width, and on the
- * sign-in page, so the theme can be changed before signing in.
+ * In the topbar beside the live-updates toggle, at the top right of every page and reachable at
+ * every width, and on the sign-in page, so the theme can be changed before signing in. On a
+ * phone-width screen the label is hidden from the eye only: the button narrows to its icon and
+ * keeps "Dark mode" as its name, so the topbar stays on one line.
  */
 @Component({
   selector: 'app-theme-toggle',
@@ -31,8 +33,21 @@ export const THEME_TOGGLE_COPY = {
       (click)="theme.toggle()"
     >
       <app-icon [name]="theme.isDark() ? 'sun' : 'moon'" [size]="16" [stroke]="2" />
-      {{ copy.label }}
+      <span class="theme-toggle__label">{{ copy.label }}</span>
     </button>
+  `,
+  styles: `
+    @media (width <= 640px) {
+      .theme-toggle__label {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+    }
   `,
 })
 export class ThemeToggle {

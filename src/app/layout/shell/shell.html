@@ -34,7 +34,7 @@
 
     <app-nav class="shell__nav" (navigated)="closeNav()" />
 
-    <!-- Identity, appearance and sign-out live here rather than in the topbar so
+    <!-- Identity and sign-out live here rather than in the topbar so
          they stay reachable at every width — see the note in AppTopbar. -->
     <footer class="shell__account">
       <div class="shell__identity">
@@ -48,7 +48,6 @@
           >
         </span>
       </div>
-      <app-theme-toggle />
       <button type="button" class="btn shell__sign-out" (click)="signOut()">
         <app-icon name="signOut" [size]="16" [stroke]="2" />
         {{ copy.signOut }}
