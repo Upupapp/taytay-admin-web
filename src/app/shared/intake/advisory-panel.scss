@@ -12,6 +12,13 @@
   background: var(--soft2);
 }
 
+/* Inside a card the card is the frame: a second filled box inside it made a
+   card in a card in a card (UI audit F112). */
+:host-context(.card) .advisory {
+  padding: 0;
+  background: none;
+}
+
 .advisory__header {
   display: flex;
   flex-direction: column;

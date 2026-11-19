@@ -17,6 +17,7 @@ import {
   type StaffUserId,
 } from '@domain/index';
 
+import { ICONS } from '../icon/icons';
 import { SavedViewsBar } from './saved-views-bar';
 
 const READER = 'staff-1';
@@ -162,6 +163,8 @@ describe('SavedViewsBar — archive, never delete (DL-225)', () => {
     ]);
     const archive = buttonNamed('Archive the saved view Pending');
     expect(archive?.classList).toContain('icon-button');
+    // An archive box, not a cross: a cross reads as close or delete, and nothing here deletes (DL-225).
+    expect(archive?.querySelector('path')?.getAttribute('d')).toBe(ICONS.archive.d);
     expect(archive?.getAttribute('title')).toBe(
       'Archive this view. It can be restored from Archived views.',
     );

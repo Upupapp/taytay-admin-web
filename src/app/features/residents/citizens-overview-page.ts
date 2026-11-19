@@ -47,6 +47,9 @@ import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { CITIZENS_OVERVIEW_COPY } from './citizens-overview.copy';
+
+/** An ISO 8601 date-time inside a sentence the API wrote. */
+const ISO_TIMESTAMP = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})/g;
 import { residentFilterParams } from './resident-query';
 
 /** The three sectors the board shows as headline figures, in its order. */
@@ -228,6 +231,19 @@ export class CitizensOverviewPage {
 
   protected when(value: string): string {
     return formatDisplayDate(value, 'date-time', this.locale) ?? '';
+  }
+
+  /**
+   * A rule the API words, with any timestamp in it said the way every date in the console is
+   * (DL-227, pass 2): the duplicates line arrived as "…2026-11-19T17:14:02.863Z".
+   */
+  protected readableBasis(text: string): string {
+    return text.replace(ISO_TIMESTAMP, (stamp) => this.when(stamp) || stamp);
+  }
+
+  /** The threshold's provenance in words, or nothing for a token with no sentence yet. */
+  protected provenanceWords(token: string): string {
+    return this.copy.provenance[token] ?? '';
   }
 
   protected sectorLabel(sector: VulnerabilitySector): string {

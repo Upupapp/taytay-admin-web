@@ -45,6 +45,7 @@ import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
 
 import { HOUSEHOLDS_COPY } from './households.copy';
 import { HouseholdMemberEditor, type MembershipSubmission } from './household-member-editor';
+import { readableTrailSummary } from './household-trail';
 
 /**
  * The household, its trail, and the members its composition and indicators are read from
@@ -149,6 +150,11 @@ export class HouseholdDetailPage {
 
   protected roleLabel(member: HouseholdMemberView): string {
     return HOUSEHOLD_ROLE_LABELS[member.role];
+  }
+
+  /** A trail line with names for ids and labels for codes, as Members shows them (DL-227). */
+  protected trailSummary(summary: string, detail: HouseholdDetail): string {
+    return readableTrailSummary(summary, detail.members);
   }
 
   protected memberLink(member: HouseholdMemberView): string {

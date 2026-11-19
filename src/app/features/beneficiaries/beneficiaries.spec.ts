@@ -231,7 +231,9 @@ describe('the beneficiary filter lives in the URL', () => {
   it('discards a date that parses but is not a real day', () => {
     // 31 February reads as a valid shape and would otherwise roll forward into
     // March, quietly shortening the history the screen reports.
-    expect(readBeneficiaryQuery(params({ from: '2026-02-31' })).filter.receivedFrom).toBeUndefined();
+    expect(
+      readBeneficiaryQuery(params({ from: '2026-02-31' })).filter.receivedFrom,
+    ).toBeUndefined();
   });
 });
 
@@ -443,7 +445,11 @@ function accountsThat(
   };
 }
 
-const MOVES = accountsThat((kept) => ({ outcome: 'relinked', reason: null, linkedResidentId: kept }));
+const MOVES = accountsThat((kept) => ({
+  outcome: 'relinked',
+  reason: null,
+  linkedResidentId: kept,
+}));
 const STAYS = accountsThat((_kept, superseded) => ({
   outcome: 'not-relinked',
   reason: 'kept-record-has-account',
@@ -458,7 +464,9 @@ interface OpenReview {
 }
 
 /** Opens the first pair, as the same person, with the record it was opened from kept. */
-async function reviewFirstPair(fixture: ComponentFixture<DuplicateReviewPage>): Promise<OpenReview> {
+async function reviewFirstPair(
+  fixture: ComponentFixture<DuplicateReviewPage>,
+): Promise<OpenReview> {
   const page = fixture.componentInstance as unknown as OpenReview;
   const first = page.rows()[0];
   expect(first).toBeDefined();
@@ -525,6 +533,40 @@ describe('a resident’s app account and a same-person finding (DL-226)', () => 
     expect(html(fixture).querySelector('.preview__account')?.textContent).toContain(
       'No resident’s app account is linked to the record being superseded',
     );
+  });
+});
+
+describe('the pair is reviewed in a centred dialog that tells the two records apart (F021, F105)', () => {
+  it('decides in a dialog, not a drawer', async () => {
+    const fixture = await openQueue();
+    await reviewFirstPair(fixture);
+    const element = html(fixture);
+    expect(element.querySelector('app-modal [role="dialog"]')).not.toBeNull();
+    expect(element.querySelector('app-drawer')).toBeNull();
+  });
+
+  it('gives each record to keep what it holds and whether an app account reads it', async () => {
+    const fixture = await openQueue('mswdo-head', MOVES);
+    await reviewFirstPair(fixture);
+    const options = [
+      ...html(fixture).querySelectorAll<HTMLInputElement>('input[name="canonical"]'),
+    ].map((input) => input.closest('label')?.textContent ?? '');
+    expect(options).toHaveLength(2);
+    expect(options[0]).toContain('First record');
+    expect(options[1]).toContain('Second record');
+    for (const option of options) {
+      expect(option).toMatch(/Holds \d+ assistance requests?/);
+      expect(option).toContain('A resident’s app account is linked to it.');
+    }
+  });
+
+  it('tells the records apart without a compared value (DL-73)', async () => {
+    const fixture = await openQueue();
+    await reviewFirstPair(fixture);
+    const text = html(fixture).textContent ?? '';
+    expect(text).not.toContain('1956-03-14');
+    expect(text).not.toContain('4471');
+    expect(text).not.toContain('0917-555-0101');
   });
 });
 

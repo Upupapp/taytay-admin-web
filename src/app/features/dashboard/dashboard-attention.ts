@@ -47,6 +47,21 @@ export interface AttentionGroup {
       </div>
 
       @if (hasAny()) {
+        <!-- The sums first, at a glance, and said once: the group headings no longer repeat them
+             (DL-227). The figure is drawn above its label (column-reverse), so dt stays before dd. -->
+        <dl class="tally-row attention__totals">
+          @for (group of groups(); track group.severity) {
+            <div
+              class="tally tally--figure-first"
+              [class.tally--red]="group.severity === 'critical'"
+              [class.tally--gold]="group.severity === 'warning'"
+              [class.tally--soft]="group.severity === 'info'"
+            >
+              <dt class="tally__label">{{ group.label }}</dt>
+              <dd class="tally__value">{{ group.total }}</dd>
+            </div>
+          }
+        </dl>
         <div class="attention__list">
           @for (group of groups(); track group.severity) {
             @if (group.cards.length > 0) {
@@ -55,7 +70,6 @@ export interface AttentionGroup {
               <h3 class="attention__group" [class]="'attention__group--' + group.severity">
                 <span class="attention__dot" aria-hidden="true"></span>
                 <span class="attention__severity">{{ group.label }}</span>
-                <span class="attention__group-total">· {{ group.total }}</span>
               </h3>
               <ul class="attention__items">
                 @for (card of group.cards; track card.signal.kind) {
@@ -81,22 +95,6 @@ export interface AttentionGroup {
             }
           }
         </div>
-
-        <!-- The sums under each heading again, as the panel's footing; the figure is drawn above
-             its label (column-reverse), so the markup keeps dt before dd. -->
-        <dl class="tally-row attention__totals">
-          @for (group of groups(); track group.severity) {
-            <div
-              class="tally tally--figure-first"
-              [class.tally--red]="group.severity === 'critical'"
-              [class.tally--gold]="group.severity === 'warning'"
-              [class.tally--soft]="group.severity === 'info'"
-            >
-              <dt class="tally__label">{{ group.label }}</dt>
-              <dd class="tally__value">{{ group.total }}</dd>
-            </div>
-          }
-        </dl>
       } @else {
         <div class="attention__clear">
           <h3 class="section-title">{{ copy.attentionEmptyHeading }}</h3>

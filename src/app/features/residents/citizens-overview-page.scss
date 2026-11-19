@@ -6,8 +6,16 @@
   gap: var(--space-4);
 }
 
+/* Five filters do not fit one pill at console widths: they wrap to two rows in a rounded box, each
+   wide enough for its label on one line and its longest choice (DL-227, pass 2). */
 .overview__filters {
   flex-wrap: wrap;
+  border-radius: var(--r-card);
+}
+
+.overview__filters > .filter-bar__field {
+  flex: 1 1 300px;
+  white-space: nowrap;
 }
 
 .overview__as-of {

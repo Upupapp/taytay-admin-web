@@ -7,12 +7,48 @@
  * zero or a blank. And the audit list's own notice says why values are absent,
  * so their absence reads as a rule rather than as a missing feature.
  */
+/** Module names for the permission matrix's row groups; a key not named here is spelled out. */
+const PERMISSION_GROUP_LABELS: Readonly<Record<string, string>> = {
+  dashboard: 'Dashboard',
+  resident: 'Residents',
+  beneficiary: 'Beneficiaries',
+  household: 'Households',
+  family: 'Families',
+  case: 'Cases',
+  'case-note': 'Case notes',
+  program: 'Programmes',
+  request: 'Assistance requests',
+  document: 'Documents',
+  release: 'Releases',
+  referral: 'Referrals',
+  report: 'Reports',
+  audit: 'Audit trail',
+  staff: 'Staff',
+  'saved-view': 'Saved views',
+  visit: 'Field visits',
+  event: 'Events',
+  settings: 'Settings',
+  verification: 'ID verification',
+  'office-inbox': 'Office inbox',
+  user: 'App accounts',
+  office: 'Offices',
+  service: 'Tulong pages',
+  hotline: 'Hotlines',
+  home: 'Home screen',
+  'app-config': 'App settings',
+  'digital-id': 'Digital IDs',
+  news: 'Balita',
+  'issuance-type': 'Document catalogue',
+  'issuance-request': 'Document requests',
+};
+
 export const ADMIN_COPY = {
   staff: {
     title: 'Staff and roles',
     subtitle: 'Who holds an account, what it covers, and whether it is active.',
     roles: 'Permission matrix',
     audit: 'Audit trail',
+    governance: 'Data governance',
 
     search: 'Search',
     searchPlaceholder: 'Name, unit or employee ID',
@@ -75,6 +111,12 @@ export const ADMIN_COPY = {
     doesNotHold: 'Does not hold',
     sensitiveFlag: 'Sensitive',
     readOnly: 'Read only',
+    roleChoice: 'Role shown',
+    roleChoiceHint: 'A narrow screen shows one role at a time. Choose another to see its grants.',
+    /** A heading over each module's permissions, by the part of the key before the dot. */
+    group: (prefix: string): string =>
+      PERMISSION_GROUP_LABELS[prefix] ??
+      prefix.charAt(0).toUpperCase() + prefix.slice(1).replaceAll('-', ' '),
   },
 
   audit: {

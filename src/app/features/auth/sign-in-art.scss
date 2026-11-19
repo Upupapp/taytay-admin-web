@@ -54,10 +54,9 @@
   font-weight: var(--fw-semibold);
 }
 
+/* One tile layout for all five: the icon top-left, the label bottom-left. */
 .art__tile--wide {
   grid-column: 1 / -1;
-  flex-direction: row;
-  align-items: center;
   min-block-size: 0;
 }
 

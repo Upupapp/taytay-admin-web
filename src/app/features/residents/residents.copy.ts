@@ -80,6 +80,7 @@ export const RESIDENTS_COPY = {
     pagesLabel: 'Sector pages',
     figuresHeading: 'In numbers',
     attentionHeading: 'Needs attention',
+    fieldsHeading: 'In the list',
     columnEnd: 'End membership',
     end: 'End',
     endLabel: (name: string, sector: string) => `End ${name}’s membership of ${sector}`,

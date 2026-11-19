@@ -317,6 +317,28 @@ describe('cancelling an event', () => {
 
     expect(cancel?.disabled).toBe(true);
   });
+
+  it('says in words why the acts are unavailable, and drops the line once a reason is written', async () => {
+    const fixture = await openEvent('event-0002');
+    const page = fixture.componentInstance as unknown as {
+      reason: { set: (value: string) => void };
+    };
+
+    expect(text(fixture)).toContain('stay unavailable until there is a reason');
+    page.reason.set('Partner clinic withdrew.');
+    await fixture.whenStable();
+    expect(text(fixture)).not.toContain('stay unavailable until there is a reason in this box');
+  });
+
+  it('draws the cancel act as an outline, keeping the filled red for the confirmation', async () => {
+    const fixture = await openEvent('event-0002');
+    const cancel = [...html(fixture).querySelectorAll('button')].find(
+      (b) => (b.textContent ?? '').trim() === 'Cancel event',
+    );
+
+    expect(cancel?.classList).toContain('btn--danger-outline');
+    expect(cancel?.classList).not.toContain('btn--danger');
+  });
 });
 
 /* ── Criterion: no unnecessary resident PII in the list ───────────────────── */

@@ -28,6 +28,8 @@ import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { liveRead, liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { Icon } from '@shared/ui/icon/icon';
+import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 
@@ -55,6 +57,8 @@ export const PAYOUT_SESSION_TOPICS: readonly LiveTopic[] = ['releases'];
     DisplayDatePipe,
     AsyncContent,
     HasPermissionDirective,
+    Icon,
+    Modal,
     PageHeader,
     PesoPipe,
     RouterLink,
@@ -132,6 +136,8 @@ export class PayoutSessionPage {
   protected readonly draftDate = signal('');
   protected readonly draftMembers = signal<readonly ReleaseId[]>([]);
   protected readonly opening = signal(false);
+  /** Whether the "Open a payout session" dialog is showing. */
+  protected readonly composing = signal(false);
 
   protected readonly canOpen = computed(
     () =>
@@ -227,6 +233,7 @@ export class PayoutSessionPage {
       this.draftVenue.set('');
       this.draftDate.set('');
       this.draftMembers.set([]);
+      this.composing.set(false);
       // The session is recorded, so the next one opened here is a new intent, not a retry of this.
       this.intent = new WriteIntent();
       this.reloads.update((n) => n + 1);

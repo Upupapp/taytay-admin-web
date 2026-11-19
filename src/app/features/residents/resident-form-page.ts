@@ -167,6 +167,17 @@ export class ResidentFormPage {
     () => this.model().sectors.length > 0 && this.model().sectorBasis.trim().length === 0,
   );
 
+  /**
+   * The missing basis is said once the clerk has left the box or tried to save, never on a form
+   * opened a moment ago: an error before anybody has done anything reads as the form being broken
+   * (DL-227, pass 2). The save is refused either way.
+   */
+  protected readonly basisTouched = signal(false);
+  protected readonly saveAttempted = signal(false);
+  protected readonly showBasisMissing = computed(
+    () => this.sectorBasisMissing() && (this.basisTouched() || this.saveAttempted()),
+  );
+
   protected readonly hasRestrictedSectors = computed(
     () => this.offeredSectors().length < VULNERABILITY_SECTORS.length,
   );
@@ -300,6 +311,7 @@ export class ResidentFormPage {
       return;
     }
 
+    this.saveAttempted.set(true);
     const draft = this.toDraft();
     const problems = validateResidentDraft(draft);
     this.problems.set(problems);
@@ -336,16 +348,16 @@ export class ResidentFormPage {
         ),
       )
       .subscribe({
-      next: ({ saved, refused }) => {
-        this.submitting.set(false);
+        next: ({ saved, refused }) => {
+          this.submitting.set(false);
 
-        if (refused.length > 0) {
-          this.notifications.warning(this.copy.sectorsNotRecorded(refused));
-        } else {
-          this.notifications.success(
-            id === undefined ? this.copy.savedCreate : this.copy.savedUpdate,
-          );
-        }
+          if (refused.length > 0) {
+            this.notifications.warning(this.copy.sectorsNotRecorded(refused));
+          } else {
+            this.notifications.success(
+              id === undefined ? this.copy.savedCreate : this.copy.savedUpdate,
+            );
+          }
 
           void this.router.navigate(['/residents', saved.id]);
         },
@@ -385,7 +397,9 @@ export class ResidentFormPage {
           catchError(() => of(sector)),
         ),
       ),
-    ).pipe(map((results) => results.filter((entry): entry is VulnerabilitySector => entry !== null)));
+    ).pipe(
+      map((results) => results.filter((entry): entry is VulnerabilitySector => entry !== null)),
+    );
   }
 
   private toDraft(): ResidentDraft {

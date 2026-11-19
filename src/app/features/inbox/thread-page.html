@@ -1,6 +1,7 @@
-<p class="thread__back">
-  <a class="btn" routerLink="/inbox">{{ copy.back }}</a>
-</p>
+<a class="back-link" routerLink="/inbox">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
 
 <app-async-content
   [state]="thread()"
@@ -13,64 +14,6 @@
       <app-page-header [title]="conversation.subject" />
 
       <div class="thread__layout">
-        <section
-          class="card card--padded thread__block thread__details"
-          aria-labelledby="thread-details"
-        >
-          <h2 id="thread-details" class="thread__heading">{{ copy.detailsHeading }}</h2>
-          <dl class="facts thread__facts">
-            <div>
-              <dt>{{ copy.office }}</dt>
-              <dd>{{ officeName() }}</dd>
-            </div>
-            <div>
-              <dt>{{ copy.status }}</dt>
-              <dd><app-status-badge [catalog]="catalog" [status]="conversation.status" /></dd>
-            </div>
-            <div>
-              <dt>{{ copy.started }}</dt>
-              <dd>
-                <time [attr.datetime]="conversation.createdAt">
-                  {{ conversation.createdAt | displayDate: 'date-time' }}
-                </time>
-              </dd>
-            </div>
-            <div>
-              <dt>{{ copy.unread }}</dt>
-              <dd>{{ listCopy.unread(conversation.unreadCount) }}</dd>
-            </div>
-          </dl>
-          <p class="thread__note">{{ copy.resident }}</p>
-
-          <div class="thread__acts">
-            @if (conversation.unreadCount > 0) {
-              <p class="thread__note">{{ readEffect }}</p>
-              <button
-                type="button"
-                class="btn btn--primary"
-                [disabled]="busy()"
-                (click)="markRead()"
-              >
-                {{ busy() ? copy.markingRead : copy.markRead }}
-              </button>
-            } @else {
-              <p class="thread__note">{{ copy.alreadyRead }}</p>
-            }
-            @if (open()) {
-              <button
-                type="button"
-                class="btn btn--danger-soft"
-                [disabled]="busy()"
-                (click)="askToClose()"
-              >
-                {{ copy.closeOpen }}
-              </button>
-            } @else {
-              <p class="thread__note">{{ copy.closedNote }}</p>
-            }
-          </div>
-        </section>
-
         <section
           class="card card--padded thread__block thread__messages-block"
           aria-labelledby="thread-messages"
@@ -213,6 +156,64 @@
           } @else {
             <p class="thread__note thread__aside-note">{{ copy.closedNote }}</p>
           }
+        </section>
+
+        <section
+          class="card card--padded thread__block thread__details"
+          aria-labelledby="thread-details"
+        >
+          <h2 id="thread-details" class="thread__heading">{{ copy.detailsHeading }}</h2>
+          <dl class="facts thread__facts">
+            <div>
+              <dt>{{ copy.office }}</dt>
+              <dd>{{ officeName() }}</dd>
+            </div>
+            <div>
+              <dt>{{ copy.status }}</dt>
+              <dd><app-status-badge [catalog]="catalog" [status]="conversation.status" /></dd>
+            </div>
+            <div>
+              <dt>{{ copy.started }}</dt>
+              <dd>
+                <time [attr.datetime]="conversation.createdAt">
+                  {{ conversation.createdAt | displayDate: 'date-time' }}
+                </time>
+              </dd>
+            </div>
+            <div>
+              <dt>{{ copy.unread }}</dt>
+              <dd>{{ listCopy.unread(conversation.unreadCount) }}</dd>
+            </div>
+          </dl>
+          <p class="thread__note">{{ copy.resident }}</p>
+
+          <div class="thread__acts">
+            @if (conversation.unreadCount > 0) {
+              <p class="thread__note">{{ readEffect }}</p>
+              <button
+                type="button"
+                class="btn btn--primary"
+                [disabled]="busy()"
+                (click)="markRead()"
+              >
+                {{ busy() ? copy.markingRead : copy.markRead }}
+              </button>
+            } @else {
+              <p class="thread__note">{{ copy.alreadyRead }}</p>
+            }
+            @if (open()) {
+              <button
+                type="button"
+                class="btn btn--danger-soft"
+                [disabled]="busy()"
+                (click)="askToClose()"
+              >
+                {{ copy.closeOpen }}
+              </button>
+            } @else {
+              <p class="thread__note">{{ copy.closedNote }}</p>
+            }
+          </div>
         </section>
       </div>
     }

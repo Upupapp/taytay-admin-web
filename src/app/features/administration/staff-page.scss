@@ -69,8 +69,11 @@
   font-size: var(--fs-2xs);
 }
 
-.account__actions {
-  margin: 0;
+/* The act sits at the foot of its card, so cards in one row keep their
+   buttons level whatever their facts wrap to. */
+.account__actions,
+.account__own {
+  margin: auto 0 0;
 }
 
 .account__panel {
@@ -109,8 +112,4 @@
   max-inline-size: 78ch;
   color: var(--text2);
   font-size: var(--fs-label);
-}
-
-.staff__governance-link {
-  margin: 0;
 }

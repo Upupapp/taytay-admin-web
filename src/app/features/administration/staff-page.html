@@ -3,6 +3,9 @@
     <a page-actions class="btn" routerLink="/administration/audit">{{ copy.audit }}</a>
   }
   <a page-actions class="btn" routerLink="/administration/roles">{{ copy.roles }}</a>
+  @if (canSeeGovernance()) {
+    <a page-actions class="btn" routerLink="/administration/settings">{{ copy.governance }}</a>
+  }
 </app-page-header>
 
 <div class="staff">
@@ -141,10 +144,4 @@
     <h3 class="not-built__subheading">{{ copy.resetHeading }}</h3>
     <p class="not-built__body">{{ resetNotice }}</p>
   </section>
-
-  @if (canSeeGovernance()) {
-    <p class="staff__governance-link">
-      <a class="btn" routerLink="/administration/settings">Data governance</a>
-    </p>
-  }
 </div>

@@ -6,22 +6,58 @@
   margin-block-end: var(--space-4);
 }
 
-.queue__find .btn {
+/* The filters in one row, top-aligned so every label, input and hint sits on its own line
+   across the row; a narrow screen wraps them, each across the whole row (DL-227). */
+.queue__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3) var(--space-4);
+}
+
+.queue__filters > .field,
+.queue__find {
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+}
+
+.queue__filters > .field.field--narrow {
+  max-inline-size: 22rem;
+}
+
+.queue__find {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-inline-size: 26rem;
+}
+
+.queue__find-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.queue__find-row .field__input {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.queue__find-row .btn {
   min-block-size: var(--h-btn);
 }
 
-.toolbar select.field__input {
-  min-inline-size: 200px;
+@media (width <= 640px) {
+  .queue__filters > .field.field--narrow,
+  .queue__find {
+    flex-basis: 100%;
+    max-inline-size: none;
+  }
 }
 
 .queue__narrowed {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-}
-
-.queue__find .queue__problem {
-  flex-basis: 100%;
 }
 
 .queue__document,

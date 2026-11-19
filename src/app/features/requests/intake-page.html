@@ -307,6 +307,10 @@
       }
 
       <div class="form-footer intake__actions">
+        <!-- Secondary first, the step's primary last, as every .form-footer (F113, F114). -->
+        <button type="button" class="btn" [disabled]="!canSave()" (click)="saveDraft()">
+          {{ copy.saveDraft }}
+        </button>
         @if (stepNumber() > 1) {
           <button type="button" class="btn" (click)="onBack()">{{ copy.back }}</button>
         }
@@ -317,9 +321,6 @@
             {{ copy.submit }}
           </button>
         }
-        <button type="button" class="btn" [disabled]="!canSave()" (click)="saveDraft()">
-          {{ copy.saveDraft }}
-        </button>
       </div>
 
       @if (refusal().length > 0) {

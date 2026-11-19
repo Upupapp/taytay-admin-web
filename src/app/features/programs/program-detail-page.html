@@ -1,13 +1,21 @@
+<a class="back-link" routerLink="/programs">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
 <app-async-content [state]="state()" [content]="body" [skeletonLines]="8" />
 
 <ng-template #body let-view>
   @if (!view) {
     <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
-    <p class="program__back">
-      <a class="btn" routerLink="/programs">{{ copy.back }}</a>
-    </p>
   } @else {
-    <app-page-header [title]="view.program.name" [subtitle]="copy.subtitle" />
+    <app-page-header [title]="view.program.name" [subtitle]="copy.subtitle">
+      <!-- The whole record is edited on its own page, with a reason (DL-178). -->
+      @if (canManage()) {
+        <a page-actions class="btn" [routerLink]="['/programs', view.program.id, 'edit']">{{
+          copy.edit
+        }}</a>
+      }
+    </app-page-header>
 
     <div class="program">
       <div class="program__main">
@@ -41,15 +49,6 @@
             <dt>{{ copy.description }}</dt>
             <dd>{{ view.program.description }}</dd>
           </dl>
-
-          <!-- The whole record is edited on its own page, with a reason (DL-178). -->
-          @if (canManage()) {
-            <div class="program__actions">
-              <a class="btn" [routerLink]="['/programs', view.program.id, 'edit']">{{
-                copy.edit
-              }}</a>
-            </div>
-          }
         </section>
 
         <!-- Guidance is a list of records. Adding, retiring or rewording one is

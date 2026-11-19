@@ -37,6 +37,7 @@ import { PersonPicker } from '@shared/residents/person-picker';
 import { HouseholdDetailPage } from './household-detail-page';
 import { HouseholdFormPage } from './household-form-page';
 import { HouseholdListPage } from './household-list-page';
+import { readableTrailSummary } from './household-trail';
 import {
   householdFilterParams,
   isHouseholdFilterActive,
@@ -261,6 +262,42 @@ describe('the household record', () => {
     expect(element.querySelector('#members-heading')).not.toBeNull();
     expect(element.querySelector('#vulnerability-heading')).not.toBeNull();
     expect(element.querySelector('#audit-heading')).not.toBeNull();
+  });
+
+  it('names a member in the trail as Members does, never by id (DL-227)', async () => {
+    await configure('social-worker');
+    const detail = await firstValueFrom(
+      TestBed.inject(HOUSEHOLD_REPOSITORY).getById(asId<HouseholdId>(BAUTISTA)),
+    );
+    const members = detail?.members ?? [];
+    const first = members[0];
+    expect(first).toBeDefined();
+    if (!first) {
+      return;
+    }
+    const id = first.view.resident.id;
+    expect(readableTrailSummary(`added ${id} as child`, members)).toBe(
+      `added ${first.view.listedName} as child`,
+    );
+    expect(readableTrailSummary(`made ${id} the household head; removed res-gone`, members)).toBe(
+      `made ${first.view.listedName} the household head; removed a person no longer listed in this household`,
+    );
+    expect(readableTrailSummary('set income-below-threshold to absent', members)).toBe(
+      'set “Income below the poverty threshold” to “Does not apply”',
+    );
+    expect(readableTrailSummary('registered the household', members)).toBe(
+      'registered the household',
+    );
+  });
+
+  it('prints no resident id anywhere in the trail', async () => {
+    const fixture = await openDetail(BAUTISTA);
+    const trail = Array.from(html(fixture).querySelectorAll('.trail__summary')).map(
+      (line) => line.textContent ?? '',
+    );
+    for (const line of trail) {
+      expect(line).not.toMatch(/res-\d+|[0-9a-f]{8}-[0-9a-f]{4}-/);
+    }
   });
 
   it('links every member to their own resident record', async () => {

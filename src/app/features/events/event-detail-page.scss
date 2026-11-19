@@ -8,10 +8,6 @@
   gap: var(--space-4);
 }
 
-.event__back {
-  margin-block-start: var(--space-4);
-}
-
 .event__subheading {
   margin-block-start: var(--space-2);
   color: var(--ink);
@@ -74,13 +70,32 @@
   font-size: var(--fs-xs);
 }
 
-/* "How many registered" as a figure; the sentence beside it says who decides. */
+/* "How many registered": these are sentences, some of them four lines long, so they are set as
+   emphasised body text rather than at a headline figure's size (DL-227). */
 .event__counts {
   color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--fs-title-sm);
-  font-weight: var(--fw-medium);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-semibold);
   font-variant-numeric: tabular-nums;
+}
+
+/* "Counted at" and the other facts stand clear of the sentence above them. */
+.event__counts + .event__facts {
+  margin-block-start: var(--space-2);
+}
+
+/* One act per block: its warning, then its button at the button's own width, a hairline
+   between acts so cancel, correct and archive do not run together. */
+.event__act {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.event__act + .event__act {
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--soft);
 }
 
 .event__facts {
@@ -95,9 +110,26 @@
   margin-inline-start: auto;
 }
 
-.registrants__reference {
+.registrants__reference,
+.registrants__date {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.registrants__name {
+  min-inline-size: 11rem;
+}
+
+.registrants__value {
+  display: block;
+  min-inline-size: 0;
+}
+
+/* The row's acts on one line beside the row; on a phone the row stacks and they wrap. */
+@media (width > 640px) {
+  .registrants__acts .registrants__actions {
+    flex-wrap: nowrap;
+  }
 }
 
 .registrants__note {

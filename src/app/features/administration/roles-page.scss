@@ -9,7 +9,6 @@
 
 .roles__notice {
   margin: 0;
-  max-inline-size: 82ch;
 }
 
 .separation {
@@ -35,12 +34,24 @@
   font-weight: var(--fw-semibold);
 }
 
-/* A wide matrix scrolls inside its card rather than the page. Positioned, so
-   the visually hidden "holds" labels are clipped with it: unpositioned, they
-   widened the page to 1475px (Phase 4 sweep). */
+/* The matrix scrolls inside its own box, both ways, so its header row and its
+   permission column stay in view (sticky) while a reader runs down 76 rows or
+   across seven roles. Positioned, so the visually hidden "holds" labels are
+   clipped with it: unpositioned, they widened the page to 1475px (Phase 4). */
+.matrix__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.matrix__choice {
+  display: none;
+}
+
 .matrix__scroll {
   position: relative;
-  overflow-x: auto;
+  max-block-size: 75vh;
+  overflow: auto;
 }
 
 .matrix {
@@ -59,14 +70,18 @@
 
 .matrix th,
 .matrix td {
-  padding: 10px 14px;
+  padding: 10px var(--space-2);
   border-block-end: 1px solid var(--soft);
   vertical-align: middle;
 }
 
+/* A sticky cell needs an opaque fill, or the rows scroll visibly under it. */
 .matrix thead th {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
   border-block-end: 0;
-  background: var(--soft2);
+  background: linear-gradient(var(--soft2), var(--soft2)), var(--card-solid);
   color: var(--muted2);
   font-size: var(--fs-caption);
   font-weight: var(--fw-semibold);
@@ -84,18 +99,44 @@
   border-end-end-radius: var(--r-md);
 }
 
+/* Headers wrap to two lines rather than widening the column: seven roles fit a
+   1280 screen beside the permission column. */
 .matrix__role {
+  inline-size: 5.5rem;
+  min-inline-size: 5.5rem;
   text-align: center;
-  white-space: nowrap;
+  white-space: normal;
 }
 
-.matrix__corner {
-  min-inline-size: 260px;
+.matrix__corner,
+.matrix__permission {
+  position: sticky;
+  inset-inline-start: 0;
+  padding-inline: var(--space-3);
   text-align: start;
+}
+
+.matrix thead .matrix__corner {
+  z-index: 2;
 }
 
 .matrix__permission {
+  background: var(--card-solid);
+  white-space: nowrap;
+}
+
+.matrix__group th {
+  padding-block: var(--space-4) var(--space-2);
+  color: var(--ink);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
   text-align: start;
+}
+
+/* The module's name stays at the start while the roles scroll sideways. */
+.matrix__group-label {
+  position: sticky;
+  inset-inline-start: var(--space-3);
 }
 
 .matrix__name {
@@ -107,7 +148,6 @@
 
 .matrix__tags {
   display: inline-flex;
-  flex-wrap: wrap;
   gap: var(--space-1);
   margin-inline-start: var(--space-2);
 }
@@ -136,5 +176,25 @@
 }
 
 .matrix__absent {
-  color: var(--muted2);
+  color: var(--muted);
+}
+
+/* A phone shows the permission and the one role chosen above the box. */
+@media (width <= 640px) {
+  .matrix__choice {
+    display: flex;
+  }
+
+  .matrix__col--other {
+    display: none;
+  }
+
+  .matrix__permission {
+    white-space: normal;
+  }
+
+  .matrix__tags {
+    flex-wrap: wrap;
+    margin-inline-start: 0;
+  }
 }

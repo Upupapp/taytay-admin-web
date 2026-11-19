@@ -149,6 +149,15 @@
   font-size: var(--fs-2xs);
 }
 
+/* On a phone the wait takes its own line under the chips, at the start, rather than a ragged
+   right-aligned line between the chips and the title (DL-227, pass 2). */
+@media (width <= 640px) {
+  .work-rows__timing {
+    flex-basis: 100%;
+    margin-inline-start: 0;
+  }
+}
+
 /* ── Acting on a task ─────────────────────────────────────────────────── */
 
 .task-panel {

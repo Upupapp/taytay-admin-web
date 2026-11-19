@@ -35,6 +35,7 @@ import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { liveRead, liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -62,6 +63,7 @@ export const RELEASE_DETAIL_TOPICS: readonly LiveTopic[] = ['releases'];
   imports: [
     AsyncContent,
     DisplayDatePipe,
+    Icon,
     PageHeader,
     PesoPipe,
     RouterLink,

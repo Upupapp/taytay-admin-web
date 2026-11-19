@@ -144,32 +144,6 @@
                 }
               </div>
             </fieldset>
-
-            <fieldset class="form__section">
-              <legend class="form__legend">{{ copy.contactHeading }}</legend>
-              <div class="form__grid">
-                <label class="field">
-                  <span class="field__label">{{ copy.mobile }}</span>
-                  <input
-                    class="field__input"
-                    type="tel"
-                    autocomplete="tel"
-                    [value]="model().mobile"
-                    (input)="onText('mobile', $event)"
-                  />
-                </label>
-                <label class="field">
-                  <span class="field__label">{{ copy.email }}</span>
-                  <input
-                    class="field__input"
-                    type="email"
-                    autocomplete="email"
-                    [value]="model().email"
-                    (input)="onText('email', $event)"
-                  />
-                </label>
-              </div>
-            </fieldset>
           </div>
           <div class="form__column">
             <fieldset class="form__section">
@@ -209,6 +183,32 @@
             </fieldset>
 
             <fieldset class="form__section">
+              <legend class="form__legend">{{ copy.contactHeading }}</legend>
+              <div class="form__grid">
+                <label class="field">
+                  <span class="field__label">{{ copy.mobile }}</span>
+                  <input
+                    class="field__input"
+                    type="tel"
+                    autocomplete="tel"
+                    [value]="model().mobile"
+                    (input)="onText('mobile', $event)"
+                  />
+                </label>
+                <label class="field">
+                  <span class="field__label">{{ copy.email }}</span>
+                  <input
+                    class="field__input"
+                    type="email"
+                    autocomplete="email"
+                    [value]="model().email"
+                    (input)="onText('email', $event)"
+                  />
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="form__section">
               <legend class="form__legend">{{ copy.sectorsHeading }}</legend>
               <p class="form__hint">{{ copy.sectorsHint }}</p>
               <div class="form__sectors">
@@ -232,7 +232,7 @@
               form where nothing has been claimed yet, is a field people learn to scroll past.
             -->
               @if (model().sectors.length > 0) {
-                <label class="field" for="sector-basis">
+                <label class="field form__basis" for="sector-basis">
                   <span class="field__label">{{ copy.sectorBasisLabel }}</span>
                   <input
                     id="sector-basis"
@@ -240,13 +240,20 @@
                     type="text"
                     [value]="model().sectorBasis"
                     (input)="onText('sectorBasis', $event)"
-                    [attr.aria-describedby]="'sector-basis-hint'"
-                    [attr.aria-invalid]="sectorBasisMissing() ? 'true' : null"
+                    (blur)="basisTouched.set(true)"
+                    [attr.aria-describedby]="
+                      showBasisMissing()
+                        ? 'sector-basis-hint sector-basis-error'
+                        : 'sector-basis-hint'
+                    "
+                    [attr.aria-invalid]="showBasisMissing() ? 'true' : null"
                   />
                   <span class="field__hint" id="sector-basis-hint">{{ copy.sectorBasisHint }}</span>
                 </label>
-                @if (sectorBasisMissing()) {
-                  <p class="field__error" role="alert">{{ copy.sectorBasisRequired }}</p>
+                @if (showBasisMissing()) {
+                  <p class="field__error" id="sector-basis-error" role="alert">
+                    {{ copy.sectorBasisRequired }}
+                  </p>
                 }
               }
             </fieldset>

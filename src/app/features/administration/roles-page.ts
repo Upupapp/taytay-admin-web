@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import {
@@ -10,6 +10,7 @@ import {
   type Permission,
   type StaffRole,
 } from '@domain/index';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { ADMIN_COPY } from './administration.copy';
@@ -31,7 +32,7 @@ import { ADMIN_COPY } from './administration.copy';
 @Component({
   selector: 'app-roles-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, RouterLink],
+  imports: [Icon, PageHeader, RouterLink],
   templateUrl: './roles-page.html',
   styleUrl: './roles-page.scss',
 })
@@ -44,6 +45,40 @@ export class RolesPage {
   protected readonly roleLabels = computed(() =>
     this.roles.map((role) => ({ role, label: ROLE_DEFINITIONS[role].label })),
   );
+
+  /**
+   * The permissions under one heading per module, in the order `PERMISSIONS` names them. A key's
+   * module is the part before the dot; a module whose keys are not contiguous still gets one group.
+   */
+  protected readonly groups = computed(() => {
+    const byModule = new Map<string, Permission[]>();
+    for (const permission of this.permissions) {
+      const module = permission.split('.')[0] ?? permission;
+      const members = byModule.get(module) ?? [];
+      members.push(permission);
+      byModule.set(module, members);
+    }
+    return [...byModule].map(([module, permissions]) => ({
+      module,
+      label: this.copy.group(module),
+      permissions,
+    }));
+  });
+
+  /**
+   * The role a narrow screen shows. Seven role columns cannot share a phone, so there the matrix
+   * is the permission and one role at a time (CSS hides the others); wider, every role shows and
+   * the choice does nothing.
+   */
+  protected readonly shownRole = signal<StaffRole | null>(this.roles[0] ?? null);
+
+  protected onRoleChosen(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    const role = this.roles.find((candidate) => candidate === value);
+    if (role !== undefined) {
+      this.shownRole.set(role);
+    }
+  }
 
   /** Asserted by a test as well; shown here so an office can see it holds. */
   protected readonly separationBreaches = computed(() => rolesBreachingSeparationOfDuties());

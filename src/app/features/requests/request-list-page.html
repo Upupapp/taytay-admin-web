@@ -39,7 +39,7 @@
             <span class="drafts__reason">{{ reasonText(draft) }}</span>
             <a
               *appHasPermission="'request.create'"
-              class="btn btn--subtle"
+              class="btn btn--small"
               [routerLink]="resumeLink(draft)"
             >
               {{ copy.resume }}

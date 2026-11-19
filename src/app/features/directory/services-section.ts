@@ -150,6 +150,7 @@ export class ServicesSection {
             header: this.copy.columnHome,
             value: (service: TulongService) =>
               service.featured ? this.copy.featured : this.copy.notFeatured,
+            nowrap: true,
           },
         ]),
     {

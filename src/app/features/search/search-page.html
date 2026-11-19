@@ -14,6 +14,7 @@
             [value]="term()"
             [placeholder]="copy.placeholder"
             aria-describedby="search-safe-notice"
+            (input)="onDraft($event)"
           />
         </span>
       </label>
@@ -54,8 +55,13 @@
       <span class="icon-tile icon-tile--blue-soft" aria-hidden="true">
         <app-icon name="search" [size]="22" [stroke]="2" />
       </span>
-      <h2 class="section-title search__idle-heading">{{ copy.idleHeading }}</h2>
-      <p class="status-line search__idle-message">{{ copy.idleMessage }}</p>
+      @if (draft() !== '') {
+        <h2 class="section-title search__idle-heading">{{ copy.pendingHeading }}</h2>
+        <p class="status-line search__idle-message">{{ copy.pending(draft()) }}</p>
+      } @else {
+        <h2 class="section-title search__idle-heading">{{ copy.idleHeading }}</h2>
+        <p class="status-line search__idle-message">{{ copy.idleMessage }}</p>
+      }
     </div>
   } @else {
     <app-async-content

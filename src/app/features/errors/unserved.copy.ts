@@ -11,6 +11,9 @@ export const UNSERVED_COPY = {
   subtitle: 'Parts of this console that the API it is connected to does not serve.',
 
   everythingServed: 'Every part of this console is served by the API it is connected to.',
+  // With nothing withheld, "Not connected yet" would contradict the page's only finding.
+  everythingHeading: 'Every part is connected',
+  everythingSubtitle: 'What this console can open, now that the API serves all of it.',
 
   meaningHeading: 'What this means',
   meaning: [

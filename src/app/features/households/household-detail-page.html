@@ -23,11 +23,14 @@
 
       <div class="record-grid household">
         <!-- ── The record ───────────────────────────────────────────────── -->
-        <section class="card card--padded panel" aria-labelledby="household-heading">
+        <section
+          class="card card--padded panel record-grid__wide"
+          aria-labelledby="household-heading"
+        >
           <h2 class="section-title panel__heading" id="household-heading">
             {{ copy.detailsHeading }}
           </h2>
-          <dl class="facts">
+          <dl class="facts household__facts">
             <div class="facts__row">
               <dt>{{ copy.reference }}</dt>
               <dd>{{ detail.household.referenceNumber }}</dd>
@@ -136,7 +139,7 @@
             <ol class="soft-list trail">
               @for (entry of detail.audit; track entry.id) {
                 <li class="soft-row soft-row--stacked trail__entry">
-                  <p class="trail__summary">{{ entry.summary }}</p>
+                  <p class="trail__summary">{{ trailSummary(entry.summary, detail) }}</p>
                   <p class="soft-row__meta trail__meta">
                     {{ entry.actorName }} · {{ entry.occurredAt | displayDate: 'date-time' }}
                   </p>

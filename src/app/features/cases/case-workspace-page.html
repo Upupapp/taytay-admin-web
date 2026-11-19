@@ -93,6 +93,173 @@
     </section>
 
     <div class="workspace__columns">
+      <!-- The summary, the next move and the tasks come first in reading order, so on one
+           column they are not 2,800px below the history; at two columns the summary sits on
+           the right (DL-227, pass 2). -->
+      <div class="workspace__side">
+        <section class="card card--padded workspace__block" aria-labelledby="facts-heading">
+          <h2 class="section-title workspace__heading" id="facts-heading">
+            {{ copy.factsHeading }}
+          </h2>
+          <dl class="workspace__facts">
+            <dt>{{ copy.status }}</dt>
+            <dd>
+              <app-status-badge [catalog]="statusCatalog" [status]="workspace.record.status" />
+            </dd>
+            <dt>{{ copy.category }}</dt>
+            <dd>{{ categoryLabel(workspace) }}</dd>
+            <dt>{{ copy.opened }}</dt>
+            <dd>
+              <time [attr.datetime]="workspace.record.openedOn">
+                {{ workspace.record.openedOn | displayDate }}
+              </time>
+            </dd>
+            @if (workspace.record.closedOn) {
+              <dt>{{ copy.closed }}</dt>
+              <dd>
+                <time [attr.datetime]="workspace.record.closedOn">
+                  {{ workspace.record.closedOn | displayDate }}
+                </time>
+              </dd>
+            }
+            @if (workspace.record.continuesCaseId; as prior) {
+              <dt>{{ copy.continues }}</dt>
+              <dd>
+                <a [routerLink]="'/cases/' + prior">{{ copy.continuesLink }}</a>
+              </dd>
+            }
+            <dt>{{ copy.summary }}</dt>
+            <dd [class.workspace__withheld]="workspace.record.summary === null">
+              {{ summaryText(workspace) }}
+            </dd>
+          </dl>
+        </section>
+
+        @if (canManage() && writable(workspace)) {
+          <div class="card card--padded workspace__block">
+            <app-status-transition
+              idPrefix="case-status"
+              [catalog]="statusCatalog"
+              [transitions]="transitions"
+              [current]="workspace.record.status"
+              [permitted]="permittedMoves(workspace)"
+              [busy]="submitting()"
+              (confirmed)="onTransition($event)"
+            />
+            @if (closeBlocked(workspace) > 0) {
+              <p class="workspace__note workspace__close-blocked">
+                {{ copy.closeBlocked(closeBlocked(workspace)) }}
+              </p>
+              <!-- The way to a closable case, on the screen that says it is blocked (DL-183). -->
+              <h3 class="workspace__subheading">{{ copy.closeBlockedHeading }}</h3>
+              <ul class="workspace__close-tasks">
+                @for (task of openTasks(workspace); track task.id) {
+                  <li>
+                    <span [class.workspace__withheld]="task.title === null">{{
+                      taskTitle(task)
+                    }}</span>
+                    <span class="row-actions">
+                      <button type="button" class="btn btn--small" (click)="openComplete(task)">
+                        {{ copy.completeTask }}
+                      </button>
+                      <button type="button" class="btn btn--small" (click)="openCancelTask(task)">
+                        {{ copy.cancelTask }}
+                      </button>
+                    </span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        }
+
+        <section class="card card--padded workspace__block" aria-labelledby="tasks-heading">
+          <h2 class="section-title workspace__heading" id="tasks-heading">
+            {{ copy.tasksHeading }}
+          </h2>
+          <p class="workspace__note">{{ copy.tasksNote }}</p>
+
+          @if (workspace.tasks.length === 0) {
+            <p class="workspace__none">{{ copy.noTasks }}</p>
+          } @else {
+            <ul class="workspace__tasks">
+              @for (task of workspace.tasks; track task.id) {
+                <li class="workspace__task">
+                  <p
+                    class="workspace__task-title"
+                    [class.workspace__withheld]="task.title === null"
+                  >
+                    {{ taskTitle(task) }}
+                  </p>
+                  <p class="workspace__task-meta">
+                    <app-status-badge [catalog]="taskStatusCatalog" [status]="task.status" />
+                    <span>{{ taskKindLabel(task.kind) }}</span>
+                    <span [class.workspace__due--late]="isLate(task)">{{ dueLabel(task) }}</span>
+                    <span>{{ copy.taskOwedBy }}: {{ taskOwner(task) }}</span>
+                  </p>
+                  @if (outcomeText(task, workspace); as words) {
+                    <p class="workspace__task-outcome">{{ copy.taskOutcome }}: {{ words }}</p>
+                  }
+                  @if (task.status === 'open' && canManage() && writable(workspace)) {
+                    <div class="row-actions workspace__task-actions">
+                      <button type="button" class="btn btn--small" (click)="openComplete(task)">
+                        {{ copy.completeTask }}
+                      </button>
+                      <button type="button" class="btn btn--small" (click)="openHandOver(task)">
+                        {{ copy.handOverTask }}
+                      </button>
+                      <button type="button" class="btn btn--small" (click)="openReschedule(task)">
+                        {{ copy.rescheduleTask }}
+                      </button>
+                      <button type="button" class="btn btn--small" (click)="openCancelTask(task)">
+                        {{ copy.cancelTask }}
+                      </button>
+                    </div>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+        <section class="card card--padded workspace__block" aria-labelledby="notes-heading">
+          <h2 class="section-title workspace__heading" id="notes-heading">
+            {{ copy.notesHeading }}
+          </h2>
+          <p class="workspace__note">{{ copy.notesNote }}</p>
+
+          @if (withheldNotes(workspace) > 0) {
+            <p class="workspace__withheld">{{ copy.withheldSummary(withheldNotes(workspace)) }}</p>
+          }
+
+          @if (workspace.notes.length === 0) {
+            <p class="workspace__none">{{ copy.noNotes }}</p>
+          } @else {
+            <ul class="workspace__notes">
+              @for (note of workspace.notes; track note.id) {
+                <li class="workspace__note-entry">
+                  <p class="workspace__note-meta">
+                    <span class="workspace__note-tier">{{
+                      sensitivityLabel(note.sensitivity)
+                    }}</span>
+                    <span>{{ note.authorName }}</span>
+                    <time [attr.datetime]="note.createdAt">
+                      {{ note.createdAt | displayDate: 'date-time' }}
+                    </time>
+                  </p>
+                  <!-- The body is absent, not hidden: the data layer never sent
+                       it (DL-38). -->
+                  @if (note.isWithheld) {
+                    <p class="workspace__note-withheld">{{ shared.timeline.withheld }}</p>
+                  } @else {
+                    <p class="workspace__note-body">{{ note.body }}</p>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      </div>
       <div class="workspace__main">
         <!-- Who this is about: person, address, family — read together. -->
         <section class="card card--padded workspace__block" aria-labelledby="context-heading">
@@ -182,49 +349,57 @@
           }
           @if (workspace.requests.length > 0) {
             <div class="table-scroll" [appScrollRegion]="copy.requestsHeading">
-              <table class="simple-table workspace__table">
+              <table class="simple-table simple-table--stack workspace__table" role="table">
                 <caption class="visually-hidden">
                   {{
                     copy.requestsHeading
                   }}
                 </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">{{ copy.requestReference }}</th>
-                    <th scope="col">{{ copy.requestStatus }}</th>
-                    <th scope="col">{{ copy.requestRequested }}</th>
-                    <th scope="col">{{ copy.requestApproved }}</th>
+                <thead role="rowgroup">
+                  <tr role="row">
+                    <th scope="col" role="columnheader">{{ copy.requestReference }}</th>
+                    <th scope="col" role="columnheader">{{ copy.requestStatus }}</th>
+                    <th scope="col" role="columnheader">{{ copy.requestRequested }}</th>
+                    <th scope="col" role="columnheader">{{ copy.requestApproved }}</th>
                     @if (writable(workspace) && canManage()) {
-                      <th scope="col">
+                      <th scope="col" role="columnheader">
                         <span class="visually-hidden">{{ copy.endLink }}</span>
                       </th>
                     }
                   </tr>
                 </thead>
-                <tbody>
+                <tbody role="rowgroup">
                   @for (request of workspace.requests; track request.id) {
-                    <tr>
-                      <th scope="row">
+                    <tr role="row">
+                      <th scope="row" role="rowheader" class="workspace__nowrap">
                         <a [routerLink]="'/assistance-requests/' + request.id">{{
                           request.referenceNumber
                         }}</a>
                       </th>
-                      <td>
+                      <td role="cell" [attr.data-label]="copy.requestStatus">
                         <app-status-badge [catalog]="requestCatalog" [status]="request.status" />
                       </td>
-                      <td>
+                      <td
+                        role="cell"
+                        class="workspace__nowrap"
+                        [attr.data-label]="copy.requestRequested"
+                      >
                         {{
                           request.requestedAmount ? (request.requestedAmount | peso) : copy.notSet
                         }}
                       </td>
-                      <td>
+                      <td
+                        role="cell"
+                        class="workspace__nowrap"
+                        [attr.data-label]="copy.requestApproved"
+                      >
                         {{ request.approvedAmount ? (request.approvedAmount | peso) : copy.notSet }}
                       </td>
                       @if (writable(workspace) && canManage()) {
-                        <td>
+                        <td role="cell">
                           <button
                             type="button"
-                            class="btn btn--subtle"
+                            class="btn btn--small"
                             [attr.aria-label]="copy.endLinkLabel(request.referenceNumber)"
                             (click)="openEndLink(request)"
                           >
@@ -244,7 +419,7 @@
           }
           @if (writable(workspace) && canManage()) {
             @if (servesRequests) {
-              <button type="button" class="btn btn--subtle" (click)="openLink(workspace)">
+              <button type="button" class="btn workspace__link" (click)="openLink(workspace)">
                 {{ copy.linkRequest }}
               </button>
             } @else {
@@ -255,169 +430,6 @@
 
         <section class="card card--padded workspace__block">
           <app-case-timeline [entries]="workspace.timeline" />
-        </section>
-      </div>
-
-      <div class="workspace__side">
-        <section class="card card--padded workspace__block" aria-labelledby="facts-heading">
-          <h2 class="section-title workspace__heading" id="facts-heading">
-            {{ copy.factsHeading }}
-          </h2>
-          <dl class="workspace__facts">
-            <dt>{{ copy.status }}</dt>
-            <dd>
-              <app-status-badge [catalog]="statusCatalog" [status]="workspace.record.status" />
-            </dd>
-            <dt>{{ copy.category }}</dt>
-            <dd>{{ categoryLabel(workspace) }}</dd>
-            <dt>{{ copy.opened }}</dt>
-            <dd>
-              <time [attr.datetime]="workspace.record.openedOn">
-                {{ workspace.record.openedOn | displayDate }}
-              </time>
-            </dd>
-            @if (workspace.record.closedOn) {
-              <dt>{{ copy.closed }}</dt>
-              <dd>
-                <time [attr.datetime]="workspace.record.closedOn">
-                  {{ workspace.record.closedOn | displayDate }}
-                </time>
-              </dd>
-            }
-            @if (workspace.record.continuesCaseId; as prior) {
-              <dt>{{ copy.continues }}</dt>
-              <dd>
-                <a [routerLink]="'/cases/' + prior">{{ copy.continuesLink }}</a>
-              </dd>
-            }
-            <dt>{{ copy.summary }}</dt>
-            <dd [class.workspace__withheld]="workspace.record.summary === null">
-              {{ summaryText(workspace) }}
-            </dd>
-          </dl>
-        </section>
-
-        @if (canManage() && writable(workspace)) {
-          <div class="card card--padded workspace__block">
-            <app-status-transition
-              idPrefix="case-status"
-              [catalog]="statusCatalog"
-              [transitions]="transitions"
-              [current]="workspace.record.status"
-              [permitted]="permittedMoves(workspace)"
-              [busy]="submitting()"
-              (confirmed)="onTransition($event)"
-            />
-            @if (closeBlocked(workspace) > 0) {
-              <p class="workspace__note workspace__close-blocked">
-                {{ copy.closeBlocked(closeBlocked(workspace)) }}
-              </p>
-              <!-- The way to a closable case, on the screen that says it is blocked (DL-183). -->
-              <h3 class="workspace__subheading">{{ copy.closeBlockedHeading }}</h3>
-              <ul class="workspace__close-tasks">
-                @for (task of openTasks(workspace); track task.id) {
-                  <li>
-                    <span [class.workspace__withheld]="task.title === null">{{
-                      taskTitle(task)
-                    }}</span>
-                    <button type="button" class="btn btn--subtle" (click)="openComplete(task)">
-                      {{ copy.completeTask }}
-                    </button>
-                    <button type="button" class="btn btn--subtle" (click)="openCancelTask(task)">
-                      {{ copy.cancelTask }}
-                    </button>
-                  </li>
-                }
-              </ul>
-            }
-          </div>
-        }
-
-        <section class="card card--padded workspace__block" aria-labelledby="tasks-heading">
-          <h2 class="section-title workspace__heading" id="tasks-heading">
-            {{ copy.tasksHeading }}
-          </h2>
-          <p class="workspace__note">{{ copy.tasksNote }}</p>
-
-          @if (workspace.tasks.length === 0) {
-            <p class="workspace__none">{{ copy.noTasks }}</p>
-          } @else {
-            <ul class="workspace__tasks">
-              @for (task of workspace.tasks; track task.id) {
-                <li class="workspace__task">
-                  <p
-                    class="workspace__task-title"
-                    [class.workspace__withheld]="task.title === null"
-                  >
-                    {{ taskTitle(task) }}
-                  </p>
-                  <p class="workspace__task-meta">
-                    <app-status-badge [catalog]="taskStatusCatalog" [status]="task.status" />
-                    <span>{{ taskKindLabel(task.kind) }}</span>
-                    <span [class.workspace__due--late]="isLate(task)">{{ dueLabel(task) }}</span>
-                    <span>{{ copy.taskOwedBy }}: {{ taskOwner(task) }}</span>
-                  </p>
-                  @if (outcomeText(task, workspace); as words) {
-                    <p class="workspace__task-outcome">{{ copy.taskOutcome }}: {{ words }}</p>
-                  }
-                  @if (task.status === 'open' && canManage() && writable(workspace)) {
-                    <div class="workspace__task-actions">
-                      <button type="button" class="btn btn--subtle" (click)="openComplete(task)">
-                        {{ copy.completeTask }}
-                      </button>
-                      <button type="button" class="btn btn--subtle" (click)="openHandOver(task)">
-                        {{ copy.handOverTask }}
-                      </button>
-                      <button type="button" class="btn btn--subtle" (click)="openReschedule(task)">
-                        {{ copy.rescheduleTask }}
-                      </button>
-                      <button type="button" class="btn btn--subtle" (click)="openCancelTask(task)">
-                        {{ copy.cancelTask }}
-                      </button>
-                    </div>
-                  }
-                </li>
-              }
-            </ul>
-          }
-        </section>
-
-        <section class="card card--padded workspace__block" aria-labelledby="notes-heading">
-          <h2 class="section-title workspace__heading" id="notes-heading">
-            {{ copy.notesHeading }}
-          </h2>
-          <p class="workspace__note">{{ copy.notesNote }}</p>
-
-          @if (withheldNotes(workspace) > 0) {
-            <p class="workspace__withheld">{{ copy.withheldSummary(withheldNotes(workspace)) }}</p>
-          }
-
-          @if (workspace.notes.length === 0) {
-            <p class="workspace__none">{{ copy.noNotes }}</p>
-          } @else {
-            <ul class="workspace__notes">
-              @for (note of workspace.notes; track note.id) {
-                <li class="workspace__note-entry">
-                  <p class="workspace__note-meta">
-                    <span class="workspace__note-tier">{{
-                      sensitivityLabel(note.sensitivity)
-                    }}</span>
-                    <span>{{ note.authorName }}</span>
-                    <time [attr.datetime]="note.createdAt">
-                      {{ note.createdAt | displayDate: 'date-time' }}
-                    </time>
-                  </p>
-                  <!-- The body is absent, not hidden: the data layer never sent
-                       it (DL-38). -->
-                  @if (note.isWithheld) {
-                    <p class="workspace__note-withheld">{{ shared.timeline.withheld }}</p>
-                  } @else {
-                    <p class="workspace__note-body">{{ note.body }}</p>
-                  }
-                </li>
-              }
-            </ul>
-          }
         </section>
       </div>
     </div>

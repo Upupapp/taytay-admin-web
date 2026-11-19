@@ -31,3 +31,15 @@
   font-size: var(--fs-2xs);
   overflow-wrap: break-word;
 }
+
+/* An id reads on one line at the hint size; a phone's stacked row lets it wrap. */
+.audit__code--id {
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+@media (width <= 640px) {
+  .audit__code--id {
+    white-space: normal;
+  }
+}

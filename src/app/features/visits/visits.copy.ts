@@ -56,12 +56,16 @@ export const VISITS_COPY = {
   schedule: {
     title: 'Schedule a home visit',
     noCaseHeading: 'That case is not available',
-    noCaseMessage: 'A visit is scheduled from the case it belongs to. Open the case and schedule it from there.',
-    backToCases: 'Back to cases',
+    noCaseMessage:
+      'A visit is scheduled from the case it belongs to. Open the case and schedule it from there.',
     backToCase: 'Back to the case',
+    backToVisits: 'Back to field visits',
+    chooseHeading: 'Choose the case this visit is for',
+    chooseAction: 'Open the cases',
     noLocation:
       'A visit records the address it is made to and what is found there. Nothing records where anybody is or was.',
-    caseClosed: 'This case is closed. A closed case is kept as it ended, so no visit is scheduled on it.',
+    caseClosed:
+      'This case is closed. A closed case is kept as it ended, so no visit is scheduled on it.',
     purpose: 'What is the visit for?',
     date: 'On what day?',
     window: 'Roughly when',
@@ -77,11 +81,13 @@ export const VISITS_COPY = {
     noWorker:
       'Nobody can be sent on this visit yet: the case has no worker. Assign the case to a social worker first.',
     checklistHeading: 'What to check',
-    checklistHint: 'Prompts the worker sets out with. They feed what the worker writes; nothing is scored from them.',
+    checklistHint:
+      'Prompts the worker sets out with. They feed what the worker writes; nothing is scored from them.',
     scheduleAction: 'Schedule the visit',
     scheduling: 'Scheduling…',
     scheduled: 'The visit is scheduled and saved to the office record.',
-    notScheduled: 'The visit was NOT scheduled. Nothing was saved, and nothing is waiting to be sent.',
+    notScheduled:
+      'The visit was NOT scheduled. Nothing was saved, and nothing is waiting to be sent.',
   },
 
   detail: {

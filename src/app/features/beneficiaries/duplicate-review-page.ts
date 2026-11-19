@@ -9,7 +9,7 @@ import {
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom, switchMap, tap } from 'rxjs';
+import { catchError, firstValueFrom, map, of, switchMap, tap } from 'rxjs';
 
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
@@ -33,8 +33,9 @@ import { IdentityComparison } from '@shared/beneficiaries/identity-comparison';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
-import { Drawer } from '@shared/ui/drawer/drawer';
+import { Icon } from '@shared/ui/icon/icon';
 import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
+import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 
@@ -62,16 +63,29 @@ export const DUPLICATE_QUEUE_TOPICS: readonly LiveTopic[] = ['beneficiaries', 'r
  * Neither is the queue allowed to decide for anybody. Resemblance orders the
  * rows; nothing acts on it.
  */
+/**
+ * What one record of the pair holds, read from the preview that would supersede it: the counts
+ * that would move and whether an app account reads it. Both records carry the same masked name, so
+ * this is how a reviewer tells them apart without a compared value (DL-73, UI audit F021).
+ */
+type Holding =
+  | { readonly state: 'reading' }
+  | { readonly state: 'unread' }
+  | { readonly state: 'read'; readonly preview: MergePreview };
+
+const READING: Holding = { state: 'reading' };
+
 @Component({
   selector: 'app-duplicate-review-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ScrollRegion,
     AsyncContent,
-    Drawer,
     FormsModule,
+    Icon,
     IdentityComparison,
     ListChangedNotice,
+    Modal,
     PageHeader,
     RouterLink,
   ],
@@ -174,6 +188,11 @@ export class DuplicateReviewPage {
 
   protected readonly openCandidate = signal<DuplicateCandidate | null>(null);
   protected readonly preview = signal<MergePreview | null>(null);
+  /** First: the record the pair was opened from; second: the one it resembles. */
+  protected readonly holdings = signal<{ readonly first: Holding; readonly second: Holding }>({
+    first: READING,
+    second: READING,
+  });
   protected readonly verdict = signal<IdentityVerdict>('same-person');
   protected readonly canonicalId = signal<ResidentId | null>(null);
   protected readonly reason = signal('');
@@ -226,15 +245,49 @@ export class DuplicateReviewPage {
     this.canonicalId.set(candidate.residentId);
     this.reason.set('');
     this.preview.set(null);
+    this.holdings.set({ first: READING, second: READING });
 
-    // A preview changes nothing; it is safe to fetch on open.
-    this.preview.set(
-      await firstValueFrom(
-        this.repository.previewResolution(
-          candidate.pairId,
-          candidate.residentId,
-          candidate.otherResidentId,
-        ),
+    // A preview changes nothing; it is safe to fetch on open. Each record's holdings are the
+    // preview that would supersede it, so the two reads also say what keeping either would do.
+    const [first, second] = await Promise.all([
+      this.readHolding(candidate, candidate.otherResidentId, candidate.residentId),
+      this.readHolding(candidate, candidate.residentId, candidate.otherResidentId),
+    ]);
+    if (this.openCandidate() !== candidate) {
+      return;
+    }
+    this.holdings.set({ first, second });
+    if (this.canonicalId() === candidate.residentId && second.state === 'read') {
+      this.preview.set(second.preview);
+    }
+  }
+
+  /** One record's holdings, in words: counts and whether an app account reads it. */
+  protected holdingText(holding: Holding): string {
+    if (holding.state === 'reading') {
+      return this.copy.recordReading;
+    }
+    if (holding.state === 'unread') {
+      return this.copy.recordUnread;
+    }
+    const preview = holding.preview;
+    const holds = this.copy.recordHolds(
+      preview.movingRequestCount,
+      preview.movingReleaseCount,
+      preview.movingCaseCount,
+    );
+    return `${holds} ${preview.appAccount === null ? this.copy.recordNoAccount : this.copy.recordAccount}`;
+  }
+
+  private readHolding(
+    candidate: DuplicateCandidate,
+    kept: ResidentId,
+    superseded: ResidentId,
+  ): Promise<Holding> {
+    return firstValueFrom(
+      this.repository.previewResolution(candidate.pairId, kept, superseded).pipe(
+        map((preview): Holding => ({ state: 'read', preview })),
+        catchError(() => of<Holding>({ state: 'unread' })),
       ),
     );
   }

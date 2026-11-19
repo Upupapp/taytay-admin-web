@@ -288,6 +288,7 @@ export const CASES_COPY = {
     subtitle:
       'A case is the office’s continuing file on a person. It opens at intake, assigned to nobody, and is given to a social worker from its workspace.',
     back: 'Back to cases',
+    cancel: 'Cancel',
     caseloadRefused:
       'Cases are opened by intake and the head. An account that works its own caseload is given cases rather than opening them.',
     subjectHeading: 'Who is this case about?',

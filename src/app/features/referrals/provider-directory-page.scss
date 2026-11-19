@@ -8,17 +8,6 @@
   min-inline-size: 170px;
 }
 
-.directory__empty {
-  align-items: center;
-  padding-block: var(--space-6);
-  text-align: center;
-}
-
-.directory__empty-message {
-  color: var(--muted);
-  font-size: var(--fs-label);
-}
-
 .provider-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));

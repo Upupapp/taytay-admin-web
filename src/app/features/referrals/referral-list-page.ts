@@ -64,6 +64,7 @@ import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/st
 import { DataTable } from '@shared/ui/data-table/data-table';
 import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { PersonPicker } from '@shared/residents/person-picker';
+import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
@@ -159,6 +160,7 @@ const NO_CHOICES: LinkChoices = { cases: [], requests: [], more: false };
     HasPermissionDirective,
     Icon,
     ListChangedNotice,
+    Modal,
     PageHeader,
     PersonPicker,
     RouterLink,
@@ -195,6 +197,8 @@ export class ReferralListPage {
   protected readonly serviceRequested = signal('');
   protected readonly reason = signal('');
   protected readonly composing = signal(false);
+  /** The compose dialog: opened from the page header, so the list comes first (DL-227). */
+  protected readonly composeOpen = signal(false);
 
   protected readonly destinationOptions = REFERRAL_DESTINATIONS;
   protected readonly destinationLabels = REFERRAL_DESTINATION_LABELS;

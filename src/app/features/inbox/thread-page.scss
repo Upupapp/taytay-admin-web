@@ -1,10 +1,7 @@
 /* Layout only (OfficeThread mock-up): the conversation and the reply on the
-   left, what it is and what can be done to it on the right. Every author,
-   warning and outcome is text in the DOM. */
-
-.thread__back {
-  margin: 0 0 var(--space-4);
-}
+   left, what it is and what can be done to it on the right — and, in one
+   column, after them: a reader meets the messages before a decision about
+   them (DOM order). Every author, warning and outcome is text in the DOM. */
 
 .thread__layout {
   display: grid;

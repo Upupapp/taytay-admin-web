@@ -37,3 +37,8 @@
 .standing {
   font-size: var(--fs-label);
 }
+
+/* Short values on one line; the person column takes the slack, not them (F033). */
+.beneficiaries__nowrap {
+  white-space: nowrap;
+}

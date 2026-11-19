@@ -177,6 +177,10 @@ describe('the http adapter set', () => {
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
 
     expect(text).toContain('Every part of this console is served');
+    // The heading agrees with the page's one finding, rather than saying "Not connected yet".
+    expect((fixture.nativeElement as HTMLElement).querySelector('h1')?.textContent?.trim()).toBe(
+      'Every part is connected',
+    );
     expect(text).toContain('Balita —');
     expect(text).toContain('Events —');
     expect(text).not.toMatch(/no records|none found/i);

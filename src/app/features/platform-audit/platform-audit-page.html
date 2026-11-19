@@ -66,7 +66,7 @@
 
 <ng-template #actorCell let-entry>
   @if (entry.actorId; as actor) {
-    <code class="audit__code">{{ actor }}</code>
+    <code class="audit__code audit__code--id">{{ actor }}</code>
   } @else {
     {{ copy.noActor }}
   }
@@ -75,7 +75,7 @@
 <ng-template #subjectCell let-entry>
   {{ entry.subjectType }}
   @if (entry.subjectId; as subject) {
-    <code class="audit__code">{{ subject }}</code>
+    <code class="audit__code audit__code--id">{{ subject }}</code>
   } @else {
     <span class="audit__note">{{ copy.noSubject }}</span>
   }

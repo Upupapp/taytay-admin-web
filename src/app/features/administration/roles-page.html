@@ -1,6 +1,9 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions class="btn" routerLink="/administration/staff">{{ copy.back }}</a>
-</app-page-header>
+<a class="back-link" routerLink="/administration/staff">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
+
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
 <div class="roles">
   <p class="callout roles__notice">{{ copy.notice }}</p>
@@ -15,66 +18,96 @@
     }
   </section>
 
-  <!-- The matrix is wider than the page: the box that scrolls takes focus, so a keyboard can
-       scroll it (WCAG 2.1.1). -->
-  <div
-    class="card card--panel card--padded matrix__scroll"
-    role="region"
-    tabindex="0"
-    aria-labelledby="matrix-caption"
-  >
-    <table class="matrix">
-      <caption id="matrix-caption" class="matrix__caption">
-        {{
-          copy.title
-        }}:
-        {{
-          permissions.length
-        }}
-        permissions across
-        {{
-          roles.length
-        }}
-        roles
-      </caption>
-      <thead>
-        <tr>
-          <th scope="col" class="matrix__corner">{{ copy.columnPermission }}</th>
-          @for (entry of roleLabels(); track entry.role) {
-            <th scope="col" class="matrix__role">{{ entry.label }}</th>
-          }
-        </tr>
-      </thead>
-      <tbody>
-        @for (permission of permissions; track permission) {
+  <section class="card card--panel card--padded matrix__card" aria-labelledby="matrix-caption">
+    <!-- A phone cannot hold seven role columns: there the matrix shows one role, chosen here. -->
+    <label class="field field--narrow matrix__choice">
+      <span class="field__label">{{ copy.roleChoice }}</span>
+      <select
+        class="field__input"
+        aria-describedby="matrix-choice-hint"
+        [value]="shownRole()"
+        (change)="onRoleChosen($event)"
+      >
+        @for (entry of roleLabels(); track entry.role) {
+          <option [value]="entry.role" [selected]="entry.role === shownRole()">
+            {{ entry.label }}
+          </option>
+        }
+      </select>
+      <span class="field__hint" id="matrix-choice-hint">{{ copy.roleChoiceHint }}</span>
+    </label>
+
+    <!-- The matrix is taller and may be wider than the screen: the box that scrolls takes focus,
+         so a keyboard can scroll it (WCAG 2.1.1), and its header row stays in view. -->
+    <div class="matrix__scroll" role="region" tabindex="0" aria-labelledby="matrix-caption">
+      <table class="matrix">
+        <caption id="matrix-caption" class="matrix__caption">
+          {{
+            copy.title
+          }}:
+          {{
+            permissions.length
+          }}
+          permissions across
+          {{
+            roles.length
+          }}
+          roles
+        </caption>
+        <thead>
           <tr>
-            <th scope="row" class="matrix__permission">
-              <span class="matrix__name">{{ permission }}</span>
-              <span class="matrix__tags">
-                @if (isSensitive(permission)) {
-                  <span class="matrix__tag matrix__tag--sensitive">{{ copy.sensitiveFlag }}</span>
-                }
-                @if (isReadOnly(permission)) {
-                  <span class="matrix__tag">{{ copy.readOnly }}</span>
-                }
-              </span>
-            </th>
+            <th scope="col" class="matrix__corner">{{ copy.columnPermission }}</th>
             @for (entry of roleLabels(); track entry.role) {
-              <td class="matrix__cell">
-                <!-- A tick with no text is a matrix nobody using assistive
-                     technology can read, and this is the office reference. -->
-                @if (holds(entry.role, permission)) {
-                  <span class="matrix__held" aria-hidden="true">●</span>
-                  <span class="visually-hidden">{{ copy.holds }}</span>
-                } @else {
-                  <span class="matrix__absent" aria-hidden="true">–</span>
-                  <span class="visually-hidden">{{ copy.doesNotHold }}</span>
-                }
-              </td>
+              <th
+                scope="col"
+                class="matrix__role"
+                [class.matrix__col--other]="entry.role !== shownRole()"
+              >
+                {{ entry.label }}
+              </th>
             }
           </tr>
+        </thead>
+        @for (group of groups(); track group.module) {
+          <tbody>
+            <tr class="matrix__group">
+              <th scope="rowgroup" [attr.colspan]="roles.length + 1">
+                <span class="matrix__group-label">{{ group.label }}</span>
+              </th>
+            </tr>
+            @for (permission of group.permissions; track permission) {
+              <tr>
+                <th scope="row" class="matrix__permission">
+                  <span class="matrix__name">{{ permission }}</span>
+                  <span class="matrix__tags">
+                    @if (isSensitive(permission)) {
+                      <span class="matrix__tag matrix__tag--sensitive">{{
+                        copy.sensitiveFlag
+                      }}</span>
+                    }
+                    @if (isReadOnly(permission)) {
+                      <span class="matrix__tag">{{ copy.readOnly }}</span>
+                    }
+                  </span>
+                </th>
+                @for (entry of roleLabels(); track entry.role) {
+                  <td class="matrix__cell" [class.matrix__col--other]="entry.role !== shownRole()">
+                    <!-- A tick with no text is a matrix nobody using assistive
+                         technology can read, and this is the office reference. -->
+                    @if (holds(entry.role, permission)) {
+                      <span class="matrix__held" aria-hidden="true">●</span>
+                      <span class="visually-hidden">{{ copy.holds }}</span>
+                    } @else {
+                      <span class="matrix__absent" aria-hidden="true">○</span>
+                      <span class="visually-hidden">{{ copy.doesNotHold }}</span>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
         }
-      </tbody>
-    </table>
-  </div>
+      </table>
+    </div>
+  </section>
 </div>

@@ -21,52 +21,40 @@
 <section class="card card--panel card--padded stack queue" aria-labelledby="issuance-queue-heading">
   <h2 id="issuance-queue-heading" class="visually-hidden">{{ copy.caption }}</h2>
 
-  <!-- DL-186: one request by its whole number, in whatever status it is. -->
-  <form
-    class="toolbar queue__find"
-    role="search"
-    novalidate
-    [attr.aria-label]="copy.findLabel"
-    (submit)="$event.preventDefault(); findReference()"
-  >
-    <div class="field field--narrow">
-      <label class="field__label" for="issuance-reference">{{ copy.referenceLabel }}</label>
-      <input
-        id="issuance-reference"
-        class="field__input field__input--pill"
-        type="search"
-        autocomplete="off"
-        spellcheck="false"
-        aria-describedby="issuance-reference-hint"
-        [value]="referenceText()"
-        (input)="onReferenceInput($event)"
-      />
-      <p id="issuance-reference-hint" class="field__hint">{{ copy.referenceHint }}</p>
-    </div>
-    <button type="submit" class="btn btn--secondary">{{ copy.find }}</button>
-    @if (referenceProblem(); as problem) {
-      <p class="callout callout--danger queue__problem" role="alert">{{ problem }}</p>
-    }
-  </form>
+  <!-- One row of filters: each label over its input, each hint under its own input, and Find
+       beside the box it searches rather than beside the hint (DL-227). -->
+  <div class="queue__filters">
+    <!-- DL-186: one request by its whole number, in whatever status it is. -->
+    <form
+      class="queue__find"
+      role="search"
+      novalidate
+      [attr.aria-label]="copy.findLabel"
+      (submit)="$event.preventDefault(); findReference()"
+    >
+      <div class="field">
+        <label class="field__label" for="issuance-reference">{{ copy.referenceLabel }}</label>
+        <span class="queue__find-row">
+          <input
+            id="issuance-reference"
+            class="field__input field__input--pill"
+            type="search"
+            autocomplete="off"
+            spellcheck="false"
+            aria-describedby="issuance-reference-hint"
+            [value]="referenceText()"
+            (input)="onReferenceInput($event)"
+          />
+          <button type="submit" class="btn btn--secondary">{{ copy.find }}</button>
+        </span>
+        <p id="issuance-reference-hint" class="field__hint">{{ copy.referenceHint }}</p>
+      </div>
+      @if (referenceProblem(); as problem) {
+        <p class="callout callout--danger queue__problem" role="alert">{{ problem }}</p>
+      }
+    </form>
 
-  @if (reference(); as found) {
-    <div class="callout queue__narrowed" role="status">
-      <p class="status-line queue__note">{{ copy.referenceShown(found) }}</p>
-      <button type="button" class="btn btn--secondary" (click)="clearReference()">
-        {{ copy.backToQueue }}
-      </button>
-    </div>
-  } @else if (forResident()) {
-    <div class="callout queue__narrowed" role="status">
-      <p class="status-line queue__note">{{ copy.residentShown }}</p>
-      <button type="button" class="btn btn--secondary" (click)="clearResident()">
-        {{ copy.everyResident }}
-      </button>
-    </div>
-  }
-
-  @if (reference() === null) {
-    <div class="toolbar queue__toolbar">
+    @if (reference() === null) {
       <div class="field field--narrow">
         <label class="field__label" for="issuance-status">{{ copy.statusLabel }}</label>
         <select
@@ -113,6 +101,22 @@
           {{ types().kind === 'error' ? copy.typesFailed : copy.typesNote }}
         </p>
       </div>
+    }
+  </div>
+
+  @if (reference(); as found) {
+    <div class="callout queue__narrowed" role="status">
+      <p class="status-line queue__note">{{ copy.referenceShown(found) }}</p>
+      <button type="button" class="btn btn--secondary" (click)="clearReference()">
+        {{ copy.backToQueue }}
+      </button>
+    </div>
+  } @else if (forResident()) {
+    <div class="callout queue__narrowed" role="status">
+      <p class="status-line queue__note">{{ copy.residentShown }}</p>
+      <button type="button" class="btn btn--secondary" (click)="clearResident()">
+        {{ copy.everyResident }}
+      </button>
     </div>
   }
 

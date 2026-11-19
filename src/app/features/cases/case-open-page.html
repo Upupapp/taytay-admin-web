@@ -1,10 +1,14 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions class="btn" routerLink="/cases">{{ copy.back }}</a>
-</app-page-header>
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
 @if (!opensCases()) {
   <!-- Opening is an assigner's act (DL-179); a caseload is told, not shown a refused form. -->
   <p class="callout callout--warning open-case__refused">{{ copy.caseloadRefused }}</p>
+  <p>
+    <a class="back-link" routerLink="/cases">
+      <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+      {{ copy.back }}
+    </a>
+  </p>
 } @else {
   <form
     class="card card--panel card--padded form-panel open-case"
@@ -115,30 +119,33 @@
             {{ summaryProblem() }}
           </p>
         </fieldset>
-
-        <fieldset class="form-section">
-          <legend class="form-section__legend">{{ copy.reasonHeading }}</legend>
-          <label class="field">
-            <span class="field__label">{{ copy.reason }}</span>
-            <textarea
-              class="field__input"
-              rows="3"
-              required
-              [placeholder]="copy.reasonPlaceholder"
-              [value]="reason()"
-              (input)="onReason($event)"
-            ></textarea>
-            <span class="field__hint">{{ copy.reasonHint }}</span>
-          </label>
-        </fieldset>
       </div>
     </div>
+
+    <!-- Who and what side by side, why across both: two columns of unequal height left a hole
+         under the first (DL-227, pass 2). -->
+    <fieldset class="form-section">
+      <legend class="form-section__legend">{{ copy.reasonHeading }}</legend>
+      <label class="field">
+        <span class="field__label">{{ copy.reason }}</span>
+        <textarea
+          class="field__input"
+          rows="3"
+          required
+          [placeholder]="copy.reasonPlaceholder"
+          [value]="reason()"
+          (input)="onReason($event)"
+        ></textarea>
+        <span class="field__hint">{{ copy.reasonHint }}</span>
+      </label>
+    </fieldset>
 
     @if (failure(); as message) {
       <p class="callout callout--danger open-case__problem" role="alert">{{ message }}</p>
     }
 
     <div class="form-footer">
+      <a class="btn" routerLink="/cases">{{ copy.cancel }}</a>
       <button type="submit" class="btn btn--primary" [disabled]="!canOpen()">
         {{ submitting() ? copy.opening : copy.confirm }}
       </button>

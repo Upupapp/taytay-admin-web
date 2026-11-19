@@ -44,8 +44,12 @@ export const EVENTS_COPY = {
 
   composer: {
     title: 'Create an event',
+    subtitle:
+      'Saved as a draft. It is published from the event’s own page, after you have read what publishing does.',
     editTitle: 'Edit event',
     back: 'Back to events',
+    cancel: 'Cancel',
+    titleFirst: 'Give the event a title to save it.',
 
     aboutHeading: 'What it is',
     eventTitle: 'Event title',
@@ -135,6 +139,8 @@ export const EVENTS_COPY = {
 
     // Correcting a published event (`DL-195`).
     correctTitle: 'Correct a published event',
+    correctSubtitle:
+      'The correction is kept with your reason, and the form says before its button what changes and who is told.',
     correctBack: 'Back to the event',
     correctLoading: 'Loading the event…',
     correctReadFailed: 'The event could not be read, so there is nothing to correct here yet.',
@@ -234,6 +240,9 @@ export const EVENTS_COPY = {
     actionsHeading: 'Actions',
     reason: 'Why',
     reasonHint: 'Recorded in the trail against your name. Required.',
+    reasonFirst: 'The buttons below stay unavailable until there is a reason in this box.',
+    registrantReasonFirst:
+      'Promote, Cancel and Restore use the reason written under Actions, and stay unavailable until there is one.',
     publish: 'Publish',
     publishWarning:
       'Publishing puts this in the resident app and opens registration on the dates you set. ' +

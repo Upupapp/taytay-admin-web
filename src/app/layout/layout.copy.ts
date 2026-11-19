@@ -37,8 +37,9 @@ export const LAYOUT_COPY = {
   notificationsLabel: 'Notifications',
   notificationsHeading: 'Notifications',
   notificationsDescription: 'Case and payout activity for your account.',
-  notificationsEmptyHeading: 'No notifications',
-  notificationsEmptyBody: 'Activity on your cases and payouts will appear here.',
+  // The same words as the Notifications page for the same empty inbox.
+  notificationsEmptyHeading: 'Nothing to catch up on',
+  notificationsEmptyBody: 'Events that concern you appear here as they happen.',
   markRead: 'Mark as read',
   markAllRead: 'Mark all as read',
   unreadCountLabel: (count: number): string =>

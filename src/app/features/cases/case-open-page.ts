@@ -36,6 +36,7 @@ import {
 import { CASE_COPY } from '@shared/cases/case.copy';
 import { PersonPicker } from '@shared/residents/person-picker';
 import { LOADING, ready, toViewState, type ViewState } from '@shared/state/view-state';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { CASES_COPY } from './cases.copy';
@@ -58,7 +59,7 @@ const REQUEST_CHOICES = 50;
 @Component({
   selector: 'app-case-open-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, PersonPicker, RouterLink],
+  imports: [Icon, PageHeader, PersonPicker, RouterLink],
   templateUrl: './case-open-page.html',
   styleUrl: './case-open-page.scss',
 })

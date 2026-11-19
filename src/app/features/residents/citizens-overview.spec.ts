@@ -53,10 +53,7 @@ const SUMMARY: ResidentSummary = {
   registered: { current: { value: null, withheld: true }, previous: { value: 9, withheld: false } },
   byBarangay: series(
     'by-barangay',
-    [
-      { key: 'brgy-dolores', label: 'Dolores', value: 80 },
-      withheld('brgy-muzon', 'Muzon'),
-    ],
+    [{ key: 'brgy-dolores', label: 'Dolores', value: 80 }, withheld('brgy-muzon', 'Muzon')],
     83,
   ),
   bySector: series(
@@ -68,7 +65,11 @@ const SUMMARY: ResidentSummary = {
     ],
     44,
   ),
-  byAgeSex: series('by-age-sex', [{ key: 'senior.female', label: 'Seniors, female', value: 18 }], 18),
+  byAgeSex: series(
+    'by-age-sex',
+    [{ key: 'senior.female', label: 'Seniors, female', value: 18 }],
+    18,
+  ),
   recordsToTidy: [
     { key: 'missing-contact', count: 7, basis: 'No mobile and no email.', lastRunAt: null },
     { key: 'possible-duplicates', count: null, basis: 'Name and birth date.', lastRunAt: null },
@@ -138,9 +139,9 @@ describe('CitizensOverviewPage (DL-213)', () => {
     expect(hrefs.some((href) => href.includes('sector=pwd'))).toBe(false);
     expect(hrefs.some((href) => href.includes('barangay=brgy-muzon'))).toBe(false);
     expect(hrefs.some((href) => href.includes('barangay=brgy-dolores'))).toBe(true);
-    expect(hrefs.some((href) => href.includes('ageGroup=senior') && href.includes('sex=female'))).toBe(
-      true,
-    );
+    expect(
+      hrefs.some((href) => href.includes('ageGroup=senior') && href.includes('sex=female')),
+    ).toBe(true);
   });
 
   it('counts records to tidy, never lists them, and says when no detection pass has run', async () => {
@@ -149,6 +150,31 @@ describe('CitizensOverviewPage (DL-213)', () => {
 
     expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.tidy['missing-contact']);
     expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.tidyNotRun);
+  });
+
+  it('words a timestamp and a provenance token instead of printing them raw (DL-227)', async () => {
+    configure(
+      of({
+        ...SUMMARY,
+        recordsToTidy: [
+          {
+            key: 'possible-duplicates',
+            count: 3,
+            basis: 'Detection pass of 2026-11-19T17:14:02.863Z.',
+            lastRunAt: null,
+          },
+        ],
+        disclosure: { ...SUMMARY.disclosure, provenance: 'convention-pending-confirmation' },
+      } satisfies ResidentSummary),
+    );
+    const root = await render();
+
+    expect(text(root)).not.toContain('2026-11-19T17:14:02.863Z');
+    expect(text(root)).toMatch(/Detection pass of \d+ Nov 2026, \d+:\d{2} [AP]M\./);
+    expect(text(root)).not.toContain('convention-pending-confirmation');
+    expect(text(root)).toContain(
+      CITIZENS_OVERVIEW_COPY.provenance['convention-pending-confirmation'] ?? 'missing',
+    );
   });
 
   it('offers the protected sectors only to a reader cleared for them', async () => {

@@ -1,14 +1,13 @@
+<a class="back-link" routerLink="/events">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
 <app-async-content [state]="state()" [content]="eventContent" [skeletonLines]="8">
   <ng-template #eventContent let-event>
     @if (event === null) {
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
-      <p class="event__back">
-        <a class="btn" routerLink="/events">{{ copy.back }}</a>
-      </p>
     } @else {
-      <app-page-header [title]="event.title">
-        <a page-actions class="btn" routerLink="/events">{{ copy.back }}</a>
-      </app-page-header>
+      <app-page-header [title]="event.title" />
 
       <div class="event">
         <div class="split event__top">
@@ -99,41 +98,9 @@
                 <p class="event__line event__line--muted">{{ event.reminders }}</p>
               }
             </section>
-          </div>
 
-          <div class="split__side">
-            <section class="card card--padded stack event__panel" aria-labelledby="meta-heading">
-              <h2 class="section-title event__heading" id="meta-heading">{{ copy.metaHeading }}</h2>
-              <dl class="facts event__facts">
-                @if (event.publishedAt) {
-                  <div class="facts__item">
-                    <dt>{{ copy.publishedOn }}</dt>
-                    <dd>{{ event.publishedAt | displayDate: 'date-time' }}</dd>
-                  </div>
-                }
-                <div class="facts__item">
-                  <dt>{{ copy.lastUpdated }}</dt>
-                  <dd>{{ event.audit.updatedAt | displayDate: 'date-time' }}</dd>
-                </div>
-                @if (event.cancelledAt) {
-                  <div class="facts__item">
-                    <dt>{{ copy.cancelledOn }}</dt>
-                    <dd>{{ event.cancelledAt | displayDate: 'date-time' }}</dd>
-                  </div>
-                }
-              </dl>
-
-              @if (event.cancellationReason) {
-                <h3 class="event__subheading">{{ copy.cancellationReason }}</h3>
-                <p class="event__line event__line--muted">{{ event.cancellationReason }}</p>
-              }
-              @if (event.replacesEventId) {
-                <p class="event__line">
-                  <a [routerLink]="['/events', event.replacesEventId]">{{ copy.replaces }}</a>
-                </p>
-              }
-            </section>
-
+            <!-- The office's count sits under what residents see, so the two columns end
+                 together rather than leaving a hole beside the acts (DL-227). -->
             <section
               class="card card--padded stack event__panel"
               aria-labelledby="capacity-heading"
@@ -189,6 +156,40 @@
                 </ng-template>
               </app-async-content>
             </section>
+          </div>
+
+          <div class="split__side">
+            <section class="card card--padded stack event__panel" aria-labelledby="meta-heading">
+              <h2 class="section-title event__heading" id="meta-heading">{{ copy.metaHeading }}</h2>
+              <dl class="facts event__facts">
+                @if (event.publishedAt) {
+                  <div class="facts__item">
+                    <dt>{{ copy.publishedOn }}</dt>
+                    <dd>{{ event.publishedAt | displayDate: 'date-time' }}</dd>
+                  </div>
+                }
+                <div class="facts__item">
+                  <dt>{{ copy.lastUpdated }}</dt>
+                  <dd>{{ event.audit.updatedAt | displayDate: 'date-time' }}</dd>
+                </div>
+                @if (event.cancelledAt) {
+                  <div class="facts__item">
+                    <dt>{{ copy.cancelledOn }}</dt>
+                    <dd>{{ event.cancelledAt | displayDate: 'date-time' }}</dd>
+                  </div>
+                }
+              </dl>
+
+              @if (event.cancellationReason) {
+                <h3 class="event__subheading">{{ copy.cancellationReason }}</h3>
+                <p class="event__line event__line--muted">{{ event.cancellationReason }}</p>
+              }
+              @if (event.replacesEventId) {
+                <p class="event__line">
+                  <a [routerLink]="['/events', event.replacesEventId]">{{ copy.replaces }}</a>
+                </p>
+              }
+            </section>
 
             @if (canViewInsights()) {
               <section
@@ -235,56 +236,73 @@
                 />
                 <span class="field__hint" id="reason-hint">{{ copy.reasonHint }}</span>
               </label>
+              <!-- A disabled button says why, in words beside it (DL-227). -->
+              @if (reason().trim().length === 0) {
+                <p class="status-line event__hint">{{ copy.reasonFirst }}</p>
+              }
 
+              <!-- One act per block, each with its warning before its button. -->
               @if (canPublish() && can(event, 'published')) {
-                <p class="callout callout--warning event__warning">{{ copy.publishWarning }}</p>
-                <button
-                  type="button"
-                  class="btn btn--primary"
-                  [disabled]="!canAct()"
-                  (click)="publish(event)"
-                >
-                  {{ copy.publish }}
-                </button>
+                <div class="event__act">
+                  <p class="callout callout--warning event__warning">{{ copy.publishWarning }}</p>
+                  <button
+                    type="button"
+                    class="btn btn--primary"
+                    [disabled]="!canAct()"
+                    (click)="publish(event)"
+                  >
+                    {{ copy.publish }}
+                  </button>
+                </div>
               }
 
               @if (isHeldNotCompleted(event) && canEdit() && can(event, 'completed')) {
-                <!-- Read before the button: this sweeps nothing (`DL-131`). -->
-                <p class="callout callout--warning event__warning">{{ copy.completeWarning }}</p>
-                <button type="button" class="btn" [disabled]="!canAct()" (click)="complete(event)">
-                  {{ copy.complete }}
-                </button>
+                <div class="event__act">
+                  <!-- Read before the button: this sweeps nothing (`DL-131`). -->
+                  <p class="callout callout--warning event__warning">{{ copy.completeWarning }}</p>
+                  <button
+                    type="button"
+                    class="btn"
+                    [disabled]="!canAct()"
+                    (click)="complete(event)"
+                  >
+                    {{ copy.complete }}
+                  </button>
+                </div>
               }
 
               @if (canCancel() && can(event, 'cancelled')) {
-                <p class="callout callout--warning event__warning">{{ copy.cancelWarning }}</p>
-                <button
-                  type="button"
-                  class="btn btn--danger"
-                  [disabled]="!canAct()"
-                  (click)="askToCancel(event)"
-                >
-                  {{ copy.cancelEvent }}
-                </button>
+                <div class="event__act">
+                  <p class="callout callout--warning event__warning">{{ copy.cancelWarning }}</p>
+                  <!-- Opens the confirmation, which holds the filled red button. -->
+                  <button
+                    type="button"
+                    class="btn btn--danger-outline"
+                    [disabled]="!canAct()"
+                    (click)="askToCancel(event)"
+                  >
+                    {{ copy.cancelEvent }}
+                  </button>
+                </div>
               }
 
               @if (canCorrectEvent(event)) {
-                <!-- A correction is kept and residents are told; the form says how before its button. -->
-                <p class="status-line event__hint">{{ copy.correctNote }}</p>
-                <p class="event__actions">
+                <div class="event__act">
+                  <!-- A correction is kept and residents are told; the form says how before its button. -->
+                  <p class="status-line event__hint">{{ copy.correctNote }}</p>
                   <a class="btn" [routerLink]="['/events', event.id, 'correct']">{{
                     copy.correct
                   }}</a>
-                </p>
+                </div>
               }
 
-              <p class="event__actions">
-                @if (canArchive() && can(event, 'archived')) {
+              @if (canArchive() && can(event, 'archived')) {
+                <div class="event__act">
                   <button type="button" class="btn" [disabled]="!canAct()" (click)="archive(event)">
                     {{ copy.archive }}
                   </button>
-                }
-              </p>
+                </div>
+              }
             </section>
           </div>
         </div>
@@ -320,12 +338,15 @@
             <div class="toolbar registrant-filters">
               <label class="field">
                 <span class="field__label">{{ copy.registrantSearch }}</span>
-                <input
-                  type="search"
-                  class="field__input field__input--pill"
-                  [value]="registrantSearch()"
-                  (input)="onRegistrantSearch($event)"
-                />
+                <span class="search-field">
+                  <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+                  <input
+                    type="search"
+                    class="field__input field__input--pill"
+                    [value]="registrantSearch()"
+                    (input)="onRegistrantSearch($event)"
+                  />
+                </span>
               </label>
               <label class="field">
                 <span class="field__label">{{ copy.status }}</span>
@@ -372,6 +393,11 @@
               }
             }
 
+            @if (canManage() && reason().trim().length === 0) {
+              <!-- Promote, cancel and restore wait for the reason under Actions; said, not only greyed. -->
+              <p class="status-line event__hint">{{ copy.registrantReasonFirst }}</p>
+            }
+
             <app-async-content
               [state]="registrantState()"
               [content]="registrantContent"
@@ -387,60 +413,79 @@
                     class="table-scroll table-scroll--simple registrants__scroll"
                     [appScrollRegion]="copy.registrantsHeading"
                   >
-                    <table class="registrants">
+                    <!-- The class attribute stays exactly "registrants" (check:events reads it); the
+                         phone layout is bound beside it. Explicit roles keep a stacked row a row. -->
+                    <table class="registrants" role="table" [class.simple-table--stack]="true">
                       <caption class="visually-hidden">
                         {{
                           copy.registrantsHeading
                         }}
                       </caption>
-                      <thead>
-                        <tr>
-                          <th scope="col">{{ copy.reference }}</th>
-                          <th scope="col">{{ copy.name }}</th>
-                          <th scope="col">{{ copy.barangay }}</th>
-                          <th scope="col">{{ copy.registeredOn }}</th>
-                          <th scope="col">{{ copy.status }}</th>
-                          <th scope="col">{{ copy.attendance }}</th>
+                      <thead role="rowgroup">
+                        <tr role="row">
+                          <th scope="col" role="columnheader">{{ copy.reference }}</th>
+                          <th scope="col" role="columnheader">{{ copy.name }}</th>
+                          <th scope="col" role="columnheader">{{ copy.barangay }}</th>
+                          <th scope="col" role="columnheader">{{ copy.registeredOn }}</th>
+                          <th scope="col" role="columnheader">{{ copy.status }}</th>
+                          <th scope="col" role="columnheader">{{ copy.attendance }}</th>
                           @if (canManage() || canMarkAttendance()) {
-                            <th scope="col">{{ copy.actionsHeading }}</th>
+                            <th scope="col" role="columnheader">{{ copy.actionsHeading }}</th>
                           }
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody role="rowgroup">
                         @for (row of registrants(); track row.id) {
-                          <tr>
-                            <td class="registrants__reference">{{ row.reference }}</td>
-                            <td>
-                              {{ row.displayName }}
-                              @if (!row.identityVerified) {
-                                <span class="chip chip--warning registrants__unverified">{{
-                                  copy.notVerified
-                                }}</span>
-                              } @else if (row.nameSource === 'account') {
-                                <span class="registrants__note">{{
-                                  copy.nameSources.account
-                                }}</span>
-                              }
-                              @if (row.notes) {
-                                <span class="registrants__note">{{ row.notes }}</span>
-                              }
+                          <tr role="row">
+                            <td
+                              class="registrants__reference"
+                              role="cell"
+                              [attr.data-label]="copy.reference"
+                            >
+                              {{ row.reference }}
                             </td>
-                            <td>{{ registrantBarangay(row) }}</td>
-                            <td>{{ row.registeredAt | displayDate }}</td>
-                            <td>
+                            <td class="registrants__name" role="cell" [attr.data-label]="copy.name">
+                              <!-- One block beside its label when the row stacks. -->
+                              <span class="registrants__value">
+                                {{ row.displayName }}
+                                @if (!row.identityVerified) {
+                                  <span class="chip chip--warning registrants__unverified">{{
+                                    copy.notVerified
+                                  }}</span>
+                                } @else if (row.nameSource === 'account') {
+                                  <span class="registrants__note">{{
+                                    copy.nameSources.account
+                                  }}</span>
+                                }
+                                @if (row.notes) {
+                                  <span class="registrants__note">{{ row.notes }}</span>
+                                }
+                              </span>
+                            </td>
+                            <td role="cell" [attr.data-label]="copy.barangay">
+                              {{ registrantBarangay(row) }}
+                            </td>
+                            <td
+                              class="registrants__date"
+                              role="cell"
+                              [attr.data-label]="copy.registeredOn"
+                            >
+                              {{ row.registeredAt | displayDate }}
+                            </td>
+                            <td role="cell" [attr.data-label]="copy.status">
                               <app-status-badge
                                 [catalog]="registrationCatalog"
                                 [status]="row.status"
                               />
                             </td>
-                            <td>
+                            <td role="cell" [attr.data-label]="copy.attendance">
                               <app-status-badge
                                 [catalog]="attendanceCatalog"
                                 [status]="row.attendance"
                               />
                             </td>
                             @if (canManage() || canMarkAttendance()) {
-                              <td>
+                              <td role="cell" class="registrants__acts">
                                 <div class="registrants__actions">
                                   @if (canMarkAttendance() && row.status !== 'cancelled') {
                                     <button

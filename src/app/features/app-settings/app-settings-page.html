@@ -49,9 +49,6 @@
               <label class="field__label" for="settings-support-email">{{
                 copy.supportEmail
               }}</label>
-              <p class="field__hint" id="settings-support-email-hint">
-                {{ copy.supportEmailHint }}
-              </p>
               <input
                 id="settings-support-email"
                 class="field__input"
@@ -61,6 +58,9 @@
                 [value]="supportEmail()"
                 (input)="supportEmail.set(text($event))"
               />
+              <p class="field__hint" id="settings-support-email-hint">
+                {{ copy.supportEmailHint }}
+              </p>
             </div>
           </fieldset>
 
@@ -100,11 +100,10 @@
                 }}
               </p>
             </div>
-            <div class="field field--narrow">
+            <div class="field">
               <label class="field__label" for="settings-minimum">{{
                 copy.minimumAppVersion
               }}</label>
-              <p class="field__hint" id="settings-minimum-hint">{{ copy.minimumAppVersionHint }}</p>
               <input
                 id="settings-minimum"
                 class="field__input"
@@ -115,6 +114,7 @@
                 [value]="minimumAppVersion()"
                 (input)="minimumAppVersion.set(text($event))"
               />
+              <p class="field__hint" id="settings-minimum-hint">{{ copy.minimumAppVersionHint }}</p>
             </div>
           </fieldset>
         </div>
@@ -345,26 +345,27 @@
             <p class="settings__note">{{ copy.noFlags }}</p>
           } @else {
             <div class="table-scroll" [appScrollRegion]="copy.flagsCaption">
-              <table class="simple-table settings__flags">
+              <!-- Stacked on a phone: name, value, then the archive tick across the row. -->
+              <table class="simple-table simple-table--stack settings__flags" role="table">
                 <caption class="visually-hidden">
                   {{
                     copy.flagsCaption
                   }}
                 </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">{{ copy.flagName }}</th>
-                    <th scope="col">{{ copy.flagValue }}</th>
-                    <th scope="col">{{ copy.flagArchive }}</th>
+                <thead role="rowgroup">
+                  <tr role="row">
+                    <th scope="col" role="columnheader">{{ copy.flagName }}</th>
+                    <th scope="col" role="columnheader">{{ copy.flagValue }}</th>
+                    <th scope="col" role="columnheader">{{ copy.flagArchive }}</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody role="rowgroup">
                   @for (flag of current.featureFlags; track flag.key) {
-                    <tr>
-                      <th scope="row">
+                    <tr role="row">
+                      <th scope="row" role="rowheader">
                         <code>{{ flag.key }}</code>
                       </th>
-                      <td>
+                      <td role="cell" [attr.data-label]="copy.flagValue">
                         <input
                           class="field__input"
                           autocomplete="off"
@@ -374,13 +375,16 @@
                           (input)="setFlag(flag.key, text($event))"
                         />
                       </td>
-                      <td>
-                        <input
-                          type="checkbox"
-                          [attr.aria-label]="copy.flagArchiveLabel(flag.key)"
-                          [checked]="archivingFlags().has(flag.key)"
-                          (change)="toggleArchive(flag.key, checked($event))"
-                        />
+                      <td role="cell">
+                        <label class="check">
+                          <input
+                            type="checkbox"
+                            [attr.aria-label]="copy.flagArchiveLabel(flag.key)"
+                            [checked]="archivingFlags().has(flag.key)"
+                            (change)="toggleArchive(flag.key, checked($event))"
+                          />
+                          <span aria-hidden="true">{{ copy.flagArchive }}</span>
+                        </label>
                       </td>
                     </tr>
                   }
@@ -447,30 +451,30 @@
                 <p class="settings__note">{{ copy.noArchivedFlags }}</p>
               } @else {
                 <div class="table-scroll" [appScrollRegion]="copy.archivedFlagsCaption">
-                  <table class="simple-table settings__flags">
+                  <table class="simple-table simple-table--stack settings__flags" role="table">
                     <caption class="visually-hidden">
                       {{
                         copy.archivedFlagsCaption
                       }}
                     </caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">{{ copy.flagName }}</th>
-                        <th scope="col">{{ copy.flagValue }}</th>
-                        <th scope="col">{{ copy.flagArchived }}</th>
-                        <th scope="col">{{ copy.flagRestore }}</th>
+                    <thead role="rowgroup">
+                      <tr role="row">
+                        <th scope="col" role="columnheader">{{ copy.flagName }}</th>
+                        <th scope="col" role="columnheader">{{ copy.flagValue }}</th>
+                        <th scope="col" role="columnheader">{{ copy.flagArchived }}</th>
+                        <th scope="col" role="columnheader">{{ copy.flagRestore }}</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody role="rowgroup">
                       @for (flag of archived; track flag.key) {
-                        <tr>
-                          <th scope="row">
+                        <tr role="row">
+                          <th scope="row" role="rowheader">
                             <code>{{ flag.key }}</code>
                           </th>
-                          <td>
+                          <td role="cell" [attr.data-label]="copy.flagValue">
                             <code>{{ flag.value }}</code>
                           </td>
-                          <td>
+                          <td role="cell" [attr.data-label]="copy.flagArchived">
                             {{
                               copy.flagArchivedOn(
                                 (flag.archived.at | displayDate) ?? '',
@@ -478,13 +482,16 @@
                               )
                             }}
                           </td>
-                          <td>
-                            <input
-                              type="checkbox"
-                              [attr.aria-label]="copy.flagRestoreLabel(flag.key)"
-                              [checked]="restoringFlags().has(flag.key)"
-                              (change)="toggleRestore(flag.key, checked($event))"
-                            />
+                          <td role="cell">
+                            <label class="check">
+                              <input
+                                type="checkbox"
+                                [attr.aria-label]="copy.flagRestoreLabel(flag.key)"
+                                [checked]="restoringFlags().has(flag.key)"
+                                (change)="toggleRestore(flag.key, checked($event))"
+                              />
+                              <span aria-hidden="true">{{ copy.flagRestore }}</span>
+                            </label>
                           </td>
                         </tr>
                       }

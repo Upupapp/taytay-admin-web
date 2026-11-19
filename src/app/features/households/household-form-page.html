@@ -13,7 +13,7 @@
 
   <fieldset class="form-section household-form__section">
     <legend class="form-section__legend">{{ copy.head }}</legend>
-    <app-person-picker [label]="copy.head" [hint]="copy.headHint" [(selected)]="head" />
+    <app-person-picker [label]="copy.headPicker" [hint]="copy.headHint" [(selected)]="head" />
   </fieldset>
 
   <fieldset class="form-section household-form__section">
@@ -110,7 +110,7 @@
   }
 
   <div class="form-footer">
-    <a class="btn" routerLink="/households">{{ copy.back }}</a>
+    <a class="btn" routerLink="/households">{{ copy.cancel }}</a>
     <button
       type="submit"
       class="btn btn--primary"

@@ -1,15 +1,5 @@
-// Payout sessions: the one act first (open a session, a form panel), then the sessions as
+// Payout sessions: the one act as the page's call to action (a centred dialog), the sessions as
 // padded cards, then the payout list — a paper sheet that leaves the building (DL-92).
-
-.sessions__open {
-  margin-block-end: var(--space-4);
-}
-
-.sessions__open > .btn {
-  align-self: flex-start;
-  min-block-size: var(--h-btn-lg);
-  padding-inline: 22px;
-}
 
 .sessions__members {
   margin: 0;
@@ -41,6 +31,12 @@
 
 .sessions__item .facts {
   align-self: stretch;
+}
+
+/* The facts sit together, as many to a row as fit, instead of two halves of the card apart; on a
+   phone each takes the row (DL-227, pass 2). */
+.sessions__facts {
+  grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
 }
 
 .sessions__reference {
@@ -162,4 +158,8 @@
     padding: 0;
     border: none;
   }
+}
+
+.manifest__hint {
+  margin-block-start: var(--space-1);
 }

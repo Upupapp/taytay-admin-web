@@ -123,6 +123,7 @@ export class HotlinesSection {
   /** Lines the server sent with no kind (`DL-220`): shown as not set, never as `other`. */
   protected readonly withoutKind = computed(() => linesWithoutKind(this.rows()));
 
+  private readonly nameCell = viewChild.required<TemplateRef<{ $implicit: Hotline }>>('nameCell');
   private readonly shownCell = viewChild.required<TemplateRef<{ $implicit: Hotline }>>('shownCell');
   private readonly archivedCell =
     viewChild.required<TemplateRef<{ $implicit: Hotline }>>('archivedCell');
@@ -132,7 +133,12 @@ export class HotlinesSection {
   protected readonly rowKey = (hotline: Hotline): string => hotline.id;
 
   protected readonly columns = computed<readonly TableColumn<Hotline>[]>(() => [
-    { key: 'name', header: this.copy.columnName, value: (hotline) => hotline.name },
+    {
+      key: 'name',
+      header: this.copy.columnName,
+      value: (hotline) => hotline.name,
+      cell: this.nameCell(),
+    },
     {
       key: 'number',
       header: this.copy.columnNumber,

@@ -95,6 +95,7 @@ export const AUTH_COPY = {
    */
   notConfiguredHeading: 'Sign-in is not available here',
   developmentHeading: 'Development sign-in',
+  developmentMore: 'What this means',
   roleClaimLegend: 'Role to record for a new account',
   roleClaimLabels: { staff: 'Staff', admin: 'Administrator' },
   passwordNotCheckedHint: 'Not checked in this build. Any text will do.',

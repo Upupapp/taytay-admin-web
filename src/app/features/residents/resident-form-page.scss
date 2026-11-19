@@ -135,3 +135,26 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* The basis question stands apart from the last row of sector boxes it follows. */
+.form__basis {
+  margin-block-start: var(--space-4);
+}
+
+/* On a phone the sections keep their legends as headings and drop their frames, as the shared
+   `.form-section` does: card and section padding left inputs 277px wide on a 390px screen. */
+@media (width <= 600px) {
+  .form {
+    padding-inline: var(--space-4);
+  }
+
+  .form__section {
+    padding: var(--space-2) 0 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .form__legend {
+    padding-inline: 0;
+  }
+}

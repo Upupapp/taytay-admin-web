@@ -111,11 +111,7 @@ class StubResidents extends MockResidentRepository {
     this.recorded.push([id, sector, reason]);
     return of(undefined);
   }
-  override endSector(
-    id: ResidentId,
-    sector: VulnerabilitySector,
-    reason = '',
-  ): Observable<void> {
+  override endSector(id: ResidentId, sector: VulnerabilitySector, reason = ''): Observable<void> {
     this.ended.push([id, sector, reason]);
     return of(undefined);
   }
@@ -240,14 +236,14 @@ describe('a sector page', () => {
     const element = html((await open('auditor', 'senior-citizen')).fixture);
     expect(element.querySelectorAll('tbody tr').length).toBeGreaterThan(0);
     expect(element.textContent).not.toContain(SECTOR_PAGES['senior-citizen'].add);
-    expect(button(element, 'End')).toBeUndefined();
+    expect(button(element, 'End membership')).toBeUndefined();
   });
 
   it('ends a membership only from the confirmation, with a reason, after its effects', async () => {
     const { fixture, residents } = await open('intake-officer', 'senior-citizen');
     const element = html(fixture);
 
-    button(element, 'End')?.click();
+    button(element, 'End membership')?.click();
     await fixture.whenStable();
     const dialog = element.querySelector('app-modal') as HTMLElement;
     expect(dialog.querySelector('.effects')).not.toBeNull();

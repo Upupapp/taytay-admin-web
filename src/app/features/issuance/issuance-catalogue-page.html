@@ -74,6 +74,7 @@
 
 <ng-template #actionCell let-type>
   @if (type.active) {
+    <!-- Retiring is drawn like the other archive-type acts, never as danger (DL-225). -->
     <div class="catalogue__acts">
       <button
         type="button"
@@ -85,7 +86,7 @@
       </button>
       <button
         type="button"
-        class="btn btn--danger-soft"
+        class="btn"
         [attr.aria-label]="copy.retireLabel(type.name)"
         (click)="askToRetire(type)"
       >

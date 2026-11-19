@@ -39,12 +39,6 @@
   background: var(--field-line);
 }
 
-.attention__group-total {
-  color: var(--muted2);
-  font-weight: var(--fw-semibold);
-  letter-spacing: 0;
-}
-
 .attention__group--critical {
   color: var(--red-ink);
 
@@ -132,8 +126,14 @@
 .attention__totals {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
-  margin-block-start: auto;
-  padding-block-start: var(--space-3);
+  margin-block: var(--space-2);
+}
+
+/* Three tiles side by side squeeze "Needs action" into two lines on a phone: one per row. */
+@media (width <= 420px) {
+  .attention__totals {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .attention__clear-body {

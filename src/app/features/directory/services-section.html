@@ -36,7 +36,7 @@
       />
 
       @if (rows().length > 0) {
-        <p class="directory-section__note" role="status">
+        <p class="directory-section__note directory-section__count" role="status">
           {{ copy.count(rows().length, archived()) }}
         </p>
       }
@@ -47,7 +47,9 @@
 <ng-template #nameCell let-service>
   <span class="directory-section__label">
     <span class="directory-section__primary">{{ service.name }}</span>
-    <span class="directory-section__secondary directory-section__slug"
+    <span
+      class="directory-section__secondary directory-section__slug"
+      [title]="'services/' + service.slug"
       >services/{{ service.slug }}</span
     >
   </span>

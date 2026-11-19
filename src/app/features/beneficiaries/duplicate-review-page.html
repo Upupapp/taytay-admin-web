@@ -1,8 +1,11 @@
+<a class="back-link" routerLink="/beneficiaries">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
   <button page-actions type="button" class="btn" [disabled]="detecting()" (click)="detect()">
     {{ detecting() ? copy.detecting : copy.detect }}
   </button>
-  <a page-actions class="btn" routerLink="/beneficiaries">{{ copy.back }}</a>
 </app-page-header>
 
 <div class="card card--panel card--padded stack review">
@@ -20,34 +23,45 @@
           <app-list-changed-notice (reload)="reloadList()" />
         }
 
+        <!-- The heading stands outside the scroll box, so a phone never clips it (F004). -->
+        <h2 class="section-title review__caption" id="pairs-heading">{{ copy.caption }}</h2>
         <div class="table-scroll" [appScrollRegion]="copy.caption">
-          <table class="simple-table review__table">
-            <caption class="review__caption">
-              {{
-                copy.caption
-              }}
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">{{ copy.columnRecords }}</th>
-                <th scope="col">{{ copy.columnStrength }}</th>
-                <th scope="col">{{ copy.columnAgreement }}</th>
-                <th scope="col"><span class="visually-hidden">Actions</span></th>
+          <table
+            class="simple-table simple-table--stack review__table"
+            role="table"
+            aria-labelledby="pairs-heading"
+          >
+            <thead role="rowgroup">
+              <tr role="row">
+                <th scope="col" role="columnheader">{{ copy.columnRecords }}</th>
+                <th scope="col" role="columnheader">{{ copy.columnStrength }}</th>
+                <th scope="col" role="columnheader">{{ copy.columnAgreement }}</th>
+                <th scope="col" role="columnheader">
+                  <span class="visually-hidden">{{ copy.columnActions }}</span>
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
               @for (candidate of rows(); track candidate.residentId + candidate.otherResidentId) {
-                <tr>
+                <tr role="row">
                   <!-- Masked names on both sides. This queue never shows a value
                      that was compared (DL-73). -->
-                  <th scope="row" class="review__pair">
+                  <th scope="row" role="rowheader" class="review__pair">
                     <span>{{ candidate.residentLabel }}</span>
                     <span class="review__versus">and</span>
                     <span>{{ candidate.otherLabel }}</span>
                   </th>
-                  <td>{{ strengthLabels[candidate.strength] }}</td>
-                  <td class="review__agreement">{{ agreementSummary(candidate) }}</td>
-                  <td class="review__action">
+                  <td role="cell" [attr.data-label]="copy.columnStrength">
+                    {{ strengthLabels[candidate.strength] }}
+                  </td>
+                  <td
+                    role="cell"
+                    class="review__agreement"
+                    [attr.data-label]="copy.columnAgreement"
+                  >
+                    {{ agreementSummary(candidate) }}
+                  </td>
+                  <td role="cell" class="review__action">
                     <button type="button" class="btn btn--small" (click)="open(candidate)">
                       {{ copy.open }}
                     </button>
@@ -83,150 +97,189 @@
 </div>
 
 @if (openCandidate(); as candidate) {
-  <app-drawer
+  <!-- A finding is a decision with a required reason: a centred dialog, not a drawer (F105). -->
+  <app-modal
     [open]="true"
-    size="wide"
-    [heading]="copy.comparisonHeading"
-    [description]="copy.comparisonHint"
+    size="large"
+    [heading]="copy.reviewHeading"
+    [description]="copy.reviewHint"
     (dismissed)="close()"
   >
-    <div drawer-body class="stack finding">
-      <app-identity-comparison
-        [candidate]="candidate"
-        [heading]="copy.comparisonHeading"
-        [hint]="copy.comparisonHint"
-        [strengthHint]="copy.strengthHint"
-        [sensitiveNotice]="copy.sensitiveNotice"
-      />
+    <div modal-body class="finding">
+      <div class="stack finding__context">
+        <app-identity-comparison
+          [candidate]="candidate"
+          [heading]="copy.comparisonHeading"
+          [hint]="copy.comparisonHint"
+          [strengthHint]="copy.strengthHint"
+          [sensitiveNotice]="copy.sensitiveNotice"
+        />
 
-      <fieldset class="choice-list finding__group">
-        <legend class="finding__legend">{{ copy.verdictHeading }}</legend>
+        <!-- Both records carry the same masked name: each is told apart by what it holds and
+             whether an app account reads it, never by a compared value (DL-73, F021). -->
+        <section class="subpanel subpanel--soft records" aria-labelledby="records-heading">
+          <h3 class="section-title" id="records-heading">{{ copy.recordsHeading }}</h3>
+          <dl class="records__list">
+            <div class="records__item">
+              <dt>{{ copy.recordFirst }} · {{ candidate.residentLabel }}</dt>
+              <dd id="record-first-facts">{{ holdingText(holdings().first) }}</dd>
+            </div>
+            <div class="records__item">
+              <dt>{{ copy.recordSecond }} · {{ candidate.otherLabel }}</dt>
+              <dd id="record-second-facts">{{ holdingText(holdings().second) }}</dd>
+            </div>
+          </dl>
+        </section>
+      </div>
 
-        <label class="choice finding__option">
-          <input
-            type="radio"
-            name="verdict"
-            value="same-person"
-            [checked]="verdict() === 'same-person'"
-            (change)="onVerdict('same-person')"
-          />
-          <span class="choice__text">
-            <span class="finding__option-label">{{ copy.verdictSame }}</span>
-            <span class="choice__hint finding__option-hint">{{ copy.verdictSameHint }}</span>
-          </span>
-        </label>
-
-        <label class="choice finding__option">
-          <input
-            type="radio"
-            name="verdict"
-            value="distinct-people"
-            [checked]="verdict() === 'distinct-people'"
-            (change)="onVerdict('distinct-people')"
-          />
-          <span class="choice__text">
-            <span class="finding__option-label">{{ copy.verdictDistinct }}</span>
-            <span class="choice__hint finding__option-hint">{{ copy.verdictDistinctHint }}</span>
-          </span>
-        </label>
-      </fieldset>
-
-      @if (verdict() === 'same-person') {
+      <div class="stack finding__decision">
         <fieldset class="choice-list finding__group">
-          <legend class="finding__legend">{{ copy.canonicalHeading }}</legend>
-          <p class="field__hint finding__hint">{{ copy.canonicalHint }}</p>
+          <legend class="section-title finding__legend">{{ copy.verdictHeading }}</legend>
 
           <label class="choice finding__option">
             <input
               type="radio"
-              name="canonical"
-              [checked]="canonicalId() === candidate.residentId"
-              (change)="onCanonical(candidate.residentId)"
+              name="verdict"
+              value="same-person"
+              [checked]="verdict() === 'same-person'"
+              (change)="onVerdict('same-person')"
             />
-            <span class="finding__option-label">{{ candidate.residentLabel }}</span>
+            <span class="choice__text">
+              <span class="finding__option-label">{{ copy.verdictSame }}</span>
+              <span class="choice__hint finding__option-hint">{{ copy.verdictSameHint }}</span>
+            </span>
           </label>
 
           <label class="choice finding__option">
             <input
               type="radio"
-              name="canonical"
-              [checked]="canonicalId() === candidate.otherResidentId"
-              (change)="onCanonical(candidate.otherResidentId)"
+              name="verdict"
+              value="distinct-people"
+              [checked]="verdict() === 'distinct-people'"
+              (change)="onVerdict('distinct-people')"
             />
-            <span class="finding__option-label">{{ candidate.otherLabel }}</span>
+            <span class="choice__text">
+              <span class="finding__option-label">{{ copy.verdictDistinct }}</span>
+              <span class="choice__hint finding__option-hint">{{ copy.verdictDistinctHint }}</span>
+            </span>
           </label>
         </fieldset>
 
-        <!-- What is carried across, never what is deleted: nothing is. -->
-        @if (preview(); as summary) {
-          <section class="subpanel subpanel--soft preview" aria-labelledby="preview-heading">
-            <h3 class="section-title preview__heading" id="preview-heading">
-              {{ copy.previewHeading }}
-            </h3>
-            <dl class="facts preview__list">
-              <div class="preview__item">
-                <dt>{{ copy.previewRequests }}</dt>
-                <dd>{{ summary.movingRequestCount }}</dd>
-              </div>
-              <div class="preview__item">
-                <dt>{{ copy.previewReleases }}</dt>
-                <dd>{{ summary.movingReleaseCount }}</dd>
-              </div>
-              <div class="preview__item">
-                <dt>{{ copy.previewCases }}</dt>
-                <dd>{{ summary.movingCaseCount }}</dd>
-              </div>
-              <div class="preview__item">
-                <dt>{{ copy.previewEnrollments }}</dt>
-                <!-- Not recorded is not zero (`DL-187`). -->
-                <dd>{{ summary.movingEnrollmentCount ?? copy.previewNotRecorded }}</dd>
-              </div>
-            </dl>
+        @if (verdict() === 'same-person') {
+          <fieldset class="choice-list finding__group">
+            <legend class="section-title finding__legend">{{ copy.canonicalHeading }}</legend>
+            <p class="field__hint finding__hint">{{ copy.canonicalHint }}</p>
 
-            @if (summary.overlappingProgramNames.length > 0) {
-              <p class="preview__overlap">
-                <span class="preview__overlap-label">{{ copy.previewOverlap }}:</span>
-                {{ summary.overlappingProgramNames.join(', ') }}
+            <label class="choice finding__option">
+              <input
+                type="radio"
+                name="canonical"
+                aria-describedby="keep-first-facts"
+                [checked]="canonicalId() === candidate.residentId"
+                (change)="onCanonical(candidate.residentId)"
+              />
+              <span class="choice__text">
+                <span class="finding__option-label"
+                  >{{ copy.recordFirst }} · {{ candidate.residentLabel }}</span
+                >
+                <span class="choice__hint" id="keep-first-facts">{{
+                  holdingText(holdings().first)
+                }}</span>
+              </span>
+            </label>
+
+            <label class="choice finding__option">
+              <input
+                type="radio"
+                name="canonical"
+                aria-describedby="keep-second-facts"
+                [checked]="canonicalId() === candidate.otherResidentId"
+                (change)="onCanonical(candidate.otherResidentId)"
+              />
+              <span class="choice__text">
+                <span class="finding__option-label"
+                  >{{ copy.recordSecond }} · {{ candidate.otherLabel }}</span
+                >
+                <span class="choice__hint" id="keep-second-facts">{{
+                  holdingText(holdings().second)
+                }}</span>
+              </span>
+            </label>
+          </fieldset>
+
+          <!-- What is carried across, never what is deleted: nothing is. -->
+          @if (preview(); as summary) {
+            <section class="subpanel subpanel--soft preview" aria-labelledby="preview-heading">
+              <h3 class="section-title preview__heading" id="preview-heading">
+                {{ copy.previewHeading }}
+              </h3>
+              <dl class="facts preview__list">
+                <div class="preview__item">
+                  <dt>{{ copy.previewRequests }}</dt>
+                  <dd>{{ summary.movingRequestCount }}</dd>
+                </div>
+                <div class="preview__item">
+                  <dt>{{ copy.previewReleases }}</dt>
+                  <dd>{{ summary.movingReleaseCount }}</dd>
+                </div>
+                <div class="preview__item">
+                  <dt>{{ copy.previewCases }}</dt>
+                  <dd>{{ summary.movingCaseCount }}</dd>
+                </div>
+                <div class="preview__item">
+                  <dt>{{ copy.previewEnrollments }}</dt>
+                  <!-- Not recorded is not zero (`DL-187`). -->
+                  <dd>{{ summary.movingEnrollmentCount ?? copy.previewNotRecorded }}</dd>
+                </div>
+              </dl>
+
+              @if (summary.overlappingProgramNames.length > 0) {
+                <p class="preview__overlap">
+                  <span class="preview__overlap-label">{{ copy.previewOverlap }}:</span>
+                  {{ summary.overlappingProgramNames.join(', ') }}
+                </p>
+                <p class="preview__overlap-hint">{{ copy.previewOverlapHint }}</p>
+              }
+
+              <!-- What happens to a resident's app account, said before the button (DL-226). -->
+              <p class="preview__account">
+                <span class="preview__overlap-label">{{ copy.previewAccount }}:</span>
+                {{ accountEffect(summary) }}
               </p>
-              <p class="preview__overlap-hint">{{ copy.previewOverlapHint }}</p>
-            }
-
-            <!-- What happens to a resident's app account, said before the button (DL-226). -->
-            <p class="preview__account">
-              <span class="preview__overlap-label">{{ copy.previewAccount }}:</span>
-              {{ accountEffect(summary) }}
-            </p>
-          </section>
-        } @else {
-          <p class="field__hint finding__hint">{{ copy.previewAccountRule }}</p>
+            </section>
+          } @else {
+            <p class="field__hint finding__hint">{{ copy.previewAccountRule }}</p>
+          }
         }
-      }
 
-      <label class="field finding__field">
-        <span class="field__label finding__legend">{{ copy.reasonLabel }}</span>
-        <textarea
-          class="field__input finding__textarea"
-          rows="3"
-          [value]="reason()"
-          [placeholder]="copy.reasonPlaceholder"
-          aria-describedby="finding-reason-hint"
-          (input)="onReason($event)"
-        ></textarea>
-        <span class="field__hint finding__hint" id="finding-reason-hint">{{
-          copy.reasonHint
-        }}</span>
-      </label>
+        <label class="field finding__field">
+          <span class="field__label finding__legend">{{ copy.reasonLabel }}</span>
+          <textarea
+            class="field__input finding__textarea"
+            rows="3"
+            [value]="reason()"
+            [placeholder]="copy.reasonPlaceholder"
+            aria-describedby="finding-reason-hint"
+            (input)="onReason($event)"
+          ></textarea>
+          <span class="field__hint finding__hint" id="finding-reason-hint">{{
+            copy.reasonHint
+          }}</span>
+        </label>
+      </div>
     </div>
 
-    <button type="button" drawer-actions class="btn" (click)="close()">{{ copy.cancel }}</button>
+    <button type="button" modal-actions class="btn btn--secondary" (click)="close()">
+      {{ copy.cancel }}
+    </button>
     <button
       type="button"
-      drawer-actions
+      modal-actions
       class="btn btn--primary"
       [disabled]="!canSubmit()"
       (click)="submit()"
     >
       {{ submitting() ? copy.submitting : copy.submit }}
     </button>
-  </app-drawer>
+  </app-modal>
 }

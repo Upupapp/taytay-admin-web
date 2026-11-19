@@ -1,21 +1,13 @@
 /* ResidentRegister as the event composer: one panel of hairline sections, the
    problems and what saving does before the one submit (DL-124, DL-195). */
 
-.composer {
-  max-inline-size: 880px;
-}
-
-.composer .field + .field {
-  margin-block-start: 0;
-}
-
 .composer__toggle.check {
   align-self: flex-start;
   font-size: var(--fs-sm);
 }
 
 .composer__unavailable {
-  max-inline-size: 880px;
+  max-inline-size: 78ch;
 }
 
 /* Something that cannot be saved at all reads differently from something that

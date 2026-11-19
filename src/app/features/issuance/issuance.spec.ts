@@ -490,6 +490,19 @@ describe('IssuanceRequestPage (DL-184)', () => {
 /* ── the catalogue ───────────────────────────────────────────────────────── */
 
 describe('IssuanceCataloguePage (DL-184)', () => {
+  it('states each standard once, under its heading, and draws Retire as a reversible-looking act', async () => {
+    configure();
+    const element = await settle(TestBed.createComponent(IssuanceCataloguePage));
+    const cells = [...element.querySelectorAll('tbody td')].map((cell) => cell.textContent ?? '');
+
+    expect(cells.some((cell) => cell.includes('3 working days'))).toBe(true);
+    expect(cells.some((cell) => cell.includes('Office standard:'))).toBe(false);
+    const retire = [...element.querySelectorAll('button')].find(
+      (button) => (button.textContent ?? '').trim() === ISSUANCE_COPY.catalogue.retire,
+    );
+    expect(retire?.className).not.toMatch(/btn--danger/);
+  });
+
   it('reads a fee typed in pesos into centavos and says back what residents will see', async () => {
     const repository = configure();
     const fixture = TestBed.createComponent(IssuanceCataloguePage);

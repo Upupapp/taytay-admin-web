@@ -6,12 +6,15 @@
   gap: 14px;
 }
 
+/* As tall as its button whether or not the button shows (the Archived view
+   has none), so switching tabs moves nothing; the heading centred on it. */
 .directory-section__head {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
+  min-block-size: var(--h-btn);
 }
 
 .directory-section__title {
@@ -75,8 +78,16 @@
   font-size: var(--fs-xs);
 }
 
+/* One line, ending in an ellipsis; the whole address is the title. */
 .directory-section__slug {
+  overflow: hidden;
   font-family: var(--font-mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.directory-section__count {
+  margin-block-start: var(--space-3);
 }
 
 .directory-section__actions {

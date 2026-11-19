@@ -1,6 +1,8 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions class="btn" routerLink="/referrals">{{ copy.back }}</a>
-</app-page-header>
+<a class="back-link" routerLink="/referrals">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
 <section class="card card--panel card--padded stack directory" [attr.aria-label]="copy.title">
   <div class="toolbar">
@@ -36,10 +38,13 @@
   >
     <ng-template #body>
       @if (providers().length === 0) {
-        <div class="subpanel subpanel--soft directory__empty">
-          <h2 class="section-title directory__empty-heading">{{ copy.emptyHeading }}</h2>
-          <p class="directory__empty-message">{{ copy.emptyMessage }}</p>
-        </div>
+        <!-- The shared empty state, saying where a provider comes from: nothing here adds one. -->
+        <app-empty-state
+          variant="empty"
+          [headingLevel]="2"
+          [heading]="copy.emptyHeading"
+          [message]="copy.emptyMessage"
+        />
       } @else {
         <ul class="provider-grid providers">
           @for (provider of providers(); track provider.id) {

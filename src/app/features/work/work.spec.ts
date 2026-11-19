@@ -170,7 +170,9 @@ describe('late work on the queue', () => {
 
     // The sentence exists independently of any styling, which is what makes
     // lateness survive a monochrome printout and a screen reader.
-    expect(page.lateness({ dueOn: '2026-01-01', waitingSince: null })).toMatch(/^Late by \d+ days$/);
+    expect(page.lateness({ dueOn: '2026-01-01', waitingSince: null })).toMatch(
+      /^Late by \d+ days$/,
+    );
   });
 
   it('heads the late bucket with a word, not only a colour', async () => {
@@ -184,7 +186,9 @@ describe('late work on the queue', () => {
 
   it('puts a lateness sentence on every late row', async () => {
     const element = html(await openQueue());
-    const rows = [...(element.querySelector('.bucket--late')?.querySelectorAll('.work-rows__item') ?? [])];
+    const rows = [
+      ...(element.querySelector('.bucket--late')?.querySelectorAll('.work-rows__item') ?? []),
+    ];
 
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
@@ -218,9 +222,7 @@ describe('the three surfaces read differently', () => {
   it('says on the notification centre that nothing there is a job', async () => {
     const element = html(await openCentre());
 
-    expect(element.querySelector('.centre__notice')?.textContent).toContain(
-      'records of events',
-    );
+    expect(element.querySelector('.centre__notice')?.textContent).toContain('records of events');
     expect(element.querySelector('.centre__notice')?.textContent).toContain('work list');
   });
 
@@ -258,7 +260,9 @@ describe('acting on the queue', () => {
 
     expect(links.length).toBeGreaterThan(0);
     for (const link of links) {
-      expect(link.getAttribute('href')).toMatch(/^\/(cases|assistance-requests|visits|referrals|releases|beneficiaries)/);
+      expect(link.getAttribute('href')).toMatch(
+        /^\/(cases|assistance-requests|visits|referrals|releases|beneficiaries)/,
+      );
     }
   });
 
@@ -267,7 +271,11 @@ describe('acting on the queue', () => {
     const notes = [...element.querySelectorAll('.work-rows__note')];
 
     expect(notes.length).toBeGreaterThan(0);
-    expect(notes[0]?.textContent).toContain('state of a record');
+    expect(notes[0]?.textContent).toContain('Not a task: act on the record.');
+    // Why, said once above the rows rather than on each of them (DL-227).
+    const why = element.querySelectorAll('.work__task-only');
+    expect(why.length).toBe(1);
+    expect(why[0]?.textContent).toContain('state of a record');
   });
 
   // Dry run 2026-11-09, defect 6: INTAKE was offered "Mark done" on a withheld task, the API

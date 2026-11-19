@@ -40,6 +40,7 @@ import {
 import { ImageFileField } from '@shared/media/image-file-field';
 import { LOADING, ready, toViewState, type ViewState } from '@shared/state/view-state';
 import { EmptyState } from '@shared/ui/empty-state/empty-state';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { EVENTS_COPY } from './events.copy';
@@ -77,7 +78,7 @@ import { EVENTS_COPY } from './events.copy';
 @Component({
   selector: 'app-event-composer-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EmptyState, ImageFileField, PageHeader, RouterLink],
+  imports: [EmptyState, Icon, ImageFileField, PageHeader, RouterLink],
   templateUrl: './event-composer-page.html',
   styleUrl: './event-composer-page.scss',
 })

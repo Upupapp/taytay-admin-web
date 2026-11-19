@@ -18,89 +18,110 @@
       </span>
     </label>
 
-    <label class="field">
-      <span class="field__label">{{ copy.status }}</span>
-      <select class="field__input field__input--pill" (change)="onStatus($event)">
-        <option value="" [selected]="!filter().status && !filter().statusGroup">
-          {{ copy.allStatuses }}
-        </option>
-        <option
-          [value]="handedOverOption"
-          [selected]="!filter().status && filter().statusGroup === 'handed-over'"
-        >
-          {{ groupLabels['handed-over'] }}
-        </option>
-        @for (value of statuses; track value) {
-          <option [value]="value" [selected]="filter().status === value">
-            {{ statusLabel(value) }}
-          </option>
-        }
-      </select>
-    </label>
+    <button
+      type="button"
+      class="btn releases__filters-toggle"
+      aria-controls="release-filters"
+      [attr.aria-expanded]="filtersOpen()"
+      (click)="filtersOpen.set(!filtersOpen())"
+    >
+      <app-icon name="sliders" [size]="16" [stroke]="2" />
+      {{ copy.moreFilters }}
+    </button>
 
-    <label class="field">
-      <span class="field__label">{{ copy.periodField }}</span>
-      <select
-        class="field__input field__input--pill"
-        aria-describedby="release-period-hint"
-        (change)="onPeriod($event)"
-      >
-        @for (value of periods; track value) {
-          <option [value]="value" [selected]="(filter().period ?? 'all-time') === value">
-            {{ periodLabel(value) }}
-          </option>
-        }
-      </select>
-    </label>
-
-    @if (filtersByBarangay()) {
+    <div
+      id="release-filters"
+      class="releases__secondary"
+      [class.releases__secondary--closed]="!filtersOpen()"
+    >
       <label class="field">
-        <span class="field__label">{{ copy.barangay }}</span>
-        <select class="field__input field__input--pill" (change)="onBarangay($event)">
-          <option value="" [selected]="!filter().barangayId">{{ copy.anyBarangay }}</option>
-          @for (barangay of barangays; track barangay.id) {
-            <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
-              {{ barangay.name }}
+        <span class="field__label">{{ copy.status }}</span>
+        <select class="field__input field__input--pill" (change)="onStatus($event)">
+          <option value="" [selected]="!filter().status && !filter().statusGroup">
+            {{ copy.allStatuses }}
+          </option>
+          <option
+            [value]="handedOverOption"
+            [selected]="!filter().status && filter().statusGroup === 'handed-over'"
+          >
+            {{ groupLabels['handed-over'] }}
+          </option>
+          @for (value of statuses; track value) {
+            <option [value]="value" [selected]="filter().status === value">
+              {{ statusLabel(value) }}
             </option>
           }
         </select>
       </label>
-    }
 
-    <label class="field">
-      <span class="field__label">{{ copy.category }}</span>
-      <select class="field__input field__input--pill" (change)="onCategory($event)">
-        <option value="" [selected]="!filter().category">{{ copy.anyCategory }}</option>
-        @for (value of categories; track value) {
-          <option [value]="value" [selected]="filter().category === value">
-            {{ categoryLabels[value] }}
-          </option>
-        }
-      </select>
-    </label>
+      <label class="field">
+        <span class="field__label">{{ copy.periodField }}</span>
+        <select
+          class="field__input field__input--pill"
+          aria-describedby="release-period-hint"
+          (change)="onPeriod($event)"
+        >
+          @for (value of periods; track value) {
+            <option [value]="value" [selected]="(filter().period ?? 'all-time') === value">
+              {{ periodLabel(value) }}
+            </option>
+          }
+        </select>
+      </label>
 
-    <label class="field">
-      <span class="field__label">{{ copy.kind }}</span>
-      <select class="field__input field__input--pill" (change)="onKind($event)">
-        <option value="" [selected]="!filter().kind">{{ copy.allKinds }}</option>
-        @for (value of kinds; track value) {
-          <option [value]="value" [selected]="filter().kind === value">
-            {{ kindLabel(value) }}
-          </option>
-        }
-      </select>
-    </label>
+      @if (filtersByBarangay()) {
+        <label class="field">
+          <span class="field__label">{{ copy.barangay }}</span>
+          <select class="field__input field__input--pill" (change)="onBarangay($event)">
+            <option value="" [selected]="!filter().barangayId">{{ copy.anyBarangay }}</option>
+            @for (barangay of barangays; track barangay.id) {
+              <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+                {{ barangay.name }}
+              </option>
+            }
+          </select>
+        </label>
+      }
 
-    <label class="check-pill">
-      <input type="checkbox" [checked]="filter().openOnly === true" (change)="onOpenOnly($event)" />
-      <span>{{ copy.openOnly }}</span>
-    </label>
+      <label class="field">
+        <span class="field__label">{{ copy.category }}</span>
+        <select class="field__input field__input--pill" (change)="onCategory($event)">
+          <option value="" [selected]="!filter().category">{{ copy.anyCategory }}</option>
+          @for (value of categories; track value) {
+            <option [value]="value" [selected]="filter().category === value">
+              {{ categoryLabels[value] }}
+            </option>
+          }
+        </select>
+      </label>
 
-    @if (hasFilters()) {
-      <button type="button" class="btn releases__clear" (click)="clearFilters()">
-        {{ copy.clear }}
-      </button>
-    }
+      <label class="field">
+        <span class="field__label">{{ copy.kind }}</span>
+        <select class="field__input field__input--pill" (change)="onKind($event)">
+          <option value="" [selected]="!filter().kind">{{ copy.allKinds }}</option>
+          @for (value of kinds; track value) {
+            <option [value]="value" [selected]="filter().kind === value">
+              {{ kindLabel(value) }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label class="check-pill">
+        <input
+          type="checkbox"
+          [checked]="filter().openOnly === true"
+          (change)="onOpenOnly($event)"
+        />
+        <span>{{ copy.openOnly }}</span>
+      </label>
+
+      @if (hasFilters()) {
+        <button type="button" class="btn releases__clear" (click)="clearFilters()">
+          {{ copy.clear }}
+        </button>
+      }
+    </div>
   </div>
 
   <p class="status-line releases__hint" id="release-period-hint">{{ copy.periodHint }}</p>

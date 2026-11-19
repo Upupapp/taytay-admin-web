@@ -134,7 +134,10 @@
 
         @for (day of closedByDay(); track day.date) {
           <section class="bucket" [attr.aria-label]="day.date | displayDate">
-            <h2 class="section-title bucket__heading">{{ day.date | displayDate }}</h2>
+            <h2 class="section-title bucket__heading">
+              {{ day.date | displayDate }}
+              <span class="tab__count bucket__count">{{ day.visits.length }}</span>
+            </h2>
             <ng-container
               [ngTemplateOutlet]="rows"
               [ngTemplateOutletContext]="{ $implicit: day.visits }"

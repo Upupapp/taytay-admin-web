@@ -33,6 +33,7 @@ import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
+import { Icon } from '@shared/ui/icon/icon';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Modal } from '@shared/ui/modal/modal';
@@ -68,6 +69,7 @@ export const ACCOUNTS_TOPICS: readonly LiveTopic[] = ['users'];
     AccountPanel,
     AsyncContent,
     DataTable,
+    Icon,
     InitialsPipe,
     ListChangedNotice,
     Modal,

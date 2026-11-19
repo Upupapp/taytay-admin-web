@@ -1,3 +1,7 @@
+<a class="back-link" routerLink="/referrals">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
 <app-async-content
   [state]="state()"
   [content]="body"
@@ -7,13 +11,8 @@
   <ng-template #body let-referral>
     @if (referral === null) {
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
-      <p class="referral__back">
-        <a class="btn" routerLink="/referrals">{{ copy.back }}</a>
-      </p>
     } @else {
-      <app-page-header [title]="referral.referenceNumber" [subtitle]="referral.destinationName">
-        <a page-actions class="btn" routerLink="/referrals">{{ copy.back }}</a>
-      </app-page-header>
+      <app-page-header [title]="referral.referenceNumber" [subtitle]="referral.destinationName" />
 
       @if (wordsWithheld(referral)) {
         <p class="callout callout--warning referral__withheld" role="note">
@@ -281,54 +280,99 @@
           }
         </section>
 
-        <section class="card card--padded referral__panel" aria-labelledby="outcome-heading">
-          <h2 class="section-title referral__heading" id="outcome-heading">
-            {{ copy.outcomeHeading }}
-          </h2>
+        <!-- The acts on a sent referral stacked in one column beside the notes, so no card is
+             left alone at half width with a hole beside it (DL-227). -->
+        <div class="referral__stack">
+          <section class="card card--padded referral__panel" aria-labelledby="outcome-heading">
+            <h2 class="section-title referral__heading" id="outcome-heading">
+              {{ copy.outcomeHeading }}
+            </h2>
 
-          @if (referral.outcome) {
-            <p class="referral__outcome">{{ referral.outcome }}</p>
-          } @else {
-            <p class="status-line referral__empty">{{ copy.outcomeNone }}</p>
-          }
+            @if (referral.outcome) {
+              <p class="referral__outcome">{{ referral.outcome }}</p>
+            } @else {
+              <p class="status-line referral__empty">{{ copy.outcomeNone }}</p>
+            }
 
-          @if (canWrite(referral) && outcomeStatuses(referral).length > 0) {
-            <label class="field">
-              <span class="field__label">{{ copy.outcomeLabel }}</span>
-              <textarea
-                class="field__input"
-                rows="3"
-                [value]="outcomeText()"
-                [placeholder]="copy.outcomePlaceholder"
-                (input)="onOutcome($event)"
-              ></textarea>
-            </label>
+            @if (canWrite(referral) && outcomeStatuses(referral).length > 0) {
+              <label class="field">
+                <span class="field__label">{{ copy.outcomeLabel }}</span>
+                <textarea
+                  class="field__input"
+                  rows="3"
+                  [value]="outcomeText()"
+                  [placeholder]="copy.outcomePlaceholder"
+                  (input)="onOutcome($event)"
+                ></textarea>
+              </label>
 
-            <label class="field">
-              <span class="field__label">{{ copy.outcomeStatus }}</span>
-              <!-- No status is assumed: the office says where the outcome leaves it (DL-185). -->
-              <select class="field__input" (change)="onOutcomeStatus($event)">
-                <option value="" [selected]="outcomeStatus() === null">
-                  {{ copy.outcomeStatusChoose }}
-                </option>
-                @for (status of outcomeStatuses(referral); track status) {
-                  <option [value]="status" [selected]="outcomeStatus() === status">
-                    {{ statusCatalog[status].label }}
+              <label class="field">
+                <span class="field__label">{{ copy.outcomeStatus }}</span>
+                <!-- No status is assumed: the office says where the outcome leaves it (DL-185). -->
+                <select class="field__input" (change)="onOutcomeStatus($event)">
+                  <option value="" [selected]="outcomeStatus() === null">
+                    {{ copy.outcomeStatusChoose }}
                   </option>
-                }
-              </select>
-            </label>
+                  @for (status of outcomeStatuses(referral); track status) {
+                    <option [value]="status" [selected]="outcomeStatus() === status">
+                      {{ statusCatalog[status].label }}
+                    </option>
+                  }
+                </select>
+              </label>
 
-            <button
-              type="button"
-              class="btn btn--primary"
-              [disabled]="!canRecordOutcome()"
-              (click)="recordOutcome()"
-            >
-              {{ copy.saveOutcome }}
-            </button>
+              <button
+                type="button"
+                class="btn btn--primary"
+                [disabled]="!canRecordOutcome()"
+                (click)="recordOutcome()"
+              >
+                {{ copy.saveOutcome }}
+              </button>
+            }
+          </section>
+
+          @if (canWrite(referral) && referral.status !== 'draft') {
+            <section class="card card--padded referral__panel" aria-labelledby="reschedule-heading">
+              <h2 class="section-title referral__heading" id="reschedule-heading">
+                {{ copy.rescheduleHeading }}
+              </h2>
+
+              <label class="field">
+                <span class="field__label">{{ copy.rescheduleDate }}</span>
+                <input
+                  type="date"
+                  class="field__input"
+                  [value]="rescheduleDate()"
+                  (change)="onRescheduleDate($event)"
+                />
+              </label>
+
+              <label class="field">
+                <span class="field__label">{{ copy.rescheduleReason }}</span>
+                <input
+                  type="text"
+                  class="field__input"
+                  [value]="rescheduleReason()"
+                  aria-describedby="reschedule-hint"
+                  (input)="onRescheduleReason($event)"
+                />
+                <span class="field__hint" id="reschedule-hint">{{
+                  copy.rescheduleReasonHint
+                }}</span>
+              </label>
+
+              <button
+                type="button"
+                class="btn"
+                [disabled]="!canReschedule()"
+                (click)="reschedule()"
+              >
+                {{ copy.saveReschedule }}
+              </button>
+            </section>
           }
-        </section>
+        </div>
 
         <section class="card card--padded referral__panel" aria-labelledby="notes-heading">
           <h2 class="section-title referral__heading" id="notes-heading">
@@ -371,40 +415,6 @@
             </button>
           }
         </section>
-
-        @if (canWrite(referral) && referral.status !== 'draft') {
-          <section class="card card--padded referral__panel" aria-labelledby="reschedule-heading">
-            <h2 class="section-title referral__heading" id="reschedule-heading">
-              {{ copy.rescheduleHeading }}
-            </h2>
-
-            <label class="field">
-              <span class="field__label">{{ copy.rescheduleDate }}</span>
-              <input
-                type="date"
-                class="field__input"
-                [value]="rescheduleDate()"
-                (change)="onRescheduleDate($event)"
-              />
-            </label>
-
-            <label class="field">
-              <span class="field__label">{{ copy.rescheduleReason }}</span>
-              <input
-                type="text"
-                class="field__input"
-                [value]="rescheduleReason()"
-                aria-describedby="reschedule-hint"
-                (input)="onRescheduleReason($event)"
-              />
-              <span class="field__hint" id="reschedule-hint">{{ copy.rescheduleReasonHint }}</span>
-            </label>
-
-            <button type="button" class="btn" [disabled]="!canReschedule()" (click)="reschedule()">
-              {{ copy.saveReschedule }}
-            </button>
-          </section>
-        }
       </div>
     }
   </ng-template>

@@ -1,10 +1,6 @@
 /* Layout only. Every statement on this page is read from the programme record.
    ResidentRecord mock-up: the record in a wide column, who runs it and its figures beside. */
 
-.program__back {
-  margin-block-start: var(--space-4);
-}
-
 .program {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
@@ -43,12 +39,6 @@
   color: var(--muted);
   font-size: var(--fs-2xs);
   font-weight: var(--fw-regular);
-}
-
-.program__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
 }
 
 .guidance__head,

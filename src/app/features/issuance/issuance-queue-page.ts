@@ -279,7 +279,13 @@ export class IssuanceQueuePage {
   protected readonly rowKey = (request: IssuanceRequestSummary): string => request.id;
 
   protected readonly columns = computed<readonly TableColumn<IssuanceRequestSummary>[]>(() => [
-    { key: 'reference', header: this.copy.columnReference, cell: this.referenceCell() },
+    // A reference is one word: never broken at its hyphens (DL-227).
+    {
+      key: 'reference',
+      header: this.copy.columnReference,
+      cell: this.referenceCell(),
+      nowrap: true,
+    },
     {
       key: 'resident',
       header: this.copy.columnResident,

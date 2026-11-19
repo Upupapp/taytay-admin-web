@@ -123,7 +123,9 @@ async function configure(role: StaffRole): Promise<void> {
   await firstValueFrom(TestBed.inject(SessionStore).load());
 }
 
-async function openList(role: StaffRole = 'social-worker'): Promise<ComponentFixture<ReferralListPage>> {
+async function openList(
+  role: StaffRole = 'social-worker',
+): Promise<ComponentFixture<ReferralListPage>> {
   await configure(role);
   await TestBed.inject(Router).navigateByUrl('/referrals');
   const fixture = TestBed.createComponent(ReferralListPage);
@@ -340,7 +342,9 @@ describe('working a referral', () => {
     expect(element.querySelector('.referral__withheld')?.textContent).toContain(
       'withheld from your account',
     );
-    expect(element.querySelector('.notes__body')?.textContent).toContain('Withheld from your account');
+    expect(element.querySelector('.notes__body')?.textContent).toContain(
+      'Withheld from your account',
+    );
     expect(element.textContent).not.toContain('Desk confirmed receipt');
     expect(element.querySelector('#reschedule-heading')).toBeNull();
   });
@@ -376,13 +380,35 @@ describe('the provider directory', () => {
 
 /* ── What a referral is about (DL-185) ────────────────────────────────────── */
 
+/** Composing is a dialog behind the page header's button (DL-227): open it as a person would. */
+function openCompose(element: HTMLElement, fixture: { detectChanges: () => void }): void {
+  const open = [...element.querySelectorAll('button')].find(
+    (button) => (button.textContent ?? '').trim() === 'Refer somebody out',
+  );
+  open?.click();
+  fixture.detectChanges();
+}
+
 describe('composing a referral from a caseload', () => {
+  it('lists first, and opens the compose form from the page header in a centred dialog', async () => {
+    const fixture = await openList('mswdo-head');
+    fixture.detectChanges();
+    const element = html(fixture);
+
+    expect(element.querySelector('app-person-picker')).toBeNull();
+    openCompose(element, fixture);
+    expect(element.querySelector('[role="dialog"] app-person-picker')).not.toBeNull();
+  });
+
   it('starts from the worker’s own cases and requests, not the registry', async () => {
     const fixture = await openList('social-worker');
     await fixture.whenStable();
     fixture.detectChanges();
     const element = html(fixture);
-    const page = fixture.componentInstance as unknown as { linkOptions: () => readonly ReferralLink[] };
+    openCompose(element, fixture);
+    const page = fixture.componentInstance as unknown as {
+      linkOptions: () => readonly ReferralLink[];
+    };
 
     // The registry's search is closed to a caseload (DL-183), so no person picker is offered.
     expect(element.querySelector('app-person-picker')).toBeNull();
@@ -428,7 +454,11 @@ describe('composing a referral from a caseload', () => {
     await page.create();
 
     expect(created).toEqual([
-      expect.objectContaining({ caseId: chosen.id, requestId: null, residentId: chosen.residentId }),
+      expect.objectContaining({
+        caseId: chosen.id,
+        requestId: null,
+        residentId: chosen.residentId,
+      }),
     ]);
   });
 
@@ -436,6 +466,7 @@ describe('composing a referral from a caseload', () => {
     const fixture = await openList('mswdo-head');
     fixture.detectChanges();
     const element = html(fixture);
+    openCompose(element, fixture);
 
     expect(element.querySelector('app-person-picker')).not.toBeNull();
     expect(element.querySelector('#compose-link')).toBeNull();
@@ -470,7 +501,6 @@ describe('a refused referral act, in the server’s words (DL-185)', () => {
     expect(failureDetail('opaque')).toBeUndefined();
   });
 });
-
 
 describe('"Try again" reads again (DL-185)', () => {
   it('re-runs the load after a failed read, and shows the record', async () => {

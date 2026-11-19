@@ -1,11 +1,18 @@
 // The team's work as a dashboard of padded cards, one per person (two
 // columns at desktop widths); each person's items are soft rows.
 
+/* Two balanced columns of cards in reading order (down the first, then the second): a grid row
+   was as tall as its longest card, so a one-item colleague beside a long caseload left half the
+   page empty and pushed "Nobody has picked these up" to the bottom-left (DL-227, pass 2). The order
+   stays the domain's — most behind first, unassigned last (`work-queue.ts`). */
 .team__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr));
-  align-items: start;
-  gap: var(--space-4);
+  columns: 2 min(440px, 100%);
+  column-gap: var(--space-4);
+}
+
+.team__grid > .member {
+  break-inside: avoid;
+  margin-block-end: var(--space-4);
 }
 
 .team__empty {

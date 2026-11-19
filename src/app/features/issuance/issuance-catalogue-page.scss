@@ -31,6 +31,13 @@
   gap: var(--space-2);
 }
 
+/* Edit and Retire side by side, as on the templates and directory tables (DL-227). */
+@media (width > 640px) {
+  .catalogue__acts {
+    flex-wrap: nowrap;
+  }
+}
+
 .catalogue__retire .field + .field {
   margin-block-start: 0;
 }

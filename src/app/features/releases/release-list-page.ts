@@ -235,6 +235,12 @@ export class ReleaseListPage {
   protected readonly hasAny = computed(() => this.releases().length > 0);
   protected readonly hasFilters = computed(() => isReleaseFilterActive(this.filter()));
 
+  /**
+   * Whether the filters past the search are showing on a phone, where seven stacked fields filled
+   * the first screen before any release. Wider, they always show; the toggle is not drawn.
+   */
+  protected readonly filtersOpen = signal(false);
+
   protected detailLink(release: Release): string {
     return `/releases/${release.id}`;
   }

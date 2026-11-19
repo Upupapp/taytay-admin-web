@@ -33,7 +33,7 @@
       />
 
       @if (rows().length > 0) {
-        <p class="directory-section__note" role="status">
+        <p class="directory-section__note directory-section__count" role="status">
           {{ copy.count(rows().length, archived()) }}
         </p>
       }

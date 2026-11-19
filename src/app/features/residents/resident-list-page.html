@@ -14,10 +14,11 @@
 </app-page-header>
 
 <!-- The sector filter as one row of tabs (CitizenRegistry mock-up). Each is a link to the same
-     list with `sector` set, so the URL stays the filter; the row scrolls inside itself rather than
-     wrapping. A protected sector is offered only to a reader cleared for it (`DL-174`). -->
+     list with `sector` set, so the URL stays the filter. Wider than a phone the tabs wrap rather
+     than run off the card unmarked; on a phone the row scrolls inside itself (`DL-227`). A
+     protected sector is offered only to a reader cleared for it (`DL-174`). -->
 <nav class="residents__sectors" [attr.aria-label]="copy.sector">
-  <ul class="tabs tabs--scroll">
+  <ul class="tabs tabs--scroll residents__sector-tabs">
     <li>
       <a
         class="tab"

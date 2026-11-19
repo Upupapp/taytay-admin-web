@@ -35,11 +35,15 @@ interface WithheldModule {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon, PageHeader, RouterLink],
   template: `
-    <app-page-header [title]="copy.heading" [subtitle]="copy.subtitle" />
+    @if (unserved().length === 0) {
+      <app-page-header [title]="copy.everythingHeading" [subtitle]="copy.everythingSubtitle" />
+    } @else {
+      <app-page-header [title]="copy.heading" [subtitle]="copy.subtitle" />
+    }
 
     <div class="unserved-grid">
       @if (unserved().length === 0) {
-        <section class="card card--padded unserved">
+        <section class="card card--padded unserved unserved--wide">
           <p class="callout callout--success">
             <app-icon name="success" [size]="18" [stroke]="2" />
             <span>{{ copy.everythingServed }}</span>
@@ -79,10 +83,13 @@ interface WithheldModule {
         </section>
       }
 
-      <section class="card card--padded unserved" aria-labelledby="unserved-available">
+      <section
+        class="card card--padded unserved unserved--wide"
+        aria-labelledby="unserved-available"
+      >
         <h2 id="unserved-available" class="section-title">{{ copy.availableHeading }}</h2>
         @if (available().length > 0) {
-          <ul class="unserved__list">
+          <ul class="unserved__list unserved__list--columns">
             @for (item of available(); track item.route) {
               <li>
                 <a class="record-link" [routerLink]="item.route">{{ item.label }}</a> —
@@ -116,6 +123,16 @@ interface WithheldModule {
       min-inline-size: 0;
       color: var(--text);
       font-size: var(--fs-sm);
+    }
+
+    /* The status and the list of what opens take the whole row; the list runs in columns. */
+    .unserved--wide {
+      grid-column: 1 / -1;
+    }
+
+    .unserved__list--columns {
+      grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+      align-items: start;
     }
 
     .unserved .callout app-icon {

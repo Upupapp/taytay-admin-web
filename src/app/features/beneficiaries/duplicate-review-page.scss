@@ -1,11 +1,7 @@
-// Residents mock-up as the duplicate queue (pairs, what agrees, Review), and the finding drawer.
+// Residents mock-up as the duplicate queue (pairs, what agrees, Review), and the finding dialog.
 
 .review__caption {
-  padding-block-end: var(--space-2);
-  color: var(--ink);
-  font-size: var(--fs-section);
-  font-weight: var(--fw-bold);
-  text-align: start;
+  margin: 0;
 }
 
 .review__pair {
@@ -55,4 +51,35 @@
 .preview__overlap-hint {
   color: var(--muted);
   font-size: var(--fs-xs);
+}
+
+/* The review dialog: what the records share and hold on one side, the finding
+   on the other; one column when the dialog is narrow (F105). */
+.finding {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  align-items: start;
+  gap: var(--space-5);
+}
+
+.finding__legend {
+  margin-block-end: var(--space-2);
+}
+
+.records__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.records__item dt {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+}
+
+.records__item dd {
+  margin: 0;
+  color: var(--text2);
+  font-size: var(--fs-label);
 }

@@ -1,10 +1,9 @@
-// The act first (compose, a form panel of two columns), then the Residents-mock-up list panel.
+// The list panel (Residents mock-up); composing is a centred dialog of two columns behind the header button.
 
 .referrals__compose {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px var(--space-4);
-  margin-block-end: var(--space-4);
 }
 
 /* The shared `.field + .field` spacing is replaced by the gap, not redefined: in a row it
@@ -13,15 +12,9 @@
   margin-block-start: 0;
 }
 
-/* Headings, notes, the person picker and the button take the whole row; fields pair up. */
+/* Notes and the person picker take the whole row; fields pair up. */
 .referrals__compose > :not(.field) {
   grid-column: 1 / -1;
-}
-
-.referrals__compose > .btn {
-  justify-self: start;
-  min-block-size: var(--h-btn-lg);
-  padding-inline: 22px;
 }
 
 @media (width <= 760px) {

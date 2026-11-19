@@ -25,6 +25,8 @@ import {
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { EmptyState } from '@shared/ui/empty-state/empty-state';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -45,7 +47,7 @@ const MONEY_METHODS: readonly PayoutMethod[] = ['cash', 'check', 'e-wallet', 'ba
 @Component({
   selector: 'app-release-prepare-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, PageHeader, PesoPipe, RouterLink, StatusBadge],
+  imports: [AsyncContent, EmptyState, Icon, PageHeader, PesoPipe, RouterLink, StatusBadge],
   templateUrl: './release-prepare-page.html',
 })
 export class ReleasePreparePage {
@@ -54,8 +56,15 @@ export class ReleasePreparePage {
   private readonly notifications = inject(NotificationStore);
   private readonly router = inject(Router);
 
-  /** The request, from `?request=` (`withComponentInputBinding`). */
-  readonly request = input<string>('');
+  /**
+   * The request, from `?request=` (`withComponentInputBinding`). The router sets the input to
+   * `undefined` when the parameter is absent, which once reached the API as
+   * `/assistance-requests/undefined` (a 422 shown as a broken page, UI audit F010).
+   */
+  readonly request = input<string | undefined>(undefined);
+
+  /** The request id, or `''` when the page was opened without one: then nothing is read. */
+  protected readonly requestId = computed(() => (this.request() ?? '').trim());
 
   protected readonly copy = RELEASES_COPY.prepare;
   protected readonly requestCatalog = ASSISTANCE_STATUS_CATALOG;
@@ -67,15 +76,18 @@ export class ReleasePreparePage {
   private readonly reloads = signal(0);
 
   protected readonly requestState = toSignal(
-    toObservable(computed(() => ({ id: this.request(), nonce: this.reloads() }))).pipe(
+    toObservable(computed(() => ({ id: this.requestId(), nonce: this.reloads() }))).pipe(
       switchMap(({ id }) =>
-        toViewState(
-          id === '' ? of(null) : this.requests.getById(asId<AssistanceRequestId>(id)),
-        ),
+        toViewState(id === '' ? of(null) : this.requests.getById(asId<AssistanceRequestId>(id))),
       ),
     ),
     { initialValue: LOADING as ViewState<AssistanceRequest | null> },
   );
+
+  /** Opened without a request: the approved requests are where one is chosen. */
+  protected chooseRequest(): void {
+    void this.router.navigate(['/assistance-requests'], { queryParams: { status: 'approved' } });
+  }
 
   /** "Try again" on a failed read: the same question asked again (`DL-185`). */
   protected retry(): void {
@@ -86,7 +98,7 @@ export class ReleasePreparePage {
 
   /** The request's releases, whole; `null` when they could not be read, which is not "none". */
   protected readonly existing = toSignal(
-    toObservable(this.request).pipe(
+    toObservable(this.requestId).pipe(
       switchMap((id) =>
         id === ''
           ? of([] as readonly Release[])
@@ -119,7 +131,7 @@ export class ReleasePreparePage {
   private intent = new WriteIntent();
 
   protected readonly draft = computed<ReleaseDraft | null>(() => {
-    const id = this.request();
+    const id = this.requestId();
     if (id === '') {
       return null;
     }
@@ -167,7 +179,10 @@ export class ReleasePreparePage {
     this.method.set((event.target as HTMLSelectElement).value as PayoutMethod);
   }
 
-  protected onText(target: 'amount' | 'goods' | 'funding' | 'reference' | 'remarks', event: Event): void {
+  protected onText(
+    target: 'amount' | 'goods' | 'funding' | 'reference' | 'remarks',
+    event: Event,
+  ): void {
     const value = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
     const field = {
       amount: this.amountText,

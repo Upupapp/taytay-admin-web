@@ -21,6 +21,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
+  margin-block-end: var(--space-3);
 }
 
 .inbox__notice {
@@ -29,6 +30,11 @@
   padding-block: 10px;
   font-size: var(--fs-label);
   text-wrap: pretty;
+}
+
+.inbox__notice app-icon {
+  flex: none;
+  margin-block-start: 1px;
 }
 
 .inbox__order {
@@ -85,6 +91,7 @@
 .inbox__latest {
   color: var(--text2);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .inbox__more {

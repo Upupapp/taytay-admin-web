@@ -97,9 +97,13 @@
                 <h2 id="sign-in-development" class="callout__title">
                   {{ copy.developmentHeading }}
                 </h2>
-                @for (line of dev.explanation; track line) {
-                  <p>{{ line }}</p>
-                }
+                <!-- Folded, so the form and its button stay on a 900px screen. -->
+                <details class="sign-in__dev">
+                  <summary>{{ copy.developmentMore }}</summary>
+                  @for (line of dev.explanation; track line) {
+                    <p>{{ line }}</p>
+                  }
+                </details>
               </div>
             </section>
           }

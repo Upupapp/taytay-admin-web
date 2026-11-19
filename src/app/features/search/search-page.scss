@@ -21,13 +21,14 @@
   flex: 1 1 360px;
 }
 
+/* The box and its button share one height, so their edges line up. */
+.search__input,
 .search__submit {
-  min-block-size: var(--h-field);
-  padding-inline: 22px;
+  block-size: var(--h-btn);
 }
 
-.search__notice {
-  max-inline-size: 90ch;
+.search__submit {
+  padding-inline: 22px;
 }
 
 .recent {
@@ -85,10 +86,6 @@
 .search__summary-label {
   color: var(--ink);
   font-weight: var(--fw-bold);
-}
-
-.search__withheld {
-  max-inline-size: 90ch;
 }
 
 .search__idle,

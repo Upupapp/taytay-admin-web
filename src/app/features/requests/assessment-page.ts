@@ -837,6 +837,14 @@ export class AssessmentPage {
     { initialValue: LOADING as ViewState<readonly AssistanceProgram[]> },
   );
 
+  /** The programme and the live status, read from the record, never a fixed page name. */
+  protected headerSubtitle(request: AssistanceRequest): string {
+    return this.copy.headerSubtitle(
+      this.programmeName(request),
+      ASSISTANCE_STATUS_CATALOG[request.status].label,
+    );
+  }
+
   protected programmeName(request: AssistanceRequest): string {
     const programs = valueOf(this.programState()) ?? [];
     return (

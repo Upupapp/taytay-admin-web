@@ -23,6 +23,8 @@ import {
 } from '@domain/index';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { EmptyState } from '@shared/ui/empty-state/empty-state';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { VISITS_COPY } from './visits.copy';
@@ -46,7 +48,7 @@ interface Worker {
 @Component({
   selector: 'app-visit-schedule-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, PageHeader, RouterLink],
+  imports: [AsyncContent, EmptyState, Icon, PageHeader, RouterLink],
   templateUrl: './visit-schedule-page.html',
   styleUrl: './visit-schedule-page.scss',
 })
@@ -57,8 +59,15 @@ export class VisitSchedulePage {
   private readonly notifications = inject(NotificationStore);
   private readonly router = inject(Router);
 
-  /** The case, from `?case=` (`withComponentInputBinding`). */
-  readonly case = input<string>('');
+  /**
+   * The case, from `?case=` (`withComponentInputBinding`). The router sets the input to `undefined`
+   * when the parameter is absent, which once reached the API as `/office/cases/undefined` (a 422
+   * shown as a bare error card with no heading, UI audit F019).
+   */
+  readonly case = input<string | undefined>(undefined);
+
+  /** The case id, or `''` when the page was opened without one: then nothing is read. */
+  protected readonly caseId = computed(() => (this.case() ?? '').trim());
 
   protected readonly copy = VISITS_COPY.schedule;
   protected readonly purposes = VISIT_PURPOSES;
@@ -69,13 +78,18 @@ export class VisitSchedulePage {
   private readonly reloads = signal(0);
 
   protected readonly state = toSignal(
-    toObservable(computed(() => ({ id: this.case(), nonce: this.reloads() }))).pipe(
+    toObservable(computed(() => ({ id: this.caseId(), nonce: this.reloads() }))).pipe(
       switchMap(({ id }) =>
         toViewState(id === '' ? of(null) : this.cases.getById(asId<CaseId>(id))),
       ),
     ),
     { initialValue: LOADING as ViewState<CaseWorkspace | null> },
   );
+
+  /** Opened without a case: a visit is scheduled from the case it belongs to. */
+  protected chooseCase(): void {
+    void this.router.navigate(['/cases']);
+  }
 
   /** "Try again" on a failed read: the same question asked again (`DL-185`). */
   protected retry(): void {
@@ -192,7 +206,9 @@ export class VisitSchedulePage {
       void this.router.navigate(['/visits', visit.id]);
     } catch (failure: unknown) {
       this.notifications.error(
-        failure instanceof Error && failure.message !== '' ? failure.message : this.copy.notScheduled,
+        failure instanceof Error && failure.message !== ''
+          ? failure.message
+          : this.copy.notScheduled,
       );
     } finally {
       this.saving.set(false);

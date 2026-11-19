@@ -8,7 +8,7 @@
 <div class="balita">
   <section class="card card--padded stack balita__section" aria-labelledby="balita-rules">
     <h2 id="balita-rules" class="section-title balita__heading">{{ copy.page.rules }}</h2>
-    <ul class="balita__effects">
+    <ul class="balita__rules">
       @for (rule of rules; track $index) {
         <li>{{ rule }}</li>
       }
@@ -87,7 +87,7 @@
         <label class="field__label" for="balita-lookup">{{ copy.byId.label }}</label>
         <input
           id="balita-lookup"
-          class="field__input field__input--pill"
+          class="field__input"
           type="text"
           autocomplete="off"
           spellcheck="false"

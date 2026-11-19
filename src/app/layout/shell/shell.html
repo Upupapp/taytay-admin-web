@@ -76,13 +76,16 @@
 >
   <app-notification-list drawer-body />
 
-  <button
-    drawer-actions
-    type="button"
-    class="btn"
-    [disabled]="notifications.unreadCount() === 0"
-    (click)="notifications.markAllRead()"
-  >
-    {{ copy.markAllRead }}
-  </button>
+  <!-- Nothing to mark when the inbox is empty: no greyed button with no reason. -->
+  @if (notifications.inbox().length > 0) {
+    <button
+      drawer-actions
+      type="button"
+      class="btn"
+      [disabled]="notifications.unreadCount() === 0"
+      (click)="notifications.markAllRead()"
+    >
+      {{ copy.markAllRead }}
+    </button>
+  }
 </app-drawer>

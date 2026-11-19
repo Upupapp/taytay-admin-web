@@ -28,7 +28,10 @@ export const WORK_COPY = {
     assignedTo: 'With',
     unassigned: 'Nobody yet',
     open: 'Open',
-    taskOnly: 'Only a task can be handed over or rescheduled. Everything else is the state of a record — act on the record.',
+    taskOnly:
+      'Only a task can be handed over or rescheduled. Everything else is the state of a record — act on the record.',
+    /** Said on each row that is not a task (DL-97), short, because the sentence above says why. */
+    taskOnlyRow: 'Not a task: act on the record.',
     taskNotYours:
       'This task is on a case withheld from your account, so you cannot act on it. A colleague cleared for protected records can.',
 
@@ -49,7 +52,8 @@ export const WORK_COPY = {
     failed: 'That could not be saved.',
 
     emptyHeading: 'Nothing owed',
-    emptyMessage: 'When a case task, request, visit, referral or release needs you, it appears here.',
+    emptyMessage:
+      'When a case task, request, visit, referral or release needs you, it appears here.',
   },
 
   team: {

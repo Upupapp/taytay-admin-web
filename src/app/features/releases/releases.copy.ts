@@ -22,6 +22,8 @@ export const RELEASES_COPY = {
     allKinds: 'Money and goods',
     openOnly: 'Only what is still to settle',
     clear: 'Clear filters',
+    /** On a phone the filters past the search fold away behind this (DL-227, pass 2). */
+    moreFilters: 'Filters',
     periodField: 'Handed over',
     period: {
       'all-time': 'Any time',
@@ -69,6 +71,10 @@ export const RELEASES_COPY = {
     title: 'Prepare a release',
     subtitle: 'What the office hands over for an approved request, before it is scheduled.',
     back: 'Back to releases',
+    chooseHeading: 'Choose an approved request to prepare',
+    chooseMessage:
+      'A release is prepared from the request it pays. Open an approved request and choose Prepare the release there.',
+    chooseAction: 'Show approved requests',
     notFoundHeading: 'That request is not available',
     notFoundMessage:
       'It may not exist, or it may be outside what your account reads. Open the release from the request’s record.',
@@ -148,7 +154,8 @@ export const RELEASES_COPY = {
     acknowledged: 'Receipt recorded.',
 
     deferHeading: 'They came and we could not pay',
-    deferHint: 'Every reason here is the office’s. If they did not come, mark it unclaimed instead.',
+    deferHint:
+      'Every reason here is the office’s. If they did not come, mark it unclaimed instead.',
     deferReason: 'Why',
     deferRemarks: 'What happened',
     defer: 'Record deferral',
@@ -161,6 +168,7 @@ export const RELEASES_COPY = {
     title: 'Payout sessions',
     subtitle: 'A date, a place, and the releases planned for it.',
     back: 'Back to releases',
+    cancel: 'Cancel',
 
     venue: 'Where',
     officer: 'Releasing officer',

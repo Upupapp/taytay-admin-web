@@ -1,6 +1,5 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions class="btn" routerLink="/residents">{{ copy.cancel }}</a>
-</app-page-header>
+<!-- The way out is the form's own Cancel, beside the submit (DL-227, pass 2). -->
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
 <app-import-steps [current]="1" />
 

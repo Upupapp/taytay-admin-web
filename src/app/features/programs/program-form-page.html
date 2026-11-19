@@ -1,9 +1,7 @@
 <app-page-header
   [title]="editing() ? copy.editTitle : copy.title"
   [subtitle]="editing() ? copy.editSubtitle : copy.subtitle"
->
-  <a page-actions class="btn" routerLink="/programs">{{ copy.back }}</a>
-</app-page-header>
+/>
 
 @let current = form();
 @let draft = reading().draft;
@@ -154,7 +152,8 @@
                 }
               </select>
             </label>
-            <label class="field">
+            <!-- Its options are sentences: the whole row, so the chosen one is not cut. -->
+            <label class="field program-form__wide">
               <span class="field__label">{{ detailCopy.lguRole }}</span>
               <select class="field__input" (change)="onLguRole($event)">
                 @for (role of roles; track role) {
@@ -223,7 +222,7 @@
               </div>
               <button
                 type="button"
-                class="btn btn--subtle btn--small"
+                class="btn btn--small program-form__remove"
                 (click)="removeSource(index)"
               >
                 {{ copy.removeSource }}
@@ -319,7 +318,7 @@
               </div>
               <button
                 type="button"
-                class="btn btn--subtle btn--small"
+                class="btn btn--small program-form__remove"
                 (click)="removeGuideline(index)"
               >
                 {{ copy.removeGuideline }}
@@ -330,8 +329,9 @@
             {{ copy.addGuideline }}
           </button>
 
-          <fieldset class="program-form__entry">
-            <legend class="form-section__legend program-form__entry-legend">
+          <!-- A sub-heading, not a third frame inside the card and the section. -->
+          <fieldset class="program-form__group">
+            <legend class="program-form__subheading">
               {{ copy.eligibilityHeading }}
             </legend>
             <p class="field__hint">{{ copy.eligibilityHint }}</p>
@@ -548,8 +548,9 @@
             <span class="field__hint" id="program-reason-hint">{{ reasonCopy.hint }}</span>
           </label>
 
+          <!-- What is still missing reads as a checklist until a save is tried, then as a refusal. -->
           @if (ruleProblems().length > 0) {
-            <div class="callout callout--danger program-form__problems">
+            <div class="callout program-form__problems" [class.callout--danger]="attempted()">
               <p class="program-form__problems-heading">{{ detailCopy.missingHeading }}</p>
               <ul>
                 @for (problem of ruleProblems(); track problem.code) {

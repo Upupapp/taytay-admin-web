@@ -89,7 +89,9 @@
       <span class="avatar" aria-hidden="true">{{ name | initials }}</span>
       <span class="accounts__name">{{ name }}</span>
     } @else {
-      <span class="avatar accounts__avatar-blank" aria-hidden="true"></span>
+      <span class="avatar accounts__avatar-blank" aria-hidden="true">
+        <app-icon name="user" [size]="16" [stroke]="2" />
+      </span>
       <span class="accounts__missing">{{ copy.noName }}</span>
     }
     @if (isOwn(account)) {

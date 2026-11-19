@@ -136,6 +136,29 @@
   font-size: var(--fs-body);
 }
 
+/* On a phone the buttons take the row, the submit on top: two right-aligned
+   rows of different widths read as an accident (DL-227, pass 2). */
+@media (width <= 480px) {
+  .form-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .form-footer .btn {
+    justify-content: center;
+  }
+}
+
+/* A row of acts on one record (a table row, a task, a document): side by side,
+   wrapping, never stacked one per line in a narrow cell. Put it in a cell with
+   `white-space: nowrap` only when the acts are short. */
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 /* ── Plain tables ─────────────────────────────────────────────────────────
    A short table written in a feature's own markup (a record's history), in
    the DataTable's look: the soft header band, hairline rows. Wrap it in
@@ -202,6 +225,70 @@
 .simple-table .simple-table__num {
   font-variant-numeric: tabular-nums;
   text-align: end;
+}
+
+/* On a phone a `.simple-table--stack` lays each row out as a block, as the
+   DataTable does (§5): the row header first, then each cell with its column's
+   header from `data-label` beside the value, and a cell without a label (the
+   row's acts) across the row. Give the table explicit roles (`table`,
+   `rowgroup`, `row`, `columnheader`, `rowheader`, `cell`), so a stacked row is
+   still read as a row (DL-227, pass 2). */
+@media (width <= 640px) {
+  .simple-table--stack,
+  .simple-table--stack > thead,
+  .simple-table--stack > tbody,
+  .simple-table--stack > tbody > tr,
+  .simple-table--stack > tbody > tr > * {
+    display: block;
+  }
+
+  .simple-table--stack > thead {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .simple-table--stack > tbody > tr {
+    padding-block: var(--space-3);
+    border-block-end: 1px solid var(--soft);
+  }
+
+  .simple-table--stack > tbody > tr:last-child {
+    border-block-end: none;
+  }
+
+  .simple-table--stack > tbody > tr > th,
+  .simple-table--stack > tbody > tr > td,
+  .simple-table--stack .simple-table__num {
+    padding: var(--space-1) 0;
+    border-block-end: none;
+    text-align: start;
+  }
+
+  .simple-table--stack td[data-label] {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: var(--space-3);
+    align-items: baseline;
+  }
+
+  .simple-table--stack td[data-label]::before {
+    content: attr(data-label);
+    content: attr(data-label) / '';
+    color: var(--muted2);
+    font-size: var(--fs-caption);
+    font-weight: var(--fw-semibold);
+    letter-spacing: var(--ls-caps);
+    text-transform: uppercase;
+  }
+
+  .simple-table--stack td:not([data-label]) {
+    padding-block-start: var(--space-2);
+  }
 }
 
 /* The same look for a table whose class a repository check reads by its exact
@@ -350,6 +437,23 @@
 
 /* Tabs that share their box's width equally, for a short choice in a narrow
    column (the Appearance control in the sidebar's account footer). */
+/* A filter inside a section (In use | Archived): a compact, content-width
+   strip on the soft fill, so it reads as below the page's own tabs (F124, F127). */
+.tabs.tabs--sub {
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  padding: 3px;
+  border-color: transparent;
+  background: var(--soft2);
+}
+
+.tabs--sub > * > .tab,
+.tabs--sub > .tab {
+  min-block-size: var(--target-min);
+  padding-inline: var(--space-3);
+  font-size: var(--fs-sm);
+}
+
 .tabs--fill {
   flex-wrap: nowrap;
   align-self: stretch;
@@ -915,6 +1019,13 @@ a.kpi:focus-visible .kpi__arrow {
   margin: 0;
 }
 
+/* In a dialog the fill alone barely shows against the panel: a hairline makes
+   the inset read as a panel rather than a misaligned block (F183, F184). */
+.modal__body .effects,
+.modal__body .subpanel--soft {
+  border: 1px solid var(--line);
+}
+
 /* The lead line of a list of effects ("What the server does:"). */
 .effects .effects__lead {
   color: var(--ink);
@@ -1145,6 +1256,25 @@ a.kpi:focus-visible .kpi__arrow {
 .form-section__note {
   color: var(--muted);
   font-size: var(--fs-label);
+}
+
+/* On a phone the section keeps its legend as a heading and drops its frame:
+   card, section and sub-section padding left a 390px screen 270px inputs
+   (DL-227, pass 2). */
+@media (width <= 600px) {
+  .form-section {
+    padding: var(--space-2) 0 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .form-section .form-section {
+    padding-block-start: var(--space-2);
+  }
+
+  .form-section__legend {
+    padding-inline: 0;
+  }
 }
 
 /* Short fields that belong together side by side — the two ends of a range —

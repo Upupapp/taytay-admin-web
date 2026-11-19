@@ -1,11 +1,15 @@
 @if (correcting()) {
-  <app-page-header [title]="copy.correctTitle">
-    <a page-actions class="btn" [routerLink]="['/events', id()]">{{ copy.correctBack }}</a>
-  </app-page-header>
+  <a class="back-link" [routerLink]="['/events', id()]">
+    <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+    {{ copy.correctBack }}
+  </a>
+  <app-page-header [title]="copy.correctTitle" [subtitle]="copy.correctSubtitle" />
 } @else {
-  <app-page-header [title]="copy.title">
-    <a page-actions class="btn" routerLink="/events">{{ copy.back }}</a>
-  </app-page-header>
+  <a class="back-link" routerLink="/events">
+    <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+    {{ copy.back }}
+  </a>
+  <app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 }
 
 @if (originalFailure(); as failure) {
@@ -26,10 +30,10 @@
     (submit)="$event.preventDefault(); submit()"
   >
     @if (correcting()) {
-      <section class="form-section composer__panel" aria-labelledby="correction-heading">
-        <h2 class="section-title composer__heading" id="correction-heading">
+      <fieldset class="form-section composer__panel">
+        <legend class="form-section__legend composer__heading" id="correction-heading">
           {{ copy.correctionHeading }}
-        </h2>
+        </legend>
         <p class="form-section__note composer__hint">{{ copy.correctionNote }}</p>
         <label class="field">
           <span class="field__label">{{ copy.correctionReason }}</span>
@@ -44,11 +48,13 @@
             copy.correctionReasonHint
           }}</span>
         </label>
-      </section>
+      </fieldset>
     }
 
-    <section class="form-section composer__panel" aria-labelledby="about-heading">
-      <h2 class="section-title composer__heading" id="about-heading">{{ copy.aboutHeading }}</h2>
+    <fieldset class="form-section composer__panel">
+      <legend class="form-section__legend composer__heading" id="about-heading">
+        {{ copy.aboutHeading }}
+      </legend>
 
       <label class="field">
         <span class="field__label">{{ copy.eventTitle }}</span>
@@ -89,62 +95,73 @@
           }
         </select>
       </label>
-    </section>
+    </fieldset>
 
-    <section class="form-section composer__panel" aria-labelledby="image-heading">
-      <h2 class="section-title composer__heading" id="image-heading">{{ copy.imageHeading }}</h2>
-      <p class="form-section__note composer__hint">{{ copy.imageNote }}</p>
+    <section class="composer__group" aria-labelledby="image-heading">
+      <fieldset class="form-section composer__panel">
+        <legend class="form-section__legend composer__heading" id="image-heading">
+          {{ copy.imageHeading }}
+        </legend>
+        <p class="form-section__note composer__hint">{{ copy.imageNote }}</p>
 
-      <!-- Refuses a file the API would refuse before anything is sent (`DL-193`). -->
-      <app-image-file-field
-        inputId="event-cover"
-        [label]="copy.image"
-        [hint]="copy.imageHint"
-        [disabled]="saving()"
-        (chosen)="cover.set($event)"
-      />
-
-      <!-- Beside the image, never behind a disclosure (`DL-125`). -->
-      <label class="field">
-        <span class="field__label">{{ copy.altText }}</span>
-        <input
-          type="text"
-          class="field__input"
-          aria-describedby="alt-hint"
-          [value]="altText()"
-          (input)="onText(altText, $event)"
+        <!-- Refuses a file the API would refuse before anything is sent (`DL-193`). -->
+        <app-image-file-field
+          inputId="event-cover"
+          [label]="copy.image"
+          [hint]="copy.imageHint"
+          [disabled]="saving()"
+          (chosen)="cover.set($event)"
         />
-        <span class="field__hint" id="alt-hint">{{ copy.altTextHint }}</span>
-      </label>
+
+        <!-- Beside the image, never behind a disclosure (`DL-125`). -->
+        <label class="field">
+          <span class="field__label">{{ copy.altText }}</span>
+          <input
+            type="text"
+            class="field__input"
+            aria-describedby="alt-hint"
+            [value]="altText()"
+            (input)="onText(altText, $event)"
+          />
+          <span class="field__hint" id="alt-hint">{{ copy.altTextHint }}</span>
+        </label>
+      </fieldset>
     </section>
 
-    <section class="form-section composer__panel" aria-labelledby="when-heading">
-      <h2 class="section-title composer__heading" id="when-heading">{{ copy.whenHeading }}</h2>
+    <fieldset class="form-section composer__panel">
+      <legend class="form-section__legend composer__heading" id="when-heading">
+        {{ copy.whenHeading }}
+      </legend>
       <p class="form-section__note composer__hint">{{ timezone }}</p>
 
-      <label class="field">
-        <span class="field__label">{{ copy.startsAt }}</span>
-        <input
-          type="datetime-local"
-          class="field__input"
-          [value]="startsAt()"
-          (input)="onText(startsAt, $event)"
-        />
-      </label>
+      <!-- The two ends of the event, side by side. -->
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">{{ copy.startsAt }}</span>
+          <input
+            type="datetime-local"
+            class="field__input"
+            [value]="startsAt()"
+            (input)="onText(startsAt, $event)"
+          />
+        </label>
 
-      <label class="field">
-        <span class="field__label">{{ copy.endsAt }}</span>
-        <input
-          type="datetime-local"
-          class="field__input"
-          [value]="endsAt()"
-          (input)="onText(endsAt, $event)"
-        />
-      </label>
-    </section>
+        <label class="field">
+          <span class="field__label">{{ copy.endsAt }}</span>
+          <input
+            type="datetime-local"
+            class="field__input"
+            [value]="endsAt()"
+            (input)="onText(endsAt, $event)"
+          />
+        </label>
+      </div>
+    </fieldset>
 
-    <section class="form-section composer__panel" aria-labelledby="where-heading">
-      <h2 class="section-title composer__heading" id="where-heading">{{ copy.whereHeading }}</h2>
+    <fieldset class="form-section composer__panel">
+      <legend class="form-section__legend composer__heading" id="where-heading">
+        {{ copy.whereHeading }}
+      </legend>
 
       <label class="field">
         <span class="field__label">{{ copy.venueName }}</span>
@@ -168,7 +185,7 @@
         <span class="field__hint" id="address-hint">{{ copy.addressHint }}</span>
       </label>
 
-      <label class="field">
+      <label class="field field--narrow">
         <span class="field__label">{{ copy.barangay }}</span>
         <select class="field__input" (change)="onBarangay($event)">
           <option value="">—</option>
@@ -191,48 +208,51 @@
         />
         <span class="field__hint" id="map-hint">{{ copy.mapUrlHint }}</span>
       </label>
-    </section>
+    </fieldset>
 
-    <section class="form-section composer__panel" aria-labelledby="contact-heading">
-      <h2 class="section-title composer__heading" id="contact-heading">
+    <fieldset class="form-section composer__panel">
+      <legend class="form-section__legend composer__heading" id="contact-heading">
         {{ copy.contactHeading }}
-      </h2>
+      </legend>
 
-      <label class="field">
-        <span class="field__label">{{ copy.contactName }}</span>
-        <input
-          type="text"
-          class="field__input"
-          [value]="contactName()"
-          (input)="onText(contactName, $event)"
-        />
-      </label>
+      <!-- Short contact fields side by side. -->
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">{{ copy.contactName }}</span>
+          <input
+            type="text"
+            class="field__input"
+            [value]="contactName()"
+            (input)="onText(contactName, $event)"
+          />
+        </label>
 
-      <label class="field">
-        <span class="field__label">{{ copy.contactOffice }}</span>
-        <input
-          type="text"
-          class="field__input"
-          [value]="contactOffice()"
-          (input)="onText(contactOffice, $event)"
-        />
-      </label>
+        <label class="field">
+          <span class="field__label">{{ copy.contactOffice }}</span>
+          <input
+            type="text"
+            class="field__input"
+            [value]="contactOffice()"
+            (input)="onText(contactOffice, $event)"
+          />
+        </label>
 
-      <label class="field">
-        <span class="field__label">{{ copy.contactPhone }}</span>
-        <input
-          type="tel"
-          class="field__input"
-          [value]="contactPhone()"
-          (input)="onText(contactPhone, $event)"
-        />
-      </label>
-    </section>
+        <label class="field">
+          <span class="field__label">{{ copy.contactPhone }}</span>
+          <input
+            type="tel"
+            class="field__input"
+            [value]="contactPhone()"
+            (input)="onText(contactPhone, $event)"
+          />
+        </label>
+      </div>
+    </fieldset>
 
-    <section class="form-section composer__panel" aria-labelledby="registration-heading">
-      <h2 class="section-title composer__heading" id="registration-heading">
+    <fieldset class="form-section composer__panel">
+      <legend class="form-section__legend composer__heading" id="registration-heading">
         {{ copy.registrationHeading }}
-      </h2>
+      </legend>
       <!-- Said on the form, because it is the thing an admin most reasonably
          assumes otherwise. -->
       <p class="form-section__note composer__hint">{{ copy.registrationHint }}</p>
@@ -345,12 +365,12 @@
           <span class="field__hint" id="participation-hint">{{ copy.participationHint }}</span>
         </label>
       }
-    </section>
+    </fieldset>
 
-    <section class="form-section composer__panel" aria-labelledby="reminders-heading">
-      <h2 class="section-title composer__heading" id="reminders-heading">
+    <fieldset class="form-section composer__panel">
+      <legend class="form-section__legend composer__heading" id="reminders-heading">
         {{ copy.remindersHeading }}
-      </h2>
+      </legend>
       <label class="field">
         <span class="field__label">{{ copy.reminders }}</span>
         <textarea
@@ -360,13 +380,13 @@
           (input)="onText(reminders, $event)"
         ></textarea>
       </label>
-    </section>
+    </fieldset>
 
     @if (correcting()) {
-      <section class="form-section composer__panel" aria-labelledby="tell-heading">
-        <h2 class="section-title composer__heading" id="tell-heading">
+      <fieldset class="form-section composer__panel">
+        <legend class="form-section__legend composer__heading" id="tell-heading">
           {{ copy.tellRegistrants }}
-        </h2>
+        </legend>
         <label class="check composer__toggle">
           <input
             type="checkbox"
@@ -377,7 +397,7 @@
           <span>{{ copy.tellRegistrants }}</span>
         </label>
         <span class="field__hint" id="tell-hint">{{ copy.tellRegistrantsHint }}</span>
-      </section>
+      </fieldset>
 
       @if (correctionBlocks().length > 0) {
         <div class="callout callout--danger problems problems--blocking" role="alert">
@@ -409,7 +429,8 @@
         </ul>
       </div>
     } @else if (publishProblems().length > 0) {
-      <div class="callout callout--warning problems" role="status">
+      <!-- A checklist while it is being written, not a refusal: saving a draft is still open. -->
+      <div class="callout problems" role="status">
         <h2 class="callout__title problems__heading">{{ copy.problemsHeading }}</h2>
         <ul class="problems__list">
           @for (problem of publishProblems(); track problem) {
@@ -431,12 +452,19 @@
       </div>
     }
 
+    @if (!correcting() && title().trim().length === 0) {
+      <!-- Why the button is unavailable, in words beside it. -->
+      <p class="status-line composer__hint">{{ copy.titleFirst }}</p>
+    }
+
     <p class="form-footer composer__actions">
       @if (correcting()) {
+        <a class="btn" [routerLink]="['/events', id()]">{{ copy.cancel }}</a>
         <button type="submit" class="btn btn--primary" [disabled]="!canCorrect()">
           {{ copy.saveCorrection }}
         </button>
       } @else {
+        <a class="btn" routerLink="/events">{{ copy.cancel }}</a>
         <button type="submit" class="btn btn--primary" [disabled]="!canSave()">
           {{ copy.saveDraft }}
         </button>

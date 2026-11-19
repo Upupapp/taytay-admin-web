@@ -32,14 +32,14 @@
         [emptyMessage]="archived() ? copy.archivedEmptyMessage : copy.emptyMessage"
       />
       @if (rows().length > 0) {
-        <p class="directory-section__note" role="status">
+        <p class="directory-section__note directory-section__count" role="status">
           {{ copy.count(rows().length, archived()) }}
         </p>
       }
       @if (!archived()) {
         <!-- DL-217: which line the app shows for an emergency, or plainly that none is marked. -->
         @if (commandCenter(); as center) {
-          <p class="directory-section__note">
+          <p class="note-box">
             {{ copy.commandCenterIs(center.name, center.number) }}
           </p>
         } @else {
@@ -56,6 +56,10 @@
     </ng-template>
   </app-async-content>
 </section>
+
+<ng-template #nameCell let-hotline>
+  <span class="directory-section__primary">{{ hotline.name }}</span>
+</ng-template>
 
 <ng-template #shownCell let-hotline>
   <app-status-badge [catalog]="visibility" [status]="visibilityOf(hotline.active)" />

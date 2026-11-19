@@ -110,8 +110,9 @@
   }
 }
 
-/* The card check, at the width of the mock-up's check dialog. */
-.card-check {
+/* The card check spans the page like the list below it; its contents keep
+   the width of the mock-up's check dialog, so the field stays a readable line. */
+.card-check > * {
   max-inline-size: 640px;
 }
 

@@ -6,7 +6,9 @@
 
 .crumbs__list {
   display: flex;
-  flex-wrap: wrap;
+  /* One line: the earlier crumbs give way with an ellipsis before the current
+     page does, rather than the trail wrapping under the search (F081, F088). */
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--space-2);
   margin: 0;
@@ -18,9 +20,22 @@
 
 .crumbs__item {
   display: inline-flex;
+  flex: 0 3 auto;
   align-items: center;
   gap: var(--space-2);
   min-inline-size: 0;
+  white-space: nowrap;
+}
+
+.crumbs__item:last-child {
+  flex-shrink: 1;
+}
+
+.crumbs__link,
+.crumbs__section {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .crumbs__link {

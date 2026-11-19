@@ -174,6 +174,14 @@ export class InboxPage {
     return this.directory.name(thread.officeId, thread.officeSlug);
   }
 
+  /**
+   * The office's own abbreviation when its name ends in one ("… Office (MSWDO)"), so a row says it
+   * in one line; the full name stays in the cell for a screen reader and as the tooltip.
+   */
+  protected officeShortName(name: string): string | null {
+    return /\(([A-Z][A-Za-z]{1,9})\)$/.exec(name.trim())?.[1] ?? null;
+  }
+
   protected reload(): void {
     this.generation.update((n) => n + 1);
   }

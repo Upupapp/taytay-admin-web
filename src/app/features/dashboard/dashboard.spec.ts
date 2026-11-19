@@ -84,7 +84,8 @@ function repository(user: StaffUser | null): StaffRepository {
     list: (): Observable<Page<StaffUser>> => of(emptyPage<StaffUser>()),
     getById: (): Observable<StaffUser | null> => of(user),
     currentUser: (): Observable<AuthenticatedUser | null> => of(authenticated),
-    signIn: (): Observable<SignInOutcome> => of({ kind: 'authenticated', user: authenticated as AuthenticatedUser }),
+    signIn: (): Observable<SignInOutcome> =>
+      of({ kind: 'authenticated', user: authenticated as AuthenticatedUser }),
     completeMfa: (): Observable<AuthenticatedUser> => of(authenticated as AuthenticatedUser),
     signOut: (): Observable<void> => of(undefined),
   };
@@ -179,6 +180,23 @@ describe('the dashboard answers "what needs attention now?" first', () => {
     expect(element.querySelector('.attention__list')?.textContent).toContain(
       'waiting for approval',
     );
+  });
+
+  it('gives the sums once, above the list, rather than again under each heading', async () => {
+    const element = html(await setUp('mswdo-head'));
+    const panel = element.querySelector('.attention');
+    const totals = panel?.querySelector('.attention__totals');
+    const list = panel?.querySelector('.attention__list');
+
+    expect(totals).not.toBeNull();
+    expect(list).not.toBeNull();
+    // The totals come first in reading order.
+    expect(
+      totals !== null && totals !== undefined && list !== null && list !== undefined
+        ? totals.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING
+        : 0,
+    ).toBeTruthy();
+    expect(panel?.querySelector('.attention__group-total')).toBeNull();
   });
 
   it('gives every signal a drill-down into the records it counted', async () => {
@@ -410,7 +428,9 @@ describe('quick actions respect permission', () => {
     expect(RECORD_REQUEST).toEqual({ route: '/assistance-requests/new', queryParams: {} });
     // `pending` was renamed `for-release` in TAB 17; the old word filtered nothing.
     expect(SCHEDULE_PAYOUTS.route).toBe('/releases');
-    expect(readReleaseQuery({ get: (name) => SCHEDULE_PAYOUTS.queryParams[name] ?? null }).filter).toEqual({
+    expect(
+      readReleaseQuery({ get: (name) => SCHEDULE_PAYOUTS.queryParams[name] ?? null }).filter,
+    ).toEqual({
       status: 'for-release',
     });
   });
@@ -670,8 +690,14 @@ describe('the dashboard keeps itself current (DL-222)', () => {
   });
 
   it('counts what its figures count: requests, payouts, referrals, the app', () => {
-    expect([...DASHBOARD_TOPICS].sort()).toEqual(
-      ['assistance-requests', 'digital-ids', 'programs', 'referrals', 'releases', 'users', 'verification'],
-    );
+    expect([...DASHBOARD_TOPICS].sort()).toEqual([
+      'assistance-requests',
+      'digital-ids',
+      'programs',
+      'referrals',
+      'releases',
+      'users',
+      'verification',
+    ]);
   });
 });

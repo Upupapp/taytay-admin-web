@@ -16,7 +16,7 @@ import { ARCHIVE_COPY } from './archive.copy';
   imports: [RouterLink],
   template: `
     <nav [attr.aria-label]="label()">
-      <ul class="tabs">
+      <ul class="tabs tabs--sub">
         <li>
           <a
             class="tab"

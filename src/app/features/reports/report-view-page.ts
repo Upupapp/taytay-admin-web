@@ -32,6 +32,7 @@ import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { ChartTable } from '@shared/ui/chart-table/chart-table';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { REPORTS_COPY } from './reports.copy';
@@ -61,7 +62,7 @@ import { REPORTS_COPY } from './reports.copy';
 @Component({
   selector: 'app-report-view-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, ChartTable, DisplayDatePipe, PageHeader, RouterLink],
+  imports: [AsyncContent, ChartTable, DisplayDatePipe, Icon, PageHeader, RouterLink],
   templateUrl: './report-view-page.html',
   styleUrl: './report-view-page.scss',
 })

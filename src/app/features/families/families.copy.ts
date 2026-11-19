@@ -50,7 +50,8 @@ export const FAMILIES_COPY = {
 
   create: {
     title: 'Record a family',
-    subtitle: 'Who belongs to whom — the people, each with their role, and where they live if anywhere.',
+    subtitle:
+      'Who belongs to whom — the people, each with their role, and where they live if anywhere.',
     back: 'Back to families',
     familyHeading: 'The family',
     name: 'Name',
@@ -85,8 +86,11 @@ export const FAMILIES_COPY = {
     householdChosen: 'Lives in:',
     chooseHousehold: 'Live here',
     changeHousehold: 'Choose another household',
-    householdFailed: 'The household register could not be searched. Try again, or record no household.',
+    householdFailed:
+      'The household register could not be searched. Try again, or record no household.',
     reason: 'Why is this family being recorded?',
+    /** The box's own label: the legend above already asks the question. */
+    reasonLabel: 'Reason',
     reasonHint: 'Required. Kept with the family and with each member’s joining, against your name.',
     reasonPlaceholder: 'e.g. Intake interview 12 August: mother and two children',
     submit: 'Record family',
@@ -202,7 +206,8 @@ export const FAMILIES_COPY = {
     'no-members': 'Add at least one member.',
     'too-many-members': 'A family is recorded with at most 30 members.',
     'duplicate-member': 'The same person is listed twice.',
-    'resident-not-found': 'A person listed is not on the registry, or is outside the area you cover.',
+    'resident-not-found':
+      'A person listed is not on the registry, or is outside the area you cover.',
     'household-not-found':
       'That household is not on the register, or is outside the area you cover.',
     'no-reason': 'Say why the family is being recorded.',

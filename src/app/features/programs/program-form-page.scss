@@ -2,10 +2,6 @@
    framed sections and the footer are `.form-section` / `.form-footer` from _patterns.scss.
    Shared with the requirement templates page. */
 
-.program-form {
-  max-inline-size: 960px;
-}
-
 .program-form__subheading {
   margin-block-start: var(--space-2);
   color: var(--ink);
@@ -57,9 +53,25 @@
   align-self: flex-start;
 }
 
-.program-form__checks {
+/* A remove sits at the end of its entry, in the same place on every entry. */
+.program-form__remove {
+  align-self: flex-end;
+}
+
+/* Eligibility parameters: a group under a sub-heading, every field the width of the section. */
+.program-form__group {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.program-form__checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr));
   gap: var(--space-2) var(--space-4);
   margin: 0;
   padding: 0;

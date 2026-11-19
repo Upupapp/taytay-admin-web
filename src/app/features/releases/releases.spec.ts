@@ -195,6 +195,24 @@ describe('the release queue', () => {
 
 /* ── Criterion: deferred and unclaimed are told apart on screen ───────────── */
 
+describe('the release filters on a phone (DL-227)', () => {
+  it('fold behind a Filters button that says whether they are showing', async () => {
+    const fixture = await openList();
+    const element = html(fixture);
+    const toggle = element.querySelector<HTMLButtonElement>('.releases__filters-toggle');
+    const filters = element.querySelector('#release-filters');
+
+    expect(toggle?.getAttribute('aria-controls')).toBe('release-filters');
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    expect(filters?.classList.contains('releases__secondary--closed')).toBe(true);
+
+    toggle?.click();
+    await fixture.whenStable();
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(filters?.classList.contains('releases__secondary--closed')).toBe(false);
+  });
+});
+
 describe('a deferral and an unclaimed payout read differently', () => {
   it('records the office’s account of a deferral, not the family’s absence', async () => {
     const element = html(await openDetail(DEFERRED));
@@ -416,18 +434,33 @@ describe('a release says how it is paid in words (DL-185)', () => {
 
     expect(release).not.toBeNull();
     if (release !== null) {
-      expect(how?.querySelector('dd')?.textContent?.trim()).toBe(PAYOUT_METHOD_LABELS[release.method]);
+      expect(how?.querySelector('dd')?.textContent?.trim()).toBe(
+        PAYOUT_METHOD_LABELS[release.method],
+      );
     }
   });
 });
 
 describe('opening a payout session is offered only to whoever may schedule (DL-185)', () => {
+  // The form is a dialog opened from the page's call to action (DL-227): the act is offered, or
+  // not, by that button.
+  const opener = (element: HTMLElement) =>
+    [...element.querySelectorAll('app-page-header button')].find(
+      (button) => button.textContent?.trim() === RELEASES_COPY.batches.openHeading,
+    );
+
   it('offers the form to the disbursing officer', async () => {
-    expect(html(await openSessions('release-officer')).querySelector('#open-heading')).not.toBeNull();
+    const fixture = await openSessions('release-officer');
+    const button = opener(html(fixture));
+    expect(button).toBeDefined();
+
+    (button as HTMLButtonElement | undefined)?.click();
+    await fixture.whenStable();
+    expect(html(fixture).querySelector('[role="dialog"] #session-title')).not.toBeNull();
   });
 
   it('withholds it from the auditor, who reads payouts and schedules none', async () => {
-    expect(html(await openSessions('auditor')).querySelector('#open-heading')).toBeNull();
+    expect(opener(html(await openSessions('auditor')))).toBeUndefined();
   });
 });
 
@@ -446,9 +479,7 @@ describe('the payout list carried to the table', () => {
     const element = html(fixture);
 
     expect(element.querySelector('.manifest__voucher')?.textContent).toContain('0311');
-    expect(element.querySelector('.manifest__voucher')?.textContent).not.toContain(
-      'DV-2026-00311',
-    );
+    expect(element.querySelector('.manifest__voucher')?.textContent).not.toContain('DV-2026-00311');
   });
 
   it('carries a name and a voucher, and nothing else about anybody', async () => {
@@ -546,6 +577,21 @@ describe('preparing a release for an approved request', () => {
     return fixture;
   }
 
+  it('opened without a request, reads nothing and says where one is chosen (F010)', async () => {
+    await configure(staffUser('release-officer'));
+    const requests = TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY);
+    const read = vi.spyOn(requests, 'getById');
+    const fixture = TestBed.createComponent(ReleasePreparePage);
+    // The router binds an absent `?request=` as undefined.
+    fixture.componentRef.setInput('request', undefined);
+    await fixture.whenStable();
+    expect(read).not.toHaveBeenCalled();
+    const element = html(fixture);
+    expect(element.querySelector('h1')?.textContent).toContain('Prepare a release');
+    expect(element.textContent).toContain('Choose an approved request to prepare');
+    expect(element.textContent).not.toContain('Could not load');
+  });
+
   it('links the request to its own record (DL-185)', async () => {
     const fixture = await openPrepare(APPROVED);
     const link = html(fixture).querySelector<HTMLAnchorElement>('#prepare-request-heading ~ p a');
@@ -590,7 +636,6 @@ describe('preparing a release for an approved request', () => {
     expect(element.querySelector('.btn--primary')).toBeNull();
   });
 });
-
 
 describe('"Try again" reads again (DL-185)', () => {
   it('re-runs the load after a failed read, and shows the record', async () => {

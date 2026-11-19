@@ -20,7 +20,10 @@
         </div>
       } @else {
         <div class="inbox__intro">
-          <p class="callout callout--warning inbox__notice">{{ copy.noName }}</p>
+          <p class="callout callout--warning inbox__notice">
+            <app-icon name="info" [size]="18" [stroke]="2" />
+            <span>{{ copy.noName }}</span>
+          </p>
           <p class="status-line inbox__order">{{ copy.order }}</p>
         </div>
         @if (officesUnnamed()) {
@@ -77,11 +80,19 @@
 </ng-template>
 
 <ng-template #officeCell let-thread>
+  @let name = officeName(thread);
   <span class="inbox__office">
     <span class="icon-tile icon-tile--sm icon-tile--soft" aria-hidden="true">
       <app-icon name="building" [size]="16" />
     </span>
-    {{ officeName(thread) }}
+    @if (officeShortName(name); as short) {
+      <span [title]="name">
+        <span aria-hidden="true">{{ short }}</span>
+        <span class="visually-hidden">{{ name }}</span>
+      </span>
+    } @else {
+      {{ name }}
+    }
   </span>
 </ng-template>
 

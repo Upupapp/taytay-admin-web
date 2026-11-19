@@ -11,7 +11,8 @@ export const REQUESTS_COPY = {
     // whoever began it, so a colleague's half-done intake can be finished rather than retyped.
     assignedTo: 'Assigned to',
     anyone: 'Anyone',
-    workersFailed: 'The list of social workers could not be read, so the list cannot be narrowed by one.',
+    workersFailed:
+      'The list of social workers could not be read, so the list cannot be narrowed by one.',
     caseloadNote:
       'Your caseload: the filed requests assigned to you for assessment. Requests not assigned to you, and unfinished intakes, are worked by others.',
     draftsHeading: 'Unfinished intakes',
@@ -24,7 +25,7 @@ export const REQUESTS_COPY = {
     resume: 'Resume',
     search: 'Search',
     // A control number and nothing else: a match on the reason says what is in somebody's file (DL-109).
-    searchPlaceholder: 'Part of a control number, e.g. TAY-2026',
+    searchPlaceholder: 'A control number, e.g. TAY-2026',
     searchHint: 'Searches control numbers only, never what a request is for.',
     order: 'Newest filing first.',
     status: 'Status',
@@ -55,7 +56,8 @@ export const REQUESTS_COPY = {
     noMore: 'That is every request matching these filters.',
     showMore: 'Show more',
     loadingMore: 'Loading more…',
-    moreFailed: 'The next requests could not be loaded. The ones above are still correct; try again.',
+    moreFailed:
+      'The next requests could not be loaded. The ones above are still correct; try again.',
     tryAgain: 'Try again',
   },
 
@@ -132,6 +134,11 @@ export const REQUESTS_COPY = {
 
   assessment: {
     subtitle: 'Assessment',
+    /**
+     * The header says what this record is and where it stands now. A fixed page name ("Assessment")
+     * read as the request's stage, beside a badge that said Released (UI audit F029).
+     */
+    headerSubtitle: (programme: string, status: string) => `${programme} · ${status}`,
     notFoundHeading: 'That request is not available',
     notFoundMessage:
       'The request does not exist, or it is outside the part of the municipality you cover.',
@@ -261,7 +268,8 @@ export const REQUESTS_COPY = {
 
     notesHeading: 'Notes',
     noNotes: 'No note has been written on this request.',
-    notesFailed: 'The notes could not be read, so none is shown — which is not the same as there being none.',
+    notesFailed:
+      'The notes could not be read, so none is shown — which is not the same as there being none.',
     notesLoading: 'Reading the notes…',
     noteWithheld: 'Withheld — this note is not shown to your account.',
     noteBody: 'Add a note',
@@ -308,9 +316,11 @@ export const REQUESTS_COPY = {
     selfApproveWarning:
       'You endorsed this request yourself. Approving it means no second person checked your recommendation, which the office normally separates. It will be recorded, in its history and the audit trail, as approved by the person who endorsed it. You may still approve it; ask another approver to decide it if one is available.',
     approveProblems: {
-      amountUnreadable: 'Enter the approved amount in pesos, like 3,000 or 3,000.50. Nothing was sent.',
+      amountUnreadable:
+        'Enter the approved amount in pesos, like 3,000 or 3,000.50. Nothing was sent.',
       'amount-not-positive': 'The approved amount has to be more than nothing. Nothing was sent.',
-      'amount-too-large': 'That amount is beyond what the office record can hold. Nothing was sent.',
+      'amount-too-large':
+        'That amount is beyond what the office record can hold. Nothing was sent.',
       'goods-missing': 'Say what goods are approved. Nothing was sent.',
       'goods-too-long': 'Describe the goods in 300 characters or fewer. Nothing was sent.',
       reasonShort: 'Say why it is approved, in 8 characters or more. Nothing was sent.',

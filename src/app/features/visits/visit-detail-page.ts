@@ -30,6 +30,7 @@ import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -49,7 +50,7 @@ export const VISIT_DETAIL_TOPICS: readonly LiveTopic[] = ['visits'];
 @Component({
   selector: 'app-visit-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DisplayDatePipe, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, DisplayDatePipe, Icon, PageHeader, RouterLink, StatusBadge],
   templateUrl: './visit-detail-page.html',
   styleUrl: './visit-detail-page.scss',
 })

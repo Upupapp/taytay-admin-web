@@ -19,14 +19,17 @@ export const REFERRALS_COPY = {
     linkChoose: 'Choose one of your cases or requests',
     linkCase: 'Case',
     linkRequest: 'Request',
-    linkHint: 'Open cases and filed requests about this person. A link lets whoever holds the case read the referral.',
+    linkHint:
+      'Open cases and filed requests about this person. A link lets whoever holds the case read the referral.',
     linkHintCaseload:
       'Only your assigned cases and requests are listed. The referral is about the person the one you choose is about.',
     linksLoading: 'Reading the cases and requests it could be about…',
-    linksFailed: 'The cases and requests could not be read, so none can be linked. Reload the page to try again.',
+    linksFailed:
+      'The cases and requests could not be read, so none can be linked. Reload the page to try again.',
     linksNoneOfYours:
       'You hold no open case and no request to refer from. A referral from your caseload names one of them; ask whoever assigns the work.',
-    linksMore: 'Only the most recent are listed; more exist. Open the case or request to find an older one.',
+    linksMore:
+      'Only the most recent are listed; more exist. Open the case or request to find an older one.',
     providerLabel: 'Choose from the directory',
     providerHint: 'Choosing one fills the name and contact from the directory record.',
     providerNone: 'Not in the directory',
@@ -37,6 +40,7 @@ export const REFERRALS_COPY = {
     serviceLabel: 'What are they being referred for?',
     reasonLabel: 'Why?',
     createAction: 'Create the draft',
+    composeCancel: 'Cancel',
     creating: 'Creating…',
     draftCreated: 'The draft was created. Nothing has been sent.',
     draftNotCreated: 'That draft was NOT created. Nothing was saved.',
@@ -47,7 +51,8 @@ export const REFERRALS_COPY = {
     noMore: 'That is every referral matching these filters.',
     showMore: 'Show more',
     loadingMore: 'Loading more…',
-    moreFailed: 'The next referrals could not be loaded. The ones above are still correct; try again.',
+    moreFailed:
+      'The next referrals could not be loaded. The ones above are still correct; try again.',
     directory: 'Service providers',
 
     search: 'Search',
@@ -65,7 +70,9 @@ export const REFERRALS_COPY = {
     notNarrowed: (what: readonly ('barangay' | 'category')[]) =>
       `Opened from a dashboard figure narrowed by ${what
         .map((entry) => (entry === 'barangay' ? 'barangay' : 'programme type'))
-        .join(' and ')}. The referral list cannot be narrowed that way, so it may hold more referrals than the figure counted.`,
+        .join(
+          ' and ',
+        )}. The referral list cannot be narrowed that way, so it may hold more referrals than the figure counted.`,
 
     caption: 'Referrals, with their status and follow-up date',
     columnReference: 'Reference',
@@ -95,7 +102,8 @@ export const REFERRALS_COPY = {
       'Once this is sent it has left the office. Nothing here can recall it, and the receiving organisation keeps whatever it was given.',
     basisLabel: 'On what lawful basis?',
     basisNoteLabel: 'What makes that true here?',
-    basisNoteHint: 'Recorded against your name with the basis. A reader six months from now sees this sentence, not the checkbox.',
+    basisNoteHint:
+      'Recorded against your name with the basis. A reader six months from now sees this sentence, not the checkbox.',
     recordBasisAction: 'Record this lawful basis',
     basisSaved: 'The lawful basis was recorded.',
     shareHeading: 'What may be shared beyond the minimum',
@@ -188,6 +196,8 @@ export const REFERRALS_COPY = {
     retired: 'No longer used. Kept so past referrals still make sense.',
 
     emptyHeading: 'No providers on file',
-    emptyMessage: 'Offices this one refers to would be listed here.',
+    emptyMessage:
+      'Offices this one refers to are listed here once they are added to the directory. They are ' +
+      'added outside this console: nothing here adds one.',
   },
 } as const;

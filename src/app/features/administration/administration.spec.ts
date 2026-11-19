@@ -191,7 +191,9 @@ describe('the audit trail', () => {
     await configure('mswdo-head', 'staff-head');
 
     await expect(
-      firstValueFrom(TestBed.inject(GOVERNANCE_REPOSITORY).auditDetail(asId<AuditEntryId>('aud-0002'))),
+      firstValueFrom(
+        TestBed.inject(GOVERNANCE_REPOSITORY).auditDetail(asId<AuditEntryId>('aud-0002')),
+      ),
     ).rejects.toThrow();
   });
 
@@ -227,6 +229,41 @@ describe('the permission matrix', () => {
     const tags = [...element.querySelectorAll('.matrix__tag--sensitive')];
 
     expect(tags.length).toBeGreaterThan(0);
+  });
+
+  it('groups the permissions under the module they belong to, once each', async () => {
+    const element = html(await open('/administration/roles', RolesPage));
+    const groups = [...element.querySelectorAll('.matrix__group th')].map((node) =>
+      (node.textContent ?? '').trim(),
+    );
+
+    expect(groups).toContain('Residents');
+    // `case` keys sit either side of `case-note` keys: still one Cases heading.
+    expect(groups.filter((label) => label === 'Cases')).toHaveLength(1);
+  });
+
+  it('lets a narrow screen show one role at a time, chosen by name', async () => {
+    const fixture = await open('/administration/roles', RolesPage);
+    const element = html(fixture);
+    const select = element.querySelector<HTMLSelectElement>('.matrix__choice select');
+    if (select === null) {
+      throw new Error('no role choice');
+    }
+    const headers = [...element.querySelectorAll('thead .matrix__role')];
+    expect(select.options.length).toBe(headers.length);
+
+    const second = select.options[1];
+    if (second === undefined) {
+      throw new Error('fewer than two roles');
+    }
+    select.value = second.value;
+    select.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+
+    const shown = headers.filter((header) => !header.classList.contains('matrix__col--other'));
+    expect(shown.map((header) => (header.textContent ?? '').trim())).toEqual([
+      (second.textContent ?? '').trim(),
+    ]);
   });
 
   it('shows no separation-of-duties breach', async () => {

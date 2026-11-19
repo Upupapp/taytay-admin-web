@@ -11,7 +11,9 @@ import { ERRORS_COPY } from './errors.copy';
   imports: [EmptyState],
   template: `
     <div class="card card--panel card--padded notice-page">
+      <!-- The search illustration: looked for and not found. The inbox tile is the empty inbox's. -->
       <app-empty-state
+        variant="no-results"
         [headingLevel]="1"
         [heading]="copy.notFoundHeading"
         [message]="copy.notFoundBody"

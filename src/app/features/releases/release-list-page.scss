@@ -13,6 +13,32 @@
   min-block-size: var(--h-btn);
 }
 
+/* The filters past the search lay out as the toolbar's own fields; on a phone they fold behind
+   the Filters button, which is drawn only there (DL-227, pass 2). */
+.releases__secondary {
+  display: contents;
+}
+
+.releases__filters-toggle {
+  display: none;
+}
+
+@media (width <= 640px) {
+  .releases__filters-toggle {
+    display: inline-flex;
+    align-self: flex-start;
+  }
+
+  .releases__secondary--closed {
+    display: none;
+  }
+
+  .releases__secondary > .field {
+    flex: 1 1 100%;
+    max-inline-size: none;
+  }
+}
+
 .releases__empty {
   align-items: center;
   padding-block: var(--space-6);
@@ -82,4 +108,25 @@
 .release-rows__remarks {
   color: var(--text2);
   font-size: var(--fs-xs);
+}
+
+/* Wider than a phone, a row reads across in columns — reference and status, then what is handed
+   over, then when — rather than filling the left 300px of an 800px row (DL-227, pass 2). */
+@media (width > 640px) {
+  .release-rows__item {
+    display: grid;
+    grid-template-columns: minmax(14rem, 1fr) minmax(0, 2fr);
+    align-items: center;
+    column-gap: var(--space-4);
+  }
+
+  .release-rows__meta {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(8rem, 2fr);
+    font-size: var(--fs-label);
+  }
+
+  .release-rows__remarks {
+    grid-column: 1 / -1;
+  }
 }

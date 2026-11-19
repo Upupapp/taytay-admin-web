@@ -2,153 +2,170 @@
   <a page-actions *appHasPermission="'referral.view'" class="btn" routerLink="/referrals/providers">
     {{ copy.directory }}
   </a>
+  @if (canCompose()) {
+    <button page-actions type="button" class="btn btn--primary" (click)="composeOpen.set(true)">
+      <app-icon name="plus" [stroke]="2.2" /> {{ copy.composeHeading }}
+    </button>
+  }
 </app-page-header>
 
 @if (canCompose()) {
   <!--
-    Composing sits above the list. The list is what the office has already done; this is the act.
+    The list first, as on every list page; composing is the page's act, behind its button, in a
+    centred dialog (DL-227). Nothing about what a referral asks for changed.
   -->
-  <section
-    class="card card--panel card--padded referrals__compose"
-    aria-labelledby="compose-heading"
+  <app-modal
+    [(open)]="composeOpen"
+    size="large"
+    [heading]="copy.composeHeading"
+    [description]="copy.composeHint"
   >
-    <h2 class="section-title section-title--display referrals__heading" id="compose-heading">
-      {{ copy.composeHeading }}
-    </h2>
-    <p class="status-line referrals__hint">{{ copy.composeHint }}</p>
+    <div modal-body class="referrals__compose">
+      <!--
+        What the referral is about (DL-185). A caseload starts from its own cases and requests — the
+        registry's search is closed to it (DL-183) and the server refuses its draft without a link —
+        and the client is that record's person. Anybody else names the person, then may link one of
+        their open cases or filed requests.
+      -->
+      @if (!isCaseload()) {
+        <app-person-picker [label]="copy.clientLabel" (chosen)="onClient($event)" />
+      }
 
-    <!--
-      What the referral is about (DL-185). A caseload starts from its own cases and requests — the
-      registry's search is closed to it (DL-183) and the server refuses its draft without a link —
-      and the client is that record's person. Anybody else names the person, then may link one of
-      their open cases or filed requests.
-    -->
-    @if (!isCaseload()) {
-      <app-person-picker [label]="copy.clientLabel" (chosen)="onClient($event)" />
-    }
-
-    @if (isCaseload() || client() !== null) {
-      @switch (linkState().kind) {
-        @case ('loading') {
-          <p class="status-line referrals__hint" role="status">{{ copy.linksLoading }}</p>
-        }
-        @case ('error') {
-          <p class="callout callout--danger referrals__problem" role="alert">
-            {{ copy.linksFailed }}
-          </p>
-        }
-        @default {
-          @if (isCaseload() && linkOptions().length === 0) {
-            <p class="status-line referrals__hint" role="note">{{ copy.linksNoneOfYours }}</p>
-          } @else {
-            <label class="field" for="compose-link">
-              <span class="field__label">
-                {{ isCaseload() ? copy.linkLabelCaseload : copy.linkLabel }}
-              </span>
-              <select id="compose-link" class="field__input" (change)="onLink($event)">
-                <option value="" [selected]="link() === null">
-                  {{ isCaseload() ? copy.linkChoose : copy.linkNone }}
-                </option>
-                @for (option of linkOptions(); track linkKey(option)) {
-                  <option [value]="linkKey(option)" [selected]="link() === option">
-                    {{ option.kind === 'case' ? copy.linkCase : copy.linkRequest }}
-                    {{ option.label }}
+      @if (isCaseload() || client() !== null) {
+        @switch (linkState().kind) {
+          @case ('loading') {
+            <p class="status-line referrals__hint" role="status">{{ copy.linksLoading }}</p>
+          }
+          @case ('error') {
+            <p class="callout callout--danger referrals__problem" role="alert">
+              {{ copy.linksFailed }}
+            </p>
+          }
+          @default {
+            @if (isCaseload() && linkOptions().length === 0) {
+              <p class="status-line referrals__hint" role="note">{{ copy.linksNoneOfYours }}</p>
+            } @else {
+              <label class="field" for="compose-link">
+                <span class="field__label">
+                  {{ isCaseload() ? copy.linkLabelCaseload : copy.linkLabel }}
+                </span>
+                <select id="compose-link" class="field__input" (change)="onLink($event)">
+                  <option value="" [selected]="link() === null">
+                    {{ isCaseload() ? copy.linkChoose : copy.linkNone }}
                   </option>
-                }
-              </select>
-              <span class="field__hint">
-                {{ isCaseload() ? copy.linkHintCaseload : copy.linkHint }}
-              </span>
-            </label>
-            @if (linkMore()) {
-              <p class="status-line referrals__hint" role="note">{{ copy.linksMore }}</p>
+                  @for (option of linkOptions(); track linkKey(option)) {
+                    <option [value]="linkKey(option)" [selected]="link() === option">
+                      {{ option.kind === 'case' ? copy.linkCase : copy.linkRequest }}
+                      {{ option.label }}
+                    </option>
+                  }
+                </select>
+                <span class="field__hint">
+                  {{ isCaseload() ? copy.linkHintCaseload : copy.linkHint }}
+                </span>
+              </label>
+              @if (linkMore()) {
+                <p class="status-line referrals__hint" role="note">{{ copy.linksMore }}</p>
+              }
             }
           }
         }
       }
-    }
 
-    <label class="field" for="compose-provider">
-      <span class="field__label">{{ copy.providerLabel }}</span>
-      <select id="compose-provider" class="field__input" (change)="chooseProvider($event)">
-        <option value="">{{ copy.providerNone }}</option>
-        @for (provider of providers(); track provider.id) {
-          <option [value]="provider.id">{{ provider.name }}</option>
-        }
-      </select>
-      <span class="field__hint">{{ copy.providerHint }}</span>
-    </label>
+      <label class="field" for="compose-provider">
+        <span class="field__label">{{ copy.providerLabel }}</span>
+        <select id="compose-provider" class="field__input" (change)="chooseProvider($event)">
+          <option value="">{{ copy.providerNone }}</option>
+          @for (provider of providers(); track provider.id) {
+            <option [value]="provider.id">{{ provider.name }}</option>
+          }
+        </select>
+        <span class="field__hint">{{ copy.providerHint }}</span>
+      </label>
 
-    <label class="field" for="compose-destination">
-      <span class="field__label">{{ copy.destinationLabel }}</span>
-      <select id="compose-destination" class="field__input" (change)="onComposeDestination($event)">
-        @for (option of destinationOptions; track option) {
-          <option [value]="option" [selected]="option === destination()">
-            {{ destinationLabels[option] }}
-          </option>
-        }
-      </select>
-    </label>
+      <label class="field" for="compose-destination">
+        <span class="field__label">{{ copy.destinationLabel }}</span>
+        <select
+          id="compose-destination"
+          class="field__input"
+          (change)="onComposeDestination($event)"
+        >
+          @for (option of destinationOptions; track option) {
+            <option [value]="option" [selected]="option === destination()">
+              {{ destinationLabels[option] }}
+            </option>
+          }
+        </select>
+      </label>
 
-    <label class="field" for="compose-destination-name">
-      <span class="field__label">{{ copy.destinationNameLabel }}</span>
-      <input
-        id="compose-destination-name"
-        class="field__input"
-        type="text"
-        [value]="destinationName()"
-        (input)="onDestinationName($event)"
-      />
-    </label>
+      <label class="field" for="compose-destination-name">
+        <span class="field__label">{{ copy.destinationNameLabel }}</span>
+        <input
+          id="compose-destination-name"
+          class="field__input"
+          type="text"
+          [value]="destinationName()"
+          (input)="onDestinationName($event)"
+        />
+      </label>
 
-    <label class="field" for="compose-contact">
-      <span class="field__label">{{ copy.destinationContactLabel }}</span>
-      <input
-        id="compose-contact"
-        class="field__input"
-        type="text"
-        [value]="destinationContact()"
-        (input)="onDestinationContact($event)"
-      />
-    </label>
+      <label class="field" for="compose-contact">
+        <span class="field__label">{{ copy.destinationContactLabel }}</span>
+        <input
+          id="compose-contact"
+          class="field__input"
+          type="text"
+          [value]="destinationContact()"
+          (input)="onDestinationContact($event)"
+        />
+      </label>
 
-    <label class="field" for="compose-urgency">
-      <span class="field__label">{{ copy.urgencyLabel }}</span>
-      <select id="compose-urgency" class="field__input" (change)="onComposeUrgency($event)">
-        @for (option of urgencyOptions; track option) {
-          <option [value]="option" [selected]="option === urgency()">
-            {{ urgencyLabels[option] }}
-          </option>
-        }
-      </select>
-    </label>
+      <label class="field" for="compose-urgency">
+        <span class="field__label">{{ copy.urgencyLabel }}</span>
+        <select id="compose-urgency" class="field__input" (change)="onComposeUrgency($event)">
+          @for (option of urgencyOptions; track option) {
+            <option [value]="option" [selected]="option === urgency()">
+              {{ urgencyLabels[option] }}
+            </option>
+          }
+        </select>
+      </label>
 
-    <label class="field" for="compose-service">
-      <span class="field__label">{{ copy.serviceLabel }}</span>
-      <input
-        id="compose-service"
-        class="field__input"
-        type="text"
-        [value]="serviceRequested()"
-        (input)="onService($event)"
-      />
-    </label>
+      <label class="field" for="compose-service">
+        <span class="field__label">{{ copy.serviceLabel }}</span>
+        <input
+          id="compose-service"
+          class="field__input"
+          type="text"
+          [value]="serviceRequested()"
+          (input)="onService($event)"
+        />
+      </label>
 
-    <label class="field" for="compose-reason">
-      <span class="field__label">{{ copy.reasonLabel }}</span>
-      <input
-        id="compose-reason"
-        class="field__input"
-        type="text"
-        [value]="reason()"
-        (input)="onReason($event)"
-      />
-    </label>
-
-    <button type="button" class="btn btn--primary" [disabled]="!canCreate()" (click)="create()">
+      <label class="field" for="compose-reason">
+        <span class="field__label">{{ copy.reasonLabel }}</span>
+        <input
+          id="compose-reason"
+          class="field__input"
+          type="text"
+          [value]="reason()"
+          (input)="onReason($event)"
+        />
+      </label>
+    </div>
+    <button modal-actions type="button" class="btn btn--secondary" (click)="composeOpen.set(false)">
+      {{ copy.composeCancel }}
+    </button>
+    <button
+      modal-actions
+      type="button"
+      class="btn btn--primary"
+      [disabled]="!canCreate()"
+      (click)="create()"
+    >
       {{ composing() ? copy.creating : copy.createAction }}
     </button>
-  </section>
+  </app-modal>
 }
 
 <section class="card card--panel card--padded stack referrals" [attr.aria-label]="copy.caption">

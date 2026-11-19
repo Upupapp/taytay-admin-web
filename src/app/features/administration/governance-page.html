@@ -1,10 +1,13 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions class="btn" routerLink="/administration/staff">{{ copy.back }}</a>
-</app-page-header>
+<a class="back-link" routerLink="/administration/staff">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
+
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
 <div class="governance">
   <section class="card card--padded section" aria-labelledby="classification-heading">
-    <h2 class="section-title section-title--display" id="classification-heading">
+    <h2 class="section-title" id="classification-heading">
       {{ copy.classificationHeading }}
     </h2>
     <p class="section__notice">{{ copy.classificationNotice }}</p>
@@ -16,30 +19,34 @@
     >
       <ng-template #classificationContent>
         <div class="table-scroll table__scroll" [appScrollRegion]="copy.classificationHeading">
-          <table class="simple-table table">
-            <caption class="table__caption">
+          <!-- The card's heading already names the table: the caption is for a reader who
+               arrives at the table on its own. Stacked on a phone, with explicit roles. -->
+          <table class="simple-table simple-table--stack table" role="table">
+            <caption class="visually-hidden">
               {{
                 copy.classificationHeading
               }}
             </caption>
-            <thead>
-              <tr>
-                <th scope="col">{{ copy.columnRecord }}</th>
-                <th scope="col">{{ copy.columnClassification }}</th>
-                <th scope="col">{{ copy.columnHolds }}</th>
+            <thead role="rowgroup">
+              <tr role="row">
+                <th scope="col" role="columnheader">{{ copy.columnRecord }}</th>
+                <th scope="col" role="columnheader">{{ copy.columnClassification }}</th>
+                <th scope="col" role="columnheader">{{ copy.columnHolds }}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
               @for (type of classifications(); track type.key) {
-                <tr>
-                  <th scope="row">{{ type.label }}</th>
-                  <td>
+                <tr role="row">
+                  <th scope="row" role="rowheader">{{ type.label }}</th>
+                  <td role="cell" [attr.data-label]="copy.columnClassification">
                     <app-status-badge
                       [catalog]="classificationCatalog"
                       [status]="type.classification"
                     />
                   </td>
-                  <td class="table__holds">{{ type.holds }}</td>
+                  <td role="cell" class="table__holds" [attr.data-label]="copy.columnHolds">
+                    {{ type.holds }}
+                  </td>
                 </tr>
               }
             </tbody>
@@ -60,7 +67,7 @@
   </section>
 
   <section class="card card--padded section" aria-labelledby="retention-heading">
-    <h2 class="section-title section-title--display" id="retention-heading">
+    <h2 class="section-title" id="retention-heading">
       {{ copy.retentionHeading }}
     </h2>
     <!-- Empty on purpose. An invented retention period is the one invented
@@ -84,7 +91,7 @@
   </section>
 
   <section class="card card--padded section" aria-labelledby="correction-heading">
-    <h2 class="section-title section-title--display" id="correction-heading">
+    <h2 class="section-title" id="correction-heading">
       {{ copy.correctionHeading }}
     </h2>
     <p class="section__notice">{{ copy.correctionNotice }}</p>

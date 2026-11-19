@@ -1,5 +1,10 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions *appHasPermission="'resident.create'" class="btn btn--primary" routerLink="/residents/new">
+  <a
+    page-actions
+    *appHasPermission="'resident.create'"
+    class="btn btn--primary"
+    routerLink="/residents/new"
+  >
     <app-icon name="plus" [stroke]="2.2" />
     {{ copy.register }}
   </a>
@@ -105,7 +110,9 @@
           @if (figure.compared) {
             <span class="kpi__hint">{{ deltaText(figure.delta) }}</span>
           }
-          <span class="kpi__hint">{{ figure.value === null ? copy.withheldHint : figure.hint }}</span>
+          <span class="kpi__hint">{{
+            figure.value === null ? copy.withheldHint : figure.hint
+          }}</span>
           @if (figure.key === 'registered') {
             <span class="kpi__hint">{{ copy.notLinked }}</span>
           }
@@ -168,7 +175,7 @@
               <strong>{{ item.count === null ? '—' : item.count }}</strong>
               {{ tidyLabel(item) }}
             </span>
-            <span class="soft-row__meta">{{ item.basis }}</span>
+            <span class="soft-row__meta">{{ readableBasis(item.basis) }}</span>
             @if (item.count === null) {
               <span class="soft-row__meta">{{ copy.tidyNotRun }}</span>
             } @else if (item.lastRunAt; as lastRun) {
@@ -193,6 +200,9 @@
   <aside class="note-box overview__disclosure" aria-labelledby="overview-disclosure">
     <h2 id="overview-disclosure" class="section-title">{{ copy.disclosureHeading }}</h2>
     <p>{{ copy.disclosure(summary.disclosure.threshold) }}</p>
-    <p>{{ summary.disclosure.basis }} {{ summary.disclosure.provenance }}</p>
+    <p>{{ readableBasis(summary.disclosure.basis) }}</p>
+    @if (provenanceWords(summary.disclosure.provenance); as words) {
+      <p>{{ words }}</p>
+    }
   </aside>
 </ng-template>

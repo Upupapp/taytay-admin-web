@@ -53,7 +53,8 @@ export const BENEFICIARIES_COPY = {
     duplicateFlagHint: 'Another record on file resembles this one.',
 
     emptyHeading: 'Nobody on file yet',
-    emptyMessage: 'Once requests are filed and assistance is released, the people served appear here.',
+    emptyMessage:
+      'Once requests are filed and assistance is released, the people served appear here.',
     noResultsHeading: 'No one matches those filters',
     noResultsMessage: 'Try a wider period, or clear the filters to see everyone.',
 
@@ -93,7 +94,8 @@ export const BENEFICIARIES_COPY = {
     totalReceived: 'Total received',
     goodsReceived: (count: number): string =>
       `+ ${count} ${count === 1 ? 'release' : 'releases'} of goods, counted rather than valued`,
-    totalReceivedHint: 'Counts only assistance actually handed over — never what was merely approved.',
+    totalReceivedHint:
+      'Counts only assistance actually handed over — never what was merely approved.',
     eventCount: 'Recorded events',
     openCases: 'Open cases',
 
@@ -143,6 +145,7 @@ export const BENEFICIARIES_COPY = {
     loadingMore: 'Loading more…',
     moreFailed: 'The next pairs could not be loaded. The ones above are still correct; try again.',
     columnRecords: 'Records',
+    columnActions: 'Actions',
     columnStrength: 'Resemblance',
     columnAgreement: 'What agrees',
     columnAction: '',
@@ -186,9 +189,28 @@ export const BENEFICIARIES_COPY = {
     canonicalHeading: 'Which record does the office keep using?',
     canonicalHint: 'The other record stays readable and keeps its history.',
 
+    /*
+     * Both records carry the same masked name, so each is told apart by what it holds and whether
+     * an app account reads it — read from the finding's own previews, never a compared value such
+     * as a birth date or barangay (DL-73, UI audit F021).
+     */
+    reviewHeading: 'Review this pair',
+    reviewHint:
+      'Compare the two records, then record what the office finds. Nothing is merged or deleted.',
+    recordsHeading: 'The two records',
+    recordFirst: 'First record',
+    recordSecond: 'Second record',
+    recordHolds: (requests: number, releases: number, cases: number): string =>
+      `Holds ${requests} assistance request${requests === 1 ? '' : 's'}, ${releases} release${releases === 1 ? '' : 's'} and ${cases} open case${cases === 1 ? '' : 's'}.`,
+    recordAccount: 'A resident’s app account is linked to it.',
+    recordNoAccount: 'No resident’s app account is linked to it.',
+    recordUnread: 'What this record holds could not be read.',
+    recordReading: 'Reading what this record holds…',
+
     reasonLabel: 'Why (required)',
     reasonPlaceholder: 'What did you check, and with whom?',
-    reasonHint: 'Recorded against your name. Somebody reading this later needs to be able to follow it.',
+    reasonHint:
+      'Recorded against your name. Somebody reading this later needs to be able to follow it.',
 
     previewHeading: 'What this finding carries across',
     previewRequests: 'Assistance requests',

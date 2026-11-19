@@ -172,7 +172,7 @@
 </ng-template>
 
 <ng-template #standingCell let-row>
-  <span class="standing">{{ standingOf(row) }}</span>
+  <span class="standing beneficiaries__nowrap">{{ standingOf(row) }}</span>
 </ng-template>
 
 <!-- "Not enrolled" is a finding about the person; where membership is not
@@ -211,8 +211,10 @@
 
 <ng-template #lastCell let-row>
   @if (row.lastAssistanceAt) {
-    <time [attr.datetime]="row.lastAssistanceAt">{{ row.lastAssistanceAt | relativeTime }}</time>
+    <time class="beneficiaries__nowrap" [attr.datetime]="row.lastAssistanceAt">{{
+      row.lastAssistanceAt | relativeTime
+    }}</time>
   } @else {
-    <span class="beneficiaries__none">{{ copy.neverAssisted }}</span>
+    <span class="beneficiaries__none beneficiaries__nowrap">{{ copy.neverAssisted }}</span>
   }
 </ng-template>

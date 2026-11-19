@@ -1,6 +1,8 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions class="btn" routerLink="/work">{{ copy.back }}</a>
-</app-page-header>
+<a class="back-link" routerLink="/work">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
 <div class="team">
   <app-async-content

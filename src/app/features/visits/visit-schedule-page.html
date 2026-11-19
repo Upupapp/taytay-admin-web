@@ -1,119 +1,146 @@
-<app-async-content
-  [state]="state()"
-  [content]="body"
-  [skeletonLines]="6"
-  (retryRequested)="retry()"
->
-  <ng-template #body let-workspace>
-    @if (workspace === null) {
-      <app-page-header [title]="copy.noCaseHeading" [subtitle]="copy.noCaseMessage" />
-      <p>
-        <a class="btn" routerLink="/cases">{{ copy.backToCases }}</a>
-      </p>
-    } @else {
-      <app-page-header [title]="copy.title" [subtitle]="workspace.record.referenceNumber">
-        <a page-actions class="btn" [routerLink]="['/cases', workspace.record.id]">{{
-          copy.backToCase
-        }}</a>
-      </app-page-header>
+<!-- The title and the way back stand outside the read, so a failure still says which page it is (F019). -->
+@if (workspace(); as loaded) {
+  <a class="back-link" [routerLink]="['/cases', loaded.record.id]">
+    <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+    {{ copy.backToCase }}
+  </a>
+  <app-page-header [title]="copy.title" [subtitle]="loaded.record.referenceNumber" />
+} @else {
+  <a class="back-link" routerLink="/visits">
+    <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+    {{ copy.backToVisits }}
+  </a>
+  <app-page-header [title]="copy.title" />
+}
 
-      <section
-        class="card card--panel card--padded form-panel schedule"
-        aria-labelledby="schedule-heading"
-      >
-        <h2 class="section-title section-title--display schedule__heading" id="schedule-heading">
-          {{ workspace.subject.fullName }}
-        </h2>
-        <!-- Said before the form, not after it: a visit holds an address, never a whereabouts. -->
-        <p class="status-line schedule__hint">{{ copy.noLocation }}</p>
-
-        @if (workspace.record.status === 'closed') {
-          <p class="callout callout--danger schedule__problem" role="alert">
-            {{ copy.caseClosed }}
-          </p>
-        }
-
-        <label class="field">
-          <span class="field__label">{{ copy.purpose }}</span>
-          <select class="field__input" (change)="onPurpose($event)">
-            @for (value of purposes; track value) {
-              <option [value]="value" [selected]="purpose() === value">
-                {{ purposeLabel(value) }}
-              </option>
-            }
-          </select>
-        </label>
-
-        <label class="field">
-          <span class="field__label">{{ copy.date }}</span>
-          <input
-            class="field__input"
-            type="date"
-            [min]="today"
-            [value]="scheduledFor()"
-            (input)="onDate($event)"
+@if (caseId() === '') {
+  <!-- Opened without a case: nothing is read, and the page says where a visit is scheduled from. -->
+  <section class="card card--panel card--padded">
+    <app-empty-state
+      [heading]="copy.chooseHeading"
+      [message]="copy.noCaseMessage"
+      [actionLabel]="copy.chooseAction"
+      (actionSelected)="chooseCase()"
+    />
+  </section>
+} @else {
+  <app-async-content
+    [state]="state()"
+    [content]="body"
+    [skeletonLines]="6"
+    (retryRequested)="retry()"
+  >
+    <ng-template #body let-workspace>
+      @if (workspace === null) {
+        <section class="card card--panel card--padded">
+          <app-empty-state
+            [heading]="copy.noCaseHeading"
+            [message]="copy.noCaseMessage"
+            [actionLabel]="copy.chooseAction"
+            (actionSelected)="chooseCase()"
           />
-        </label>
+        </section>
+      } @else {
+        <section
+          class="card card--panel card--padded form-panel schedule"
+          aria-labelledby="schedule-heading"
+        >
+          <h2 class="section-title section-title--display schedule__heading" id="schedule-heading">
+            {{ workspace.subject.fullName }}
+          </h2>
+          <!-- Said before the form, not after it: a visit holds an address, never a whereabouts. -->
+          <p class="status-line schedule__hint">{{ copy.noLocation }}</p>
 
-        <label class="field">
-          <span class="field__label">{{ copy.window }}</span>
-          <input
-            class="field__input"
-            type="text"
-            maxlength="80"
-            [placeholder]="copy.windowPlaceholder"
-            [value]="scheduledWindow()"
-            (input)="onWindow($event)"
-          />
-        </label>
+          @if (workspace.record.status === 'closed') {
+            <p class="callout callout--danger schedule__problem" role="alert">
+              {{ copy.caseClosed }}
+            </p>
+          }
 
-        <label class="field">
-          <span class="field__label">{{ copy.address }}</span>
-          <input
-            class="field__input"
-            type="text"
-            maxlength="300"
-            [value]="address()"
-            (input)="onAddress($event)"
-          />
-          <span class="field__hint">{{ copy.addressHint }}</span>
-        </label>
-
-        @if (workers().length === 0) {
-          <p class="callout callout--danger schedule__problem" role="alert">{{ copy.noWorker }}</p>
-        } @else {
           <label class="field">
-            <span class="field__label">{{ copy.worker }}</span>
-            <select class="field__input" (change)="onWorker($event)">
-              @for (option of workers(); track option.id) {
-                <option [value]="option.id" [selected]="worker() === option.id">
-                  {{ option.name }}
+            <span class="field__label">{{ copy.purpose }}</span>
+            <select class="field__input" (change)="onPurpose($event)">
+              @for (value of purposes; track value) {
+                <option [value]="value" [selected]="purpose() === value">
+                  {{ purposeLabel(value) }}
                 </option>
               }
             </select>
-            <span class="field__hint">{{ copy.workerHint }}</span>
           </label>
-        }
 
-        <h3 class="section-title schedule__subheading">{{ copy.checklistHeading }}</h3>
-        <p class="status-line schedule__hint">{{ copy.checklistHint }}</p>
-        <ul class="effects schedule__prompts">
-          @for (prompt of prompts; track prompt.code) {
-            <li>{{ prompt.label }}</li>
+          <label class="field">
+            <span class="field__label">{{ copy.date }}</span>
+            <input
+              class="field__input"
+              type="date"
+              [min]="today"
+              [value]="scheduledFor()"
+              (input)="onDate($event)"
+            />
+          </label>
+
+          <label class="field">
+            <span class="field__label">{{ copy.window }}</span>
+            <input
+              class="field__input"
+              type="text"
+              maxlength="80"
+              [placeholder]="copy.windowPlaceholder"
+              [value]="scheduledWindow()"
+              (input)="onWindow($event)"
+            />
+          </label>
+
+          <label class="field">
+            <span class="field__label">{{ copy.address }}</span>
+            <input
+              class="field__input"
+              type="text"
+              maxlength="300"
+              [value]="address()"
+              (input)="onAddress($event)"
+            />
+            <span class="field__hint">{{ copy.addressHint }}</span>
+          </label>
+
+          @if (workers().length === 0) {
+            <p class="callout callout--danger schedule__problem" role="alert">
+              {{ copy.noWorker }}
+            </p>
+          } @else {
+            <label class="field">
+              <span class="field__label">{{ copy.worker }}</span>
+              <select class="field__input" (change)="onWorker($event)">
+                @for (option of workers(); track option.id) {
+                  <option [value]="option.id" [selected]="worker() === option.id">
+                    {{ option.name }}
+                  </option>
+                }
+              </select>
+              <span class="field__hint">{{ copy.workerHint }}</span>
+            </label>
           }
-        </ul>
 
-        <p class="form-footer schedule__actions">
-          <button
-            type="button"
-            class="btn btn--primary"
-            [disabled]="!canSchedule()"
-            (click)="schedule()"
-          >
-            {{ saving() ? copy.scheduling : copy.scheduleAction }}
-          </button>
-        </p>
-      </section>
-    }
-  </ng-template>
-</app-async-content>
+          <h3 class="section-title schedule__subheading">{{ copy.checklistHeading }}</h3>
+          <p class="status-line schedule__hint">{{ copy.checklistHint }}</p>
+          <ul class="effects schedule__prompts">
+            @for (prompt of prompts; track prompt.code) {
+              <li>{{ prompt.label }}</li>
+            }
+          </ul>
+
+          <p class="form-footer schedule__actions">
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="!canSchedule()"
+              (click)="schedule()"
+            >
+              {{ saving() ? copy.scheduling : copy.scheduleAction }}
+            </button>
+          </p>
+        </section>
+      }
+    </ng-template>
+  </app-async-content>
+}

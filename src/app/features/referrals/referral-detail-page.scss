@@ -21,8 +21,8 @@
   font-size: var(--fs-sm);
 }
 
-.referral__back {
-  margin-block-start: var(--space-4);
+.referral__stack {
+  gap: var(--space-4);
 }
 
 .referral__status {

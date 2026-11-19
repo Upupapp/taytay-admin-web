@@ -40,7 +40,6 @@
                   {{ copy.goodsReceived(record.goodsReceivedCount) }}
                 </dd>
               }
-              <dd class="tally__hint totals__hint">{{ copy.totalReceivedHint }}</dd>
             </div>
             <div class="tally totals__item">
               <dt class="tally__label">{{ copy.eventCount }}</dt>
@@ -53,6 +52,8 @@
               </dd>
             </div>
           </dl>
+          <!-- Under the row, not inside the first tile: five lines there stretched the others (F035). -->
+          <p class="status-line totals__hint">{{ copy.totalReceivedHint }}</p>
         </section>
 
         <section class="card card--padded beneficiary__panel" aria-labelledby="household-heading">
@@ -159,7 +160,10 @@
           </section>
         }
 
-        <section class="card card--padded beneficiary__panel" aria-labelledby="findings-heading">
+        <section
+          class="card card--padded beneficiary__panel record-grid__wide"
+          aria-labelledby="findings-heading"
+        >
           <h2 class="section-title beneficiary__heading" id="findings-heading">
             {{ copy.findingsHeading }}
           </h2>

@@ -40,3 +40,8 @@
 .enrollments__exit {
   color: var(--text2);
 }
+
+/* Each tile as tall as its own figure (F035). */
+.totals {
+  align-items: start;
+}

@@ -12,3 +12,21 @@
 .sector__list {
   grid-column: 1 / -1;
 }
+
+.sector__gaps {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--space-3) var(--space-4);
+}
+
+.sector__gap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* The search hint and the order note are two lines, not two ends of one row. */
+.sector__meta {
+  flex-direction: column;
+}

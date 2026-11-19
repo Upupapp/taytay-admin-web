@@ -78,6 +78,18 @@
   gap: var(--space-4);
 }
 
+/* The side column comes first in the markup (summary first on one column);
+   at two columns it sits on the right. */
+@media (width > 1100px) {
+  .workspace__side {
+    grid-area: 1 / 2;
+  }
+
+  .workspace__main {
+    grid-area: 1 / 1;
+  }
+}
+
 @media (width <= 1100px) {
   .workspace__columns {
     grid-template-columns: minmax(0, 1fr);
@@ -182,6 +194,14 @@
 
 .workspace__table a {
   color: var(--ink);
+}
+
+.workspace__nowrap {
+  white-space: nowrap;
+}
+
+.workspace__link {
+  align-self: flex-start;
 }
 
 .workspace__facts .workspace__withheld {

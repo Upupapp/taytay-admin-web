@@ -33,6 +33,15 @@
 
 /* The seal on the left, the theme switch on the right (DL-207), so the theme can
    be changed before anyone signs in. */
+/* The seal, the form and the footer note share one column, so their left
+   edges line up. */
+.sign-in__top,
+.sign-in__footer {
+  inline-size: 100%;
+  max-inline-size: 400px;
+  align-self: center;
+}
+
 .sign-in__top {
   display: flex;
   align-items: center;
@@ -235,7 +244,14 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-block-size: var(--h-btn);
+  min-block-size: var(--target-min);
+}
+
+.sign-in__dev summary {
+  padding-block: var(--space-1);
+  color: var(--link);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
 }
 
 // The artwork hides itself on a narrow screen (sign-in-art.scss); the frame tightens.

@@ -37,10 +37,14 @@ import { PROGRAMS_COPY } from './programs.copy';
               class="field__input"
               autocomplete="off"
               spellcheck="false"
-              [attr.aria-describedby]="idPrefix() + '-code-hint'"
+              [attr.aria-describedby]="idPrefix() + '-code-hint-' + index"
               [value]="requirement.code"
               (input)="set(index, { code: valueOf($event) })"
             />
+            <!-- Each hint under its own input, never below the whole list (DL-227). -->
+            <span class="field__hint" [id]="idPrefix() + '-code-hint-' + index">{{
+              copy.codeHint
+            }}</span>
           </label>
           <label class="field">
             <span class="field__label">{{ copy.label }}</span>
@@ -68,10 +72,13 @@ import { PROGRAMS_COPY } from './programs.copy';
             <textarea
               class="field__input"
               rows="2"
-              [attr.aria-describedby]="idPrefix() + '-applies-hint'"
+              [attr.aria-describedby]="idPrefix() + '-applies-hint-' + index"
               [value]="requirement.appliesWhen ?? ''"
               (input)="set(index, { appliesWhen: valueOf($event) })"
             ></textarea>
+            <span class="field__hint" [id]="idPrefix() + '-applies-hint-' + index">{{
+              copy.appliesWhenHint
+            }}</span>
           </label>
         }
         <label class="field">
@@ -83,15 +90,17 @@ import { PROGRAMS_COPY } from './programs.copy';
             (input)="set(index, { notes: valueOf($event) })"
           />
         </label>
-        <button type="button" class="btn btn--subtle btn--small" (click)="remove(index)">
+        <button
+          type="button"
+          class="btn btn--small documents-editor__remove"
+          (click)="remove(index)"
+        >
           {{ copy.remove }}
         </button>
       </fieldset>
     } @empty {
-      <p class="documents-editor__none">{{ copy.none }}</p>
+      <p class="note-box documents-editor__none">{{ copy.none }}</p>
     }
-    <p class="field__hint" [id]="idPrefix() + '-code-hint'">{{ copy.codeHint }}</p>
-    <p class="field__hint" [id]="idPrefix() + '-applies-hint'">{{ copy.appliesWhenHint }}</p>
     <button type="button" class="btn" (click)="add()">{{ copy.add }}</button>
   `,
   styles: `
@@ -132,9 +141,12 @@ import { PROGRAMS_COPY } from './programs.copy';
     }
 
     .documents-editor__none {
+      align-self: stretch;
       margin: 0;
-      font-size: var(--fs-label);
-      color: var(--muted);
+    }
+
+    .documents-editor__remove {
+      align-self: flex-end;
     }
   `,
 })

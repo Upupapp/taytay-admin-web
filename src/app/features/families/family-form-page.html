@@ -110,7 +110,13 @@
         </button>
       </div>
     } @else {
-      <p class="status-line family-form__chosen-none">{{ copy.noHousehold }}</p>
+      <!-- The current choice reads as a value, like a chosen household, not as a note. -->
+      <div class="soft-row family-form__chosen family-form__chosen-none">
+        <p>
+          <span class="family-form__chosen-label">{{ copy.householdChosen }}</span>
+          {{ copy.noHousehold }}
+        </p>
+      </div>
       <!-- Said beside the choice, before anybody invents an address to fill a gap (DL-47). -->
       <p class="form-section__note family-form__note">{{ copy.noHouseholdNote }}</p>
 
@@ -165,7 +171,7 @@
   <fieldset class="form-section family-form__section">
     <legend class="form-section__legend">{{ copy.reason }}</legend>
     <label class="field">
-      <span class="field__label">{{ copy.reason }}</span>
+      <span class="field__label">{{ copy.reasonLabel }}</span>
       <textarea
         class="field__input"
         rows="3"

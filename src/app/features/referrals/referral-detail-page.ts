@@ -37,6 +37,7 @@ import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { liveRead, liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -57,7 +58,7 @@ export const REFERRAL_DETAIL_TOPICS: readonly LiveTopic[] = ['referrals'];
 @Component({
   selector: 'app-referral-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DisplayDatePipe, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, DisplayDatePipe, Icon, PageHeader, RouterLink, StatusBadge],
   templateUrl: './referral-detail-page.html',
   styleUrl: './referral-detail-page.scss',
 })

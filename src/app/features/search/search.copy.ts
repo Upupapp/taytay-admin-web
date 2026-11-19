@@ -33,4 +33,7 @@ export const SEARCH_COPY = {
 
   idleHeading: 'Search across the office',
   idleMessage: 'Find a resident, a request, a case, a household, a family or a programme.',
+  // Typed but not yet sent: said, so the invitation above does not read as "nothing found".
+  pendingHeading: 'Ready to search',
+  pending: (term: string) => `Press Search to look for “${term}”.`,
 } as const;

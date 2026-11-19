@@ -76,3 +76,13 @@
 .residents__status--retired {
   color: var(--muted);
 }
+
+/* Wider than a phone, a strip that does not fit wraps inside a rounded box: clipped mid-word with
+   no cue, "VAWC surviv…" read as cut off rather than scrollable (DL-227, pass 2). */
+@media (width > 640px) {
+  .residents__sector-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    border-radius: var(--r-card);
+  }
+}

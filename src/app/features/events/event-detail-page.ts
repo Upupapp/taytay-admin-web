@@ -55,6 +55,7 @@ import { debouncedTerm } from '@shared/state/debounced';
 import { liveViewState } from '@shared/state/live-view-state';
 import { IDLE, LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { Icon } from '@shared/ui/icon/icon';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
@@ -102,6 +103,7 @@ export const EVENT_HISTORY_TOPICS: readonly LiveTopic[] = ['events'];
     AsyncContent,
     DisplayDatePipe,
     EventCheckIn,
+    Icon,
     Modal,
     PageHeader,
     RouterLink,

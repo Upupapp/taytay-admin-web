@@ -16,7 +16,6 @@ import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
 import {
   catalogueReasonProblem,
-  describeProcessingStandard,
   ISSUANCE_BOUNDARIES,
   ISSUANCE_REPOSITORY,
   ISSUANCE_TYPE_LIMITS,
@@ -125,16 +124,19 @@ export class IssuanceCataloguePage {
   protected readonly columns = computed<readonly TableColumn<IssuanceType>[]>(() => [
     { key: 'name', header: this.copy.columnName, cell: this.nameCell() },
     { key: 'office', header: this.copy.columnOffice, value: (type) => type.office.name },
-    { key: 'fee', header: this.copy.columnFee, cell: this.feeCell() },
+    // Short values on one line, so the document's name takes the spare width (DL-227).
+    { key: 'fee', header: this.copy.columnFee, cell: this.feeCell(), nowrap: true },
     {
       key: 'standard',
       header: this.copy.columnStandard,
-      value: (type) => describeProcessingStandard(type.processingDays),
+      value: (type) => this.copy.standardValue(type.processingDays),
+      nowrap: true,
     },
     {
       key: 'requirements',
       header: this.copy.columnRequirements,
       value: (type) => this.copy.requirementCount(type.requirements.length),
+      nowrap: true,
     },
     { key: 'status', header: this.copy.columnStatus, cell: this.statusCell() },
     {
@@ -143,6 +145,7 @@ export class IssuanceCataloguePage {
       hideHeader: true,
       align: 'end',
       cell: this.actionCell(),
+      nowrap: true,
     },
   ]);
 

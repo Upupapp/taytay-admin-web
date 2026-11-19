@@ -183,9 +183,7 @@ describe('what was found', () => {
     expect(form).not.toBeNull();
     // The radio group precedes the body field in document order, so a worker
     // chooses the kind before writing rather than reclassifying afterwards.
-    expect(form?.compareDocumentPosition(textarea as Node)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
+    expect(form?.compareDocumentPosition(textarea as Node)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it('requires an attribution before a third-party entry can be added', async () => {
@@ -304,12 +302,25 @@ describe('scheduling a visit from a case', () => {
     expect(added?.addressVisited.length).toBeGreaterThan(0);
   });
 
+  it('opened without a case, reads nothing and keeps its title and a way back (F019)', async () => {
+    await configure('social-worker');
+    const read = vi.spyOn(TestBed.inject(CASE_REPOSITORY), 'getById');
+    const fixture = TestBed.createComponent(VisitSchedulePage);
+    // The router binds an absent `?case=` as undefined.
+    fixture.componentRef.setInput('case', undefined);
+    await fixture.whenStable();
+    expect(read).not.toHaveBeenCalled();
+    const element = html(fixture);
+    expect(element.querySelector('h1')?.textContent).toContain('Schedule a home visit');
+    expect(element.querySelector('a.back-link')?.getAttribute('href')).toBe('/visits');
+    expect(element.textContent).toContain('Choose the case this visit is for');
+  });
+
   it('says a failed send left nothing queued, in the domain’s own words (DL-87)', () => {
     expect(VISITS_COPY.detail.failed).toContain(CAPTURE_STATE_DESCRIPTIONS['send-failed']);
     expect(VISITS_COPY.detail.observationSaved).toContain(CAPTURE_STATE_LABELS.sent);
   });
 });
-
 
 describe('"Try again" reads again (DL-185)', () => {
   it('re-runs the load after a failed read, and shows the record', async () => {

@@ -90,7 +90,7 @@ import { SAVED_VIEWS_COPY } from './saved-views.copy';
                 [title]="copy.archiveHint"
                 (click)="archive(view)"
               >
-                <app-icon name="close" [size]="14" [stroke]="2.2" />
+                <app-icon name="archive" [size]="15" [stroke]="2" />
               </button>
             }
           </li>

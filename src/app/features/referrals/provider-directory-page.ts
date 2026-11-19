@@ -20,6 +20,7 @@ import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { EmptyState } from '@shared/ui/empty-state/empty-state';
 import { Icon } from '@shared/ui/icon/icon';
 
 import { REFERRALS_COPY } from './referrals.copy';
@@ -38,7 +39,7 @@ export const PROVIDER_DIRECTORY_TOPICS: readonly LiveTopic[] = ['referrals'];
 @Component({
   selector: 'app-provider-directory-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, Icon, PageHeader, RouterLink],
+  imports: [AsyncContent, EmptyState, Icon, PageHeader, RouterLink],
   templateUrl: './provider-directory-page.html',
   styleUrl: './provider-directory-page.scss',
 })

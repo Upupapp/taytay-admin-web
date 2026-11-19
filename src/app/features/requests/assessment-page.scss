@@ -105,3 +105,19 @@
   flex-direction: column;
   gap: var(--space-1);
 }
+
+/* A button in a column of fields keeps its own width: stretched, it read as a
+   thin bar rather than a button (UI audit F028). */
+.assessment__ask {
+  align-self: flex-start;
+}
+
+/* The amount box is short; its hint takes the panel's width, so "3,000.50." is
+   not left alone on a line, and the panel's own gap spaces the fields (F182). */
+.assessment__amount .field__input {
+  max-inline-size: 240px;
+}
+
+.assessment__approve > .field + .field {
+  margin-block-start: 0;
+}

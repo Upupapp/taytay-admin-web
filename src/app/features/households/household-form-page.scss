@@ -1,9 +1,5 @@
 // ResidentRegister mock-up: one panel of framed sections, the membership note, the footer.
 
-.household-form {
-  max-inline-size: 960px;
-}
-
 .household-form__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));

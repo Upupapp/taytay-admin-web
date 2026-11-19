@@ -14,7 +14,7 @@
 }
 
 .section__subheading {
-  margin: var(--space-2) 0 0;
+  margin: var(--space-5) 0 0;
   color: var(--ink);
   font-size: var(--fs-section);
   font-weight: var(--fw-bold);
@@ -32,13 +32,6 @@
 .section__count {
   color: var(--ink);
   font-weight: var(--fw-semibold);
-}
-
-.table__caption {
-  padding-block-end: var(--space-3);
-  color: var(--muted);
-  font-size: var(--fs-label);
-  text-align: start;
 }
 
 .table__holds {

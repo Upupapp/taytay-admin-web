@@ -116,6 +116,16 @@ export class SearchPage {
   private readonly recentTerms = signal<readonly string[]>([]);
   protected readonly recent = this.recentTerms.asReadonly();
 
+  /**
+   * What is in the box but not yet sent. Held for this tab like the term, and used only to say that
+   * Search has not been pressed; nothing is asked of the data layer until it is.
+   */
+  protected readonly draft = signal('');
+
+  protected onDraft(event: Event): void {
+    this.draft.set((event.target as HTMLInputElement).value.trim());
+  }
+
   protected onSubmit(event: Event): void {
     event.preventDefault();
     const input = (event.target as HTMLFormElement).querySelector('input');

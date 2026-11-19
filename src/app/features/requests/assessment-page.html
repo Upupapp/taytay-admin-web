@@ -14,7 +14,7 @@
   } @else {
     <app-page-header
       [title]="request.referenceNumber || copy.subtitle"
-      [subtitle]="copy.subtitle"
+      [subtitle]="headerSubtitle(request)"
     />
 
     <div class="split assessment">
@@ -223,7 +223,7 @@
                       <div class="documents__controls">
                         <button
                           type="button"
-                          class="btn btn--subtle"
+                          class="btn btn--small"
                           [disabled]="!canDecide(requirement.id) || submitting()"
                           (click)="decide(requirement.id, 'applies')"
                         >
@@ -231,7 +231,7 @@
                         </button>
                         <button
                           type="button"
-                          class="btn btn--subtle"
+                          class="btn btn--small"
                           [disabled]="!canDecide(requirement.id) || submitting()"
                           (click)="decide(requirement.id, 'does-not-apply')"
                         >
@@ -435,7 +435,7 @@
                       } @else {
                         <button
                           type="button"
-                          class="btn btn--small"
+                          class="btn btn--small assessment__ask"
                           (click)="openAsk(requirement.id)"
                         >
                           {{ documentCopy.ask }}
@@ -470,7 +470,7 @@
                     @if (requirement.submittedAt) {
                       <button
                         type="button"
-                        class="btn btn--subtle"
+                        class="btn btn--small"
                         [disabled]="submitting()"
                         (click)="review(requirement.id, 'verified')"
                       >
@@ -478,7 +478,7 @@
                       </button>
                       <button
                         type="button"
-                        class="btn btn--subtle"
+                        class="btn btn--small btn--danger-outline"
                         [disabled]="submitting()"
                         (click)="review(requirement.id, 'rejected')"
                       >
@@ -486,7 +486,7 @@
                       </button>
                       <button
                         type="button"
-                        class="btn btn--subtle"
+                        class="btn btn--small"
                         [disabled]="submitting()"
                         (click)="review(requirement.id, 'needs-replacement')"
                       >
@@ -496,7 +496,7 @@
                            wrong when a certificate simply lapsed. -->
                       <button
                         type="button"
-                        class="btn btn--subtle"
+                        class="btn btn--small"
                         [disabled]="submitting()"
                         (click)="review(requirement.id, 'expired')"
                       >
@@ -505,7 +505,7 @@
                     }
                     <button
                       type="button"
-                      class="btn btn--subtle"
+                      class="btn btn--small"
                       [disabled]="submitting()"
                       (click)="review(requirement.id, 'waived')"
                     >
@@ -1018,7 +1018,7 @@
                 </label>
               </fieldset>
               @if (approvalKind() === 'money') {
-                <label class="field field--narrow">
+                <label class="field assessment__amount">
                   <span class="field__label">{{ copy.approveAmount }}</span>
                   <input
                     class="field__input"

@@ -30,6 +30,12 @@
             <span class="work__as-of">{{ copy.asOf }} {{ today }}</span>
           </p>
 
+          @if (total() > 0) {
+            <!-- Why most rows offer no snooze, said once; each such row still says it is not a
+                 task (DL-97), in four words rather than two lines (DL-227, pass 2). -->
+            <p class="note-box work__task-only">{{ copy.taskOnly }}</p>
+          }
+
           @if (total() === 0) {
             <div class="subpanel subpanel--soft work__empty">
               <span class="icon-tile icon-tile--blue-soft" aria-hidden="true">
@@ -211,7 +217,7 @@
           } @else {
             <!-- Honest about what this item is. Offering a snooze on the state
                  of a record would be offering a control that does nothing. -->
-            <span class="work-rows__note">{{ copy.taskOnly }}</span>
+            <span class="work-rows__note">{{ copy.taskOnlyRow }}</span>
           }
         </p>
 

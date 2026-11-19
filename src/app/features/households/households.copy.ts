@@ -4,7 +4,7 @@ import type { FactorState, HouseholdProblemCode } from '@domain/index';
 export const HOUSEHOLDS_COPY = {
   list: {
     title: 'Households',
-    subtitle: 'Families as the office assesses them, with the indicators behind each one.',
+    subtitle: 'Addresses as the office assesses them, with the indicators behind each one.',
     caption: 'Households registered with the MSWDO',
     search: 'Search',
     searchPlaceholder: 'Household number, head’s surname or street',
@@ -44,6 +44,7 @@ export const HOUSEHOLDS_COPY = {
     title: 'Register a household',
     subtitle: 'An address, and the person who heads the household there.',
     back: 'Back to households',
+    cancel: 'Cancel',
     addressHeading: 'Address',
     meansHeading: 'Income and classification',
     barangay: 'Barangay',
@@ -53,6 +54,8 @@ export const HOUSEHOLDS_COPY = {
     street: 'Street address',
     streetHint: 'House number and street, as the family gives it.',
     head: 'Head of the household',
+    /** The picker's own label: the legend above already says whose record this is. */
+    headPicker: 'Find the person',
     headHint:
       'Search the registry. A person not yet registered is registered first, as a resident.',
     headChosen: 'Head:',
@@ -108,6 +111,8 @@ export const HOUSEHOLDS_COPY = {
 
     noAudit: 'Nothing has been changed on this record yet.',
     auditReason: 'Reason',
+    /** A trail line's person who is no longer a member: never their id (DL-227, pass 2). */
+    trailFormerMember: 'a person no longer listed in this household',
   },
 
   members: {

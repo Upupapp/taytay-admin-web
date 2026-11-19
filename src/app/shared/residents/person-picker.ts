@@ -132,7 +132,7 @@ export class PersonPicker {
   readonly selected = model<ResidentView | null>(null);
 
   readonly label = input('Find a resident');
-  readonly placeholder = input('Type a name, address or mobile number');
+  readonly placeholder = input('Name, address or mobile');
   readonly hint = input('Start typing, then use the arrow keys to choose.');
   readonly emptyMessage = input('No resident matches that search.');
   readonly changeLabel = input('Change');

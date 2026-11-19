@@ -19,8 +19,7 @@
   gap: var(--space-4);
 }
 
-/* The shared `.field + .field` spacing is replaced by the gap, not redefined: in a row it
-   would drop the second field below the first (DL-227). */
+/* The gap spaces the row; the stacked margin would drop a field (DL-227). */
 .filters > .field + .field {
   margin-block-start: 0;
 }
@@ -41,9 +40,7 @@
 .entries {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
   margin: var(--space-3) 0 0;
-  padding: 0;
   list-style: none;
 }
 
@@ -51,50 +48,76 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  padding-block: var(--space-3);
+  border-block-start: 1px solid var(--soft);
 }
 
-/* The word "sensitive" carries it; the frame is reinforcement. */
+.entry:first-child {
+  border-block-start: 0;
+}
+
+/* The word "Sensitive" carries it; the edge is reinforcement. */
 .entry--sensitive {
-  border-color: var(--red-ink);
+  padding-inline-start: var(--space-3);
+  border-inline-start: 3px solid var(--red-ink);
+}
+
+.entry__line {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1.2fr) minmax(0, 2fr) minmax(9rem, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+}
+
+.entry__line > p {
+  margin: 0;
+}
+
+@media (width <= 900px) {
+  .entry__line {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .entry__line > p:not(.entry__head) {
+    grid-column: 1 / -1;
+  }
+
+  .entry__time {
+    grid-row: 1;
+    grid-column: 2;
+  }
 }
 
 .entry__head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2) var(--space-3);
-  margin: 0;
+  gap: var(--space-1) var(--space-2);
+}
+
+.entry__action,
+.entry__entity,
+.entry__summary {
+  color: var(--text2);
+  font-size: var(--fs-label);
 }
 
 .entry__action {
   color: var(--ink);
-  font-size: var(--fs-section);
   font-weight: var(--fw-bold);
 }
 
-.entry__entity {
-  color: var(--text2);
-  font-size: var(--fs-sm);
-}
-
 .entry__time {
-  margin-inline-start: auto;
   color: var(--muted);
   font-size: var(--fs-2xs);
   font-variant-numeric: tabular-nums;
-}
-
-.entry__summary {
-  margin: 0;
-  color: var(--text);
-  font-size: var(--fs-sm);
+  white-space: nowrap;
 }
 
 .entry__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  margin: 0;
+  gap: var(--space-1) var(--space-3);
   color: var(--muted);
   font-size: var(--fs-2xs);
 }
@@ -203,10 +226,12 @@
   color: var(--ink);
 }
 
+/* Show more sits at the end, as on the app audit trail. */
 .audit__more {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-3);
   margin-block-start: var(--space-3);
 }

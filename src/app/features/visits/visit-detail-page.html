@@ -1,3 +1,7 @@
+<a class="back-link" routerLink="/visits">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
 <app-async-content
   [state]="state()"
   [content]="visitContent"
@@ -7,13 +11,13 @@
   <ng-template #visitContent let-visit>
     @if (visit === null) {
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
-      <p class="visit__back">
-        <a class="btn" routerLink="/visits">{{ copy.back }}</a>
-      </p>
     } @else {
-      <app-page-header [title]="visit.referenceNumber" [subtitle]="addressShown(visit)">
-        <a page-actions class="btn" routerLink="/visits">{{ copy.back }}</a>
-      </app-page-header>
+      <app-page-header [title]="visit.referenceNumber" [subtitle]="addressShown(visit)" />
+
+      @if (!isOpen()) {
+        <!-- Said first, not in an orphan card at the foot of the page (F179). -->
+        <p class="note-box visit__closed" role="note">{{ copy.alreadyClosed }}</p>
+      }
 
       @if (wordsWithheld(visit)) {
         <p class="callout callout--warning visit__withheld" role="note">
@@ -271,10 +275,6 @@
             >
               {{ copy.close }}
             </button>
-          </section>
-        } @else if (!isOpen()) {
-          <section class="card card--padded visit__panel">
-            <p class="status-line visit__empty">{{ copy.alreadyClosed }}</p>
           </section>
         }
       </div>

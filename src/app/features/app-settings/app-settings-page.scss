@@ -39,6 +39,7 @@
 .settings__flags code {
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
+  overflow-wrap: break-word;
 }
 
 .settings__new-flag {
@@ -116,6 +117,7 @@
 }
 
 .settings__legal-current summary {
+  padding-block: var(--space-1);
   color: var(--link);
   font-size: var(--fs-label);
   font-weight: var(--fw-semibold);

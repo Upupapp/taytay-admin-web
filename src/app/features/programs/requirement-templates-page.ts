@@ -36,6 +36,7 @@ import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { Icon } from '@shared/ui/icon/icon';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { refusalSentences } from './program-form';
@@ -78,7 +79,15 @@ function emptyTemplateDraft(): RequirementTemplateDraft {
 @Component({
   selector: 'app-requirement-templates-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, DisplayDatePipe, PageHeader, RequirementListEditor, RouterLink, StatusBadge],
+  imports: [
+    DataTable,
+    DisplayDatePipe,
+    Icon,
+    PageHeader,
+    RequirementListEditor,
+    RouterLink,
+    StatusBadge,
+  ],
   templateUrl: './requirement-templates-page.html',
   // The form's layout is the new-programme form's; the list's own few classes are beside it.
   styleUrls: ['./program-form-page.scss', './requirement-templates-page.scss'],

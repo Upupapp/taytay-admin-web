@@ -10963,3 +10963,50 @@ status control's space. Two archive-history and one verification expectation now
 clock.
 
 Easiest to reverse: each is a rule in one stylesheet, one pipe, or one function in the navigation.
+
+### DL-227, second pass — the page defects (20 November 2026)
+
+The second pass fixes single pages, under the same terms: presentation only, except the two pages
+that read a record without one (below). What it settled for every page:
+
+- **One way back.** A record or sub-page says "Back to …" as a `.back-link` above its page header,
+  outside the read, so a page whose read fails still names itself and its way out. A form leaves by
+  **Cancel**, first in its `.form-footer`. The header's action slot holds acts only (Edit, Create,
+  Look for duplicates now). Eighteen pages had used a header pill, two an arrow link and one a pill
+  above the title.
+- **A page opened without its record reads nothing.** `/releases/prepare` and `/visits/schedule`
+  take the request or the case from the query, and the router binds an absent parameter as
+  `undefined`, which reached the API as `/office/assistance-requests/undefined` and
+  `/office/cases/undefined`: a 422, shown as a bare error card with no title. Each now says where
+  the record is chosen (an empty state whose action opens the approved requests or the cases), and
+  the schedule page keeps its title and way back whatever its read does.
+- **The duplicate finding is a centred dialog** (`app-modal size="large"`, the review-dialog
+  pattern), not a drawer: it is a decision with a required reason (§8 rule 3). Both records carry
+  the same masked name, so "which record does the office keep using?" offered "Dela Cruz, M." twice.
+  Each record is now told apart by what it holds — its assistance requests, releases and open cases —
+  and whether a resident's app account reads it, composed from the two previews that would supersede
+  either record. No compared value is shown: no birth date, barangay, address or number (`DL-73`).
+- **A request record's header** says its programme and its status now, read from the record. Its
+  subtitle had been the fixed word "Assessment", beside a badge that said Released.
+- **Shared rules added for pages**: `.row-actions` (a record's acts side by side, wrapping);
+  `.simple-table--stack` (a feature's own table stacks on a phone like `DataTable`, with explicit
+  roles and `data-label`); `.tabs--sub` (the In use | Archived filter, compact under a page's own
+  tabs); on a phone a `.form-footer` is a column of full-width buttons with the submit on top, and a
+  `.form-section` drops its frame and keeps its legend; the breadcrumb stays on one line and its
+  earlier crumbs give way with an ellipsis; a callout or note box takes its column's width; a
+  saved view's Archive button shows an archive box, not a cross, which read as close or delete.
+- **Pages**: document decisions, task acts and record links are buttons (`.btn--small`; Reject is
+  `.btn--danger-outline`, never an archive); the permission matrix shows one role at a time on a
+  phone and fits seven roles at 1440 with a sticky header; household history names people, not
+  database ids; the events record flows its registrants under the preview, sets sentences at body
+  size and says why a button is unavailable; forms show their checklist neutral until the first
+  attempt; card titles use `.section-title`.
+
+Left open, and why: the sector pages' figures need the API to send them (`<app-not-connected>`
+stays); the chart table's label column and its wording of a tie (shared `ChartTable`); the audit
+trail's repeated source line and mixed category names; the programme form's responsibility chip and
+"No template" select at 390; the file picker's native look (`ImageFileField`).
+
+Tests: a request header follows the record's status; the two pages opened without their record read
+nothing and keep their title; the duplicate finding opens in a dialog and tells its records apart
+without a compared value; the saved view's Archive glyph; and the page-level changes above.

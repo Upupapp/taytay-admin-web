@@ -43,7 +43,9 @@
   border-radius: var(--r-panel);
 }
 
-.metric .kpi__value {
+/* Label, figure, hint from the top: a figure pushed to the bottom sat at whatever height its
+   hint left it, so figures in one row did not line up (DL-227). */
+.metric .kpi__hint {
   margin-block-start: auto;
 }
 
@@ -55,7 +57,8 @@
 /* ── Breakdowns ───────────────────────────────────────────────────────────── */
 .panels {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  align-items: start;
   gap: var(--space-4);
 }
 

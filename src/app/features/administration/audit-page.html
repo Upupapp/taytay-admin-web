@@ -1,6 +1,9 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions class="btn" routerLink="/administration/staff">{{ copy.back }}</a>
-</app-page-header>
+<a class="back-link" routerLink="/administration/staff">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
+
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
 <div class="audit">
   <!-- Said at the top, so the absence of values reads as a rule rather than as
@@ -61,25 +64,32 @@
           (actionSelected)="clearFilters()"
         />
       } @else {
-        <ul class="entries">
+        <!-- One card of compact rows: on a desktop each entry's act, summary, actor and time
+             share a line; on a phone they stack. -->
+        <ul class="card card--panel card--padded entries">
           @for (row of rows(); track row.id) {
-            <li class="card card--padded entry" [class.entry--sensitive]="row.touchesSensitive">
-              <p class="entry__head">
-                <span class="entry__action">{{ actionLabel(row.action) }}</span>
-                <span class="entry__entity">{{ row.entityLabel }}</span>
-                @if (row.touchesSensitive) {
-                  <!-- The word, not only the border. -->
-                  <span class="chip chip--danger entry__sensitive">{{ copy.sensitiveBadge }}</span>
-                }
+            <li class="entry" [class.entry--sensitive]="row.touchesSensitive">
+              <div class="entry__line">
+                <p class="entry__head">
+                  <span class="entry__action">{{ actionLabel(row.action) }}</span>
+                  <span class="entry__entity">{{ row.entityLabel }}</span>
+                  @if (row.touchesSensitive) {
+                    <!-- The word, not only the edge. -->
+                    <span class="chip chip--danger entry__sensitive">{{
+                      copy.sensitiveBadge
+                    }}</span>
+                  }
+                </p>
+
+                <p class="entry__summary">{{ row.summary }}</p>
+
+                <p class="entry__meta">
+                  <span class="entry__actor">{{ row.actorName }}</span>
+                  <span class="entry__source">{{ copy.source }} {{ sourceLabel(row) }}</span>
+                </p>
+
                 <time class="entry__time">{{ row.occurredAt | displayDate: 'date-time' }}</time>
-              </p>
-
-              <p class="entry__summary">{{ row.summary }}</p>
-
-              <p class="entry__meta">
-                <span class="entry__actor">{{ row.actorName }}</span>
-                <span class="entry__source">{{ copy.source }} {{ sourceLabel(row) }}</span>
-              </p>
+              </div>
 
               @if (!row.fieldsRecorded) {
                 <!-- Not recorded, said: an empty list would read as "nothing moved". -->

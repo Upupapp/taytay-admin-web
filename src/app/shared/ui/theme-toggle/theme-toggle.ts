@@ -28,7 +28,7 @@ export const THEME_TOGGLE_COPY = {
   template: `
     <button
       type="button"
-      class="btn btn--secondary btn--small"
+      class="btn btn--secondary btn--small theme-toggle__button"
       [attr.aria-pressed]="theme.isDark()"
       (click)="theme.toggle()"
     >
@@ -37,7 +37,19 @@ export const THEME_TOGGLE_COPY = {
     </button>
   `,
   styles: `
+    /* As tall as the round buttons beside it in the top bar (menu, search, inbox). */
+    .theme-toggle__button {
+      min-block-size: var(--h-icon-btn);
+    }
+
+    /* On a phone only the glyph shows: a circle like its neighbours, its name still spoken. */
     @media (width <= 640px) {
+      .theme-toggle__button {
+        min-inline-size: var(--h-icon-btn);
+        padding: 0;
+        justify-content: center;
+      }
+
       .theme-toggle__label {
         position: absolute;
         inline-size: 1px;

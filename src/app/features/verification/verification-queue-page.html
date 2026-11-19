@@ -9,6 +9,7 @@
       <select
         id="verification-status"
         class="field__input field__input--pill"
+        aria-describedby="verification-order"
         [value]="filterValue()"
         (change)="onFilter($event)"
       >
@@ -19,8 +20,8 @@
         }
         <option value="all" [selected]="filterValue() === 'all'">{{ copy.filterAll }}</option>
       </select>
+      <p class="field__hint" id="verification-order">{{ copy.order }}</p>
     </div>
-    <p class="status-line">{{ copy.order }}</p>
   </div>
 
   <p class="callout callout--warning queue__notice">

@@ -192,6 +192,15 @@ export const ISSUANCE_COPY = {
     columnRequirements: 'Asks for',
     columnStatus: 'Status',
     columnAction: 'Act',
+    /** The standard under its own column heading, without repeating the heading in every cell. */
+    standardValue: (days: number | null): string =>
+      days === null
+        ? 'Not stated'
+        : days === 0
+          ? 'The same day'
+          : days === 1
+            ? '1 working day'
+            : `${days} working days`,
     active: 'Offered',
     retired: 'Retired',
     retiredOn: (date: string): string => `Retired ${date}`,

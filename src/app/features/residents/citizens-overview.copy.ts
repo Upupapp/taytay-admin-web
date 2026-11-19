@@ -71,4 +71,14 @@ export const CITIZENS_OVERVIEW_COPY = {
   disclosureHeading: 'Why some figures are withheld',
   disclosure: (threshold: number) =>
     `A count of people from 1 to ${threshold - 1} is withheld rather than shown, never shown as zero, and cannot be opened. Totals are taken before anything is withheld, so the rows shown do not add up to them.`,
+  /**
+   * Where the threshold comes from, in words. The API sends a token; printed as it came it read
+   * "…add up to them. convention-pending-confirmation" (DL-227, pass 2). An unknown token is not
+   * printed: the sentence for it is not written yet, and a code is not a sentence.
+   */
+  provenance: {
+    'convention-pending-confirmation':
+      'This threshold is a working convention: the MSWDO has not yet confirmed it.',
+    'office-confirmed': 'The MSWDO has confirmed this threshold.',
+  } as Readonly<Record<string, string>>,
 } as const;

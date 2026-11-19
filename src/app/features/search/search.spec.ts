@@ -301,6 +301,21 @@ describe('the search screen', () => {
     expect(element.querySelector('.search__empty-heading')).toBeNull();
   });
 
+  it('says Search has not been pressed while a term is typed, rather than inviting one', async () => {
+    const fixture = await openSearch('');
+    const input = html(fixture).querySelector<HTMLInputElement>('.search__input');
+    if (input === null) {
+      throw new Error('no search box');
+    }
+    input.value = 'Dela Cruz';
+    input.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+
+    expect(html(fixture).querySelector('.search__idle-message')?.textContent).toContain(
+      'Press Search to look for “Dela Cruz”',
+    );
+  });
+
   it('summarises the results in counts', async () => {
     const element = html(await openSearch('mercado'));
     const summary = element.querySelector('.search__summary')?.textContent ?? '';

@@ -133,6 +133,7 @@ export class BannersSection {
       key: 'image',
       header: this.copy.columnImage,
       value: (banner) => (banner.mediaId === null ? this.copy.noImage : this.copy.hasImage),
+      nowrap: true,
     },
     this.archived()
       ? { key: 'archived', header: this.copy.columnArchived, cell: this.archivedCell() }

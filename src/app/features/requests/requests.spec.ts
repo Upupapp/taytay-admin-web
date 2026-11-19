@@ -13,6 +13,7 @@ import { MockReleaseRepository } from '@data/mock/mock-release.repository';
 import { MockResidentRepository } from '@data/mock/mock-resident.repository';
 import {
   ACCESS_CONTEXT,
+  ASSISTANCE_STATUS_CATALOG,
   ASSISTANCE_REQUEST_REPOSITORY,
   NOTIFICATION_REPOSITORY,
   PROGRAM_REPOSITORY,
@@ -424,8 +425,8 @@ describe('the intake flow', () => {
     // Filed by a colleague while this screen was open: saving over it is now refused.
     await firstValueFrom(requests.submitIntake(saved.id, null));
 
-    const save = [...html(fixture).querySelectorAll<HTMLButtonElement>('button')].find(
-      (button) => button.textContent?.includes('Save and finish later'),
+    const save = [...html(fixture).querySelectorAll<HTMLButtonElement>('button')].find((button) =>
+      button.textContent?.includes('Save and finish later'),
     );
     save?.click();
     await fixture.whenStable();
@@ -480,6 +481,13 @@ describe('the assessment workspace', () => {
     expect(element.querySelector('#applicant-heading')).not.toBeNull();
     expect(element.textContent).toContain('Mercado');
     expect(element.textContent).toContain('TAY-2026-000841');
+  });
+
+  it('heads the record with its programme and its status now, not a fixed page name (F029)', async () => {
+    const element = html(await openAssessment(ENDORSED, 'mswdo-head'));
+    const subtitle = element.querySelector('app-page-header p')?.textContent?.trim() ?? '';
+    expect(subtitle).toContain(` · ${ASSISTANCE_STATUS_CATALOG.endorsed.label}`);
+    expect(subtitle).not.toBe('Assessment');
   });
 
   it('states that a recommendation is not an approval', async () => {
@@ -746,7 +754,10 @@ const buttonNamed = (root: Element | null | undefined, name: string) =>
     (node) => (node.textContent ?? '').trim() === name,
   );
 
-function type(field: HTMLInputElement | HTMLTextAreaElement | null | undefined, text: string): void {
+function type(
+  field: HTMLInputElement | HTMLTextAreaElement | null | undefined,
+  text: string,
+): void {
   if (field) {
     field.value = text;
     field.dispatchEvent(new Event('input'));

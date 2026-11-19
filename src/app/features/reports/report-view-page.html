@@ -1,14 +1,13 @@
+<a class="back-link" routerLink="/reports">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
 <app-async-content [state]="state()" [content]="reportContent" [skeletonLines]="8">
   <ng-template #reportContent let-result>
     @if (result === null) {
       <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
-      <p class="report__back">
-        <a class="btn" routerLink="/reports">{{ copy.back }}</a>
-      </p>
     } @else {
-      <app-page-header [title]="result.definition.title">
-        <a page-actions class="btn" routerLink="/reports">{{ copy.back }}</a>
-      </app-page-header>
+      <app-page-header [title]="result.definition.title" />
 
       <div class="record-grid report">
         <section class="card card--padded report__about" aria-labelledby="about-heading">

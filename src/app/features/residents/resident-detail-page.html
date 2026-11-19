@@ -14,12 +14,13 @@
           <app-icon name="pencil" [size]="16" [stroke]="2" />
           {{ copy.edit }}
         </a>
+        <!-- Retiring is undone by Restore, so it is drawn as the reversible act it is (DL-225). -->
         @if (profile.view.resident.isActive) {
           <button
             page-actions
             *appHasPermission="'resident.deactivate'"
             type="button"
-            class="btn btn--danger-outline"
+            class="btn"
             (click)="askRetire()"
           >
             {{ copy.retire }}
@@ -344,6 +345,9 @@
         <!--
           ── Assistance history ─────────────────────────────────────────
 
+          A panel that says only "none" takes half the row, so cases, payouts, referrals and the
+          record pair up instead of four full-width cards of one sentence each (DL-227, pass 2).
+
           Read, or named as not read (DL-112). Requests, payouts and referrals arrive together, so
           one note stands for all three rather than three empty panels that each say "none".
         -->
@@ -358,7 +362,11 @@
           }
           @case ('read') {
             @let history = profile.history.history;
-            <section class="card card--padded panel panel--wide" aria-labelledby="cases-heading">
+            <section
+              class="card card--padded panel"
+              [class.panel--wide]="history.cases.length > 0"
+              aria-labelledby="cases-heading"
+            >
               <h2 class="section-title panel__heading" id="cases-heading">
                 {{ copy.casesHeading }}
               </h2>
@@ -412,7 +420,11 @@
             </section>
 
             <!-- ── Payouts ──────────────────────────────────────────────────── -->
-            <section class="card card--padded panel panel--wide" aria-labelledby="payouts-heading">
+            <section
+              class="card card--padded panel"
+              [class.panel--wide]="history.payouts.length > 0"
+              aria-labelledby="payouts-heading"
+            >
               <h2 class="section-title panel__heading" id="payouts-heading">
                 {{ copy.payoutsHeading }}
               </h2>
@@ -466,7 +478,8 @@
 
             <!-- ── Referrals ────────────────────────────────────────────────── -->
             <section
-              class="card card--padded panel panel--wide"
+              class="card card--padded panel"
+              [class.panel--wide]="history.referrals.length > 0"
               aria-labelledby="referrals-heading"
             >
               <h2 class="section-title panel__heading" id="referrals-heading">

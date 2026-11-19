@@ -16,14 +16,12 @@
         </div>
       } @else {
         @for (group of areas(); track group.area) {
-          <section class="stack area" [attr.aria-label]="group.label">
+          <section class="area" [attr.aria-label]="group.label">
             <h2 class="section-title section-title--display area__heading">{{ group.label }}</h2>
             <ul class="area__list">
               @for (report of group.reports; track report.id) {
+                <!-- No icon tile: the same chart glyph on all fourteen cards said nothing (DL-227). -->
                 <li class="card card--padded report-card">
-                  <span class="icon-tile icon-tile--sm report-card__tile" aria-hidden="true">
-                    <app-icon name="chart" [size]="18" [stroke]="2" />
-                  </span>
                   <h3 class="report-card__title">
                     <a [routerLink]="['/reports', report.id]">{{ report.title }}</a>
                   </h3>

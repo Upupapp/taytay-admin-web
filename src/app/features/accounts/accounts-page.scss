@@ -33,8 +33,10 @@
   font-weight: var(--fw-semibold);
 }
 
+/* No name, no initials: a person glyph, so the circle never reads as a broken image. */
 .accounts__avatar-blank {
   background: var(--soft);
+  color: var(--muted);
 }
 
 .accounts__missing {
