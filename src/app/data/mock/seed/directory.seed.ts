@@ -64,6 +64,8 @@ const service = (
   contacts: [],
   locations: [],
   officeId: null,
+  programId: null,
+  acceptsOnlineApplications: false,
   featured: false,
   featuredHeadline: null,
   hiddenFromList: false,

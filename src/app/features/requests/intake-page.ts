@@ -253,7 +253,13 @@ export class IntakePage {
       .pipe(takeUntilDestroyed())
       .subscribe((state) => {
         const request = valueOf(state) ?? null;
-        if (request === null || request.status !== 'draft' || request.withheld.length > 0) {
+        // An imported request is never a draft (`DL-228`); the check also narrows its channel.
+        if (
+          request === null ||
+          request.status !== 'draft' ||
+          request.withheld.length > 0 ||
+          request.channel === 'imported'
+        ) {
           return;
         }
         this.draftId.set(request.id);

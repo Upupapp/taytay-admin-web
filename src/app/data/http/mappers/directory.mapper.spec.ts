@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { asId, type OfficeId } from '@domain/index';
+import { asId, type OfficeId, type ProgramId } from '@domain/index';
 
 import HOTLINES from '../fixtures/hotlines.json';
 import OFFICE from '../fixtures/office.json';
@@ -169,6 +169,8 @@ describe('the Tulong page bodies (DL-170)', () => {
       contacts: [{ type: 'email', label: null, value: 'pdao@directory.example.test' }],
       locations: [],
       officeId: asId<OfficeId>('3c9a7e21-5b84-4d1f-a0c6-1e2f3a4b5c70'),
+      programId: asId<ProgramId>('5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c80'),
+      acceptsOnlineApplications: true,
       iconKey: null,
       tileColor: null,
       badge: null,
@@ -184,8 +186,27 @@ describe('the Tulong page bodies (DL-170)', () => {
       office_id: '3c9a7e21-5b84-4d1f-a0c6-1e2f3a4b5c70',
       contacts: [{ type: 'email', label: null, value: 'pdao@directory.example.test' }],
       hidden_from_list: false,
+      program_id: '5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c80',
+      accepts_online_applications: true,
     });
     expect(JSON.parse(JSON.stringify(wire))).not.toHaveProperty('category');
+  });
+
+  it('reads the programme a page applies to and whether it takes applications (DL-228)', () => {
+    const read = toTulongService({
+      ...SERVICE.data,
+      program_id: '5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c80',
+      accepts_online_applications: true,
+    });
+    expect(read?.programId).toBe('5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c80');
+    expect(read?.acceptsOnlineApplications).toBe(true);
+    // The public read carries neither: information only.
+    expect(toTulongService(SERVICE.data)?.acceptsOnlineApplications).toBe(false);
+    expect(
+      JSON.parse(
+        JSON.stringify(toWireServiceChanges({ programId: null, acceptsOnlineApplications: false })),
+      ),
+    ).toEqual({ program_id: null, accepts_online_applications: false });
   });
 
   it('sends a change as only what changed, and null to clear', () => {

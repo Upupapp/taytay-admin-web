@@ -1,6 +1,7 @@
 import {
   SERVICE_CONTACT_TYPES,
   type OfficeId,
+  type ProgramId,
   type ServiceChanges,
   type ServiceContact,
   type ServiceDraft,
@@ -108,6 +109,9 @@ export function toTulongService(wire: unknown): TulongService | null {
     contacts,
     locations,
     officeId: id<OfficeId>(field(wire, 'office_id')),
+    // The public read carries neither; only the administrator's does (`DL-228`).
+    programId: id<ProgramId>(field(wire, 'program_id')),
+    acceptsOnlineApplications: bool(field(wire, 'accepts_online_applications')),
     featured: bool(field(wire, 'featured')),
     featuredHeadline: str(field(wire, 'featured_headline')),
     hiddenFromList: bool(field(wire, 'hidden_from_list')),
@@ -147,6 +151,8 @@ export interface ServiceWriteWire {
   readonly contacts: readonly ServiceContactWire[];
   readonly locations: readonly { readonly name: string; readonly address: string }[];
   readonly office_id: string | null;
+  readonly program_id: string | null;
+  readonly accepts_online_applications: boolean;
   readonly icon_key: string | null;
   readonly tile_color: string | null;
   readonly badge: string | null;
@@ -169,6 +175,8 @@ export function toWireServiceDraft(draft: ServiceDraft): ServiceWriteWire {
     contacts: draft.contacts.map(contactWire),
     locations: draft.locations.map((place) => ({ name: place.name, address: place.address })),
     office_id: draft.officeId,
+    program_id: draft.programId,
+    accepts_online_applications: draft.acceptsOnlineApplications,
     icon_key: draft.iconKey,
     tile_color: draft.tileColor,
     badge: draft.badge,
@@ -188,6 +196,8 @@ export interface ServicePatchWire {
   readonly requirements: readonly string[] | undefined;
   readonly contacts: readonly ServiceContactWire[] | undefined;
   readonly featured: boolean | undefined;
+  readonly program_id: string | null | undefined;
+  readonly accepts_online_applications: boolean | undefined;
   readonly icon_key: string | null | undefined;
   readonly tile_color: string | null | undefined;
   readonly badge: string | null | undefined;
@@ -206,6 +216,8 @@ export function toWireServiceChanges(changes: ServiceChanges): ServicePatchWire 
     requirements: changes.requirements,
     contacts: changes.contacts?.map(contactWire),
     featured: changes.featured,
+    program_id: changes.programId,
+    accepts_online_applications: changes.acceptsOnlineApplications,
     icon_key: changes.iconKey,
     tile_color: changes.tileColor,
     badge: changes.badge,

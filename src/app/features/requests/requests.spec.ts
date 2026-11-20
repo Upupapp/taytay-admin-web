@@ -1,7 +1,7 @@
 import { Component, type Type } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, lastValueFrom, of, throwError, type Observable } from 'rxjs';
+import { firstValueFrom, lastValueFrom, map, of, throwError, type Observable } from 'rxjs';
 
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
@@ -27,6 +27,8 @@ import {
   EMPTY_INTAKE_DRAFT,
   emptyPage,
   toAuthenticatedUser,
+  type AssistanceImportId,
+  type AssistanceRequest,
   type AssistanceRequestId,
   type AuthenticatedUser,
   type Page,
@@ -1073,5 +1075,74 @@ describe('the document checklist', () => {
     );
 
     expect(labels).toContain('Mark expired');
+  });
+});
+
+/* ── how a request came in (DL-228) ───────────────────────────────────────── */
+
+class ArrivedRequests extends MockAssistanceRequestRepository {
+  override getById(id: AssistanceRequestId): Observable<AssistanceRequest | null> {
+    return super.getById(id).pipe(
+      map((request) => {
+        if (request === null) return null;
+        if (id === asId<AssistanceRequestId>('req-0001')) {
+          return {
+            ...request,
+            channel: 'imported',
+            status: 'completed',
+            imported: {
+              importId: asId<AssistanceImportId>('import-1'),
+              sourceReference: 'V-2023-0142',
+              decidedAt: asIsoDateTime('2023-03-14T16:00:00.000Z'),
+              withdrawnAt: asIsoDateTime('2026-11-19T02:00:00.000Z'),
+            },
+          };
+        }
+        return {
+          ...request,
+          channel: 'online',
+          filingAdvisory: {
+            signals: [
+              { code: 'assistance-within-lookback', tone: 'caution' },
+              { code: 'a-check-added-later', tone: 'note' },
+            ],
+            computedAt: asIsoDateTime('2026-11-19T01:00:00.000Z'),
+            recordsRead: 3,
+          },
+        };
+      }),
+    );
+  }
+}
+
+describe('how a request came in (DL-228)', () => {
+  it('says an imported request came from past records, its source and its withdrawal, and offers no act', async () => {
+    const fixture = await openAssessment('req-0001', 'mswdo-head', ArrivedRequests);
+    const element = html(fixture);
+    expect(element.textContent).toContain('Imported from past records');
+    expect(element.textContent).toContain('V-2023-0142');
+    expect(element.textContent).toContain('Its import was withdrawn on');
+    expect(element.textContent).toContain('no longer counted');
+    expect(element.querySelector('.transition__select')).toBeNull();
+    expect(element.querySelector('#request-note-body, textarea[name="note"]')).toBeNull();
+  });
+
+  it('says an online request was applied for in the app, with the check the server kept', async () => {
+    const fixture = await openAssessment('req-0002', 'intake-officer', ArrivedRequests);
+    const element = html(fixture);
+    expect(element.textContent).toContain('Applied in the app');
+    expect(element.textContent).toContain('read 3 records and found');
+    expect(element.textContent).toContain('Worth a second look: Assistance received recently');
+    expect(element.textContent).toContain(
+      'For information: A check this console has no words for (a-check-added-later)',
+    );
+    expect(element.textContent).toContain('Advice, never a decision');
+  });
+
+  it('names how each request came in, in the list', async () => {
+    const fixture = await openList();
+    const headers = [...html(fixture).querySelectorAll('th')].map((th) => th.textContent?.trim());
+    expect(headers).toContain('Came in');
+    expect(html(fixture).textContent).toContain('Walk-in');
   });
 });

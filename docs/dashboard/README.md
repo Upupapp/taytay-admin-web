@@ -107,14 +107,15 @@ _situation_, not this application's URLs.
 
 ## Known gaps
 
-- **Quick actions link to screens later TABs will build.** "Record a request"
-  reaches `/assistance-requests?action=new`; the intake form itself is not built
-  yet, so the query parameter is a seam rather than a feature.
-- **No trend over time.** Every figure is a current position; there is no
-  period-on-period comparison, which is what an executive would ask for next.
-  It needs historical snapshots the mock does not hold.
-- **`assigned-cases` scope still does not narrow lists** (carried from TAB 05),
-  so a social worker's dashboard counts the whole caseload rather than theirs.
-- **Attention thresholds are counts, not ages.** "Waiting for approval" does not
-  yet distinguish two days from two weeks; ageing needs a decision about what
-  the office considers overdue.
+Reviewed 20 November 2026 (`DL-228`): "Record a request" opens the intake form
+(`/assistance-requests/new`), the API narrows a caseload's figures (`DL-183`), and a period filter
+reads the figures over a chosen window; the earlier entries saying otherwise are gone.
+
+- **Past assistance counts once it is imported.** Figures start from what this system holds; the
+  office's old Tulong reports count only after they are imported (Assistance requests › Import past
+  assistance), and a withdrawn import stops counting (`DL-228`, `DL-225`).
+- **No period-on-period comparison on the dashboard.** The summary report (Reports › Summary
+  report, "Download report" here) carries twelve months of received and served; the dashboard
+  itself shows a position for one period.
+- **Waiting is not lateness.** The office has set no service standard for assistance requests, so
+  nothing is counted overdue; open work reports how long it has waited (`DL-101`).

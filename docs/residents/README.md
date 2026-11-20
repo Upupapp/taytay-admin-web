@@ -114,18 +114,22 @@ target minimum.
 
 ## Known gaps
 
-- **Household membership is not editable.** The form does not move a person
-  between households: that is a two-sided decision belonging to a household
-  screen no TAB has built yet. An existing membership is preserved on save.
-- **The mock registry is tab-lifetime.** Created and edited records survive
-  navigation but not a reload. Persistence is the API's.
-- **`assigned-cases` scope still does not narrow lists** (carried from TAB 05),
-  so a social worker sees the whole registry rather than their caseload.
-- **No duplicate detection.** The picker helps a person notice an existing
-  record, but nothing warns at creation that a similar name and birth date are
-  already on file — the single most valuable next addition to this screen.
-- **No export.** `resident.export` exists as a permission with no surface yet;
-  it belongs with the reporting TAB.
-- **`barangay-link` cannot read back a PhilSys reference it recorded.** A
-  deliberate consequence of minimising by default, and worth re-examining after
-  a first office pilot.
+Reviewed 20 November 2026 (`DL-228`): the earlier list named gaps that later work closed —
+duplicate review (`DL-73`, `DL-74`), the caseload's narrowing, which the API now enforces
+(`DL-183`), and membership, which is changed on the household screen.
+
+- **The profile cannot say whether an app account is linked, or where the record came from.**
+  The API keeps both — the link rows (migrations 0058, 0069) and the imports' outcomes (0057,
+  0071) — but `GET /office/residents/{id}` sends neither, so the profile shows nothing rather than
+  a guess. It needs a field such as `app_account { linked_at, act }` and `origin` (citizen import,
+  past assistance import, counter, verification) on that read.
+- **The create form warns on a name, not on a person.** It lists records with the name typed so
+  far, through the registry's own name search (`DL-228`). The API serves no duplicate check for a
+  person not yet recorded, so a same-name record with a different birth date is listed too, and
+  saving is never refused: two people may share a name.
+- **No export.** `resident.export` exists as a permission with no surface yet; it belongs with the
+  reporting work.
+- **The mock registry is tab-lifetime.** Created and edited records survive navigation but not a
+  reload. Persistence is the API's.
+- **`barangay-link` cannot read back a PhilSys reference it recorded.** A deliberate consequence of
+  minimising by default, and worth re-examining after a first office pilot.

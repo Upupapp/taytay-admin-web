@@ -289,6 +289,47 @@
       </div>
     </div>
 
+    <fieldset class="directory-form__group">
+      <legend>{{ copy.applications }}</legend>
+      <p class="field__hint">{{ copy.applicationsLead }}</p>
+      <div class="field">
+        <label class="field__label" for="service-program">{{ copy.program }}</label>
+        <select
+          id="service-program"
+          class="field__input"
+          aria-describedby="service-program-hint"
+          (change)="chooseProgramme($event)"
+        >
+          <option value="" [selected]="programId() === null">{{ copy.programNone }}</option>
+          @if (inactiveProgramme(); as kept) {
+            <option [value]="kept" [selected]="true">{{ copy.programInactive }}</option>
+          }
+          @for (program of programmes(); track program.id) {
+            <option [value]="program.id" [selected]="programId() === program.id">
+              {{ program.name }}
+            </option>
+          }
+        </select>
+        <p class="field__hint" id="service-program-hint">
+          @if (programs().kind === 'error') {
+            {{ copy.programsFailed }}
+          } @else {
+            {{ copy.programHint }}
+          }
+        </p>
+      </div>
+      <label class="check">
+        <input
+          type="checkbox"
+          aria-describedby="service-online-hint"
+          [checked]="acceptsOnline()"
+          (change)="acceptsOnline.set(checked($event))"
+        />
+        {{ copy.acceptsOnline }}
+      </label>
+      <p class="field__hint" id="service-online-hint">{{ copy.acceptsOnlineHint }}</p>
+    </fieldset>
+
     <label class="check">
       <input
         type="checkbox"
@@ -350,6 +391,13 @@
           <div>
             <dt>{{ copy.office }}</dt>
             <dd>{{ officeName(current.officeId) }}</dd>
+          </div>
+          <div>
+            <dt>{{ copy.applications }}</dt>
+            <dd>
+              {{ current.acceptsOnlineApplications ? copy.onlineYes : copy.onlineNo }} —
+              {{ programmeName(current.programId) }}
+            </dd>
           </div>
         </dl>
       </section>

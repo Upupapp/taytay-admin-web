@@ -200,6 +200,25 @@ export const DIRECTORY_COPY = {
     tileColor: 'Tile colour',
     tileColorHint: 'Written #RGB or #RRGGBB. Optional.',
     hidden: 'Hide from the app’s catalogue',
+    // Applying from the app (`DL-228`).
+    applications: 'Applications from the app',
+    applicationsLead:
+      'A Tulong page is information, not a programme. Name the office programme it applies to, ' +
+      'and residents can apply for it from the app.',
+    program: 'Office programme this page applies to',
+    programNone: 'None',
+    programInactive: 'A programme that is not active',
+    programHint:
+      'The active programmes. An application from this page is filed under the one chosen.',
+    programsFailed:
+      'The office’s programmes could not be read, so none can be chosen now. Reopen this form to ' +
+      'try again.',
+    acceptsOnline: 'Accepts online applications',
+    acceptsOnlineHint:
+      'Residents see Apply in the app while the page is in use and its programme is active. ' +
+      'Needs a programme.',
+    onlineYes: 'Accepts online applications',
+    onlineNo: 'Information only',
     featured: 'Feature on the app’s home screen',
     featuredHeadline: 'Headline on the home screen',
     optional: 'Optional.',

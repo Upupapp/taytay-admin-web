@@ -21,8 +21,10 @@ import {
   SERVICE_FIXED_AFTER_CREATION,
   serviceProblems,
   TULONG_SERVICE_REPOSITORY,
+  type AssistanceProgram,
   type Office,
   type OfficeId,
+  type ProgramId,
   type ServiceChanges,
   type ServiceContact,
   type ServiceContactType,
@@ -77,6 +79,8 @@ export class ServiceForm {
   readonly service = input<TulongService | null>(null);
   /** The office directory, read once by the section. */
   readonly offices = input.required<ViewState<readonly Office[]>>();
+  /** The office's active programmes, read whole by the section: the page's programme picker. */
+  readonly programs = input.required<ViewState<readonly AssistanceProgram[]>>();
   /** The page as the server answered after a save or an upload. */
   readonly saved = output<TulongService>();
 
@@ -104,6 +108,8 @@ export class ServiceForm {
   protected readonly tileColor = signal('');
   protected readonly featuredHeadline = signal('');
   protected readonly hiddenFromList = signal(false);
+  protected readonly programId = signal<ProgramId | null>(null);
+  protected readonly acceptsOnline = signal(false);
   protected readonly featured = signal(false);
   protected readonly image = signal<Blob | null>(null);
 
@@ -113,6 +119,14 @@ export class ServiceForm {
 
   protected readonly creating = computed(() => this.service() === null);
   protected readonly directory = computed(() => valueOf(this.offices()) ?? []);
+  protected readonly programmes = computed(() => valueOf(this.programs()) ?? []);
+  /** The page's programme when it is not among the active ones, so the picker still shows it. */
+  protected readonly inactiveProgramme = computed(() => {
+    const chosen = this.programId();
+    return chosen !== null && !this.programmes().some((program) => program.id === chosen)
+      ? chosen
+      : null;
+  });
 
   private readonly draft = computed<ServiceDraft>(() => ({
     name: this.name().trim(),
@@ -128,6 +142,8 @@ export class ServiceForm {
       address: place.address.trim(),
     })),
     officeId: this.officeId(),
+    programId: this.programId(),
+    acceptsOnlineApplications: this.acceptsOnline(),
     iconKey: blankToNull(this.iconKey()),
     tileColor: blankToNull(this.tileColor()),
     badge: blankToNull(this.badge()),
@@ -166,6 +182,14 @@ export class ServiceForm {
       changes.hiddenFromList = draft.hiddenFromList;
     }
     if (this.featured() !== service.featured) changes.featured = this.featured();
+    // Sent together, so the server and `serviceProblems` judge the pair as it will stand.
+    if (
+      draft.programId !== service.programId ||
+      draft.acceptsOnlineApplications !== service.acceptsOnlineApplications
+    ) {
+      changes.programId = draft.programId;
+      changes.acceptsOnlineApplications = draft.acceptsOnlineApplications;
+    }
     return changes;
   });
 
@@ -181,10 +205,24 @@ export class ServiceForm {
 
   protected readonly effects = computed<readonly string[]>(() => {
     if (this.creating()) {
-      return SERVICE_EFFECTS.create;
+      return this.acceptsOnline()
+        ? [...SERVICE_EFFECTS.create, ...SERVICE_EFFECTS.acceptApplications]
+        : SERVICE_EFFECTS.create;
     }
     const changes = this.changes();
+    const service = this.service();
+    const startsApplications =
+      changes.acceptsOnlineApplications === true && service?.acceptsOnlineApplications !== true;
+    const stopsApplications =
+      changes.acceptsOnlineApplications === false && service?.acceptsOnlineApplications === true;
+    const movesProgramme =
+      changes.programId !== undefined &&
+      changes.programId !== service?.programId &&
+      changes.acceptsOnlineApplications === true;
     return [
+      ...(startsApplications ? SERVICE_EFFECTS.acceptApplications : []),
+      ...(stopsApplications ? SERVICE_EFFECTS.stopApplications : []),
+      ...(movesProgramme && !startsApplications ? SERVICE_EFFECTS.programChanged : []),
       ...(changes.hiddenFromList === true ? SERVICE_EFFECTS.hide : []),
       ...(changes.hiddenFromList === false ? SERVICE_EFFECTS.show : []),
       ...(changes.featured === true ? SERVICE_EFFECTS.feature : []),
@@ -228,6 +266,24 @@ export class ServiceForm {
 
   protected label(office: Office): string {
     return officeLabel(office);
+  }
+
+  /** The programme chosen in the picker — one of the active ones, the page's own, or none. */
+  protected chooseProgramme(event: Event): void {
+    const chosen = readText(event);
+    const kept = this.inactiveProgramme();
+    this.programId.set(
+      this.programmes().find((program) => program.id === chosen)?.id ??
+        (kept !== null && kept === chosen ? kept : null),
+    );
+  }
+
+  protected programmeName(id: ProgramId | null): string {
+    if (id === null) {
+      return this.copy.programNone;
+    }
+    const program = this.programmes().find((candidate) => candidate.id === id);
+    return program === undefined ? this.copy.programInactive : program.name;
   }
 
   protected addContact(): void {
@@ -314,6 +370,8 @@ export class ServiceForm {
   }
 
   private fill(service: TulongService | null): void {
+    this.programId.set(service?.programId ?? null);
+    this.acceptsOnline.set(service?.acceptsOnlineApplications ?? false);
     this.name.set(service?.name ?? '');
     this.slug.set(service?.slug ?? '');
     this.category.set(service?.category ?? '');

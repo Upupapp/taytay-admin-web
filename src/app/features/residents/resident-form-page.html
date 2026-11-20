@@ -82,6 +82,29 @@
                   />
                 </label>
               </div>
+              @let alike = lookalikes();
+              <div class="form__lookalikes">
+                @if (alike.kind === 'ready' && alike.value.length > 0) {
+                  <div class="callout callout--warning" role="status">
+                    <p class="callout__title">{{ copy.lookalikesHeading }}</p>
+                    <p>{{ copy.lookalikesLead }}</p>
+                    <ul>
+                      @for (view of alike.value; track view.resident.id) {
+                        <li>
+                          <a [routerLink]="['/residents', view.resident.id]">{{
+                            view.resident.name | personName: 'listed'
+                          }}</a>
+                          @if (!view.resident.isActive) {
+                            {{ copy.lookalikeInactive }}
+                          }
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                } @else if (alike.kind === 'error') {
+                  <p class="field__hint">{{ copy.lookalikesFailed }}</p>
+                }
+              </div>
             </fieldset>
 
             <fieldset class="form__section">

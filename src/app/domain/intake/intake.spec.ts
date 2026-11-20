@@ -441,6 +441,8 @@ describe('the case study', () => {
     barangayId: asId('brgy-san-juan'),
     status: 'assessment',
     channel: 'walk-in',
+    filingAdvisory: null,
+    imported: null,
     referredBy: null,
     requestedAmount: pesos(9000),
     approvedAmount: null,

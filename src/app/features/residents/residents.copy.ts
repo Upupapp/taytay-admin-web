@@ -208,6 +208,14 @@ export const RESIDENTS_COPY = {
   form: {
     createTitle: 'Register a resident',
     createSubtitle: 'Add a person to the municipal registry.',
+    // Records with the name being typed (`DL-228`): advice, never a refusal.
+    lookalikesHeading: 'Already on the registry under this name?',
+    lookalikesLead:
+      'These records match the name typed so far. Open one to check it is not this person before ' +
+      'adding a second record; two people may share a name, so saving is still allowed.',
+    lookalikeInactive: '(deactivated)',
+    lookalikesFailed:
+      'The registry could not be searched for this name just now. Saving is still allowed.',
     editTitle: 'Edit resident',
     editSubtitle: 'Correct the details on an existing record.',
     back: 'Back to residents',

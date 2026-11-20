@@ -31,7 +31,9 @@
  *
  *   5. Nothing in the directory's domain, mappers, mock, seed or screens names `Program`,
  *      `PROGRAM_REPOSITORY` or an eligibility guideline, and the programmes module names no Tulong
- *      type (`DL-164`).
+ *      type (`DL-164`). One read is allowed, and only as written: the services section's
+ *      `inject(PROGRAM_REPOSITORY).listActive()`, the picker for the programme a page applies to
+ *      (`DL-228`, the API's ADR 0004 decision 2) — a reference to a programme, never one.
  *
  * ## Images
  *
@@ -240,8 +242,15 @@ if (!/COMMAND_CENTER_EFFECTS\s*\.\s*leaves\s*,\s*\.\.\.\s*HOTLINE_EFFECTS\s*\.\s
 /* ── 5. not a programme ──────────────────────────────────────────────────── */
 
 const PROGRAMME = /\b(Program|ProgramRepository|PROGRAM_REPOSITORY|EligibilityGuideline|ProgramResponsibility)\b/;
+/** The one read `DL-228` allows: the services section's picker of active programmes. */
+const PROGRAMME_PICKER = { file: join(APP, 'features', 'directory', 'services-section.ts'), read: 'inject(PROGRAM_REPOSITORY).listActive()' };
 for (const file of moduleFiles) {
-  const found = PROGRAMME.exec(code(readFileSync(file, 'utf8')));
+  let text = code(readFileSync(file, 'utf8'));
+  if (file === PROGRAMME_PICKER.file) {
+    // The import of the token, and the one read; any other mention still fails.
+    text = text.split(PROGRAMME_PICKER.read).join('').replace(/^\s*PROGRAM_REPOSITORY,\s*$/m, '');
+  }
+  const found = PROGRAMME.exec(text);
   if (found !== null) {
     failures.push(`${shown(file)} names ${found[1]}. A Tulong page is information for residents, not a programme (DL-164).`);
   }

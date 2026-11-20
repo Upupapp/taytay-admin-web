@@ -32,6 +32,7 @@ import {
   type SocialWorker,
   type StaffUserId,
 } from '@domain/index';
+import { INTAKE_COPY } from '@shared/intake/intake.copy';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
@@ -275,6 +276,11 @@ export class RequestListPage {
   protected readonly columns = computed<readonly TableColumn<AssistanceRequest>[]>(() => [
     { key: 'reference', header: this.copy.columnReference, cell: this.referenceCell() },
     { key: 'status', header: this.copy.columnStatus, cell: this.statusCell() },
+    {
+      key: 'channel',
+      header: this.copy.columnChannel,
+      value: (request) => INTAKE_COPY.requestChannelLabel[request.channel],
+    },
     {
       key: 'reason',
       header: this.copy.columnReason,

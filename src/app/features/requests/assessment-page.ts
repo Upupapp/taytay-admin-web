@@ -35,6 +35,9 @@ import {
   PROTECTED_WRITE_REFUSAL,
   REQUEST_NOTE_MAX_LENGTH,
   isTerminalAssistanceStatus,
+  isHistorical,
+  INTAKE_SIGNAL_CODES,
+  type IntakeSignalTone,
   type CaseNoteSensitivity,
   type RequestNote,
   type SocialWorker,
@@ -340,8 +343,24 @@ export class AssessmentPage {
     return (
       request.referenceNumber !== '' &&
       !isTerminalAssistanceStatus(request.status) &&
-      !this.uncleared(request)
+      !this.uncleared(request) &&
+      !isHistorical(request)
     );
+  }
+
+  /** An imported request is read, never worked (`DL-228`): nothing here adds to it. */
+  protected historical(request: AssistanceRequest): boolean {
+    return isHistorical(request);
+  }
+
+  /** A kept filing signal in words; a code this console does not know is said, never dropped. */
+  protected signalLabel(code: string): string {
+    const known = INTAKE_SIGNAL_CODES.find((candidate) => candidate === code);
+    return known === undefined ? this.copy.signalUnknown(code) : INTAKE_COPY.signalLabel[known];
+  }
+
+  protected toneLabel(tone: IntakeSignalTone): string {
+    return INTAKE_COPY.toneLabel[tone];
   }
 
   protected readonly protectedWriteRefusal = PROTECTED_WRITE_REFUSAL;
@@ -859,7 +878,7 @@ export class AssessmentPage {
   }
 
   protected channelLabel(request: AssistanceRequest): string {
-    return INTAKE_COPY.channelLabel[request.channel];
+    return INTAKE_COPY.requestChannelLabel[request.channel];
   }
 
   protected moveLabel(change: StatusChange): string {

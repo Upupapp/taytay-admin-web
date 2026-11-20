@@ -26,6 +26,51 @@
           <h2 class="section-title assessment__heading" id="request-heading">
             {{ copy.requestHeading }}
           </h2>
+          @if (request.imported; as origin) {
+            <div class="callout assessment__origin" role="note">
+              <p class="callout__title">{{ copy.importedHeading }}</p>
+              <p>{{ copy.importedLead }}</p>
+              <dl class="facts">
+                <dt>{{ copy.importedSource }}</dt>
+                <dd>{{ origin.sourceReference ?? copy.importedSourceNone }}</dd>
+                <dt>{{ copy.importedDecided }}</dt>
+                <dd>
+                  <time [attr.datetime]="origin.decidedAt">{{
+                    origin.decidedAt | displayDate: 'date'
+                  }}</time>
+                </dd>
+              </dl>
+              @if (origin.withdrawnAt; as withdrawn) {
+                <p>{{ copy.importedWithdrawn((withdrawn | displayDate: 'date') ?? '') }}</p>
+              }
+            </div>
+          }
+          @if (request.channel === 'online') {
+            <div class="callout assessment__origin" role="note">
+              <p class="callout__title">{{ copy.onlineHeading }}</p>
+              <p>{{ copy.onlineLead }}</p>
+              @if (request.filingAdvisory; as kept) {
+                <p>
+                  {{
+                    copy.onlineChecked(
+                      (kept.computedAt | displayDate: 'date-time') ?? '',
+                      kept.recordsRead
+                    )
+                  }}
+                </p>
+                @if (kept.signals.length === 0) {
+                  <p>{{ copy.onlineNothing }}</p>
+                } @else {
+                  <ul>
+                    @for (signal of kept.signals; track $index) {
+                      <li>{{ toneLabel(signal.tone) }}: {{ signalLabel(signal.code) }}</li>
+                    }
+                  </ul>
+                }
+                <p>{{ copy.onlineAdvice }}</p>
+              }
+            </div>
+          }
           @if (request.withheld.includes('reasonForRequest')) {
             <p class="status-line assessment__note" role="note">{{ copy.protectedNote }}</p>
           }
@@ -830,7 +875,7 @@
             }
           }
 
-          @if (canNote()) {
+          @if (canNote() && !historical(request)) {
             @if (withheld(request, 'notes')) {
               <p class="status-line assessment__note" role="note">{{ protectedWriteRefusal }}</p>
             } @else {

@@ -219,6 +219,15 @@ describe('Tulong pages (DL-170)', () => {
     expect(serviceProblems({ featured: true })).toEqual([]);
   });
 
+  it('takes online applications only on a page that names its programme (DL-228)', () => {
+    expect(
+      serviceProblems({ acceptsOnlineApplications: true, programId: null }).map(
+        (problem) => problem.field,
+      ),
+    ).toEqual(['acceptsOnlineApplications']);
+    expect(serviceProblems({ acceptsOnlineApplications: false, programId: null })).toEqual([]);
+  });
+
   it('says a hidden page stays in this list, and featuring one may push another off', () => {
     expect(SERVICE_EFFECTS.hide.join(' ')).toContain('It stays in this list');
     expect(SERVICE_EFFECTS.hide.join(' ')).not.toContain('Open a page by its address');

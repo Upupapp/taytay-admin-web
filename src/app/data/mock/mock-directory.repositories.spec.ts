@@ -76,6 +76,8 @@ const SERVICE_DRAFT: ServiceDraft = {
   contacts: [],
   locations: [],
   officeId: null,
+  programId: null,
+  acceptsOnlineApplications: false,
   iconKey: null,
   tileColor: null,
   badge: null,

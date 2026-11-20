@@ -44,6 +44,7 @@ export const REQUESTS_COPY = {
     columnReason: 'What it is for',
     columnStatus: 'Status',
     columnRequested: 'Requested',
+    columnChannel: 'Came in',
     unnamedDraft: 'Not yet filed',
     withheld: 'Withheld — protected record',
     notGiven: 'Not given yet',
@@ -151,6 +152,29 @@ export const REQUESTS_COPY = {
     requestHeading: 'The request',
     programme: 'Programme',
     channel: 'Channel',
+    // Where the request came from (`DL-228`).
+    importedHeading: 'Imported from past records',
+    importedLead:
+      'A record of assistance the office gave before this system, brought in from an old Tulong ' +
+      'report. Nothing in this system moved it, so it has no history of steps and is never worked: ' +
+      'it is read here, and counted in the dashboard, the reports and the twelve-month look-back.',
+    importedSource: 'Source reference',
+    importedSourceNone: 'The report gave none',
+    importedDecided: 'Decided on',
+    importedWithdrawn: (on: string): string =>
+      `Its import was withdrawn on ${on}. The request is kept, and no longer counted anywhere.`,
+    onlineHeading: 'Applied in the app',
+    onlineLead:
+      'The resident applied for this from the app, with the documents shown below as received ' +
+      'from her account. Intake reviews it as any other request.',
+    onlineChecked: (on: string, records: number): string =>
+      `When she applied (${on}), the duplicate and previous-assistance check read ${records} ` +
+      `record${records === 1 ? '' : 's'} and found:`,
+    onlineNothing: 'Nothing to note.',
+    onlineAdvice:
+      'Advice, never a decision: nobody was there to answer a caution, so it waits for you. The ' +
+      'check below is read again as the records stand now.',
+    signalUnknown: (code: string): string => `A check this console has no words for (${code})`,
     requested: 'Requested',
     approved: 'Approved',
     recommended: 'Recommended',

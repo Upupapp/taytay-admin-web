@@ -1024,3 +1024,36 @@ describe('a resident record keeps itself current (DL-222)', () => {
     expect(reads.profile).toBe(1);
   });
 });
+
+describe('a new record warns of records with the same name (DL-228)', () => {
+  function type(element: HTMLElement, autocomplete: string, value: string): void {
+    const input = element.querySelector<HTMLInputElement>(`input[autocomplete="${autocomplete}"]`);
+    if (input === null) throw new Error(`no ${autocomplete} field`);
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+  }
+
+  it('lists the records already under the name typed, and still lets the person save', async () => {
+    const fixture = await openForm();
+    const element = fixture.nativeElement as HTMLElement;
+    type(element, 'given-name', 'Aurora');
+    type(element, 'family-name', 'Mercado');
+    // The search waits for the typing to settle, as every name search here does (`DL-119`).
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await fixture.whenStable();
+
+    const warning = element.querySelector('.form__lookalikes .callout');
+    expect(warning?.textContent).toContain('Already on the registry under this name?');
+    expect(warning?.querySelector('a')?.textContent).toContain('Mercado');
+    expect(warning?.textContent).toContain('saving is still allowed');
+  });
+
+  it('says nothing while the name is not yet whole, or on an edit', async () => {
+    const fixture = await openForm();
+    const element = fixture.nativeElement as HTMLElement;
+    type(element, 'given-name', 'Aurora');
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await fixture.whenStable();
+    expect(element.querySelector('.form__lookalikes .callout')).toBeNull();
+  });
+});

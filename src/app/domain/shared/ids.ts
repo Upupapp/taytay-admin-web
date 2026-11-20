@@ -96,6 +96,8 @@ export type QuickLinkId = Branded<string, 'QuickLinkId'>;
 export type ArchiveEventId = Branded<string, 'ArchiveEventId'>;
 /** A file of the office's own list, held for checking before it reaches the registry (`DL-214`). */
 export type ResidentImportId = Branded<string, 'ResidentImportId'>;
+/** A file of the office's past assistance, held for checking before it is filed (`DL-228`). */
+export type AssistanceImportId = Branded<string, 'AssistanceImportId'>;
 /** A resident's application from the app to be recorded in a sector (`DL-215`). */
 export type SectorApplicationId = Branded<string, 'SectorApplicationId'>;
 /** A resident’s digital ID card, as the API numbers its record — not the card number (`DL-171`). */

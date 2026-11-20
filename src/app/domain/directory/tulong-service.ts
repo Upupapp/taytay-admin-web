@@ -1,5 +1,5 @@
 import type { ArchiveRecord } from '../shared/archive';
-import type { IsoDateTime, OfficeId, TulongServiceId } from '../shared/ids';
+import type { IsoDateTime, OfficeId, ProgramId, TulongServiceId } from '../shared/ids';
 import type { StatusCatalog, StatusTransitions } from '../shared/status';
 
 import type { FieldProblem } from './directory-office';
@@ -33,6 +33,17 @@ export interface TulongService {
   readonly contacts: readonly ServiceContact[];
   readonly locations: readonly ServiceLocation[];
   readonly officeId: OfficeId | null;
+  /**
+   * The office programme this page applies to (`DL-228`, the API's ADR 0004 decision 2), or `null`.
+   * A Tulong page is not a programme (`DL-170`); this names the one an application from it files
+   * under.
+   */
+  readonly programId: ProgramId | null;
+  /**
+   * Residents apply from the app: the page shows Apply while it is live, takes applications and its
+   * programme is active. Needs `programId`.
+   */
+  readonly acceptsOnlineApplications: boolean;
   /** Shown among the featured pages on the app's home screen. */
   readonly featured: boolean;
   readonly featuredHeadline: string | null;
@@ -126,6 +137,8 @@ export interface ServiceDraft {
   readonly contacts: readonly ServiceContact[];
   readonly locations: readonly ServiceLocation[];
   readonly officeId: OfficeId | null;
+  readonly programId: ProgramId | null;
+  readonly acceptsOnlineApplications: boolean;
   readonly iconKey: string | null;
   readonly tileColor: string | null;
   readonly badge: string | null;
@@ -149,6 +162,8 @@ export interface ServiceChanges {
   readonly requirements?: readonly string[];
   readonly contacts?: readonly ServiceContact[];
   readonly featured?: boolean;
+  readonly programId?: ProgramId | null;
+  readonly acceptsOnlineApplications?: boolean;
   readonly iconKey?: string | null;
   readonly tileColor?: string | null;
   readonly badge?: string | null;
@@ -307,6 +322,13 @@ export function serviceProblems(
     SERVICE_LIMITS.featuredHeadline,
   );
   long('schedule', 'The schedule', values.schedule, SERVICE_LIMITS.schedule);
+  // The API's 422 and database check (`DL-228`): an application files under a programme.
+  if (values.acceptsOnlineApplications === true && values.programId === null) {
+    problems.push({
+      field: 'acceptsOnlineApplications',
+      message: 'Choose the office programme first: an application from the app is filed under it.',
+    });
+  }
   return problems;
 }
 
@@ -328,7 +350,8 @@ export function serviceProblems(
 export const SERVICE_EFFECTS = {
   create: [
     'The page appears in the app’s Tulong catalogue, unless it is hidden from the catalogue.',
-    'It is information only. Residents read it; nothing in the app lets them apply through it.',
+    'Unless it accepts online applications, it is information only: residents read it, and ' +
+      'nothing in the app lets them apply through it.',
     'Its address, category, who it is for, places and office can be set only now. The API’s ' +
       'published contract declares no way to change them afterwards.',
     'A picture, and featuring it on the home screen, are added once the page exists.',
@@ -349,6 +372,19 @@ export const SERVICE_EFFECTS = {
       'newest featured pages, so featuring a seventh pushes the oldest off it.',
   ],
   unfeature: ['The page leaves the featured pages on the app’s home screen.'],
+  // Applying from the app (`DL-228`; the API's ADR 0004 decision 2, `can_apply`).
+  acceptApplications: [
+    'Residents whose accounts are verified and linked to a registry record see Apply on this ' +
+      'page in the app, while the page is in use and its programme is active. Anybody else is ' +
+      'told what to do first.',
+    'An application files an assistance request under the programme, with a control number, in ' +
+      'the intake queue as “Applied in the app”, with the documents the resident sent and what the ' +
+      'duplicate check found. Intake reviews it as any other request.',
+  ],
+  stopApplications: [
+    'Apply leaves the page in the app. Applications already sent stay in the intake queue.',
+  ],
+  programChanged: ['Applications sent from this page from now on are filed under this programme.'],
   imageReplaced: [
     'The image replaces the page’s picture in the app at once. The old one stays stored on the ' +
       'server; nothing deletes it.',

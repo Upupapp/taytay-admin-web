@@ -178,3 +178,68 @@ describe('the assistance-request mapper, a self-approval (DL-226)', () => {
     expect(read?.statusHistory[0]?.selfApproved).toBe(false);
   });
 });
+
+describe('the assistance-request mapper, how a request came in (DL-228)', () => {
+  const BARANGAYS = toBarangayIndex([
+    { id: '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04', name: 'San Juan' },
+  ]);
+  const FILED = OFFICE_REQUESTS_PAGE.data[1];
+
+  it('reads an online request with the check the server kept, codes and tones only', () => {
+    const read = toAssistanceRequest(
+      {
+        ...FILED,
+        channel: 'online',
+        filing_advisory: {
+          signals: [
+            { code: 'assistance-within-lookback', tone: 'caution' },
+            { code: 'a-check-added-later', tone: 'note' },
+          ],
+          computed_at: '2026-11-19T01:00:00.000Z',
+          records_read: 4,
+        },
+        imported: null,
+      },
+      BARANGAYS,
+    );
+    expect(read?.channel).toBe('online');
+    expect(read?.filingAdvisory).toEqual({
+      signals: [
+        { code: 'assistance-within-lookback', tone: 'caution' },
+        { code: 'a-check-added-later', tone: 'note' },
+      ],
+      computedAt: '2026-11-19T01:00:00.000Z',
+      recordsRead: 4,
+    });
+    expect(read?.imported).toBeNull();
+  });
+
+  it('reads an imported request with its origin, and refuses one that says none', () => {
+    const imported = {
+      ...FILED,
+      channel: 'imported',
+      imported: {
+        import_id: '1f2e3d4c-5b6a-4987-8a6b-5c4d3e2f1a01',
+        source_reference: 'V-2023-0142',
+        decided_at: '2023-03-14T16:00:00.000Z',
+        withdrawn_at: null,
+      },
+    };
+    expect(toAssistanceRequest(imported, BARANGAYS)?.imported).toEqual({
+      importId: '1f2e3d4c-5b6a-4987-8a6b-5c4d3e2f1a01',
+      sourceReference: 'V-2023-0142',
+      decidedAt: '2023-03-14T16:00:00.000Z',
+      withdrawnAt: null,
+    });
+    expect(toAssistanceRequest({ ...imported, imported: null }, BARANGAYS)).toBeNull();
+    expect(
+      toAssistanceRequest({ ...FILED, filing_advisory: { signals: 'none' } }, BARANGAYS),
+    ).toBeNull();
+  });
+
+  it('reads every counter request as before: no kept check, no origin', () => {
+    const read = toAssistanceRequest(FILED, BARANGAYS);
+    expect(read?.filingAdvisory).toBeNull();
+    expect(read?.imported).toBeNull();
+  });
+});

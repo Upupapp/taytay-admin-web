@@ -1525,6 +1525,8 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       barangayId,
       status: 'draft' as const,
       channel: draft.channel,
+      filingAdvisory: null,
+      imported: null,
       referredBy: referredBy === '' ? null : referredBy,
       requestedAmount: draft.requestedAmount,
       reasonForRequest: draft.reasonForRequest.trim(),

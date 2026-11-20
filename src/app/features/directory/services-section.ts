@@ -12,6 +12,8 @@ import {
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, combineLatest, of, switchMap } from 'rxjs';
 
+import { NotConnected } from '@core/access/not-connected';
+import { ServedPorts } from '@core/access/served-ports';
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
 import {
@@ -19,11 +21,13 @@ import {
   listingOf,
   officeLabel,
   OFFICE_REPOSITORY,
+  PROGRAM_REPOSITORY,
   SERVICE_EFFECTS,
   SERVICE_LISTING_CATALOG,
   TULONG_SERVICE_REPOSITORY,
   type OfficeId,
   type TulongService,
+  type AssistanceProgram,
 } from '@domain/index';
 import { ArchiveDialog } from '@shared/archive/archive-dialog';
 import { ArchiveHistory } from '@shared/archive/archive-history';
@@ -33,7 +37,7 @@ import { officeDirectory } from '@shared/offices/office-directory';
 import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { failureReason } from '@shared/state/failure-reason';
 import { liveViewState } from '@shared/state/live-view-state';
-import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
+import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
@@ -66,6 +70,7 @@ interface Move {
   selector: 'app-services-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NotConnected,
     ArchiveDialog,
     ArchiveHistory,
     ArchiveTabs,
@@ -97,6 +102,17 @@ export class ServicesSection {
   protected readonly listingOf = listingOf;
   /** The offices in use: the form's picker, and the names in the list (`DL-161`). */
   protected readonly offices = officeDirectory(inject(OFFICE_REPOSITORY).list());
+  /**
+   * The active programmes, read whole, for the form's "applies to" picker (`DL-228`). Read once
+   * with the section: a picker that changed under somebody choosing would move what they chose.
+   */
+  protected readonly servesPrograms = inject(ServedPorts).serves('program');
+  protected readonly programs = toSignal(
+    this.servesPrograms
+      ? toViewState(inject(PROGRAM_REPOSITORY).listActive())
+      : of(ready<readonly AssistanceProgram[]>([])),
+    { initialValue: LOADING as ViewState<readonly AssistanceProgram[]> },
+  );
 
   /**
    * The archived offices' names, for a page that names one: context, not the record — when they

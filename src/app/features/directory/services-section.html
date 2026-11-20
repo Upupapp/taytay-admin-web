@@ -118,9 +118,14 @@
     (dismissed)="closeDrawer()"
   >
     <div modal-body class="stack">
+      <!-- The programme picker's port, said in place when it is not served (DL-228). -->
+      @if (!servesPrograms) {
+        <app-not-connected port="program" />
+      }
       <app-service-form
         [service]="drawerService()"
         [offices]="offices.state()"
+        [programs]="programs()"
         (saved)="onSaved($event)"
       />
       @if (drawerService() !== null) {

@@ -39,8 +39,10 @@ import {
   type Sex,
   type VulnerabilitySector,
 } from '@domain/index';
+import { PersonNamePipe } from '@shared/pipes/person-name.pipe';
+import { debouncedTerm } from '@shared/state/debounced';
 import { failureReason } from '@shared/state/failure-reason';
-import { LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
+import { IDLE, LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
@@ -108,7 +110,7 @@ const BLANK: FormModel = {
 @Component({
   selector: 'app-resident-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, PageHeader, RouterLink],
+  imports: [AsyncContent, PageHeader, PersonNamePipe, RouterLink],
   templateUrl: './resident-form-page.html',
   styleUrl: './resident-form-page.scss',
 })
@@ -228,6 +230,32 @@ export class ResidentFormPage {
 
   protected readonly subtitle = computed(() =>
     this.isEdit() ? this.copy.editSubtitle : this.copy.createSubtitle,
+  );
+
+  /**
+   * Records already on the registry under the name being typed, for a new record only (`DL-228`).
+   * The API serves no duplicate check for a person not yet recorded, so this is the registry's own
+   * name search — the one the person picker uses, the same closed set of fields (`DL-109`) — and it
+   * advises: it never stops a save, because two people may share a name (`DL-60`, `DL-74`).
+   */
+  private readonly typedName = debouncedTerm(
+    computed(() =>
+      this.isEdit() ? '' : `${this.model().first.trim()} ${this.model().last.trim()}`.trim(),
+    ),
+  );
+  protected readonly lookalikes = toSignal(
+    toObservable(this.typedName).pipe(
+      switchMap((term) =>
+        this.model().first.trim() === '' || this.model().last.trim().length < 2
+          ? of(IDLE as ViewState<readonly ResidentView[]>)
+          : toViewState(
+              this.repository
+                .list({ search: term, includeInactive: true }, { limit: 5, cursor: null })
+                .pipe(map((page) => page.items)),
+            ),
+      ),
+    ),
+    { initialValue: IDLE as ViewState<readonly ResidentView[]> },
   );
 
   private seeded = false;

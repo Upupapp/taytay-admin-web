@@ -1,8 +1,10 @@
 import type { AuditStamp } from '../shared/audit';
 import type { AssessmentRecommendation } from '../intake/assessment';
 import type { IntakeChannel } from '../intake/intake-draft';
+import type { IntakeSignalTone } from '../intake/intake-advisory';
 import type { CaseNoteSensitivity } from '../cases/case-note';
 import type {
+  AssistanceImportId,
   AssistanceRequestId,
   BarangayId,
   RequestNoteId,
@@ -532,6 +534,54 @@ export function isWithheldFromReader(
   return request.withheld.includes(field);
 }
 
+/**
+ * How a filed request reached the office: the counter's channels (`DL-61`), and `imported` — an old
+ * Tulong report brought in as a closed request (`DL-228`, the API's ADR 0005 s.3). `imported` is
+ * never a draft's: nobody files one at the counter.
+ */
+export type RequestChannel = IntakeChannel | 'imported';
+export const REQUEST_CHANNELS: readonly RequestChannel[] = [
+  'walk-in',
+  'barangay-referral',
+  'encoded',
+  'online',
+  'imported',
+];
+
+/**
+ * What the duplicate and previous-assistance check found when the resident applied from the app
+ * (`DL-228`): codes and tones only, kept once by the server, for intake to read. Advice, never a
+ * decision (`DL-60`) — nobody was there to answer a caution, so it waits for intake.
+ */
+export interface FilingAdvisory {
+  readonly signals: readonly FilingSignal[];
+  readonly computedAt: IsoDateTime;
+  readonly recordsRead: number;
+}
+
+export interface FilingSignal {
+  /** The check's code, as the server gives it; a code this console has no words for is kept. */
+  readonly code: string;
+  readonly tone: IntakeSignalTone;
+}
+
+/**
+ * Where an imported request came from (`DL-228`): its import, the source's own control or voucher
+ * number, the day it was decided, and when its import was withdrawn — kept, flagged, and no longer
+ * counted (`DL-225`). Historical: nothing in this system moved it, and nothing here moves it now.
+ */
+export interface ImportedOrigin {
+  readonly importId: AssistanceImportId;
+  readonly sourceReference: string | null;
+  readonly decidedAt: IsoDateTime;
+  readonly withdrawnAt: IsoDateTime | null;
+}
+
+/** An imported request is a record of what was given before this system; it is not worked. */
+export function isHistorical(request: Pick<AssistanceRequest, 'channel'>): boolean {
+  return request.channel === 'imported';
+}
+
 export interface AssistanceRequest {
   readonly id: AssistanceRequestId;
   /** Human-facing control number printed on the applicant's copy. `''` while a draft. */
@@ -545,7 +595,11 @@ export interface AssistanceRequest {
    * How the request reached the office (`DL-61`). Kept on the record: a resumed draft that forgot
    * it would be re-saved as a walk-in, and the server keeps what it is sent.
    */
-  readonly channel: IntakeChannel;
+  readonly channel: RequestChannel;
+  /** For a request applied for in the app: what the check found then. `null` otherwise. */
+  readonly filingAdvisory: FilingAdvisory | null;
+  /** For a request imported from an old Tulong report: where it came from. `null` otherwise. */
+  readonly imported: ImportedOrigin | null;
   /** Who sent the applicant, when somebody did. `null` too when withheld — see `withheld`. */
   readonly referredBy: string | null;
   readonly requestedAmount: Money | null;

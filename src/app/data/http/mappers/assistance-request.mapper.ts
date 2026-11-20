@@ -5,7 +5,7 @@ import {
   CASE_NOTE_SENSITIVITIES,
   DOCUMENT_REQUEST_CHANNELS,
   DOCUMENT_SOURCES,
-  INTAKE_CHANNELS,
+  REQUEST_CHANNELS,
   INTAKE_SIGNAL_CODES,
   INTAKE_SIGNAL_TONES,
   REQUIREMENT_OBLIGATIONS,
@@ -21,7 +21,11 @@ import {
   type AssessmentQuestionKind,
   type AssessmentTemplate,
   type AssessmentTemplateStatus,
+  type AssistanceImportId,
   type AssistanceRequest,
+  type FilingAdvisory,
+  type FilingSignal,
+  type ImportedOrigin,
   type AssistanceRequestId,
   type AssistanceRequestStatus,
   type ConditionalApplicability,
@@ -122,8 +126,14 @@ export function toAssistanceRequest(wire: unknown, barangays: BarangayIndex): As
   const residentId = id<ResidentId>(field(wire, 'resident_id'));
   const barangayId = barangays.toConsole(str(field(wire, 'barangay_id')));
   const status = oneOf(field(wire, 'status'), STATUSES);
-  const channel = oneOf(field(wire, 'channel'), INTAKE_CHANNELS);
+  const channel = oneOf(field(wire, 'channel'), REQUEST_CHANNELS);
   const requirements = toRequirements(field(wire, 'requirements'));
+  // An online request's kept check, an imported one's origin (`DL-228`): either present and
+  // unreadable refuses the request — an origin shown as "none" would put an old report in the queue.
+  const advisoryWire = field(wire, 'filing_advisory');
+  const filingAdvisory = toFilingAdvisory(advisoryWire);
+  const importedWire = field(wire, 'imported');
+  const imported = toImportedOrigin(importedWire);
   const statusHistory = toHistory(field(wire, 'status_history'));
   const assignments = toAssignments(field(wire, 'assignments'));
   const withheld = toWithheld(field(wire, 'withheld'));
@@ -145,6 +155,13 @@ export function toAssistanceRequest(wire: unknown, barangays: BarangayIndex): As
     createdAt === null ||
     updatedAt === null
   ) {
+    return null;
+  }
+  // An origin sent and unreadable, or an imported request without one, refuses the request.
+  const advisoryUnread =
+    advisoryWire !== null && advisoryWire !== undefined && filingAdvisory === null;
+  const originUnread = importedWire !== null && importedWire !== undefined && imported === null;
+  if (advisoryUnread || originUnread || (channel === 'imported' && imported === null)) {
     return null;
   }
   // A case study the console cannot read is not "none was done": the request is refused whole. Nor
@@ -184,6 +201,8 @@ export function toAssistanceRequest(wire: unknown, barangays: BarangayIndex): As
     barangayId,
     status,
     channel,
+    filingAdvisory,
+    imported,
     referredBy: str(field(wire, 'referred_by')),
     requestedAmount: requested === null ? null : centavos(requested),
     approvedAmount: approved === null ? null : centavos(approved),
@@ -208,6 +227,44 @@ export function toAssistanceRequest(wire: unknown, barangays: BarangayIndex): As
       updatedAt,
       updatedBy: id<StaffUserId>(field(wire, 'updated_by')),
     },
+  };
+}
+
+/**
+ * `filing_advisory` (`DL-228`): codes and tones only. A code this console has no words for is kept
+ * as given and said so on screen, never dropped; an unknown tone refuses the whole advisory.
+ */
+function toFilingAdvisory(wire: unknown): FilingAdvisory | null {
+  const computedAt = dateTime(field(wire, 'computed_at'));
+  const recordsRead = int(field(wire, 'records_read'));
+  const signalsWire = field(wire, 'signals');
+  if (computedAt === null || recordsRead === null || !Array.isArray(signalsWire)) {
+    return null;
+  }
+  const signals: FilingSignal[] = [];
+  for (const item of signalsWire) {
+    const code = str(field(item, 'code'));
+    const tone = oneOf(field(item, 'tone'), INTAKE_SIGNAL_TONES);
+    if (code === null || tone === null) {
+      return null;
+    }
+    signals.push({ code, tone });
+  }
+  return { signals, computedAt, recordsRead };
+}
+
+/** `imported` (`DL-228`): the import, the source's number, the day decided, the withdrawal. */
+function toImportedOrigin(wire: unknown): ImportedOrigin | null {
+  const importId = id<AssistanceImportId>(field(wire, 'import_id'));
+  const decidedAt = dateTime(field(wire, 'decided_at'));
+  if (importId === null || decidedAt === null) {
+    return null;
+  }
+  return {
+    importId,
+    sourceReference: str(field(wire, 'source_reference')),
+    decidedAt,
+    withdrawnAt: dateTime(field(wire, 'withdrawn_at')),
   };
 }
 

@@ -1,6 +1,7 @@
 import type {
   AssessmentReadinessCode,
   IntakeChannel,
+  RequestChannel,
   IntakeProblemCode,
   IntakeSignalCode,
   IntakeSignalTone,
@@ -13,14 +14,23 @@ export const INTAKE_COPY = {
     'walk-in': 'Walk-in',
     'barangay-referral': 'Barangay referral',
     encoded: 'Encoded from paper',
-    online: 'Online submission',
+    online: 'Applied in the app',
   } satisfies Record<IntakeChannel, string>,
+
+  /** How a filed request came in, the import of past records included (`DL-228`). */
+  requestChannelLabel: {
+    'walk-in': 'Walk-in',
+    'barangay-referral': 'Barangay referral',
+    encoded: 'Encoded from paper',
+    online: 'Applied in the app',
+    imported: 'Imported from past records',
+  } satisfies Record<RequestChannel, string>,
 
   channelHint: {
     'walk-in': 'The applicant was seen at the counter.',
     'barangay-referral': 'Endorsed by a barangay official, usually with a covering letter.',
     encoded: 'Typed up afterwards from a paper form.',
-    online: 'Filed by the applicant themselves. Not available from this screen.',
+    online: 'Sent by the resident from the app. Not available from this screen.',
   } satisfies Record<IntakeChannel, string>,
 
   stepLabel: {
