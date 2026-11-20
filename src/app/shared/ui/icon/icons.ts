@@ -84,6 +84,7 @@ const DEFINITIONS = {
   arrowRight: { d: 'M5 12h14M13 6l6 6-6 6' },
   arrowUpRight: { d: 'M7 17 17 7M8 7h9v9' },
   download: { d: 'M12 4v11M7 10l5 5 5-5M5 20h14' },
+  upload: { d: 'M12 16V4M7 9l5-5 5 5M4 20h16' },
   chevronDown: { d: 'm6 9 6 6 6-6' },
   chevronUp: { d: 'm6 15 6-6 6 6' },
   chevronsUpDown: { d: 'm8 9 4-4 4 4M8 15l4 4 4-4' },

@@ -47,7 +47,7 @@ import { PageHeader } from '@shared/ui/page-header/page-header';
 import { SavedViewsBar } from '@shared/ui/saved-views/saved-views-bar';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 
-import { residentColumns } from './resident-columns';
+import { residentColumns, sectorChipClass } from './resident-columns';
 import { RESIDENTS_COPY } from './residents.copy';
 import { readResidentQuery, residentFilterParams } from './resident-query';
 
@@ -214,6 +214,8 @@ export class ResidentListPage {
   protected detailLink(view: ResidentView): string {
     return `/residents/${view.resident.id}`;
   }
+
+  protected readonly sectorChip = sectorChipClass;
 
   protected sectorLabel(sector: VulnerabilitySector): string {
     return VULNERABILITY_SECTOR_LABELS[sector];

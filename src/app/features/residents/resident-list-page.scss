@@ -6,6 +6,20 @@
   color: var(--gold);
 }
 
+// The board's header buttons: a small outlined pill beside a 44px primary one, smaller than the
+// pattern's 48px page action.
+.btn.residents__action {
+  min-block-size: var(--h-btn-sm);
+  padding-inline: 14px;
+  font-size: var(--fs-sm);
+}
+
+.btn.residents__action--primary {
+  min-block-size: var(--h-btn);
+  padding-inline: 18px;
+  font-size: var(--fs-control);
+}
+
 .residents__sectors {
   margin-block-end: var(--space-4);
 }
@@ -14,12 +28,37 @@
   flex: 1 1 260px;
 }
 
-.toolbar select.field__input {
-  min-inline-size: 170px;
+.residents__sector-tabs {
+  gap: 2px;
+}
+
+.residents__sector-tabs .tab {
+  flex: none;
+  padding-inline: 14px;
+  white-space: nowrap;
+}
+
+// The board's filter bar: one row of small pills, their labels read but not shown.
+.residents .toolbar {
+  align-items: center;
+  gap: 10px;
+}
+
+.residents .field__input--pill,
+.residents__check {
+  min-block-size: var(--h-tab);
+  padding-inline-start: 14px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.residents input.field__input--pill {
+  padding-inline-start: 42px;
+  font-weight: var(--fw-medium);
 }
 
 .residents__clear {
-  min-block-size: var(--h-btn);
+  min-block-size: var(--h-tab);
 }
 
 // The search hint on the left, the order on the right, as on the board.
@@ -31,6 +70,7 @@
 
   p {
     margin: 0;
+    font-size: var(--fs-xs);
   }
 }
 
@@ -40,9 +80,14 @@
   justify-content: space-between;
 }
 
+.residents__who .avatar {
+  background: var(--blue-tint);
+}
+
+// The name wraps beside its initials, never under them, as on the board.
 .residents__who {
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 10px;
 }

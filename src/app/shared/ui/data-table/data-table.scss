@@ -230,3 +230,31 @@
   color: var(--text2);
   white-space: nowrap;
 }
+
+/* The framed layout (`class="data-table--framed"` on the host): the registry boards draw the table
+   in its own hairline box, the header band square inside it (CitizenRegistry, Sector boards). */
+:host(.data-table--framed) .table-wrap {
+  border: 1px solid var(--line);
+  border-radius: var(--r-box);
+}
+
+:host(.data-table--framed) .table th,
+:host(.data-table--framed) .table th:first-child,
+:host(.data-table--framed) .table th:last-child {
+  border-radius: 0;
+}
+
+:host(.data-table--framed) .table td {
+  padding-block: var(--space-3);
+}
+
+:host(.data-table--framed) .table-wrap > app-empty-state,
+:host(.data-table--framed) .table-wrap > app-skeleton {
+  margin: var(--space-3);
+}
+
+@media (width <= 640px) {
+  :host(.data-table--framed) .table-wrap {
+    padding-inline: var(--space-3);
+  }
+}

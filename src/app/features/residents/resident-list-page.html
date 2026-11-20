@@ -1,11 +1,17 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions *appHasPermission="'resident.import'" class="btn" routerLink="/residents/import">
+  <a
+    page-actions
+    *appHasPermission="'resident.import'"
+    class="btn residents__action"
+    routerLink="/residents/import"
+  >
+    <app-icon name="upload" [size]="15" [stroke]="2" />
     {{ copy.importCitizens }}
   </a>
   <a
     page-actions
     *appHasPermission="'resident.create'"
-    class="btn btn--primary"
+    class="btn btn--primary residents__action residents__action--primary"
     routerLink="/residents/new"
   >
     <app-icon name="plus" class="residents__cta-icon" [stroke]="2.2" />
@@ -61,7 +67,7 @@
 
   <div class="toolbar">
     <label class="field residents__search">
-      <span class="field__label">{{ copy.search }}</span>
+      <span class="field__label visually-hidden">{{ copy.search }}</span>
       <span class="search-field">
         <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
         <input
@@ -76,7 +82,7 @@
     </label>
 
     <label class="field">
-      <span class="field__label">{{ copy.barangay }}</span>
+      <span class="field__label visually-hidden">{{ copy.barangay }}</span>
       <select class="field__input field__input--pill" (change)="onBarangay($event)">
         <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
         @for (barangay of barangays; track barangay.id) {
@@ -88,7 +94,7 @@
     </label>
 
     <label class="field">
-      <span class="field__label">{{ copy.ageGroup }}</span>
+      <span class="field__label visually-hidden">{{ copy.ageGroup }}</span>
       <select class="field__input field__input--pill" (change)="onAgeGroup($event)">
         <option value="" [selected]="!filter().ageGroup">{{ copy.allAges }}</option>
         @for (group of ageGroups; track group) {
@@ -100,7 +106,7 @@
     </label>
 
     <label class="field">
-      <span class="field__label">{{ copy.sex }}</span>
+      <span class="field__label visually-hidden">{{ copy.sex }}</span>
       <select class="field__input field__input--pill" (change)="onSex($event)">
         <option value="" [selected]="!filter().sex">{{ copy.allSexes }}</option>
         @for (sex of sexes; track sex) {
@@ -142,6 +148,7 @@
   }
 
   <app-data-table
+    class="data-table--framed"
     [caption]="copy.caption"
     [columns]="columns()"
     [rows]="rows()"
@@ -194,7 +201,7 @@
 <ng-template #sectorsCell let-view>
   <span class="chip-list">
     @for (sector of view.resident.sectors; track sector) {
-      <span class="chip">{{ sectorLabel(sector) }}</span>
+      <span [class]="sectorChip(sector)">{{ sectorLabel(sector) }}</span>
     } @empty {
       <span class="residents__none">{{ copy.none }}</span>
     }

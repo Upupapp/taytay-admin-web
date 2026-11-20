@@ -1,6 +1,11 @@
 import type { TemplateRef } from '@angular/core';
 
-import { ageInYears, barangayName, type ResidentView } from '@domain/index';
+import {
+  ageInYears,
+  barangayName,
+  type ResidentView,
+  type VulnerabilitySector,
+} from '@domain/index';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 
 import type { RESIDENTS_COPY } from './residents.copy';
@@ -38,4 +43,20 @@ export function residentColumns(
       cell: cells.status,
     },
   ];
+}
+
+/**
+ * A sector chip's tint, as the CitizenRegistry board draws it: the two sectors with an office ID
+ * in blue, solo parents in gold, 4Ps in green, the rest neutral. The words carry the meaning; the
+ * tint only helps a reader scan a long list (WCAG 1.4.1). Presentation only: nothing reads it.
+ */
+const SECTOR_CHIP: Partial<Record<VulnerabilitySector, string>> = {
+  'senior-citizen': 'chip chip--info',
+  pwd: 'chip chip--info',
+  'solo-parent': 'chip chip--warning',
+  'four-ps': 'chip chip--success',
+};
+
+export function sectorChipClass(sector: VulnerabilitySector): string {
+  return SECTOR_CHIP[sector] ?? 'chip';
 }

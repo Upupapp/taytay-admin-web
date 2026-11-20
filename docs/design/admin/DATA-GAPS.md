@@ -20,6 +20,7 @@ Checked against `openapi.json` at console `1eadbc0`.
 | CitizensOverview | Age and sex: female and male totals under the pyramid | summary: `by_age_sex.total_by_sex { female, male }`, taken before suppression |
 | SectorSeniors / PWD / SoloParents | Needs attention — milestone birthdays, centenarians, pension waitlist, no sector ID on file | summary with `sector=`: `attention[]` |
 | SectorSeniors / PWD / SoloParents, CitizenRegistry | "App and Digital ID" column per row | `OfficeResident`: `app_account { verified, digital_id_status }` |
+| CitizenRegistry | "Household" column per row | `OfficeResident`: `household_reference` |
 
 ## Sent by the API but not shown yet (UI work only)
 
@@ -28,3 +29,5 @@ Checked against `openapi.json` at console `1eadbc0`.
 | SectorSeniors / PWD / SoloParents | KPI row, by barangay, age bands | `GET office/residents/summary?sector=` (`residents`, `by_barangay`, `by_age_sex`) |
 | SectorSeniors / PWD / SoloParents | Sector ID, social pension, disability type, validity columns | `OfficeResident.sector_details[]` |
 | CitizensOverview | Recent imports | `GET office/imports` |
+| CitizenRegistry | A count on each sector tab | `GET office/residents/summary` (`by_sector`) |
+| CitizenRegistry | Purok under the barangay; birth date and sex under the name; "Updated" column | `OfficeResident` (`purok_or_sitio`, `birth_date`, `sex`, `updated_at`) |
