@@ -66,6 +66,28 @@ describe('GlobalErrorHandler', () => {
     expect(message).toContain('01JBTRACE');
   });
 
+  it('says once, as a warning, that the console was updated when a page outlives a release', () => {
+    const { handler, notifications } = setUp();
+    const stale = new TypeError(
+      'Failed to fetch dynamically imported module: https://x.test/chunk-ABC123.js',
+    );
+
+    handler.handleError(stale);
+    handler.handleError(stale);
+    handler.handleError(new Error('Loading chunk 42 failed.'));
+
+    const said = [...notifications.toasts(), ...notifications.inbox()].filter((n) =>
+      (n.body ?? '').includes('Reload the page'),
+    );
+    expect(said.length).toBeGreaterThanOrEqual(1);
+    expect(new Set(said.map((n) => n.id)).size).toBe(1);
+    expect(
+      [...notifications.toasts(), ...notifications.inbox()].some(
+        (n) => n.title === 'Something went wrong',
+      ),
+    ).toBe(false);
+  });
+
   it('says nothing technical when there is no reference to quote', () => {
     const { handler, notifications } = setUp();
 
@@ -85,7 +107,13 @@ describe('GlobalErrorHandler', () => {
         status: 500,
         // A server message is written for an operator and may name internals. The console shows
         // its own words and the reference, never the server's sentence.
-        error: { error: { code: 'SERVER_ERROR', message: 'SQLSTATE[23000] residents.uuid', request_id: 'r1' } },
+        error: {
+          error: {
+            code: 'SERVER_ERROR',
+            message: 'SQLSTATE[23000] residents.uuid',
+            request_id: 'r1',
+          },
+        },
       }),
     );
 
@@ -126,7 +154,7 @@ describe('GlobalErrorHandler', () => {
     expect(message).toContain('r2');
   });
 
-  it('uses the API\'s own wording rather than inventing guidance', () => {
+  it("uses the API's own wording rather than inventing guidance", () => {
     const { handler, notifications } = setUp();
 
     handler.handleError(
@@ -136,7 +164,7 @@ describe('GlobalErrorHandler', () => {
           error: {
             code: 'VALIDATION_FAILED',
             message: 'invalid',
-            details: { reason: ['A deferral reason is the office\'s own, never the family\'s.'] },
+            details: { reason: ["A deferral reason is the office's own, never the family's."] },
           },
         },
       }),
@@ -146,5 +174,4 @@ describe('GlobalErrorHandler', () => {
     // rule in the system, drifting from the one that actually refuses.
     expect(notifications.inbox()[0]?.body).toContain("A deferral reason is the office's own");
   });
-
 });

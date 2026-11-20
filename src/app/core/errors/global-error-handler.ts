@@ -15,9 +15,25 @@ export class GlobalErrorHandler implements ErrorHandler {
   private readonly notifications = inject(NotificationStore);
   private readonly environment = inject(APP_ENVIRONMENT);
 
+  /** Said once per page: a stale page fails every lazy load the same way, and one notice is enough. */
+  private staleVersionSaid = false;
+
   handleError(error: unknown): void {
     if (!this.environment.production) {
       console.error(error);
+    }
+
+    if (isStaleVersion(error)) {
+      // A release replaced the files this open page still asks for. Not a fault to report: the
+      // page needs a reload. Never reloaded for the person — that would drop what they typed.
+      if (!this.staleVersionSaid) {
+        this.staleVersionSaid = true;
+        this.notifications.warning(
+          'The console was updated',
+          'The console was updated while this page was open. Reload the page to continue.',
+        );
+      }
+      return;
     }
 
     this.notifications.error('Something went wrong', this.describe(error));
@@ -59,4 +75,20 @@ export class GlobalErrorHandler implements ErrorHandler {
 
     return failure.requestId === null ? body : `${body} Quote reference ${failure.requestId}.`;
   }
+}
+
+/**
+ * A lazy chunk the open page asks for no longer exists: the console was redeployed under it. The
+ * browsers word it differently; the router may wrap it in another error.
+ */
+export function isStaleVersion(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? `${error.message} ${error.cause instanceof Error ? error.cause.message : ''}`
+      : typeof error === 'string'
+        ? error
+        : '';
+  return /Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed|ChunkLoadError|Loading chunk [\w-]+ failed/i.test(
+    message,
+  );
 }
