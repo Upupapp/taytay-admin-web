@@ -44,6 +44,7 @@ export * from './pipes/peso.pipe';
 export * from './pipes/relative-time.pipe';
 export * from './ui/async-content/async-content';
 export * from './ui/chart-table/chart-table';
+export * from './ui/bar-chart/bar-chart';
 export * from './ui/connection-banner/connection-banner';
 export * from './ui/data-table/data-table';
 export * from './ui/data-table/table-column';

@@ -272,6 +272,31 @@ for (const file of viewFiles) {
   }
 }
 
+// The one picture a report may carry (DL-228): the shared SVG bar chart of the printed summary
+// sheet. It is a picture of a table, never the record — hidden from assistive technology, and
+// drawn only where the same rows are printed as a table.
+const barChartPath = 'src/app/shared/ui/bar-chart/bar-chart.ts';
+if (existsSync(join(root, barChartPath))) {
+  const chart = read(barChartPath);
+  if (!/<svg[\s\S]*?aria-hidden="true"/.test(chart)) {
+    problems.push(
+      `${barChartPath} is no longer aria-hidden. The table beside it is the record; a chart read ` +
+        'aloud as well states every figure twice, or worse, differently.',
+    );
+  }
+  if (!/withheldLabel/.test(chart)) {
+    problems.push(`${barChartPath} no longer says "withheld" for a withheld figure (DL-105).`);
+  }
+}
+for (const file of viewFiles) {
+  const text = read(file);
+  if (/<app-bar-chart/.test(text) && !/<table/.test(text)) {
+    problems.push(
+      `${file} draws a bar chart without the table it pictures. The table is the record.`,
+    );
+  }
+}
+
 // And no charting dependency has been added to draw one.
 const packageJson = JSON.parse(read('package.json'));
 const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
@@ -602,16 +627,29 @@ if (httpReports === '') {
   const calls = [...httpReports.matchAll(/\.\s*(?:item|list)\s*\(([\s\S]*?)\)\s*\.\s*pipe\s*\(/g)].map(
     (match) => [match[0], /,\s*(\{[^}]*\})\s*,?\s*$/.exec(match[1] ?? '')?.[1] ?? ''],
   );
-  if (calls.length !== 3) {
+  // Five since DL-228: the summary report and its file joined the catalogue, a report and a file.
+  if (calls.length !== 5) {
     problems.push(
-      `HttpReportRepository makes ${calls.length} reads; it makes three — the catalogue, a report ` +
-        'and a file — and writes nothing.',
+      `HttpReportRepository makes ${calls.length} reads; it makes five — the catalogue, a report, ` +
+        'a file, the summary report and its file — and writes nothing.',
     );
   }
   const allowed = new Set(['period', 'barangay_id', 'program_id', 'status', 'format']);
-  for (const [, params] of calls) {
+  // The summary report's seven named filters (backend ADR 0005, decision 4), and its format.
+  const summaryAllowed = new Set([
+    'from',
+    'to',
+    'barangay_id',
+    'program_id',
+    'sex',
+    'age',
+    'sector',
+    'format',
+  ]);
+  for (const [call, params] of calls) {
+    const keys = /\/summary/.test(call) ? summaryAllowed : allowed;
     for (const key of [...params.matchAll(/(\w+)\s*:/g)].map((match) => match[1])) {
-      if (!allowed.has(key)) {
+      if (!keys.has(key)) {
         problems.push(
           `HttpReportRepository sends '${key}'. The filter is four named keys and a format, and ` +
             'nothing that could ask for the figures before suppression (DL-105).',

@@ -656,6 +656,19 @@ export const routes: Routes = [
               import('@features/reports/report-hub-page').then((m) => m.ReportHubPage),
           },
           {
+            // Before `:id`, or "summary" would be read as a report id. A caseload is 403 from the
+            // API: the report counts the whole office's requests and payouts (DL-228).
+            path: 'summary',
+            title: 'Summary report — Taytay Social Welfare',
+            canActivate: [
+              servedGuard('report'),
+              permissionGuard('report.view'),
+              scopeGuard('assigned-cases'),
+            ],
+            loadComponent: () =>
+              import('@features/reports/summary-report-page').then((m) => m.SummaryReportPage),
+          },
+          {
             path: ':id',
             title: 'Report — Taytay Social Welfare',
             canActivate: [servedGuard('report'), permissionGuard('report.view')],

@@ -99,6 +99,11 @@ export class DashboardPage {
   private readonly router = inject(Router);
   private readonly live = inject(LiveUpdates);
 
+  /** The summary report counts the whole office, so a caseload is not offered it (DL-228). */
+  protected readonly offersSummaryReport = computed(
+    () => this.permissions.has('report.view') && this.permissions.scope() !== 'assigned-cases',
+  );
+
   protected readonly copy = DASHBOARD_COPY;
   protected readonly barangays = TAYTAY_BARANGAYS;
   protected readonly recordRequest = RECORD_REQUEST;

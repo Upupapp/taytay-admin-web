@@ -700,6 +700,7 @@
         "updated_at"
       ],
       "optional": [
+        "accepts_online_applications",
         "badge",
         "category",
         "claim_steps",
@@ -711,6 +712,7 @@
         "legal_basis",
         "media_id",
         "office_id",
+        "program_id",
         "schedule",
         "tile_color"
       ]
@@ -743,6 +745,7 @@
         "updated_at"
       ],
       "optional": [
+        "accepts_online_applications",
         "badge",
         "category",
         "claim_steps",
@@ -754,6 +757,7 @@
         "legal_basis",
         "media_id",
         "office_id",
+        "program_id",
         "schedule",
         "tile_color"
       ]
@@ -786,6 +790,7 @@
         "updated_at"
       ],
       "optional": [
+        "accepts_online_applications",
         "badge",
         "category",
         "claim_steps",
@@ -797,6 +802,7 @@
         "legal_basis",
         "media_id",
         "office_id",
+        "program_id",
         "schedule",
         "tile_color"
       ]
@@ -829,6 +835,7 @@
         "updated_at"
       ],
       "optional": [
+        "accepts_online_applications",
         "badge",
         "category",
         "claim_steps",
@@ -840,6 +847,7 @@
         "legal_basis",
         "media_id",
         "office_id",
+        "program_id",
         "schedule",
         "tile_color"
       ]
@@ -872,6 +880,7 @@
         "updated_at"
       ],
       "optional": [
+        "accepts_online_applications",
         "badge",
         "category",
         "claim_steps",
@@ -883,6 +892,7 @@
         "legal_basis",
         "media_id",
         "office_id",
+        "program_id",
         "schedule",
         "tile_color"
       ]
@@ -915,6 +925,7 @@
         "updated_at"
       ],
       "optional": [
+        "accepts_online_applications",
         "badge",
         "category",
         "claim_steps",
@@ -926,6 +937,7 @@
         "legal_basis",
         "media_id",
         "office_id",
+        "program_id",
         "schedule",
         "tile_color"
       ]
@@ -991,6 +1003,7 @@
       "consumer": "verification.mapper.ts#toInPersonVerification",
       "required": [],
       "optional": [
+        "account_link",
         "id",
         "id_type",
         "method",
@@ -1033,6 +1046,17 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "admin/users/{id}/registry-matches",
+      "consumer": "verification.mapper.ts#toRegistryProposals",
+      "required": [],
+      "optional": [
+        "linked_resident_id",
+        "matches",
+        "user_id"
+      ]
+    },
+    {
       "method": "PATCH",
       "path": "admin/users/{id}/role",
       "consumer": "app-account.mapper.ts#toAppAccount",
@@ -1063,6 +1087,7 @@
       ],
       "optional": [
         "account_birthdate",
+        "account_link",
         "account_name",
         "id_back_media_id",
         "message",
@@ -1086,6 +1111,7 @@
       ],
       "optional": [
         "account_birthdate",
+        "account_link",
         "account_name",
         "id_back_media_id",
         "message",
@@ -1109,6 +1135,7 @@
       ],
       "optional": [
         "account_birthdate",
+        "account_link",
         "account_name",
         "id_back_media_id",
         "message",
@@ -1399,6 +1426,141 @@
     },
     {
       "method": "GET",
+      "path": "office/assistance-imports",
+      "consumer": "assistance-import.mapper.ts#toAssistanceImportSummary",
+      "required": [],
+      "optional": [
+        "committed_at",
+        "committed_by",
+        "created_at",
+        "created_by",
+        "file_name",
+        "id",
+        "kind",
+        "result",
+        "row_count",
+        "status",
+        "withdrawal"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-imports",
+      "consumer": "assistance-import.mapper.ts#toAssistanceImportSummary",
+      "required": [],
+      "optional": [
+        "committed_at",
+        "committed_by",
+        "created_at",
+        "created_by",
+        "file_name",
+        "id",
+        "kind",
+        "result",
+        "row_count",
+        "status",
+        "withdrawal"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/assistance-imports/{id}",
+      "consumer": "assistance-import.mapper.ts#toAssistanceImport",
+      "required": [
+        "columns",
+        "fields",
+        "mapping",
+        "missing_fields",
+        "outcomes",
+        "rows"
+      ],
+      "optional": [
+        "counts"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-imports/{id}/commit",
+      "consumer": "assistance-import.mapper.ts#toAssistanceImportSummary",
+      "required": [],
+      "optional": [
+        "committed_at",
+        "committed_by",
+        "created_at",
+        "created_by",
+        "file_name",
+        "id",
+        "kind",
+        "result",
+        "row_count",
+        "status",
+        "withdrawal"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "office/assistance-imports/{id}/mapping",
+      "consumer": "assistance-import.mapper.ts#toAssistanceImport",
+      "required": [
+        "columns",
+        "fields",
+        "mapping",
+        "missing_fields",
+        "outcomes",
+        "rows"
+      ],
+      "optional": [
+        "counts"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-imports/{id}/rows/{row}/resolve",
+      "consumer": "assistance-import.mapper.ts#toAssistanceImport",
+      "required": [
+        "columns",
+        "fields",
+        "mapping",
+        "missing_fields",
+        "outcomes",
+        "rows"
+      ],
+      "optional": [
+        "counts"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "office/assistance-imports/{id}/withdraw",
+      "consumer": "assistance-import.mapper.ts#toAssistanceImportSummary",
+      "required": [],
+      "optional": [
+        "committed_at",
+        "committed_by",
+        "created_at",
+        "created_by",
+        "file_name",
+        "id",
+        "kind",
+        "result",
+        "row_count",
+        "status",
+        "withdrawal"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/assistance-imports/template",
+      "consumer": "import-template.mapper.ts#toImportTemplate",
+      "required": [],
+      "optional": [
+        "content",
+        "content_type",
+        "file_name"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "office/assistance-requests",
       "consumer": "assistance-request.mapper.ts#toAssistanceRequest",
       "required": [
@@ -1421,6 +1583,8 @@
         "assigned_to",
         "created_by",
         "endorsed_by",
+        "filing_advisory",
+        "imported",
         "is_protected",
         "program_id",
         "reason_for_request",
@@ -1457,6 +1621,8 @@
         "assigned_to",
         "created_by",
         "endorsed_by",
+        "filing_advisory",
+        "imported",
         "is_protected",
         "program_id",
         "reason_for_request",
@@ -1493,6 +1659,8 @@
         "assigned_to",
         "created_by",
         "endorsed_by",
+        "filing_advisory",
+        "imported",
         "is_protected",
         "program_id",
         "reason_for_request",
@@ -1529,6 +1697,8 @@
         "assigned_to",
         "created_by",
         "endorsed_by",
+        "filing_advisory",
+        "imported",
         "is_protected",
         "program_id",
         "reason_for_request",
@@ -1601,6 +1771,8 @@
         "assigned_to",
         "created_by",
         "endorsed_by",
+        "filing_advisory",
+        "imported",
         "is_protected",
         "program_id",
         "reason_for_request",
@@ -1637,6 +1809,8 @@
         "assigned_to",
         "created_by",
         "endorsed_by",
+        "filing_advisory",
+        "imported",
         "is_protected",
         "program_id",
         "reason_for_request",
@@ -1742,6 +1916,8 @@
         "assigned_to",
         "created_by",
         "endorsed_by",
+        "filing_advisory",
+        "imported",
         "is_protected",
         "program_id",
         "reason_for_request",
@@ -1795,6 +1971,8 @@
         "assigned_to",
         "created_by",
         "endorsed_by",
+        "filing_advisory",
+        "imported",
         "is_protected",
         "program_id",
         "reason_for_request",
@@ -1846,6 +2024,8 @@
         "assigned_to",
         "created_by",
         "endorsed_by",
+        "filing_advisory",
+        "imported",
         "is_protected",
         "program_id",
         "reason_for_request",
@@ -1882,6 +2062,8 @@
         "assigned_to",
         "created_by",
         "endorsed_by",
+        "filing_advisory",
+        "imported",
         "is_protected",
         "program_id",
         "reason_for_request",
@@ -3114,6 +3296,17 @@
     },
     {
       "method": "GET",
+      "path": "office/imports/template",
+      "consumer": "import-template.mapper.ts#toImportTemplate",
+      "required": [],
+      "optional": [
+        "content",
+        "content_type",
+        "file_name"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "office/issuance-requests",
       "consumer": "issuance.mapper.ts#toIssuanceRequestSummary",
       "required": [
@@ -3721,6 +3914,35 @@
         "filename",
         "format",
         "manifest"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/reports/summary",
+      "consumer": "summary-report.mapper.ts#toSummaryReport",
+      "required": [
+        "disclosure",
+        "filters_in_words",
+        "footer",
+        "letterhead",
+        "period",
+        "sections",
+        "signatories",
+        "title"
+      ],
+      "optional": [
+        "executive_summary"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/reports/summary/export",
+      "consumer": "summary-report.mapper.ts#toSummaryReportExport",
+      "required": [],
+      "optional": [
+        "content",
+        "filename",
+        "format"
       ]
     },
     {

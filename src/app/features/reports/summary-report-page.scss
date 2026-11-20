@@ -1,0 +1,170 @@
+/* The summary report page (DL-228): filters and actions above an A4 sheet. The app chrome is hidden
+   in print by src/styles/_report-print.scss; this file hides the page's own controls. */
+:host {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.summary__filters,
+.summary__actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.summary__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+}
+
+/* The sheet: an A4 page's proportions on screen, the page itself on paper. */
+.report-sheet {
+  display: grid;
+  gap: var(--space-4);
+  inline-size: 100%;
+  max-inline-size: 210mm;
+  margin-inline: auto;
+  background: var(--card-solid);
+}
+
+.report-sheet__letterhead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+
+.report-sheet__letterhead-line {
+  margin: 0;
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}
+
+.report-sheet__letterhead-line:last-child {
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+}
+
+.report-sheet__title {
+  text-align: center;
+  font-size: var(--fs-title-sm);
+}
+
+.report-sheet__conditions {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+
+  div {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  dt {
+    color: var(--muted);
+    font-weight: var(--fw-semibold);
+  }
+
+  dd {
+    margin: 0;
+    color: var(--ink);
+  }
+}
+
+.report-sheet__summary {
+  display: grid;
+  gap: var(--space-2);
+
+  p {
+    margin: 0;
+  }
+}
+
+.report-sheet__overdue {
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}
+
+.signatures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-5);
+  margin-block-start: var(--space-3);
+}
+
+.signatures__block {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.signatures__role {
+  color: var(--muted);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+}
+
+/* The blank space a hand signs in, above the printed name. */
+.signatures__rule {
+  block-size: var(--space-7);
+  border-block-end: 1px solid var(--ink);
+}
+
+.signatures__input {
+  inline-size: 100%;
+  padding: var(--space-1) 0;
+  border: none;
+  border-block-end: 1px dashed var(--line);
+  background: transparent;
+  color: var(--text2);
+  font: inherit;
+  font-size: var(--fs-sm);
+}
+
+.signatures__name {
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+}
+
+.report-sheet__footer {
+  display: grid;
+  gap: var(--space-1);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--fs-caption);
+
+  p {
+    margin: 0;
+  }
+}
+
+@media print {
+  :host {
+    display: block;
+  }
+
+  .summary__chrome,
+  .summary__filters {
+    display: none;
+  }
+
+  .report-sheet {
+    max-inline-size: none;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+  }
+
+  .report-sheet__signatures,
+  .report-sheet__footer {
+    break-inside: avoid-page;
+  }
+
+  .signatures__input {
+    border: none;
+  }
+}

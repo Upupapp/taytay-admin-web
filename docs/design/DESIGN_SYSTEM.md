@@ -483,6 +483,13 @@ Inputs: `caption`, `rows` (required; `ChartRow`: `key`, `label`, `value`, `displ
 />
 ```
 
+### BarChart — `app-bar-chart`
+
+The printed report sheet's chart only (`DL-228`, §7 "Report sheet"): inline SVG, `aria-hidden`, one
+or two series, the figure printed at each bar's end, "withheld" (input `withheldLabel`) and no bar
+for a withheld figure. Inputs: `series`, `rows` (`{ key, label, values: (number | null)[] }`),
+`withheldLabel`, `format`. Always beside a table of the same rows; on a screen, use `ChartTable`.
+
 ### SavedViewsBar — `app-saved-views-bar`
 
 Named filters above a list whose filters live in the URL; drawn as the `.tabs` strip. Applying a view
@@ -878,6 +885,58 @@ Mock-ups: [`OfficeInbox.dc.html`](./admin/screens/OfficeInbox.dc.html),
 The message bubbles are local to `thread-page.scss` (one screen uses them); move them to
 `_patterns.scss` the day a second screen does. The list shows no preview of what a resident wrote,
 attachments open only after a warning, and nothing is logged (`check:inbox`).
+
+### Report sheet (print)
+
+Reference: `src/app/features/reports/summary-report-page.*` with `summary-section.ts` (`DL-228`) — the
+summary report in the office's standard template, drawn from one read of
+`GET office/reports/summary`. A page whose job is a **document to print**: the screen is the paper's
+preview, and the paper is the deliverable.
+
+```angular-html
+<a class="back-link summary__chrome" routerLink="/reports">…</a>
+<app-page-header class="summary__chrome" … />
+<section class="card card--padded summary__filters">…filters in the URL…</section>
+<app-async-content [state]="sheetState()" [content]="sheet">
+  <ng-template #sheet let-report>
+    <section class="card card--padded summary__actions summary__chrome">
+      <p class="status-line">…what Print does…</p>
+      <button class="btn btn--primary">…</button>
+      <p class="status-line">…what the CSV is…</p>
+      <button class="btn">…</button>
+    </section>
+    <article class="card card--padded report-sheet">
+      <header class="report-sheet__letterhead">
+        <app-municipal-seal size="lg" decorative /> …
+      </header>
+      … title, period, "Narrowed to", executive summary …
+      @for (section of report.sections; track section.key) {
+        <app-summary-section … />
+      }
+      … signatures (inputs held in signals, never saved or sent), footer …
+    </article>
+  </ng-template>
+</app-async-content>
+```
+
+- **The server words it; the sheet lays it out.** Letterhead, headings, notes, totals labels and
+  suppression notices are the API's; the page adds no figure up (`DL-105`).
+- **Each section is a chart and its table.** The table (`.table-scroll` + `.simple-table`) is the
+  record; `app-bar-chart` (`shared/ui/bar-chart`) is inline SVG, `aria-hidden`, with the figure
+  printed at the end of every bar, the legend naming each series (`--bar`, then
+  `--tone-success-fg`), and "withheld" — never a bar of zero — where a figure is withheld.
+  `check:reports` holds the chart to being hidden and beside a table.
+- **Print is the PDF.** `src/styles/_report-print.scss` hides the frame (sidebar, top bar, banners,
+  route progress, drawer, toasts) only while a `.report-sheet` is on the page, and gives it a named
+  A4 `@page` with "Page n of N" at the foot. The page's own stylesheet hides `.summary__chrome` and the
+  filters; each section avoids breaking inside itself. Print re-reads the report first (a run the
+  API audits), then calls `window.print()`; the browser's "Save as PDF" makes the file. No PDF or
+  spreadsheet library.
+- **Not live.** Every read is an audited run, so the page is named in `check:live` as a report run
+  and prints when it was generated instead.
+- States: the skeleton while loading, `EmptyState` above the sheet when nothing was counted (the sheet
+  still prints: a period with no service is a finding), the error panel with Try again, and the
+  offline illustration through `AsyncContent`.
 
 ### Also in use
 

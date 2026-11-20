@@ -1,0 +1,658 @@
+{
+  "data": {
+    "letterhead": [
+      "Republic of the Philippines",
+      "Province of Rizal",
+      "Municipality of Taytay",
+      "Municipal Social Welfare and Development Office"
+    ],
+    "title": "Assistance summary report",
+    "period": {
+      "from": "2026-01-01",
+      "to": "2026-11-20",
+      "label": "1 January 2026 to 20 November 2026"
+    },
+    "filters": {
+      "barangay_id": null,
+      "program_id": null,
+      "sex": null,
+      "age": null,
+      "sector": null
+    },
+    "filters_in_words": [],
+    "executive_summary": {
+      "paragraphs": [
+        "This report covers the assistance work of the Municipal Social Welfare and Development Office of Taytay from 1 January 2026 to 20 November 2026. The office received 19 requests and handed over 12 releases to 11 persons, PHP 30,000.00 in all.",
+        "Financial assistance accounted for the most releases (8 of 12, 67%). No request is counted as overdue: the office has set no service standard for assistance requests."
+      ],
+      "figures": {
+        "received": 19,
+        "served": 12,
+        "persons_served": 11,
+        "persons_served_withheld": null,
+        "amount_released_centavos": 3000000,
+        "goods_released": 1,
+        "rejected": 2,
+        "top_program": {
+          "id": "5f0c2a8e-1b7d-4c1e-9a55-0d2b3c4e5f61",
+          "name": "Financial assistance",
+          "served": 8
+        },
+        "top_barangay": {
+          "id": "0b6c1d2e-3f40-4a51-8b62-7c83d94e0f15",
+          "name": "San Juan",
+          "served": 7
+        },
+        "women_share_percent": 64,
+        "average_processing_days": 6.5,
+        "processing_basis": "Calendar days from filing to handing over, for releases handed over in the period; imported past records are left out.",
+        "open_now": 5,
+        "overdue_now": null,
+        "overdue_basis": "The office has set no service standard for assistance requests, so none is counted as overdue (DL-101)."
+      }
+    },
+    "sections": [
+      {
+        "note": null,
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [
+          {
+            "key": "received",
+            "label": "Received",
+            "value": 19,
+            "measure": "records",
+            "withheld": null,
+            "hint": "Requests filed in the period"
+          },
+          {
+            "key": "served",
+            "label": "Served",
+            "value": 12,
+            "measure": "records",
+            "withheld": null,
+            "hint": "Releases handed over in the period"
+          },
+          {
+            "key": "persons_served",
+            "label": "Persons served",
+            "value": 11,
+            "measure": "people",
+            "withheld": null,
+            "hint": "Each person once"
+          },
+          {
+            "key": "amount_released",
+            "label": "Amount released",
+            "value": 3000000,
+            "measure": "centavos",
+            "withheld": null,
+            "hint": "Money handed over in the period, besides 1 release of goods, counted and not valued"
+          },
+          {
+            "key": "rejected",
+            "label": "Rejected",
+            "value": 2,
+            "measure": "records",
+            "withheld": null,
+            "hint": "Requests decided against in the period"
+          },
+          {
+            "key": "open_now",
+            "label": "Open now",
+            "value": 5,
+            "measure": "records",
+            "withheld": null,
+            "hint": "Requests not yet closed, as of today"
+          }
+        ],
+        "columns": [],
+        "rows": [],
+        "totals": null,
+        "totals_label": null,
+        "suppression_notice": null,
+        "key": "at-a-glance",
+        "letter": "A",
+        "title": "At a glance"
+      },
+      {
+        "note": "The twelve months to November 2026, by the month each request was filed and each release handed over.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "received",
+            "label": "Received",
+            "measure": "records"
+          },
+          {
+            "key": "served",
+            "label": "Served",
+            "measure": "records"
+          },
+          {
+            "key": "amount_centavos",
+            "label": "Amount released",
+            "measure": "centavos"
+          }
+        ],
+        "rows": [
+          {
+            "key": "2025-12",
+            "label": "December 2025",
+            "values": {
+              "received": 0,
+              "served": 0,
+              "amount_centavos": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-01",
+            "label": "January 2026",
+            "values": {
+              "received": 0,
+              "served": 0,
+              "amount_centavos": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-02",
+            "label": "February 2026",
+            "values": {
+              "received": 0,
+              "served": 0,
+              "amount_centavos": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-03",
+            "label": "March 2026",
+            "values": {
+              "received": 0,
+              "served": 0,
+              "amount_centavos": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-04",
+            "label": "April 2026",
+            "values": {
+              "received": 0,
+              "served": 0,
+              "amount_centavos": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-05",
+            "label": "May 2026",
+            "values": {
+              "received": 0,
+              "served": 0,
+              "amount_centavos": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-06",
+            "label": "June 2026",
+            "values": {
+              "received": 0,
+              "served": 0,
+              "amount_centavos": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-07",
+            "label": "July 2026",
+            "values": {
+              "received": 0,
+              "served": 0,
+              "amount_centavos": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-08",
+            "label": "August 2026",
+            "values": {
+              "received": 0,
+              "served": 0,
+              "amount_centavos": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-09",
+            "label": "September 2026",
+            "values": {
+              "received": 4,
+              "served": 2,
+              "amount_centavos": 600000
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-10",
+            "label": "October 2026",
+            "values": {
+              "received": 9,
+              "served": 6,
+              "amount_centavos": 1500000
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-11",
+            "label": "November 2026",
+            "values": {
+              "received": 6,
+              "served": 4,
+              "amount_centavos": 900000
+            },
+            "withheld": {}
+          }
+        ],
+        "totals": {
+          "received": 19,
+          "served": 12,
+          "amount_centavos": 3000000
+        },
+        "totals_label": "Total",
+        "suppression_notice": null,
+        "key": "month-by-month",
+        "letter": "B",
+        "title": "Month by month"
+      },
+      {
+        "note": "Received and rejected in the period, served in the period, and open as of today.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "received",
+            "label": "Received",
+            "measure": "records"
+          },
+          {
+            "key": "served",
+            "label": "Served",
+            "measure": "records"
+          },
+          {
+            "key": "rejected",
+            "label": "Rejected",
+            "measure": "records"
+          },
+          {
+            "key": "open_now",
+            "label": "Open now",
+            "measure": "records"
+          },
+          {
+            "key": "amount_centavos",
+            "label": "Amount released",
+            "measure": "centavos"
+          }
+        ],
+        "rows": [
+          {
+            "key": "5f0c2a8e-1b7d-4c1e-9a55-0d2b3c4e5f61",
+            "label": "Financial assistance",
+            "values": {
+              "received": 12,
+              "served": 8,
+              "rejected": 1,
+              "open_now": 3,
+              "amount_centavos": 2400000
+            },
+            "withheld": {}
+          },
+          {
+            "key": "6a1d3b9f-2c8e-4d2f-8b66-1e3c4d5f6a72",
+            "label": "Burial assistance",
+            "values": {
+              "received": 7,
+              "served": 4,
+              "rejected": 1,
+              "open_now": 2,
+              "amount_centavos": 600000
+            },
+            "withheld": {}
+          }
+        ],
+        "totals": {
+          "received": 19,
+          "served": 12,
+          "rejected": 2,
+          "open_now": 5,
+          "amount_centavos": 3000000
+        },
+        "totals_label": "Total",
+        "suppression_notice": null,
+        "key": "by-program",
+        "letter": "C",
+        "title": "By programme"
+      },
+      {
+        "note": "Every barangay, those with nothing included. Served is releases handed over in the period.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "served",
+            "label": "Served",
+            "measure": "records"
+          },
+          {
+            "key": "amount_centavos",
+            "label": "Amount released",
+            "measure": "centavos"
+          },
+          {
+            "key": "open_now",
+            "label": "Open now",
+            "measure": "records"
+          }
+        ],
+        "rows": [
+          {
+            "key": "0b6c1d2e-3f40-4a51-8b62-7c83d94e0f15",
+            "label": "San Juan",
+            "values": {
+              "served": 7,
+              "amount_centavos": 1800000,
+              "open_now": 3
+            },
+            "withheld": {}
+          },
+          {
+            "key": "1c7d2e3f-4051-4b62-9c73-8d94ea0f1026",
+            "label": "Dolores",
+            "values": {
+              "served": 5,
+              "amount_centavos": 1200000,
+              "open_now": 2
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2d8e3f40-5162-4c73-8d84-9ea5fb102137",
+            "label": "Muzon",
+            "values": {
+              "served": 0,
+              "amount_centavos": 0,
+              "open_now": 0
+            },
+            "withheld": {}
+          }
+        ],
+        "totals": {
+          "served": 12,
+          "amount_centavos": 3000000,
+          "open_now": 5
+        },
+        "totals_label": "Total",
+        "suppression_notice": null,
+        "key": "by-barangay",
+        "letter": "D",
+        "title": "By barangay"
+      },
+      {
+        "note": "Each person once, as the registry records them.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "persons",
+            "label": "Persons",
+            "measure": "people"
+          },
+          {
+            "key": "share_percent",
+            "label": "Share",
+            "measure": "percent"
+          }
+        ],
+        "rows": [
+          {
+            "key": "female",
+            "label": "Female",
+            "values": {
+              "persons": 7,
+              "share_percent": 64
+            },
+            "withheld": {}
+          },
+          {
+            "key": "male",
+            "label": "Male",
+            "values": {
+              "persons": null,
+              "share_percent": null
+            },
+            "withheld": {
+              "persons": "small-cell",
+              "share_percent": "small-cell"
+            }
+          }
+        ],
+        "totals": {
+          "persons": 11
+        },
+        "totals_label": "Total, counted before anything was withheld",
+        "suppression_notice": "1 figure is withheld because the count is small enough to identify somebody. The total therefore does not add up to the figures shown.",
+        "key": "by-sex",
+        "letter": "E",
+        "title": "Sex"
+      },
+      {
+        "note": "Each person once, by their age on the first day they were served in the period.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "persons",
+            "label": "Persons",
+            "measure": "people"
+          },
+          {
+            "key": "share_percent",
+            "label": "Share",
+            "measure": "percent"
+          }
+        ],
+        "rows": [
+          {
+            "key": "0-17",
+            "label": "Children (0–17)",
+            "values": {
+              "persons": 0,
+              "share_percent": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "18-59",
+            "label": "Adults (18–59)",
+            "values": {
+              "persons": 6,
+              "share_percent": 55
+            },
+            "withheld": {}
+          },
+          {
+            "key": "60-plus",
+            "label": "Seniors (60 and over)",
+            "values": {
+              "persons": 5,
+              "share_percent": 45
+            },
+            "withheld": {}
+          }
+        ],
+        "totals": {
+          "persons": 11
+        },
+        "totals_label": "Total, counted before anything was withheld",
+        "suppression_notice": null,
+        "key": "by-age",
+        "letter": "F",
+        "title": "Age group"
+      },
+      {
+        "note": "Each person under every sector the registry records for them now, so the rows overlap. A senior citizen is one the registry records as such.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "persons",
+            "label": "Persons",
+            "measure": "people"
+          },
+          {
+            "key": "share_percent",
+            "label": "Share of persons served",
+            "measure": "percent"
+          }
+        ],
+        "rows": [
+          {
+            "key": "senior-citizen",
+            "label": "Senior citizen",
+            "values": {
+              "persons": 5,
+              "share_percent": 45
+            },
+            "withheld": {}
+          },
+          {
+            "key": "solo-parent",
+            "label": "Solo parent",
+            "values": {
+              "persons": 0,
+              "share_percent": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "vawc-survivor",
+            "label": "VAWC survivor",
+            "values": {
+              "persons": null,
+              "share_percent": null
+            },
+            "withheld": {
+              "persons": "protected-sector",
+              "share_percent": "protected-sector"
+            }
+          }
+        ],
+        "totals": {
+          "persons": 11
+        },
+        "totals_label": "Persons served, counted before anything was withheld",
+        "suppression_notice": "VAWC survivor is a sector protected by law (RA 9262, RA 9344) and not counted for your account at all; the total leaves them out.",
+        "key": "by-sector",
+        "letter": "G",
+        "title": "Sector"
+      },
+      {
+        "note": "\"Waiting on the resident\" means the office returned the request for something from her, or set the payout she must come to.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "waiting_on",
+            "label": "Waiting on",
+            "measure": "records"
+          },
+          {
+            "key": "requests",
+            "label": "Requests",
+            "measure": "records"
+          }
+        ],
+        "rows": [
+          {
+            "key": "intake-review",
+            "label": "Intake review",
+            "values": {
+              "waiting_on": "office",
+              "requests": 3
+            },
+            "withheld": {}
+          },
+          {
+            "key": "returned",
+            "label": "Returned",
+            "values": {
+              "waiting_on": "resident",
+              "requests": 2
+            },
+            "withheld": {}
+          }
+        ],
+        "totals": {
+          "requests": 5
+        },
+        "totals_label": "Total",
+        "suppression_notice": null,
+        "key": "open-by-stage",
+        "letter": "H",
+        "title": "Open requests by stage, as of today"
+      },
+      {
+        "note": null,
+        "available": false,
+        "unavailable_reason": "Your account does not read the digital ID register (digital-id.manage), so IDs are not counted here.",
+        "tiles": [],
+        "columns": [],
+        "rows": [],
+        "totals": null,
+        "totals_label": null,
+        "suppression_notice": null,
+        "key": "digital-ids",
+        "letter": "I",
+        "title": "Digital IDs"
+      }
+    ],
+    "signatories": {
+      "prepared_by": {
+        "name": "Teodoro Lim",
+        "title": null
+      },
+      "noted_by": {
+        "name": "Rosario Dizon",
+        "title": "Municipal Social Welfare and Development Officer"
+      },
+      "approved_by": {
+        "name": null,
+        "title": "Municipal Mayor"
+      }
+    },
+    "footer": {
+      "generated_at": "2026-11-20T02:15:00.000Z",
+      "generated_by": "Teodoro Lim",
+      "handling_notice": "This export contains information held by the Municipal Social Welfare and Development Office of Taytay, Rizal and is protected under RA 10173. Keep it within the office, do not forward it, and delete it when the work it was produced for is finished."
+    },
+    "disclosure": {
+      "threshold": 5,
+      "provenance": "convention-pending-confirmation",
+      "basis": "Counts of people from 1 to 4 are withheld, because a figure that small can identify somebody (DL-105)."
+    }
+  },
+  "meta": {}
+}

@@ -1,0 +1,249 @@
+<a class="back-link summary__chrome" routerLink="/reports">
+  <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
+  {{ copy.back }}
+</a>
+<app-page-header class="summary__chrome" [title]="copy.title" [subtitle]="copy.subtitle" />
+
+<!-- The filters live in the URL; the sheet below says them again in the server's words. -->
+<section
+  class="card card--padded summary__filters summary__chrome"
+  aria-labelledby="summary-filters-heading"
+>
+  <h2 class="section-title" id="summary-filters-heading">{{ copy.filtersHeading }}</h2>
+  <div class="summary__fields">
+    <label class="field">
+      <span class="field__label">{{ copy.from }}</span>
+      <input
+        class="field__input"
+        type="date"
+        min="1990-01-01"
+        [max]="today"
+        [value]="filter().from ?? ''"
+        (change)="setFilter('from', $event)"
+      />
+    </label>
+    <label class="field">
+      <span class="field__label">{{ copy.to }}</span>
+      <input
+        class="field__input"
+        type="date"
+        min="1990-01-01"
+        [max]="today"
+        [value]="filter().to ?? ''"
+        (change)="setFilter('to', $event)"
+      />
+    </label>
+    <label class="field">
+      <span class="field__label">{{ copy.barangay }}</span>
+      <select class="field__input field__input--pill" (change)="setFilter('barangay', $event)">
+        @if (barangays().length > 1) {
+          <option value="">{{ copy.allBarangays }}</option>
+        }
+        @for (barangay of barangays(); track barangay.id) {
+          <option [value]="barangay.id" [selected]="isBarangaySelected(barangay.id)">
+            {{ barangay.name }}
+          </option>
+        }
+      </select>
+    </label>
+    @if (programList(); as programs) {
+      <label class="field">
+        <span class="field__label">{{ copy.program }}</span>
+        <select class="field__input field__input--pill" (change)="setFilter('program', $event)">
+          <option value="">{{ copy.allPrograms }}</option>
+          @for (program of programs; track program.id) {
+            <option [value]="program.id" [selected]="filter().programId === program.id">
+              {{ program.name }}
+            </option>
+          }
+        </select>
+      </label>
+    }
+    <label class="field">
+      <span class="field__label">{{ copy.sex }}</span>
+      <select class="field__input field__input--pill" (change)="setFilter('sex', $event)">
+        <option value="">{{ copy.allSexes }}</option>
+        @for (sex of sexes; track sex) {
+          <option [value]="sex" [selected]="filter().sex === sex">{{ sexLabel(sex) }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      <span class="field__label">{{ copy.age }}</span>
+      <select class="field__input field__input--pill" (change)="setFilter('age', $event)">
+        <option value="">{{ copy.allAges }}</option>
+        @for (age of ages; track age) {
+          <option [value]="age" [selected]="filter().age === age">{{ ageLabel(age) }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      <span class="field__label">{{ copy.sector }}</span>
+      <select class="field__input field__input--pill" (change)="setFilter('sector', $event)">
+        <option value="">{{ copy.allSectors }}</option>
+        @for (sector of sectors(); track sector.value) {
+          <option [value]="sector.value" [selected]="isSectorSelected(sector.value)">
+            {{ sector.label }}
+          </option>
+        }
+      </select>
+    </label>
+  </div>
+  <p class="status-line">{{ copy.filtersHint }}</p>
+  @if (!servesPrograms) {
+    <app-not-connected port="program" />
+  } @else if (programList() === null) {
+    <p class="status-line summary__programs-unread">{{ copy.programsUnread }}</p>
+  }
+  @if (periodReversed()) {
+    <p class="callout callout--warning" role="status">{{ copy.badPeriod }}</p>
+  }
+  @if (hasFilters()) {
+    <p>
+      <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+    </p>
+  }
+</section>
+
+<app-async-content
+  [state]="sheetState()"
+  [content]="sheet"
+  [skeletonLines]="10"
+  [errorHeading]="copy.errorHeading"
+>
+  <ng-template #sheet let-report>
+    @if (isEmpty(report)) {
+      <app-empty-state
+        class="summary__chrome summary__empty"
+        [variant]="hasFilters() ? 'no-results' : 'empty'"
+        [heading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
+        [message]="copy.emptyMessage"
+        [actionLabel]="hasFilters() ? copy.clear : null"
+        (actionSelected)="clearFilters()"
+      />
+    }
+
+    <!-- What each button does is said before it (DL-106). -->
+    <section
+      class="card card--padded summary__actions summary__chrome"
+      aria-labelledby="summary-actions-heading"
+    >
+      <h2 class="section-title" id="summary-actions-heading">{{ copy.actionsHeading }}</h2>
+      <p class="status-line summary__print-hint">{{ copy.printHint }}</p>
+      <p>
+        <button
+          type="button"
+          class="btn btn--primary summary__print"
+          [disabled]="printing()"
+          (click)="print()"
+        >
+          {{ printing() ? copy.printing : copy.print }}
+        </button>
+      </p>
+      @if (canExport()) {
+        <p class="status-line summary__excel-hint">{{ copy.excelHint }}</p>
+        @if (fileReady(); as file) {
+          <p class="callout callout--success summary__ready" role="status">
+            {{ copy.fileReady }}
+            <a [href]="file.url" [attr.download]="file.filename">{{
+              copy.saveFile(file.filename)
+            }}</a>
+          </p>
+        }
+        <p>
+          <button
+            type="button"
+            class="btn summary__excel"
+            [disabled]="exporting()"
+            (click)="exportCsv()"
+          >
+            {{ exporting() ? copy.exporting : copy.excel }}
+          </button>
+        </p>
+      }
+    </section>
+
+    <article class="card card--padded report-sheet" aria-labelledby="report-sheet-title">
+      <header class="report-sheet__letterhead">
+        <app-municipal-seal size="lg" decorative />
+        <div class="report-sheet__letterhead-lines">
+          @for (line of report.letterhead; track $index) {
+            <p class="report-sheet__letterhead-line">{{ line }}</p>
+          }
+        </div>
+      </header>
+
+      <h2 class="report-sheet__title" id="report-sheet-title">{{ report.title }}</h2>
+      <dl class="report-sheet__conditions">
+        <div>
+          <dt>{{ copy.periodCovered }}</dt>
+          <dd>{{ report.period.label }}</dd>
+        </div>
+        <div>
+          <dt>{{ copy.narrowedTo }}</dt>
+          <dd class="report-sheet__narrowed">
+            @if (report.filtersInWords.length === 0) {
+              {{ copy.narrowedToNothing }}
+            } @else {
+              {{ report.filtersInWords.join('; ') }}
+            }
+          </dd>
+        </div>
+      </dl>
+
+      <section class="report-sheet__summary" aria-labelledby="report-sheet-summary">
+        <h3 id="report-sheet-summary">{{ copy.executiveSummary }}</h3>
+        @for (paragraph of report.executiveSummary.paragraphs; track $index) {
+          <p>{{ paragraph }}</p>
+        }
+        <!-- No service standard is set, so nothing is overdue (DL-101): said, never a zero. -->
+        <p class="report-sheet__overdue">
+          <strong>{{ copy.overdueHeading }}: {{ copy.overdueNone }}.</strong>
+          {{ report.executiveSummary.figures.overdueBasis }}
+        </p>
+      </section>
+
+      @for (section of report.sections; track section.key) {
+        <app-summary-section [section]="section" />
+      }
+
+      <section class="report-sheet__signatures" aria-labelledby="report-sheet-signatures">
+        <h3 id="report-sheet-signatures">{{ copy.signaturesHeading }}</h3>
+        <p class="status-line summary__chrome">{{ copy.signaturesHint }}</p>
+        <div class="signatures">
+          @for (role of roles; track role) {
+            @let line = signatures().lines[role];
+            <div class="signatures__block">
+              <span class="signatures__role">{{ roleLabel(role) }}</span>
+              <span class="signatures__rule" aria-hidden="true"></span>
+              <input
+                class="signatures__input signatures__name"
+                type="text"
+                autocomplete="off"
+                [attr.aria-label]="copy.signatoryName(roleLabel(role))"
+                [value]="line.name"
+                (input)="editSignature(role, 'name', $event)"
+              />
+              <input
+                class="signatures__input"
+                type="text"
+                autocomplete="off"
+                [attr.aria-label]="copy.signatoryTitle(roleLabel(role))"
+                [value]="line.title"
+                (input)="editSignature(role, 'title', $event)"
+              />
+            </div>
+          }
+        </div>
+      </section>
+
+      <footer class="report-sheet__footer">
+        <p>{{ generatedLine(report) }}</p>
+        <p>{{ report.footer.handlingNotice }}</p>
+        <p>
+          <strong>{{ copy.disclosureHeading }}.</strong> {{ report.disclosure.basis }}
+        </p>
+      </footer>
+    </article>
+  </ng-template>
+</app-async-content>

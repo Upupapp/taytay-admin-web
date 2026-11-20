@@ -1,5 +1,11 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
   <button page-actions type="button" class="btn" (click)="refresh()">{{ copy.refresh }}</button>
+  @if (offersSummaryReport()) {
+    <a page-actions class="btn btn--primary" routerLink="/reports/summary">
+      <app-icon name="download" [size]="16" [stroke]="2" />
+      {{ copy.downloadReport }}
+    </a>
+  }
 </app-page-header>
 
 <!-- Filter first: it governs every figure below, so it reads before them. -->

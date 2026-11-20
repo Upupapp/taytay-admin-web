@@ -256,6 +256,9 @@ import {
   type ReportId,
   type ReportRepository,
   type ReportResult,
+  type SummaryReport,
+  type SummaryReportExport,
+  type SummaryReportFilter,
   AUDIT_SENSITIVE_FILTER_UNAVAILABLE,
   type AuditEntryDetail,
   type AuditEntryId,
@@ -567,6 +570,7 @@ import {
 } from './mappers/issuance.mapper';
 import { toSearchResults } from './mappers/search.mapper';
 import { toReportDefinitions, toReportExport, toReportResult } from './mappers/report.mapper';
+import { toSummaryReport, toSummaryReportExport } from './mappers/summary-report.mapper';
 import {
   toClassifiedRecordType,
   toCorrectionRequest,
@@ -4622,6 +4626,63 @@ export class HttpReportRepository implements ReportRepository {
             format: 'csv',
           })
           .pipe(map((wire) => readReport(toReportExport(wire))));
+      }),
+    );
+  }
+
+  /**
+   * The summary report (`DL-228`): the server counts, suppresses and words it; this asks with the
+   * seven named filters and nothing else, so there is no way to ask for the figures before
+   * suppression. Every call is audited by the server as a run.
+   */
+  summary(filter: SummaryReportFilter): Observable<SummaryReport> {
+    return this.summaryBarangay(filter).pipe(
+      switchMap((barangayId) =>
+        this.api
+          .item(`${API_ENDPOINTS.officeReports}/summary`, {
+            from: filter.from,
+            to: filter.to,
+            barangay_id: barangayId,
+            program_id: filter.programId,
+            sex: filter.sex,
+            age: filter.age,
+            sector: filter.sector,
+          })
+          .pipe(map((wire) => readReport(toSummaryReport(wire)))),
+      ),
+    );
+  }
+
+  /** The same tables as the server's CSV, its conditions inside the file (`DL-106`). */
+  exportSummary(filter: SummaryReportFilter): Observable<SummaryReportExport> {
+    return this.summaryBarangay(filter).pipe(
+      switchMap((barangayId) =>
+        this.api
+          .item(`${API_ENDPOINTS.officeReports}/summary/export`, {
+            from: filter.from,
+            to: filter.to,
+            barangay_id: barangayId,
+            program_id: filter.programId,
+            sex: filter.sex,
+            age: filter.age,
+            sector: filter.sector,
+            format: 'csv',
+          })
+          .pipe(map((wire) => readReport(toSummaryReportExport(wire)))),
+      ),
+    );
+  }
+
+  /** The filter's barangay by the API's own id, read through the join; none when not narrowed. */
+  private summaryBarangay(filter: SummaryReportFilter): Observable<string | undefined> {
+    const consoleId = filter.barangayId;
+    if (consoleId === undefined) {
+      return of(undefined);
+    }
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const barangayId = barangays.toApi(consoleId);
+        return barangayId === null ? throwError(() => unknownBarangay()) : of(barangayId);
       }),
     );
   }

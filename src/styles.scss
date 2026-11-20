@@ -753,3 +753,4 @@ option {
 /* Page patterns (chips, tabs, KPI figures, icon tiles, notices, filter rows,
    the dashboard grid). Loaded last, so a pattern can refine a primitive. */
 @include meta.load-css('./styles/patterns');
+@include meta.load-css('./styles/report-print');

@@ -1,0 +1,46 @@
+/* The printed sheet's charts (DL-228). Colours are the chart tokens: the first series is the
+   console's bar, the second the success ink, each told apart by the legend and its place as well. */
+:host {
+  display: block;
+}
+
+.bar-chart {
+  display: block;
+  overflow: visible;
+}
+
+.bar-chart__bar--0 {
+  fill: var(--bar);
+}
+
+.bar-chart__bar--1 {
+  fill: var(--tone-success-fg);
+}
+
+.bar-chart__label,
+.bar-chart__legend {
+  fill: var(--text2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+}
+
+.bar-chart__figure {
+  fill: var(--ink);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-chart__figure--withheld {
+  fill: var(--muted);
+  font-style: italic;
+  font-weight: var(--fw-regular);
+}
+
+/* A printed page is always light (DL-207); the inks above are the light ones there. */
+@media print {
+  .bar-chart__bar--0,
+  .bar-chart__bar--1 {
+    print-color-adjust: exact;
+  }
+}

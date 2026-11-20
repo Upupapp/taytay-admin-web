@@ -106,6 +106,8 @@ import OFFICE_REPORT_COMPLETENESS from './office-report-data-completeness.json';
 import OFFICE_REPORT_EXPORT from './office-report-export.json';
 import OFFICE_REPORT_PROGRAMS from './office-report-program-utilisation.json';
 import OFFICE_REPORT_VULNERABILITY from './office-report-vulnerability-indicators.json';
+import OFFICE_REPORT_SUMMARY from './office-report-summary.json';
+import OFFICE_REPORT_SUMMARY_EXPORT from './office-report-summary-export.json';
 import OFFICE_DOCUMENT_GRANT from './office-document-grant.json';
 import ISSUANCE_TYPES from './issuance-types.json';
 import OFFICE_ISSUANCE_TYPE_RETIRED from './office-issuance-type-retired.json';
@@ -426,6 +428,8 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['office-report-program-utilisation', OFFICE_REPORT_PROGRAMS, 'OfficeReportResultEnvelope'],
     ['office-report-data-completeness', OFFICE_REPORT_COMPLETENESS, 'OfficeReportResultEnvelope'],
     ['office-report-export', OFFICE_REPORT_EXPORT, 'OfficeReportExportEnvelope'],
+    ['office-report-summary', OFFICE_REPORT_SUMMARY, 'SummaryReportEnvelope'],
+    ['office-report-summary-export', OFFICE_REPORT_SUMMARY_EXPORT, 'SummaryReportExportEnvelope'],
     ['office-staff', OFFICE_STAFF, 'OfficeStaffAccountListEnvelope'],
     ['office-staff-switched', OFFICE_STAFF_SWITCHED, 'OfficeStaffAccountEnvelope'],
     ['office-audit-page', OFFICE_AUDIT_PAGE, 'OfficeAuditEntryPage'],

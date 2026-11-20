@@ -149,6 +149,8 @@ export const DASHBOARD_COPY = {
   exportUnavailable: 'Report export arrives with the reporting TAB.',
 
   refresh: 'Refresh',
+  /** The summary report in the office's standard template, to print or save (DL-228). */
+  downloadReport: 'Download report',
   generatedAt: 'Figures generated',
   errorHeading: 'Could not load the dashboard',
 } as const;

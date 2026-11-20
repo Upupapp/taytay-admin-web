@@ -1,0 +1,101 @@
+/* One lettered section of the A4 summary sheet (DL-228). On screen it sits inside the sheet card;
+   in print each section starts clear of the last and is kept whole where it fits. */
+:host {
+  display: block;
+}
+
+.sheet-section {
+  display: grid;
+  gap: var(--space-3);
+  padding-block-start: var(--space-5);
+  border-block-start: 1px solid var(--line);
+  break-inside: avoid-page;
+}
+
+.sheet-section__heading {
+  font-size: var(--fs-section);
+}
+
+.sheet-section__note,
+.sheet-section__unavailable,
+.sheet-section__suppression {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.sheet-section__unavailable {
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}
+
+.sheet-section__suppression {
+  color: var(--text2);
+  font-style: italic;
+}
+
+.sheet-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.sheet-tiles__tile {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.sheet-tiles__label {
+  color: var(--muted);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+}
+
+.sheet-tiles__value {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet-tiles__hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-caption);
+}
+
+.sheet-section__totals > * {
+  border-block-start: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+}
+
+.sheet-withheld {
+  display: block;
+  color: var(--text2);
+  font-style: italic;
+}
+
+.sheet-withheld__reason {
+  display: block;
+  color: var(--muted);
+  font-size: var(--fs-caption);
+}
+
+@media print {
+  .sheet-section {
+    padding-block-start: var(--space-3);
+  }
+
+  /* The scroll box is for a narrow screen; on paper the table is as wide as the page. */
+  .sheet-section__table {
+    overflow: visible;
+  }
+}

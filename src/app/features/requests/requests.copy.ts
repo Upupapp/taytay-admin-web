@@ -7,6 +7,8 @@ export const REQUESTS_COPY = {
     subtitle: 'Intake, assessment, endorsement and approval of one intervention at a time.',
     caption: 'Assistance requests recorded by the MSWDO',
     startIntake: 'Start an intake',
+    importPast: 'Import past assistance',
+    downloadReport: 'Download report',
     // Not "your": the office record lists every unfinished intake the reader's scope covers,
     // whoever began it, so a colleague's half-done intake can be finished rather than retyped.
     assignedTo: 'Assigned to',

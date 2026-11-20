@@ -1,15 +1,33 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <!-- Not offered to a caseload: the server refuses it intake, so the link would bounce (DL-178). -->
+  <!-- Not offered to a caseload: the server refuses it intake, so the link would bounce (DL-178).
+       One root inside the block, projected as the actions: a block with three roots is projected
+       nowhere (DL-228). -->
   @if (!isCaseload()) {
-    <a
-      page-actions
-      *appHasPermission="'request.create'"
-      class="btn btn--primary"
-      routerLink="/assistance-requests/new"
-    >
-      <app-icon name="plus" class="requests__cta-icon" [stroke]="2.2" />
-      {{ copy.startIntake }}
-    </a>
+    <ng-container ngProjectAs="[page-actions]">
+      <a
+        page-actions
+        *appHasPermission="'request.create'"
+        class="btn btn--primary"
+        routerLink="/assistance-requests/new"
+      >
+        <app-icon name="plus" class="requests__cta-icon" [stroke]="2.2" />
+        {{ copy.startIntake }}
+      </a>
+      <!-- The API refuses a caseload request.import too (DL-228), so the link is not offered. -->
+      <a
+        page-actions
+        *appHasPermission="'request.import'"
+        class="btn"
+        routerLink="/assistance-requests/import"
+      >
+        {{ copy.importPast }}
+      </a>
+      <!-- The summary report counts the whole office; a caseload is 403 from the API (DL-228). -->
+      <a page-actions *appHasPermission="'report.view'" class="btn" routerLink="/reports/summary">
+        <app-icon name="download" [size]="16" [stroke]="2" />
+        {{ copy.downloadReport }}
+      </a>
+    </ng-container>
   }
 </app-page-header>
 

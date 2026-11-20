@@ -1,0 +1,49 @@
+/* Printing the summary report's A4 sheet (DL-228; docs/design/DESIGN_SYSTEM.md, "Report sheet").
+
+   Only while a `.report-sheet` is on the page: the console's frame — the sidebar, the top bar, the
+   connection banner, the route progress bar, the drawer and the toasts — is not part of what goes to
+   paper, and the outlet takes the whole page. Every other page prints as it did. The page's own
+   filters and buttons are hidden by its component stylesheet. */
+
+@media print {
+  body:has(.report-sheet) {
+    .skip-link,
+    .shell__banner,
+    .shell__scrim,
+    .shell__sidebar,
+    app-topbar,
+    app-route-progress,
+    app-drawer,
+    app-toast-host,
+    app-connection-banner {
+      display: none;
+    }
+
+    .shell {
+      display: block;
+      padding: 0;
+    }
+
+    .shell__main {
+      display: block;
+    }
+
+    .shell__content {
+      padding: 0;
+    }
+  }
+
+  .report-sheet {
+    page: report-sheet;
+  }
+}
+
+@page report-sheet {
+  size: A4;
+  margin: 14mm 14mm 16mm;
+
+  @bottom-center {
+    content: 'Page ' counter(page) ' of ' counter(pages);
+    font-size: 9pt;
+  }
+}

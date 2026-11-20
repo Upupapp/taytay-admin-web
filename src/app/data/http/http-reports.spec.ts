@@ -9,6 +9,7 @@ import { AuthTokenHolder } from '@core/auth/auth-token.holder';
 import { apiHeadersInterceptor } from '@core/http/api.interceptors';
 import {
   asId,
+  asIsoDate,
   REPORT_CATALOGUE,
   WITHHELD_DISPLAY,
   type BarangayId,
@@ -21,6 +22,8 @@ import OFFICE_REPORT_COMPLETENESS from './fixtures/office-report-data-completene
 import OFFICE_REPORT_EXPORT from './fixtures/office-report-export.json';
 import OFFICE_REPORT_PROGRAMS from './fixtures/office-report-program-utilisation.json';
 import OFFICE_REPORT_VULNERABILITY from './fixtures/office-report-vulnerability-indicators.json';
+import OFFICE_REPORT_SUMMARY from './fixtures/office-report-summary.json';
+import OFFICE_REPORT_SUMMARY_EXPORT from './fixtures/office-report-summary-export.json';
 import { HttpReportRepository } from './http-repositories';
 
 const BASE = 'https://api.example.gov.ph/api/v1';
@@ -333,5 +336,80 @@ describe('reports over the API (DL-190)', () => {
       /CSV/,
     );
     http.expectNone(`${BASE}/office/reports/caseload/export`);
+  });
+});
+
+/**
+ * The summary report over the API (`DL-228`): seven named filters and nothing else, the barangay
+ * by the API's own id, and an answer that cannot be read is refused whole.
+ */
+describe('the summary report over the API (DL-228)', () => {
+  let http: HttpTestingController;
+  let repository: HttpReportRepository;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers });
+    http = TestBed.inject(HttpTestingController);
+    TestBed.inject(AuthTokenHolder).hold('fixture-token', null);
+    repository = TestBed.inject(HttpReportRepository);
+  });
+
+  afterEach(() => http.verify());
+
+  it('sends the filter as named keys, the barangay as the API knows it', async () => {
+    const read = firstValueFrom(
+      repository.summary({
+        from: asIsoDate('2026-01-01'),
+        to: asIsoDate('2026-06-30'),
+        barangayId: MUZON,
+        sex: 'female',
+        age: '60-plus',
+        sector: 'senior-citizen',
+      }),
+    );
+    http.expectOne(`${BASE}/barangays`).flush(BARANGAYS);
+    const sent = http.expectOne((request) => request.url === `${BASE}/office/reports/summary`);
+    sent.flush(OFFICE_REPORT_SUMMARY);
+
+    expect(sent.request.params.keys().sort()).toEqual([
+      'age',
+      'barangay_id',
+      'from',
+      'sector',
+      'sex',
+      'to',
+    ]);
+    expect(sent.request.params.get('barangay_id')).toBe(MUZON_API);
+    expect((await read).sections).toHaveLength(9);
+  });
+
+  it('sends nothing for an empty filter, and asks for no barangay list', async () => {
+    const read = firstValueFrom(repository.summary({}));
+    const sent = http.expectOne(`${BASE}/office/reports/summary`);
+    sent.flush(OFFICE_REPORT_SUMMARY);
+
+    expect(sent.request.params.keys()).toEqual([]);
+    expect((await read).period.from).toBe('2026-01-01');
+  });
+
+  it('refuses an answer that cannot be read, rather than drawing part of it', async () => {
+    const body = copy(OFFICE_REPORT_SUMMARY);
+    (body.data.executive_summary.figures as { overdue_now: unknown }).overdue_now = 2;
+    const read = firstValueFrom(repository.summary({})).catch((error: unknown) => error);
+    http.expectOne(`${BASE}/office/reports/summary`).flush(body);
+
+    expect(await read).toBeInstanceOf(Error);
+  });
+
+  it('asks for the CSV with the same filter and hands over the server’s file as it is', async () => {
+    const read = firstValueFrom(repository.exportSummary({ sex: 'male' }));
+    const sent = http.expectOne(
+      (request) => request.url === `${BASE}/office/reports/summary/export`,
+    );
+    sent.flush(OFFICE_REPORT_SUMMARY_EXPORT);
+
+    expect(sent.request.params.get('format')).toBe('csv');
+    expect(sent.request.params.get('sex')).toBe('male');
+    expect((await read).content).toBe(OFFICE_REPORT_SUMMARY_EXPORT.data.content);
   });
 });

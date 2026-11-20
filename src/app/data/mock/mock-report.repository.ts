@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import type { Observable } from 'rxjs';
+import { throwError, type Observable } from 'rxjs';
 
 import {
   ACCESS_CONTEXT,
@@ -9,6 +9,7 @@ import {
   EXPORT_HANDLING_NOTICE,
   REFERRAL_STATUS_CATALOG,
   REPORT_CATALOGUE,
+  SENSITIVE_SECTORS,
   SMALL_CELL_BASIS,
   VISIT_STATUS_CATALOG,
   VULNERABILITY_SECTOR_LABELS,
@@ -37,12 +38,16 @@ import {
   type ReportResult,
   type ReportRow,
   type ReportSeries,
+  type SummaryReport,
+  type SummaryReportExport,
+  type SummaryReportFilter,
   type VulnerabilitySector,
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
 import { MockCaseStore } from './mock-case.store';
 import { MockLatency } from './mock-latency';
+import { composeMockSummary, summaryCsv } from './mock-summary-report';
 import { MockResidentStore } from './mock-resident.store';
 import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
 import { MOCK_DISBURSEMENTS } from './seed/releases.seed';
@@ -164,6 +169,72 @@ export class MockReportRepository implements ReportRepository {
       format,
       content: lines.join('\r\n'),
       filename: `${definition.id}-${manifest.generatedAt.slice(0, 10)}.csv`,
+    });
+  }
+
+  /* ── The summary report (DL-228) ─────────────────────────────────────────── */
+
+  summary(filter: SummaryReportFilter): Observable<SummaryReport> {
+    const refused = this.refuseSummary<SummaryReport>(filter);
+    if (refused !== null) {
+      return refused;
+    }
+    return this.latency.respond(this.composeSummary(filter));
+  }
+
+  exportSummary(filter: SummaryReportFilter): Observable<SummaryReportExport> {
+    const denied = denyUnless<SummaryReportExport>(
+      this.access.currentUser(),
+      'report.export-person-level',
+    );
+    if (denied) {
+      return denied;
+    }
+    const refused = this.refuseSummary<SummaryReportExport>(filter);
+    if (refused !== null) {
+      return refused;
+    }
+    const report = this.composeSummary(filter);
+    return this.latency.respond({
+      format: 'csv',
+      filename: `summary-report-${report.period.from}-to-${report.period.to}.csv`,
+      content: summaryCsv(report),
+    });
+  }
+
+  /** The server's refusals: the key, a caseload (403), a protected sector for an uncleared reader. */
+  private refuseSummary<T>(filter: SummaryReportFilter): Observable<T> | null {
+    const user = this.access.currentUser();
+    const denied = denyUnless<T>(user?.scope === 'assigned-cases' ? null : user, 'report.view');
+    if (denied) {
+      return denied;
+    }
+    if (
+      filter.sector !== undefined &&
+      SENSITIVE_SECTORS.includes(filter.sector) &&
+      !userHasPermission(user, 'request.view-sensitive')
+    ) {
+      return throwError(
+        () => new Error('A protected sector is counted only for a cleared reader.'),
+      );
+    }
+    return null;
+  }
+
+  private composeSummary(filter: SummaryReportFilter): SummaryReport {
+    const user = this.access.currentUser();
+    if (user === null) {
+      throw new Error('No session.');
+    }
+    return composeMockSummary({
+      user,
+      filter,
+      today: new Date().toISOString().slice(0, 10),
+      requests: MOCK_ASSISTANCE_REQUESTS,
+      releases: MOCK_DISBURSEMENTS,
+      programs: MOCK_PROGRAMS,
+      resident: (id) => this.residents.find(id),
+      sensitiveCleared: userHasPermission(user, 'request.view-sensitive'),
     });
   }
 

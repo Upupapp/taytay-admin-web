@@ -64,6 +64,7 @@ export * from './residents/sector-application';
 export * from './reports/report-definition';
 export * from './reports/report-disclosure';
 export * from './reports/report-result';
+export * from './reports/summary-report';
 export * from './community/resident-contract';
 export * from './events/event';
 export * from './events/registration';

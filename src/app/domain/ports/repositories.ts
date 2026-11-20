@@ -16,10 +16,11 @@ import type {
   ReportResult,
 } from '../reports/report-result';
 import type {
-  AuditEntryDetail,
-  AuditFilter,
-  AuditRow,
-} from '../governance/audit-view';
+  SummaryReport,
+  SummaryReportExport,
+  SummaryReportFilter,
+} from '../reports/summary-report';
+import type { AuditEntryDetail, AuditFilter, AuditRow } from '../governance/audit-view';
 import type { CorrectionRequest } from '../governance/correction-request';
 import type { EventCorrection, EventDraft, EventFilter, EventView, LguEvent } from '../events/event';
 import type {
@@ -1414,6 +1415,17 @@ export interface ReportRepository {
    * re-checks the permission (`DL-30`).
    */
   export(id: ReportId, filter: ReportFilter, format: ExportFormat): Observable<ReportExport>;
+  /**
+   * The summary report in the office's standard template (`DL-228`), as the server counted,
+   * withheld and worded it. Every call is a run the server records
+   * (`office_report.summary_read`), so a screen asks for it deliberately and never on a timer.
+   */
+  summary(filter: SummaryReportFilter): Observable<SummaryReport>;
+  /**
+   * The same tables as the server's CSV, with its conditions inside the file (`DL-106`).
+   * Requires `report.export-person-level`, the key every report export takes.
+   */
+  exportSummary(filter: SummaryReportFilter): Observable<SummaryReportExport>;
 }
 
 export const REPORT_REPOSITORY = new InjectionToken<ReportRepository>('ReportRepository');

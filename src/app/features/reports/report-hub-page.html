@@ -7,6 +7,24 @@
     <span>{{ copy.aggregateNotice }}</span>
   </p>
 
+  <!-- The office's standard template sits above the catalogue: it is the one it prints (DL-228). -->
+  @if (offersSummary()) {
+    <section class="card card--padded report-card hub__summary" aria-labelledby="hub-summary">
+      <h2 class="report-card__title" id="hub-summary">
+        <a routerLink="/reports/summary">{{ summaryCopy.hubHeading }}</a>
+      </h2>
+      <p class="status-line report-card__question">{{ summaryCopy.hubLead }}</p>
+      <p class="report-card__actions">
+        <a class="btn btn--arrow" routerLink="/reports/summary">
+          {{ summaryCopy.hubOpen }}
+          <span class="btn__arrow" aria-hidden="true">
+            <app-icon name="arrowRight" [size]="14" [stroke]="2.2" />
+          </span>
+        </a>
+      </p>
+    </section>
+  }
+
   <app-async-content [state]="state()" [content]="hubContent" [skeletonLines]="6">
     <ng-template #hubContent>
       @if (!hasAny()) {

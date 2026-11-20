@@ -11010,3 +11010,80 @@ trail's repeated source line and mixed category names; the programme form's resp
 Tests: a request header follows the record's status; the two pages opened without their record read
 nothing and keep their title; the duplicate finding opens in a dialog and tells its records apart
 without a compared value; the saved view's Archive glyph; and the page-level changes above.
+
+## DL-228 — an account is linked when it is verified, a Tulong page takes applications, the office imports its past assistance and prints the summary report
+
+**Status:** Settled (20 November 2026). The console's side of `taytay-backend` ADR 0004 (decisions 1
+and 2) and ADR 0005 (decisions 3 and 4), decided by the lead on the owner's "fix, you decide for the
+best" and Ella's decision on OD-4 (residents apply from the app). Contract re-vendored at
+`taytay-backend` `6794f8d` (326 operations). Extends `DL-197` (the reviewer has the ID in hand),
+`DL-214` (the citizen import's four steps), `DL-104` to `DL-106` (reports), `DL-225` (withdrawn, never
+deleted); keeps `DL-73` and `DL-60` everywhere a match is proposed.
+
+**1. The registry record is chosen at verification.** The ID review and the counter check
+(`VerifyInPersonDialog`) show `AccountLinkChoice` before the decision: the records
+`GET admin/users/{id}/registry-matches` proposes — a label ("Mercado, L."), a resemblance band that
+"only orders the list", and each signal as *attribute: the same / similar / different / cannot be
+compared — the rule* — never a value. The reviewer links to one (a reason, 1–500), makes a record
+from the account (the verified name split into the registry's parts, civil status, and the sex,
+birth date and street only when the account does not give them), or leaves it unlinked (a reason).
+What each choice does is said before the button, and joins the approval's consequences; the
+approve button waits, saying what is missing, until the choice is whole (`TransitionGuidance` gains
+`blockedBy`). A record another account holds cannot be chosen, and says why. An account already
+linked approves with no decision. The decision travels in the approval's body (`account_link`): a
+refused link refuses the approval, and the server's sentence is shown. A decided request says what
+its approval recorded. The proposals are read once, not live: a list that moved under the
+reviewer's choice would move what they chose. `StatusTransition`'s tick is now keyed on the move
+and its statement, so re-worded consequences no longer untick it.
+
+**2. A Tulong page names its programme and may take applications.** The page form picks one of
+the office's active programmes and "Accepts online applications", which the domain refuses without
+a programme (the API's 422); both travel together on a change. The effects say that verified,
+linked residents then see Apply in the app, and that an application files a request in intake as
+"Applied in the app". A page is still not a programme (`DL-170`); the picker degrades in place when
+the programme port is not served.
+
+**3. How a request came in.** `RequestChannel` adds `imported` to the counter's channels;
+`IntakeChannel` stays the draft's, since nobody files an imported request. The queue gains a "Came
+in" column. An online request carries `filingAdvisory` — the check the server kept when she applied,
+codes and tones only, a code with no words here said as such — and the request page states it as
+advice, beside the documents she sent. An imported request carries `imported` (its import, the
+source's number, the day decided, the withdrawal), is said to be "Imported from past records" and
+read-only: `isHistorical` closes every act on it. A request whose channel or origin cannot be read
+is refused whole.
+
+**4. Import past assistance** (`/assistance-requests/import`, `request.import` — intake, the head,
+the administrator; never a caseload). The citizen import's four steps, the step strip moved to
+`shared/imports` so neither feature imports the other: upload (limits before the picker, "Download
+the template" — the API's header-only CSV, built as a Blob in the browser; the citizen import gained
+the same), match columns, review by group (ready, needs review, skipped, duplicate, error) with the
+proposed match, candidates as label, band and signals, and link / create / skip each with a reason,
+duplicates naming the earlier row or reference, then commit and its outcomes. The list of imports is
+live; Withdraw goes through `ArchiveDialog`, saying before its button that the requests stay on the
+records, are no longer counted anywhere, and are never deleted.
+
+**5. The summary report** (`/reports/summary`, `report.view`, not a caseload's; "Download report" on
+the dashboard and the Assistance requests page, and on the Reports hub). The API counts, withholds
+and words; the console lays out Esperanza's A4 sheet — letterhead, period, "Narrowed to", the
+executive summary, sections A to I, signatures, and the footer with the RA 10173 rule (`DL-106`).
+Each section's table is the record; its chart is the shared `BarChart`, inline SVG, `aria-hidden`,
+every value printed, and a withheld cell is "withheld", never a zero bar (`DL-105`). Signatures are
+editable and never saved. **PDF is the browser's print** — `_report-print.scss`, A4, a page per
+section, no app chrome — after the report is read again with the same filters, because every run
+is audited (`office_report.summary_read`). **Excel is the API's CSV** (`report.export-person-level`),
+which carries the conditions inside the file; no spreadsheet library was added: SheetJS's maintained
+builds are not on the npm registry, and a client-made workbook would have to re-compose what
+`DL-106` makes the data layer's. The page is a named report run in `check:live`, not live: a
+re-read would write audit rows nobody asked for.
+
+**6. The registry.** The create form lists records already under the name typed, through the
+registry's own name search, as advice — two people may share a name, so saving is never refused. The
+API serves no duplicate check for a person not yet recorded. **Not built:** the profile cannot say
+whether an app account is linked or where the record came from — the API keeps both but
+`GET office/residents/{id}` sends neither; `docs/residents/README.md` says so, and its stale gaps and
+the dashboard's are rewritten.
+
+**Also:** `request.import` joins `PERMISSIONS` and the office reference; the app audit trail words
+the account left unlinked, the import's acts and rows, the imported request and release, and the
+summary run. The Assistance requests header projects its actions through one `ng-container
+ngProjectAs`, because a control-flow block with three roots is projected nowhere.

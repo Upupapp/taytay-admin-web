@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
+import { PermissionService } from '@core/access/permission.service';
+
 import {
   REPORT_AREA_LABELS,
   REPORT_REPOSITORY,
@@ -14,6 +16,7 @@ import { PageHeader } from '@shared/ui/page-header/page-header';
 import { Icon } from '@shared/ui/icon/icon';
 
 import { REPORTS_COPY } from './reports.copy';
+import { SUMMARY_REPORT_COPY } from './summary-report.copy';
 
 /**
  * The reports hub.
@@ -36,8 +39,15 @@ import { REPORTS_COPY } from './reports.copy';
 })
 export class ReportHubPage {
   private readonly repository = inject(REPORT_REPOSITORY);
+  private readonly permissions = inject(PermissionService);
 
   protected readonly copy = REPORTS_COPY.hub;
+  protected readonly summaryCopy = SUMMARY_REPORT_COPY;
+
+  /** The summary report counts the whole office, so a caseload is not offered it (DL-228). */
+  protected readonly offersSummary = computed(
+    () => this.permissions.has('report.view') && this.permissions.scope() !== 'assigned-cases',
+  );
 
   protected readonly state = toSignal(toViewState(this.repository.catalogue()), {
     initialValue: LOADING as ViewState<readonly ReportDefinition[]>,
