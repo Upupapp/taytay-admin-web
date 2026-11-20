@@ -41,7 +41,7 @@ import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-n
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
-import { residentColumns } from './resident-columns';
+import { residentColumns, sectorChipClass } from './resident-columns';
 import { readResidentFilter } from './resident-query';
 import {
   RESIDENTS_COPY,
@@ -228,6 +228,8 @@ export class SectorPage {
   protected detailLink(view: ResidentView): string {
     return `/residents/${view.resident.id}`;
   }
+
+  protected readonly sectorChip = sectorChipClass;
 
   protected sectorLabel(sector: VulnerabilitySector): string {
     return VULNERABILITY_SECTOR_LABELS[sector];

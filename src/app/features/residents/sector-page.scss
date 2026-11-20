@@ -30,3 +30,8 @@
 .sector__meta {
   flex-direction: column;
 }
+
+/* "End membership" stays on one line at 1280: the sectors column gives way instead. */
+.sector__list .btn--small {
+  white-space: nowrap;
+}

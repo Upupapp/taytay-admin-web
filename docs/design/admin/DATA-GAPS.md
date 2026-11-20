@@ -21,6 +21,9 @@ Checked against `openapi.json` at console `1eadbc0`.
 | SectorSeniors / PWD / SoloParents | Needs attention — milestone birthdays, centenarians, pension waitlist, no sector ID on file | summary with `sector=`: `attention[]` |
 | SectorSeniors / PWD / SoloParents, CitizenRegistry | "App and Digital ID" column per row | `OfficeResident`: `app_account { verified, digital_id_status }` |
 | CitizenRegistry | "Household" column per row | `OfficeResident`: `household_reference` |
+| SectorSeniors / PWD / SoloParents | Benefits and IDs (IDs and services, IDs and support) — sector ID on file, social pension, on the app, Digital ID, each of the sector | summary with `sector=`: `coverage { sector_id_on_file, social_pension, app_accounts, digital_ids }` |
+| SectorPWD | Type of disability — count per type | summary with `sector=pwd`: `by_disability_type[]` |
+| SectorSoloParents | Children in their care — 1, 2, 3, 4 or more | summary with `sector=solo-parent`: `by_children_in_care[]` |
 
 ## Sent by the API but not shown yet (UI work only)
 
