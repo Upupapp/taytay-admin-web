@@ -55,6 +55,7 @@
           "how": "proposed"
         },
         "will_create": false,
+        "creates_with_row": null,
         "create_problems": [],
         "candidates": [
           {
@@ -91,6 +92,7 @@
         "problems": [],
         "match": null,
         "will_create": false,
+        "creates_with_row": null,
         "create_problems": ["civil_status: Required", "street_address: Required"],
         "candidates": [
           {
@@ -127,6 +129,7 @@
         "problems": [],
         "match": null,
         "will_create": false,
+        "creates_with_row": null,
         "create_problems": [],
         "candidates": [],
         "duplicate": null,
@@ -153,6 +156,7 @@
         "problems": [],
         "match": null,
         "will_create": false,
+        "creates_with_row": null,
         "create_problems": [],
         "candidates": [],
         "duplicate": { "reason": "control-number", "of_row": 1, "of_request_reference": null },
@@ -166,6 +170,7 @@
         "problems": [{ "field": "barangay", "message": "That is not a Taytay barangay." }],
         "match": null,
         "will_create": false,
+        "creates_with_row": null,
         "create_problems": [],
         "candidates": [],
         "duplicate": null,

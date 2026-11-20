@@ -29,6 +29,9 @@
       @if (row().willCreate) {
         <p class="status-line">{{ review.willCreate }}</p>
       }
+      @if (row().createsWithRow; as first) {
+        <p class="status-line">{{ review.createsWith(first) }}</p>
+      }
     </section>
 
     @if (row().candidates.length > 0) {

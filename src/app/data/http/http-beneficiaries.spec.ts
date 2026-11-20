@@ -21,6 +21,7 @@ import {
 } from '@domain/index';
 
 import OFFICE_ASSISTANCE_HISTORY from './fixtures/office-assistance-history.json';
+import OFFICE_ASSISTANCE_HISTORY_IMPORTED from './fixtures/office-assistance-history-imported.json';
 import OFFICE_ASSISTANCE_HISTORY_WITHHELD from './fixtures/office-assistance-history-withheld.json';
 import OFFICE_BENEFICIARIES_PAGE from './fixtures/office-beneficiaries-page.json';
 import OFFICE_BENEFICIARY from './fixtures/office-beneficiary.json';
@@ -296,10 +297,32 @@ describe('the beneficiary registry over the API (DL-187)', () => {
     http
       .expectOne(`${BASE}/office/residents/${MARIA}/assistance-history`)
       .flush(OFFICE_ASSISTANCE_HISTORY_WITHHELD);
-    expect((await withheld)?.history).toEqual({
+    const withheldProfile = await withheld;
+    expect(withheldProfile?.history).toEqual({
       kind: 'unavailable',
       because: ASSISTANCE_HISTORY_NOT_YOURS,
     });
+    // A read that does not say is not known, never "no account".
+    expect(withheldProfile?.provenance).toBeNull();
+  });
+
+  it('reads a history holding a payout imported from a past report, its method not recorded', async () => {
+    const residents = TestBed.inject(HttpResidentRepository);
+    const empty = { data: [], meta: { pagination: { has_more: false, next_cursor: null } } };
+    const read = firstValueFrom(residents.getProfile(MARIA));
+    barangays();
+    http.expectOne(`${BASE}/office/residents/${MARIA}`).flush(OFFICE_RESIDENT_DETAIL);
+    http.expectOne((r) => r.url === `${BASE}/office/households`).flush(empty);
+    http
+      .expectOne(`${BASE}/office/residents/${MARIA}/assistance-history`)
+      .flush(OFFICE_ASSISTANCE_HISTORY_IMPORTED);
+    const profile = await read;
+    expect(profile?.history.kind).toBe('read');
+    if (profile?.history.kind === 'read') {
+      expect(profile.history.history.payouts.map((payout) => payout.method)).toContain(
+        'not-recorded',
+      );
+    }
   });
 
   it('reads utilization counted from releases, goods apart, and keeps the sentence for a reader not shown it', async () => {

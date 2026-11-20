@@ -347,6 +347,8 @@ function toRow(wire: unknown): AssistanceImportRow | null {
   const rawMatch = field(wire, 'match');
   const match = rawMatch === null ? null : toMatch(rawMatch);
   const willCreate = field(wire, 'will_create');
+  const rawCreatesWith = field(wire, 'creates_with_row');
+  const createsWithRow = int(rawCreatesWith);
   const createProblems = every(field(wire, 'create_problems'), str);
   const candidates = every(field(wire, 'candidates'), toCandidate);
   const rawDuplicate = field(wire, 'duplicate');
@@ -360,6 +362,7 @@ function toRow(wire: unknown): AssistanceImportRow | null {
     problems === null ||
     (rawMatch !== null && match === null) ||
     typeof willCreate !== 'boolean' ||
+    (rawCreatesWith !== null && createsWithRow === null) ||
     createProblems === null ||
     candidates === null ||
     (rawDuplicate !== null && duplicate === null) ||
@@ -375,6 +378,7 @@ function toRow(wire: unknown): AssistanceImportRow | null {
     problems,
     match,
     willCreate,
+    createsWithRow,
     createProblems,
     candidates,
     duplicate,

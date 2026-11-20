@@ -164,6 +164,8 @@ export const ASSISTANCE_IMPORT_COPY = {
       `Proposed: filed on ${label}, the one strong match in its barangay.`,
     linked: (label: string) => `Filed on ${label}, as a person linked it.`,
     willCreate: 'A new registry record will be made from this row when the import is committed.',
+    createsWith: (row: number) =>
+      `Filed on the new registry record row ${row} makes: the same name, barangay, birth date and sex, so one record, not two.`,
     duplicateOf: {
       'control-number': 'The same control number under the same programme',
       'same-day': 'The same person, programme and day of assistance',

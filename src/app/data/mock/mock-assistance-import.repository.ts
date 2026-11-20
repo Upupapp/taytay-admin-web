@@ -332,6 +332,8 @@ export class MockAssistanceImportRepository implements AssistanceImportRepositor
 
   private rows(held: HeldImport): readonly AssistanceImportRow[] {
     const seen = new Map<string, number>();
+    // As the API groups them: rows resolved `create` for the same name, barangay, birth date and sex.
+    const firstCreate = new Map<string, number>();
     return held.cells.map((cells, index): AssistanceImportRow => {
       const values: Partial<Record<AssistanceImportField, string>> = {};
       for (const field of ASSISTANCE_IMPORT_FIELDS) {
@@ -380,6 +382,15 @@ export class MockAssistanceImportRepository implements AssistanceImportRepositor
             ? { residentId: proposed.residentId, label: proposed.label, how: 'proposed' as const }
             : null;
       const draft = toDraftValues(values, {});
+      const person =
+        `${last}|${first}|${values.barangay ?? ''}|${values.birthDate ?? ''}|${values.sex ?? ''}`.toLowerCase();
+      const createsWithRow =
+        group === 'ready' && decided?.action === 'create'
+          ? (firstCreate.get(person) ?? null)
+          : null;
+      if (group === 'ready' && decided?.action === 'create' && createsWithRow === null) {
+        firstCreate.set(person, row);
+      }
       return {
         row,
         sourceLine: row + 1,
@@ -387,7 +398,8 @@ export class MockAssistanceImportRepository implements AssistanceImportRepositor
         values: held.summary.status === 'open' ? values : null,
         problems,
         match,
-        willCreate: decided?.action === 'create',
+        willCreate: decided?.action === 'create' && createsWithRow === null,
+        createsWithRow,
         createProblems: draft === null ? ['The registry needs a civil status and an address.'] : [],
         candidates,
         duplicate:

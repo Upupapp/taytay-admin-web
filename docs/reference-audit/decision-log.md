@@ -11087,3 +11087,32 @@ the dashboard's are rewritten.
 the account left unlinked, the import's acts and rows, the imported request and release, and the
 summary run. The Assistance requests header projects its actions through one `ng-container
 ngProjectAs`, because a control-flow block with three roots is projected nowhere.
+
+## DL-229 — what the full-flow simulation found: the profile says where a record came from, imported payouts read, and the report prints on A4 from its first page
+
+**Date:** 2026-11-20. **Context:** the whole MSWDO process was run end to end on a local copy
+(citizen import, onboarding with an account linked, made and left unlinked at verification, an
+application from the app through intake, approval and payout, a past-assistance import and its
+withdrawal, the dashboard and the summary report), through the API and the console's own screens.
+What it found is fixed here; nothing in `DL-228` changes.
+
+1. **The profile says where the record came from and whether an app account reads it.** The API's
+   record read now carries both (backend ADR 0004 §3), so `DL-228`'s "not built" is built: *Came
+   from* names the citizen import or past-assistance import and its file, a record made at
+   verification, or one typed in; *App account* says how and since when it was linked — and, when
+   none is, that the resident cannot apply from the app until one is. Nothing about the account
+   itself is shown; the API sends none of it. A read that does not say is "not said", never "none".
+2. **A payout imported from a past report reads.** Its method is `not-recorded` (the API's 0071);
+   the console did not know the word, so after an import the resident's history and the Payouts list
+   could not be read at all. `not-recorded` is read and labelled, and never offered when preparing a
+   release.
+3. **One person new to the registry is one record, however many rows name them.** A row resolved
+   *create* for the same name, barangay, birth date and sex as an earlier one is filed on the record
+   that row makes (`creates_with_row`), and the review says so. Before, an old report naming the same
+   new person four times made four records.
+4. **The summary report prints on A4 from its first page.** The named page was on the sheet alone,
+   so the empty frame before it opened a blank page in the printer's default size first; the whole
+   document now prints on the sheet's page.
+5. **The Tulong section no longer says a page cannot take applications** — true until `DL-228`.
+
+The simulation (`flows-sim.mjs`) is kept with the session's tooling, not in this repository.

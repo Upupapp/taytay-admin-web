@@ -15,7 +15,12 @@ import { sumMoney, ZERO_PESOS, type Money } from '../shared/money';
 import type { Permission } from '../access/permission';
 import { nextStatuses, type StatusCatalog, type StatusTransitions } from '../shared/status';
 
-export type PayoutMethod = 'cash' | 'check' | 'e-wallet' | 'bank-transfer' | 'in-kind';
+/**
+ * `not-recorded` is a money release imported from an old Tulong report, which did not say how it was
+ * paid (the API's 0071, `DL-228`). It is read, never offered: nobody prepares a release that way.
+ */
+export type PayoutMethod =
+  'cash' | 'check' | 'e-wallet' | 'bank-transfer' | 'in-kind' | 'not-recorded';
 
 export const PAYOUT_METHOD_LABELS: Readonly<Record<PayoutMethod, string>> = {
   cash: 'Cash',
@@ -23,6 +28,7 @@ export const PAYOUT_METHOD_LABELS: Readonly<Record<PayoutMethod, string>> = {
   'e-wallet': 'E-wallet',
   'bank-transfer': 'Bank transfer',
   'in-kind': 'In-kind goods',
+  'not-recorded': 'Not recorded (imported from a past report)',
 };
 
 export type ReleaseStatus =

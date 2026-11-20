@@ -7,6 +7,11 @@
 
 @media print {
   body:has(.report-sheet) {
+    /* The whole document is on the sheet's named page. Named on the sheet alone, whatever precedes it
+       in the flow (the shell's empty boxes) opened an unnamed page first: a blank page in the
+       printer's default size before the A4 sheet. */
+    page: report-sheet;
+
     .skip-link,
     .shell__banner,
     .shell__scrim,

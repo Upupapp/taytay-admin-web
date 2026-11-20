@@ -165,6 +165,11 @@ export interface AssistanceImportRow {
   readonly match: AssistanceImportMatch | null;
   /** A record will be made from the row at commit. */
   readonly willCreate: boolean;
+  /**
+   * An earlier row of the file that makes the same new person's record: this row is filed on that
+   * record, so a person new to the registry who appears in several rows becomes one record.
+   */
+  readonly createsWithRow: number | null;
   /** What the registry would refuse in the record a create would make, in the server's words. */
   readonly createProblems: readonly string[];
   readonly candidates: readonly AssistanceImportCandidate[];

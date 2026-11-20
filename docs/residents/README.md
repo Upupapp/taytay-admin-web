@@ -116,13 +116,9 @@ target minimum.
 
 Reviewed 20 November 2026 (`DL-228`): the earlier list named gaps that later work closed —
 duplicate review (`DL-73`, `DL-74`), the caseload's narrowing, which the API now enforces
-(`DL-183`), and membership, which is changed on the household screen.
+(`DL-183`), and membership, which is changed on the household screen. The profile now says where
+the record came from and whether an app account reads it (`DL-229`), from the record's own read.
 
-- **The profile cannot say whether an app account is linked, or where the record came from.**
-  The API keeps both — the link rows (migrations 0058, 0069) and the imports' outcomes (0057,
-  0071) — but `GET /office/residents/{id}` sends neither, so the profile shows nothing rather than
-  a guess. It needs a field such as `app_account { linked_at, act }` and `origin` (citizen import,
-  past assistance import, counter, verification) on that read.
 - **The create form warns on a name, not on a person.** It lists records with the name typed so
   far, through the registry's own name search (`DL-228`). The API serves no duplicate check for a
   person not yet recorded, so a same-name record with a different birth date is listed too, and

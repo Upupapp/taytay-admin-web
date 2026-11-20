@@ -75,6 +75,22 @@ describe('the past-assistance import mapper (DL-228)', () => {
     expect(summary?.result?.residentsCreated).toBe(1);
   });
 
+  it('reads a row filed on the record an earlier row of the file makes', () => {
+    const data = ASSISTANCE_IMPORT.data;
+    const shared = toAssistanceImport({
+      ...data,
+      rows: data.rows.map((row, index) => (index === 0 ? { ...row, creates_with_row: 3 } : row)),
+    });
+    expect(shared?.rows[0]?.createsWithRow).toBe(3);
+    expect(shared?.rows[1]?.createsWithRow).toBeNull();
+    expect(
+      toAssistanceImport({
+        ...data,
+        rows: data.rows.map((row) => ({ ...row, creates_with_row: 'row 3' })),
+      }),
+    ).toBeNull();
+  });
+
   it('refuses an answer it cannot read whole, rather than dropping a row', () => {
     const data = ASSISTANCE_IMPORT.data;
     expect(toAssistanceImportSummary({ ...data, status: 'deleted' })).toBeNull();

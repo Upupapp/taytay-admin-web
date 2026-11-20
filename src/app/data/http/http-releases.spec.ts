@@ -88,6 +88,22 @@ describe('releases over the API (DL-180)', () => {
     expect(pack?.inKindDescription).toContain('rice');
   });
 
+  it('reads a release imported from a past report, whose payment method was not recorded', async () => {
+    const page = firstValueFrom(releases.list({}, { limit: 50, cursor: null }));
+    const [cash] = OFFICE_RELEASES_PAGE.data;
+    const imported = {
+      ...cash,
+      status: 'completed',
+      method: 'not-recorded',
+      batch_id: null,
+      scheduled_for: null,
+    };
+    http.expectOne((r) => r.url === RELEASES).flush({ ...OFFICE_RELEASES_PAGE, data: [imported] });
+    const [read] = (await page).items;
+    expect(read?.method).toBe('not-recorded');
+    expect(read?.status).toBe('completed');
+  });
+
   it('refuses a one-character search before anything is sent', async () => {
     await expect(
       firstValueFrom(releases.list({ search: 'R' }, { limit: 50, cursor: null })),

@@ -868,7 +868,8 @@ describe('ServicesSection (DL-170)', () => {
     const element = await settle(TestBed.createComponent(ServicesSection));
 
     expect(services.listed).toEqual([false]);
-    expect(element.textContent).toContain('It is not one of the office’s assistance programmes.');
+    expect(element.textContent).toContain('A page is never a programme itself.');
+    expect(element.textContent).not.toContain('cannot apply through it');
     expect(element.textContent).toContain('Page hidden');
     expect(element.textContent).toContain('2 pages in use, hidden ones included.');
     expect(element.querySelector('#service-find')).toBeNull();

@@ -70,6 +70,7 @@ const RECORD: AssistanceImport = {
       problems: [],
       match: { residentId: asId<ResidentId>('resident-1'), label: 'Reyes, A.', how: 'proposed' },
       willCreate: false,
+      createsWithRow: null,
       createProblems: [],
       candidates: [],
       duplicate: null,
@@ -83,6 +84,7 @@ const RECORD: AssistanceImport = {
       problems: [],
       match: null,
       willCreate: false,
+      createsWithRow: null,
       createProblems: ['civil_status: Required'],
       candidates: [
         {
@@ -109,6 +111,7 @@ const RECORD: AssistanceImport = {
       problems: [],
       match: null,
       willCreate: false,
+      createsWithRow: null,
       createProblems: [],
       candidates: [],
       duplicate: { reason: 'control-number', ofRow: null, ofRequestReference: 'TAY-2024-00012' },
@@ -470,6 +473,26 @@ describe('Import past assistance, the rows (DL-228)', () => {
     expect(text(root)).toContain(
       COPY.review.duplicateRequest(COPY.review.duplicateOf['control-number'], 'TAY-2024-00012'),
     );
+  });
+
+  it('says a row is filed on the record an earlier row makes, so one person is one record', async () => {
+    const imports = configure();
+    imports.record = {
+      ...RECORD,
+      rows: RECORD.rows.map((row, index) =>
+        index === 0 ? { ...row, match: null, willCreate: false, createsWithRow: 4 } : row,
+      ),
+    };
+    const fixture = TestBed.createComponent(AssistanceImportPage);
+    fixture.componentRef.setInput('importId', 'import-1');
+    fixture.componentRef.setInput('step', 'review');
+    await settle(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+    [...root.querySelectorAll<HTMLButtonElement>('.tab')]
+      .find((tab) => tab.textContent?.includes(COPY.review.groups.ready))
+      ?.click();
+    await settle(fixture);
+    expect(text(root)).toContain(COPY.review.createsWith(4));
   });
 
   it('holds the commit while a row waits, and says why', async () => {

@@ -79,6 +79,7 @@ import OFFICE_DUPLICATE_PAIRS_PAGE from './office-duplicate-pairs-page.json';
 import OFFICE_IDENTITY_FINDING from './office-identity-finding.json';
 import OFFICE_IDENTITY_PREVIEW from './office-identity-preview.json';
 import OFFICE_ASSISTANCE_HISTORY from './office-assistance-history.json';
+import OFFICE_ASSISTANCE_HISTORY_IMPORTED from './office-assistance-history-imported.json';
 import OFFICE_ASSISTANCE_HISTORY_WITHHELD from './office-assistance-history-withheld.json';
 import OFFICE_PROGRAM_UTILIZATION from './office-program-utilization.json';
 import OFFICE_PROGRAM_UTILIZATION_WITHHELD from './office-program-utilization-withheld.json';
@@ -395,6 +396,11 @@ describe('the Node fixtures, held to the vendored spec', () => {
     [
       'office-assistance-history',
       OFFICE_ASSISTANCE_HISTORY,
+      'OfficeAssistanceHistoryReadingEnvelope',
+    ],
+    [
+      'office-assistance-history-imported',
+      OFFICE_ASSISTANCE_HISTORY_IMPORTED,
       'OfficeAssistanceHistoryReadingEnvelope',
     ],
     [

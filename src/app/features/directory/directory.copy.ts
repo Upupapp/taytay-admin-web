@@ -119,8 +119,9 @@ export const DIRECTORY_COPY = {
     heading: 'Tulong pages',
     lead:
       'What the app tells residents about a service — what it is, who it is for, what to bring and ' +
-      'whom to call. A Tulong page is information only: residents read it, and cannot apply ' +
-      'through it. It is not one of the office’s assistance programmes.',
+      'whom to call. A page is information only unless it names an office programme and accepts ' +
+      'online applications; then a verified resident linked to a registry record can apply through ' +
+      'it, and the request reaches intake. A page is never a programme itself.',
     add: 'Add a page',
     tabsLabel: 'Tulong pages: in use or archived',
     caption: 'Tulong pages, hidden ones included',
