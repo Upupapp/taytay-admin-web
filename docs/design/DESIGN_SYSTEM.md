@@ -123,6 +123,8 @@ Families: `--font-body` (Inter), `--font-display` (Inter Tight: page and section
 | `--fs-kpi`        | 38px   | Headline figure (`.kpi__value`)             |
 | `--fs-kpi-md`     | 36px   | A figure in a row of four (DL-231)          |
 | `--fs-kpi-money`  | 34px   | A peso total beside counts (DL-231)         |
+| `--fs-kpi-sm`     | 28px   | A figure in a row of five or six (DL-231)   |
+| `--fs-hero`       | 34px   | A hero band's title (DL-231)                |
 | `--fs-title-xl`   | 32px   | Sign-in title                               |
 | `--fs-title-lg`   | 26px   | Record title                                |
 | `--fs-title`      | 24px   | Card or dialog title                        |

@@ -16,6 +16,8 @@ Checked against `openapi.json` at console `1eadbc0`.
 | CitizensOverview | Citizens on the registry — 12-month line | `GET office/residents/summary`: `residents.by_month[]` |
 | CitizensOverview | From the registry to a Digital ID — funnel under the page filter | summary: `funnel { on_registry, on_app, verified, active_ids }` |
 | CitizensOverview | This month — turning 60, leaving the children's count, Solo Parent IDs due, PWD IDs expiring | summary: `this_month {}` |
+| CitizensOverview | KPI row: "On the residents' app" and "Active Digital IDs" under the page filter | summary: `app_accounts { current, previous, verified }`, `digital_ids { active, previous }` |
+| CitizensOverview | Age and sex: female and male totals under the pyramid | summary: `by_age_sex.total_by_sex { female, male }`, taken before suppression |
 | SectorSeniors / PWD / SoloParents | Needs attention — milestone birthdays, centenarians, pension waitlist, no sector ID on file | summary with `sector=`: `attention[]` |
 | SectorSeniors / PWD / SoloParents, CitizenRegistry | "App and Digital ID" column per row | `OfficeResident`: `app_account { verified, digital_id_status }` |
 
@@ -25,5 +27,4 @@ Checked against `openapi.json` at console `1eadbc0`.
 |---|---|---|
 | SectorSeniors / PWD / SoloParents | KPI row, by barangay, age bands | `GET office/residents/summary?sector=` (`residents`, `by_barangay`, `by_age_sex`) |
 | SectorSeniors / PWD / SoloParents | Sector ID, social pension, disability type, validity columns | `OfficeResident.sector_details[]` |
-| CitizensOverview | KPI deltas (↑ / ↓ beside each figure) | summary `residents.current/previous`, `registered.current/previous` |
 | CitizensOverview | Recent imports | `GET office/imports` |

@@ -74,6 +74,7 @@
   /* Inks */
   --primary: var(--blue);
   --primary-hover: #3a63f0;
+  --gold-hover: #ffe443; /* a gold button under the pointer (DL-231) */
   --on-primary: #ffffff;
   --deep: var(--navy);
   --ink: #08124a;
@@ -111,6 +112,9 @@
   --dash: #9aa3b5;
   --area: rgb(45 84 224 / 16%);
   --bar: #1d3a9c;
+  /* The second series beside --bar: female in the age-and-sex pyramid (DL-231). Decoration: the
+     legend and the table say which is which. */
+  --bar-female: #f5b700;
   --chart-line: var(--blue);
   --accent-line: var(--blue);
 
@@ -163,10 +167,12 @@
   --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', consolas, monospace;
 
   --fs-display: 42px; /* page title */
+  --fs-hero: 34px; /* a hero band's title (DL-231) */
   --fs-kpi-lg: 44px; /* the dashboard's headline counts (DL-231) */
   --fs-kpi: 38px; /* headline figure */
   --fs-kpi-md: 36px; /* a figure in a row of four (DL-231) */
   --fs-kpi-money: 34px; /* a peso total beside the counts (DL-231) */
+  --fs-kpi-sm: 28px; /* a figure in a row of five or six (DL-231) */
   --fs-title-xl: 32px; /* sign-in title */
   --fs-title-lg: 26px; /* record title */
   --fs-title: 24px; /* card or dialog title */
@@ -204,6 +210,7 @@
   --r-lg: 16px; /* notice boxes */
   --r-box: 18px;
   --r-xl: 20px; /* sections inside a card */
+  --r-card-sm: 22px; /* a small card, a figure tile (DL-231) */
   --r-card: 24px;
   --r-panel: 28px; /* dialogs, large panels */
   --r-pill: 999px; /* buttons, chips, tabs */

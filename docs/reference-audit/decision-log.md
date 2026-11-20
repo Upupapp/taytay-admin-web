@@ -11147,7 +11147,10 @@ running. Playwright is a dev dependency for this tool only. It never runs in the
 
 **Tokens added**, each the value a board draws, so a page can match it without a raw number:
 `--fs-kpi-lg` 44px (the dashboard's headline counts), `--fs-kpi-md` 36px (a figure in a row of
-four), `--fs-kpi-money` 34px (a peso total beside counts). `--shell-sidebar-width` is 256px, the
+four), `--fs-kpi-money` 34px (a peso total beside counts), `--fs-kpi-sm` 28px (a figure in a row
+of five or six), `--fs-hero` 34px (a hero band's title), `--r-card-sm` 22px (a figure tile, a
+filter card), `--gold-hover` (a gold button under the pointer) and `--bar-female` (the second series
+in the age-and-sex pyramid, decoration beside words). `--shell-sidebar-width` is 256px, the
 boards' sidebar, not 264px. A later board that needs a value the scale lacks adds it here.
 
 **The shell.** The sidebar runs the page's full height, never less than the window, with the account

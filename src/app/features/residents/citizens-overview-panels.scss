@@ -1,0 +1,172 @@
+// CitizensOverview board, inside the panels: the age-and-sex pyramid, its legend, and the records
+// to tidy up (DL-230). Kept apart from the page's frame so each sheet stays inside its budget.
+
+/* ── Age and sex: the pyramid is the table ────────────────────────────────── */
+.overview-legend {
+  display: inline-flex;
+  gap: 10px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.overview-legend__key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  &::before {
+    inline-size: 9px;
+    block-size: 9px;
+    border-radius: var(--r-xs);
+    content: '';
+  }
+}
+
+.overview-legend__key--female::before,
+.pyramid__side--female .pyramid__bar {
+  background: var(--bar-female);
+}
+
+.overview-legend__key--male::before,
+.pyramid__side--male .pyramid__bar {
+  background: var(--bar);
+}
+
+.pyramid {
+  inline-size: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0 10px;
+  color: var(--text2);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.pyramid__caption {
+  margin-block-end: var(--space-1);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  text-align: start;
+}
+
+.pyramid__summary {
+  display: block;
+}
+
+.pyramid__band {
+  inline-size: 28%;
+  padding: 0 var(--space-2);
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+  text-align: center;
+}
+
+.pyramid__side {
+  inline-size: 36%;
+  padding: 0;
+}
+
+.pyramid__cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pyramid__track {
+  display: flex;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.pyramid__side--female .pyramid__track {
+  justify-content: flex-end;
+}
+
+.pyramid__bar {
+  display: block;
+  block-size: 24px;
+  border-radius: var(--r-xs);
+}
+
+.pyramid__figure {
+  flex: none;
+  min-inline-size: 28px;
+}
+
+.pyramid__side--female .pyramid__figure {
+  text-align: end;
+}
+
+.pyramid__link {
+  color: var(--text2);
+  text-decoration: underline;
+  text-decoration-color: var(--line2);
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: var(--ink);
+    text-decoration-color: currentcolor;
+  }
+}
+
+/* ── Records to tidy up: the board's soft rows, a large figure first ──────── */
+.tidy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tidy-list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 14px;
+  border-radius: var(--r-lg);
+  background: var(--soft2);
+  color: var(--text2);
+}
+
+.tidy-list__item--none {
+  font-size: var(--fs-sm);
+}
+
+.tidy-list__count {
+  flex: none;
+  min-inline-size: 56px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-title-md);
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.tidy-list__words {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+}
+
+.tidy-list__label {
+  font-size: var(--fs-sm);
+}
+
+.tidy-list__meta {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.tidy-list__open {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  color: var(--link);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+}

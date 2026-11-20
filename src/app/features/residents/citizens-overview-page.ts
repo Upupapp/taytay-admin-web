@@ -44,7 +44,7 @@ import { LOADING, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { ChartTable } from '@shared/ui/chart-table/chart-table';
 import { Icon } from '@shared/ui/icon/icon';
-import { PageHeader } from '@shared/ui/page-header/page-header';
+import type { IconName } from '@shared/ui/icon/icons';
 
 import { CITIZENS_OVERVIEW_COPY } from './citizens-overview.copy';
 
@@ -61,6 +61,30 @@ type HeadlineSector = (typeof HEADLINE_SECTORS)[number];
  * added in the period, missing a contact — and the possible duplicates the beneficiary review
  * resolves. An approved sector application changes a resident, so it arrives as `residents`.
  */
+/** One side of an age band in the pyramid: the row the server sent, and its bar's share. */
+interface PyramidSide {
+  readonly row: ReportRow;
+  /** Percent of the largest cell; 0 for a withheld cell, which draws no bar. */
+  readonly width: number;
+}
+
+/** One age band, female on the left and male on the right, as the board draws it (DL-230). */
+export interface PyramidBand {
+  readonly key: ResidentAgeGroup;
+  readonly label: string;
+  readonly female: PyramidSide;
+  readonly male: PyramidSide;
+}
+
+/** Each headline's tile, from the board's own icon tiles. */
+const HEADLINE_TILES: Readonly<Record<string, { icon: IconName; tone: string }>> = {
+  registry: { icon: 'users', tone: 'blue' },
+  registered: { icon: 'userPlus', tone: 'green' },
+  'senior-citizen': { icon: 'senior', tone: 'navy' },
+  pwd: { icon: 'accessible', tone: 'sky' },
+  'solo-parent': { icon: 'soloParent', tone: 'gold' },
+};
+
 export const CITIZENS_OVERVIEW_TOPICS: readonly LiveTopic[] = ['residents', 'beneficiaries'];
 
 interface Headline {
@@ -92,9 +116,9 @@ interface Headline {
 @Component({
   selector: 'app-citizens-overview-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, ChartTable, HasPermissionDirective, Icon, PageHeader, RouterLink],
+  imports: [AsyncContent, ChartTable, HasPermissionDirective, Icon, RouterLink],
   templateUrl: './citizens-overview-page.html',
-  styleUrl: './citizens-overview-page.scss',
+  styleUrls: ['./citizens-overview-page.scss', './citizens-overview-panels.scss'],
 })
 export class CitizensOverviewPage {
   private readonly repository = inject(RESIDENT_REPOSITORY);
@@ -183,6 +207,48 @@ export class CitizensOverviewPage {
       }
     }
     return figures;
+  }
+
+  protected tileFor(key: string): { icon: IconName; tone: string } {
+    return HEADLINE_TILES[key] ?? { icon: 'users', tone: 'blue' };
+  }
+
+  /** The chip's tone: the words carry the direction, the tint repeats it. */
+  protected deltaTone(delta: SummaryDelta | null): string {
+    return delta === null ? 'none' : delta.direction;
+  }
+
+  /**
+   * The age-and-sex rows as a pyramid, when every row is an age band and a sex the console knows;
+   * otherwise `null`, and the screen keeps the plain table. Rows are the server's, links and
+   * withheld cells included; nothing is summed or derived.
+   */
+  protected pyramid(series: ReportSeries): readonly PyramidBand[] | null {
+    const rows = this.ageSexRows(series);
+    const find = (group: ResidentAgeGroup, sex: Sex): ReportRow | undefined =>
+      rows.find((row) => row.key === `${group}.${sex}`);
+    const largest = rows.reduce((max, row) => (row.isWithheld ? max : Math.max(max, row.value)), 0);
+    const side = (row: ReportRow): PyramidSide => ({
+      row,
+      width:
+        row.isWithheld || largest <= 0 || row.value <= 0
+          ? 0
+          : Math.max(2, Math.round((row.value / largest) * 100)),
+    });
+    const bands: PyramidBand[] = [];
+    for (const group of RESIDENT_AGE_GROUPS) {
+      const female = find(group, 'female');
+      const male = find(group, 'male');
+      if (female === undefined && male === undefined) continue;
+      if (female === undefined || male === undefined) return null;
+      bands.push({
+        key: group,
+        label: RESIDENT_AGE_GROUP_LABELS[group],
+        female: side(female),
+        male: side(male),
+      });
+    }
+    return bands.length * 2 === rows.length ? bands : null;
   }
 
   protected deltaText(delta: SummaryDelta | null): string {

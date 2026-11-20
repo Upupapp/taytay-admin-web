@@ -193,3 +193,31 @@
     background: var(--gold);
   }
 }
+
+/* The quiet layout (`class="chart-table--quiet"`): the panel's own heading names the chart, so the
+   caption is small print under it and the column headings are for screen readers only; the label
+   has a fixed column as the CitizensOverview board draws it (DL-230). */
+:host(.chart-table--quiet) {
+  .chart__caption {
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-regular);
+  }
+
+  .chart thead {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .chart__label-cell {
+    font-size: var(--fs-sm);
+  }
+
+  .chart__label-row {
+    grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
+  }
+}

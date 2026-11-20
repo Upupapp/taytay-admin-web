@@ -1,31 +1,316 @@
-// CitizensOverview mock-up: the filter bar, the as-of line, then the figures and breakdowns on the
-// shared `.bento` grid. Layout only; the shapes are `.filter-bar`, `.kpi`, `.soft-list`, `.note-box`.
+// CitizensOverview board: the hero band, the filter card, a row of figures, then the panels on a
+// twelve-column grid (DL-230). Panels the API cannot fill yet are listed in DATA-GAPS.md.
 
 :host {
   display: grid;
-  gap: var(--space-4);
+  gap: 18px;
 }
 
-/* Five filters do not fit one pill at console widths: they wrap to two rows in a rounded box, each
-   wide enough for its label on one line and its longest choice (DL-227, pass 2). */
-.overview__filters {
+/* ── Hero ─────────────────────────────────────────────────────────────────── */
+.overview-hero {
+  position: relative;
+  display: flex;
   flex-wrap: wrap;
-  border-radius: var(--r-card);
+  align-items: center;
+  gap: 20px;
+  padding: 26px 30px;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: var(--header-radius);
+  background: var(--grad-header);
+  color: var(--on-deep);
+
+  /* The board's two soft discs, decoration behind the words. */
+  &::before,
+  &::after {
+    position: absolute;
+    z-index: -1;
+    border-radius: var(--r-pill);
+    content: '';
+  }
+
+  &::before {
+    inset-block-start: var(--header-shape-a-top);
+    inset-inline-end: var(--header-shape-a-right);
+    inline-size: var(--header-shape-a-size);
+    block-size: var(--header-shape-a-size);
+    background: var(--header-shape-a-color);
+  }
+
+  &::after {
+    inset-block-end: var(--header-shape-b-bottom);
+    inset-inline-start: var(--header-shape-b-left);
+    inline-size: var(--header-shape-b-size);
+    block-size: var(--header-shape-b-size);
+    background: var(--header-shape-b-color);
+  }
+}
+
+.overview-hero__text {
+  display: flex;
+  flex: 1 1 520px;
+  flex-direction: column;
+  gap: 10px;
+  max-inline-size: 760px;
+}
+
+.overview-hero__title {
+  color: var(--on-deep);
+  font-family: var(--font-display);
+  font-size: var(--fs-hero);
+  font-weight: var(--fw-medium);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.overview-hero__lead {
+  color: var(--on-deep-muted);
+  font-size: var(--fs-section);
+  line-height: 1.55;
+}
+
+.overview-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-inline-start: auto;
+}
+
+.overview-hero__button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 42px;
+  padding: 0 18px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  text-decoration: none;
+}
+
+.overview-hero__button--gold {
+  background: var(--gold);
+  color: var(--navy);
+
+  &:hover {
+    background: var(--gold-hover);
+    color: var(--navy);
+  }
+}
+
+/* ── Filters: small pill selects in a card, labels for screen readers ────── */
+.overview__filters {
+  padding: 14px var(--space-4);
+  border-radius: var(--r-card-sm);
 }
 
 .overview__filters > .filter-bar__field {
-  flex: 1 1 300px;
-  white-space: nowrap;
+  flex: 0 1 auto;
+  padding-inline-start: 0;
+}
+
+.overview__select {
+  min-block-size: 40px;
+  border-color: var(--line2);
+  background-color: var(--card-flat);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.overview__clear {
+  min-block-size: var(--h-btn-sm);
 }
 
 .overview__as-of {
-  margin: 0 0 var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding-inline: 14px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+
+  &::before {
+    flex: none;
+    inline-size: 8px;
+    block-size: 8px;
+    border-radius: var(--r-pill);
+    background: var(--green-ink);
+    content: '';
+  }
 }
 
-.overview__disclosure {
-  margin-block-start: var(--space-4);
+/* The figures and panels arrive inside AsyncContent, so they keep the page's rhythm themselves. */
+.overview-body {
+  display: grid;
+  gap: 18px;
+}
 
-  p {
-    margin: var(--space-2) 0 0;
+/* ── Figures: one row, as many tiles as there are figures ─────────────────── */
+.overview-kpis {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 14px;
+}
+
+.overview-kpi {
+  gap: 6px;
+  padding: var(--space-4) 18px;
+  border-radius: var(--r-card-sm);
+}
+
+.overview-kpi__label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text2);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+}
+
+a.overview-kpi:hover .overview-kpi__label,
+a.overview-kpi:focus-visible .overview-kpi__label {
+  color: var(--on-primary);
+}
+
+.overview-kpi__tile {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 32px;
+  block-size: 32px;
+  border-radius: var(--r-sm);
+  color: var(--on-primary);
+}
+
+.overview-kpi__tile--blue {
+  background: var(--tile-blue);
+}
+
+.overview-kpi__tile--green {
+  background: var(--tile-green);
+}
+
+.overview-kpi__tile--navy {
+  background: var(--tile-navy);
+}
+
+.overview-kpi__tile--sky {
+  background: var(--tile-sky);
+}
+
+.overview-kpi__tile--gold {
+  background: var(--tile-gold);
+  color: var(--tile-gold-ink);
+}
+
+.overview-kpi__value {
+  font-size: var(--fs-kpi-sm);
+}
+
+/* The comparison as the board's chip: the words carry the direction, the tint repeats it. */
+.overview-kpi__delta {
+  align-self: flex-start;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: var(--soft);
+  color: var(--text2);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-bold);
+}
+
+.overview-kpi__delta--up {
+  background: var(--green-tint);
+  color: var(--green-ink);
+}
+
+.overview-kpi__delta--down {
+  background: var(--red-tint);
+  color: var(--red-ink);
+}
+
+/* ── Panels ───────────────────────────────────────────────────────────────── */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.overview-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-inline-size: 0;
+  padding: 20px 22px;
+  border: 1px solid var(--card-edge);
+  border-radius: var(--r-card);
+  background: var(--card);
+  backdrop-filter: var(--glass-filter);
+}
+
+.overview-panel--third {
+  grid-column: span 4;
+}
+
+.overview-panel--tidy {
+  grid-column: span 5;
+}
+
+.overview-panel--disclosure {
+  grid-column: span 7;
+}
+
+.overview-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.overview-panel__title {
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
+}
+
+.overview-panel__note,
+.overview-panel__body {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.overview-panel__body {
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}
+
+@media (width <= 1100px) {
+  .overview-kpis {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .overview-panel--third,
+  .overview-panel--tidy,
+  .overview-panel--disclosure {
+    grid-column: span 6;
+  }
+
+  .overview-panel--third:nth-child(3) {
+    grid-column: span 12;
+  }
+}
+
+@media (width <= 700px) {
+  .overview-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .overview-grid > .overview-panel {
+    grid-column: span 12;
   }
 }
