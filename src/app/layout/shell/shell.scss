@@ -1,10 +1,11 @@
 /* The console mock-ups' frame: a glass sidebar floating on the page wash with
    the page's own 16px margin, and the main column beside it. A grid, so a wide
-   table in the outlet can never push the main column under the sidebar. */
+   table in the outlet can never push the main column under the sidebar. The
+   sidebar runs the page's full height, as every board draws it (DL-230). */
 .shell {
   display: grid;
   grid-template-columns: var(--shell-sidebar-width) minmax(0, 1fr);
-  align-items: start;
+  align-items: stretch;
   gap: var(--space-4);
   min-block-size: 100vh;
   padding: var(--space-4);
@@ -51,19 +52,18 @@
 }
 
 /* Glass, with the blur the mock-ups give it: the sidebar never contains a
-   fixed overlay, so the filter cannot trap one (DL-200). */
+   fixed overlay, so the filter cannot trap one (DL-200). It is as tall as the
+   page, never less than the window, with the account at its foot as the boards
+   draw it; the whole menu shows without a scroll of its own (DL-230). */
 .shell__sidebar {
-  position: sticky;
-  inset-block-start: var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   inline-size: var(--shell-sidebar-width);
   /* Cannot exceed the viewport on a small screen. */
   max-inline-size: 100%;
-  block-size: calc(100vh - 2 * var(--space-4));
+  min-block-size: calc(100vh - 2 * var(--space-4));
   padding: 20px 14px var(--space-4);
-  overflow-y: auto;
   border: 1px solid var(--card-edge);
   border-radius: var(--r-card);
   background: var(--card);
@@ -80,15 +80,10 @@
   padding: 2px 6px;
 }
 
+/* Takes the room between the brand and the account, so the account sits at the sidebar's foot.
+   The sidebar grows with the menu, so no link runs under the footer. */
 .shell__nav {
   flex: 1 1 auto;
-  min-block-size: 0;
-  /* The nav may shrink below its content (min-block-size: 0), so it must scroll: otherwise its
-     lower links run on underneath the account footer, which takes the clicks, and on a laptop
-     screen part of the menu cannot be reached at all. The footer stays put, so signing out is
-     always one click away. */
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .shell__account {
@@ -148,7 +143,7 @@
 .shell__main {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   /* Without this a wide table inside the outlet widens the whole page. */
   min-inline-size: 0;
 }
@@ -179,13 +174,21 @@
     inset-inline-start: var(--space-2);
     z-index: 40;
     inline-size: min(var(--shell-sidebar-width), calc(100% - 2 * var(--space-2)));
-    block-size: auto;
+    min-block-size: 0;
     background: var(--card-solid);
     visibility: hidden;
     transform: translateX(calc(-100% - var(--space-4)));
     transition:
       transform var(--motion-panel) var(--motion-ease-decelerate),
       visibility 0s linear var(--motion-panel);
+  }
+
+  /* The drawer is the window's height, so here the menu scrolls between the brand and the
+     account, and the current entry is scrolled into its view (AppNav). */
+  .shell__nav {
+    min-block-size: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .shell__sidebar--open {

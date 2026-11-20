@@ -1,7 +1,8 @@
 # Data gaps — board panels waiting on the API
 
-A board panel whose data the API does not send stays on the page in its empty / not-connected
-state, and is listed here. `/match-board` adds lines; a backend change that closes one deletes it.
+A board panel whose data the API does not send is left out of the page, the grid around it
+re-balanced, and listed here (`DL-230`). A panel the console already has keeps its empty or
+not-connected state. `/match-board` adds lines; a backend change that closes one deletes it.
 
 Checked against `openapi.json` at console `1eadbc0`.
 

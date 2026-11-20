@@ -127,3 +127,69 @@
     gap: var(--space-1);
   }
 }
+
+/* The stacked layout (`class="chart-table--stacked"` on the host): the label above a thin bar,
+   the figure at the row's top right, the largest row in gold — the Main board's breakdowns
+   (DL-230). The table and its numbers are the same; only the drawing differs. */
+:host(.chart-table--stacked) {
+  .chart__caption {
+    margin-block-end: var(--space-3);
+    font-family: var(--font-display);
+    font-size: var(--fs-heading);
+    font-weight: var(--fw-medium);
+    letter-spacing: var(--ls-title);
+  }
+
+  .chart__summary {
+    margin-block-start: var(--space-1);
+    font-family: var(--font-body);
+    letter-spacing: normal;
+    text-wrap: pretty;
+  }
+
+  .chart thead th {
+    padding-block-end: 6px;
+    font-size: var(--fs-micro);
+  }
+
+  .chart__label-cell {
+    padding-inline-end: 14px;
+    color: var(--text);
+    font-weight: var(--fw-medium);
+  }
+
+  .chart__label-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .chart__label,
+  .chart__link {
+    min-block-size: 24px;
+    padding-inline: 0;
+    line-height: 24px;
+  }
+
+  .chart__link {
+    justify-self: start;
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .chart__link:hover {
+    text-decoration: underline;
+  }
+
+  .chart td.chart__value {
+    vertical-align: top;
+    line-height: 24px;
+  }
+
+  .chart__track {
+    block-size: 8px;
+  }
+
+  .chart__bar--top {
+    background: var(--gold);
+  }
+}

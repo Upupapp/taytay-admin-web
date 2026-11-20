@@ -119,7 +119,10 @@ Families: `--font-body` (Inter), `--font-display` (Inter Tight: page and section
 | Token             | Size   | Use                                         |
 | ----------------- | ------ | ------------------------------------------- |
 | `--fs-display`    | 42px   | Page title (`app-page-header`)              |
+| `--fs-kpi-lg`     | 44px   | The dashboard's headline counts (DL-231)    |
 | `--fs-kpi`        | 38px   | Headline figure (`.kpi__value`)             |
+| `--fs-kpi-md`     | 36px   | A figure in a row of four (DL-231)          |
+| `--fs-kpi-money`  | 34px   | A peso total beside counts (DL-231)         |
 | `--fs-title-xl`   | 32px   | Sign-in title                               |
 | `--fs-title-lg`   | 26px   | Record title                                |
 | `--fs-title`      | 24px   | Card or dialog title                        |
@@ -154,7 +157,7 @@ Gradients).
 `--h-field` 46 · `--h-btn` 44 (primary) · `--h-btn-sm` 38 (secondary) · `--h-btn-lg` 48 (the page's
 call to action, form footers) · `--h-nav` 42 · `--h-tab` 40 · `--h-icon-btn` 46 · icon tiles
 `--tile` 44, `--tile-sm` 36, `--tile-lg` 56 · seals `--seal-size-{sm,md,lg,xl}` 32/48/96/160 ·
-shell `--shell-sidebar-width` 264, `--shell-topbar-height` 60 · `--target-min` 24 (the WCAG 2.5.8
+shell `--shell-sidebar-width` 256, `--shell-topbar-height` 60 · `--target-min` 24 (the WCAG 2.5.8
 floor every control keeps).
 
 ### Spacing

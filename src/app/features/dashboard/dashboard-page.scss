@@ -17,6 +17,10 @@
 }
 
 /* ── The grid ─────────────────────────────────────────────────────────────── */
+/* The Main board's bento: twelve columns, 16px apart. Every rule names `.dash >` so it outranks
+   the span-12 default (a lone class lost to it under view encapsulation, and every panel ran the
+   full width). The board's weekly-requests and handed-over-by-day panels wait on the API
+   (docs/design/admin/DATA-GAPS.md); the figures beside them widen to fill their row. */
 .dash {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -28,25 +32,82 @@
   }
 }
 
-.dash__attention {
+.dash > .dash__attention {
   grid-column: span 5;
 }
 
-.metrics {
+/* Open requests, awaiting approval and scheduled payouts on the first row (3, 2 and 2 of the
+   board's twelve), Released across the row below. */
+.dash > .metrics {
   display: grid;
   grid-column: span 7;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  /* The first row as tall as its figures; Released takes what the attention list leaves. */
+  grid-template-rows: auto 1fr;
   gap: var(--space-4);
 }
 
+.metrics > .metric:first-child,
+.metrics > .metric:nth-child(2),
+.metrics > .metric:nth-child(3) {
+  min-block-size: 199px;
+}
+
+.metrics > .metric {
+  grid-column: span 2;
+}
+
+.metrics > .metric:first-child {
+  grid-column: span 3;
+}
+
+.metrics > .metric:nth-child(4) {
+  grid-column: 1 / -1;
+}
+
+/* Without the payout figures: the two that remain share the row. */
+.metrics:has(> .metrics__note) > .metric {
+  grid-column: span 3;
+}
+
+.metrics:has(> .metrics__note) > .metric:first-child {
+  grid-column: span 4;
+}
+
 .metric {
+  gap: var(--space-2);
   border-radius: var(--r-panel);
+}
+
+.metric .kpi__label {
+  font-size: var(--fs-control);
+}
+
+.metric .metric__value {
+  font-size: var(--fs-kpi-lg);
+  letter-spacing: var(--ls-display);
+}
+
+.metric .kpi__value--long {
+  font-size: var(--fs-kpi-money);
+  line-height: var(--lh-display);
 }
 
 /* Label, figure, hint from the top: a figure pushed to the bottom sat at whatever height its
    hint left it, so figures in one row did not line up (DL-227). */
 .metric .kpi__hint {
   margin-block-start: auto;
+  line-height: 1.45;
+}
+
+/* Released stands alone on its row, so nothing beside it to line up with: its figure sits low,
+   above its hint, as the board draws every figure. */
+.metrics > .metric:nth-child(4) .kpi__value {
+  margin-block-start: auto;
+}
+
+.metrics > .metric:nth-child(4) .kpi__hint {
+  margin-block-start: 0;
 }
 
 .metrics__note {
@@ -54,11 +115,10 @@
   align-self: start;
 }
 
-/* ── Breakdowns ───────────────────────────────────────────────────────────── */
+/* ── Breakdowns: three panels of four columns, one height ─────────────────── */
 .panels {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-  align-items: start;
   gap: var(--space-4);
 }
 
@@ -68,11 +128,28 @@
   overflow-x: auto;
 }
 
+.panels > .panel {
+  padding: 20px;
+  border-radius: var(--r-panel);
+}
+
 /* ── The residents' app ───────────────────────────────────────────────────── */
-.app-figures {
+/* The section lays its parts straight into the bento, so the verification panel and Quick actions
+   share a row as the board draws them (8 and 4 columns). */
+.dash > .app-figures {
+  display: contents;
+}
+
+.app-figures__row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-column: 1 / -1;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
   gap: var(--space-4);
+}
+
+.app-figures__row > .metric .metric__value {
+  font-size: var(--fs-kpi-md);
 }
 
 .app-figures__intro {
@@ -84,6 +161,18 @@
   border-radius: var(--r-panel);
   background: var(--primary);
   color: var(--on-primary);
+}
+
+.app-figures__tile {
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: var(--r-md);
+}
+
+.app-figures__words {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .app-figures__heading {
@@ -101,25 +190,148 @@
   text-wrap: pretty;
 }
 
-.app-figures__breakdown {
-  grid-column: 1 / -1;
+.dash > .app-figures > .app-figures__breakdown {
+  grid-column: span 8;
+}
+
+.verification {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border-radius: var(--r-panel);
+}
+
+.verification__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.verification__heading {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-medium);
+}
+
+.verification__summary {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.verification__bar {
+  display: flex;
+  gap: 3px;
+  block-size: 16px;
+}
+
+.verification__part {
+  min-inline-size: 6px;
+  border-radius: var(--r-pill);
+}
+
+.verification__table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-control);
+
+  thead th {
+    padding: 0 0 6px;
+    color: var(--muted2);
+    font-size: var(--fs-micro);
+    font-weight: var(--fw-semibold);
+    letter-spacing: var(--ls-caps);
+    text-align: start;
+    text-transform: uppercase;
+  }
+
+  tbody th,
+  tbody td {
+    padding: 6px 0;
+    border-block-start: 1px solid var(--soft);
+    font-weight: var(--fw-medium);
+    text-align: start;
+  }
+
+  thead th.verification__count,
+  tbody td.verification__count {
+    text-align: end;
+  }
+
+  td.verification__count {
+    color: var(--ink);
+    font-weight: var(--fw-semibold);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.verification__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.verification__dot {
+  flex: none;
+  inline-size: 10px;
+  block-size: 10px;
+  border-radius: var(--r-pill);
+}
+
+.verification__link {
+  color: var(--text);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.verification--unverified {
+  background: var(--line2);
+}
+
+.verification--pending {
+  background: var(--gold);
+}
+
+.verification--verified {
+  background: var(--accent-line);
+}
+
+.verification--rejected {
+  background: var(--red);
 }
 
 /* ── Quick actions ────────────────────────────────────────────────────────── */
+/* Beside the verification panel when there is one (4 of 12), across the row when there is not. */
+.dash:has(.app-figures__breakdown) > .quick {
+  grid-column: span 4;
+}
+
 .quick {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  padding: 20px;
+  border-radius: var(--r-panel);
+}
+
+.quick .section-title {
+  font-size: var(--fs-heading);
 }
 
 .quick__actions {
   display: grid;
+  flex: 1 1 auto;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-auto-rows: minmax(58px, 1fr);
   gap: 10px;
 }
 
 .generated {
-  margin-block-start: var(--space-4);
+  margin-block-start: 0;
   padding-inline: 6px;
   color: var(--muted);
   font-size: var(--fs-xs);
@@ -127,19 +339,29 @@
 
 /* The grid gives way as the mock-up's bento does. */
 @media (width <= 1100px) {
-  .dash__attention,
-  .metrics {
+  .dash > .dash__attention,
+  .dash > .metrics,
+  .dash > .app-figures > .app-figures__breakdown,
+  .dash:has(.app-figures__breakdown) > .quick {
     grid-column: span 12;
   }
 
-  .app-figures {
+  .app-figures__row {
+    grid-auto-flow: row;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (width <= 700px) {
-  .metrics,
-  .app-figures {
+  .dash > .metrics,
+  .app-figures__row {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .metrics > .metric,
+  .metrics > .metric:first-child,
+  .metrics:has(> .metrics__note) > .metric,
+  .metrics:has(> .metrics__note) > .metric:first-child {
+    grid-column: 1 / -1;
   }
 }

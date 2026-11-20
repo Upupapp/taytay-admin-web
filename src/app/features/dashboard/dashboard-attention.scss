@@ -37,6 +37,8 @@
   block-size: 8px;
   border-radius: var(--r-pill);
   background: var(--field-line);
+  /* The board's halo, as an outline: a ring, not a shadow. */
+  outline: 3px solid var(--soft);
 }
 
 .attention__group--critical {
@@ -44,6 +46,7 @@
 
   .attention__dot {
     background: var(--red);
+    outline-color: var(--red-tint);
   }
 }
 
@@ -52,6 +55,7 @@
 
   .attention__dot {
     background: var(--gold);
+    outline-color: var(--gold-tint);
   }
 }
 
@@ -118,6 +122,7 @@
 
 .attention__basis {
   grid-column: 2 / -1;
+  margin-block-end: var(--space-1);
   color: var(--muted);
   font-size: var(--fs-xs);
   text-wrap: pretty;
@@ -127,6 +132,14 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
   margin-block: var(--space-2);
+
+  .tally {
+    padding: var(--space-3) 14px;
+  }
+
+  .tally__label {
+    font-size: var(--fs-2xs);
+  }
 }
 
 /* Three tiles side by side squeeze "Needs action" into two lines on a phone: one per row. */

@@ -5,6 +5,7 @@ import { filter, map, startWith } from 'rxjs';
 
 import { ServedPorts } from '@core/access/served-ports';
 import { activeNavRoute, NAVIGATION, pathOf, type NavItem } from '@core/navigation/navigation';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { LAYOUT_COPY } from '../layout.copy';
 
@@ -28,7 +29,7 @@ export const HOME_CRUMB: Crumb = { label: LAYOUT_COPY.breadcrumbHome, route: '/d
 @Component({
   selector: 'app-breadcrumb',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [Icon, RouterLink],
   template: `
     @if (crumbs().length > 1) {
       <nav class="crumbs" [attr.aria-label]="copy.breadcrumbLandmark">
@@ -53,6 +54,13 @@ export const HOME_CRUMB: Crumb = { label: LAYOUT_COPY.breadcrumbHome, route: '/d
           }
         </ol>
       </nav>
+    } @else if (root(); as root) {
+      <!-- The root alone, as the Main board draws it: the page's name beside the dashboard's
+           grid. One crumb is no trail, so it is not a navigation landmark (DL-230). -->
+      <p class="crumbs crumbs--root">
+        <app-icon class="crumbs__icon" name="grid" [size]="15" />
+        <span class="crumbs__current">{{ root.label }}</span>
+      </p>
     }
   `,
   styleUrl: './app-breadcrumb.scss',
@@ -85,6 +93,11 @@ export class AppBreadcrumb {
   );
 
   protected readonly crumbs = computed<readonly Crumb[]>(() => buildCrumbs(this.url(), this.home));
+
+  /** The dashboard's crumb on the dashboard itself — never on a page the trail does not know. */
+  protected readonly root = computed<Crumb | null>(() =>
+    this.home !== null && pathOf(this.url()) === this.home.route ? this.home : null,
+  );
 }
 
 /**

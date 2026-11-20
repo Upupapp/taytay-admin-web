@@ -11140,3 +11140,25 @@ script, tokens only, no shadows or glows, the focus ring, the four data states, 
 running console side by side into `.parity/`, which git ignores. It needs `npm start` (local-mock)
 running. Playwright is a dev dependency for this tool only. It never runs in the build or in
 `verify`.
+
+## DL-231 — values the boards draw that the scale lacked, and the shell the boards draw
+
+**Status:** Settled (21 November 2026), during `/match-board` (`DL-230`).
+
+**Tokens added**, each the value a board draws, so a page can match it without a raw number:
+`--fs-kpi-lg` 44px (the dashboard's headline counts), `--fs-kpi-md` 36px (a figure in a row of
+four), `--fs-kpi-money` 34px (a peso total beside counts). `--shell-sidebar-width` is 256px, the
+boards' sidebar, not 264px. A later board that needs a value the scale lacks adds it here.
+
+**The shell.** The sidebar runs the page's full height, never less than the window, with the account
+at its foot, as every board draws it; it no longer sticks to the window with a menu that scrolls
+inside it. Signing out is at the foot of the page. On a narrow screen it is still the drawer, whose
+menu scrolls. The breadcrumb names the dashboard on the dashboard, beside its grid icon, as plain
+text: one crumb is no trail, so it is not a navigation landmark. The sections stay open (`DL-201`),
+though the boards fold them.
+
+**Kept from this log over the boards:** an attention item's basis stays visible under it (`DL-98`),
+where the Main board folds it behind "How this is counted"; the attention totals stay above the
+list (`DL-227`), where the board puts them at its foot; figures in a row read from the top
+(`DL-227`).
+

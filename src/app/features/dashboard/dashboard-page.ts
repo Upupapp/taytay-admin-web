@@ -258,6 +258,16 @@ export class DashboardPage {
     });
   });
 
+  /**
+   * Each status's share of all the accounts, for the stacked bar drawn above the table (DL-230).
+   * Decoration only: the table beneath states every figure.
+   */
+  protected readonly verificationShares = computed(() => {
+    const rows = this.verificationRows();
+    const total = rows.reduce((sum, row) => sum + row.value, 0);
+    return rows.map((row) => ({ key: row.key, share: total > 0 ? (row.value / total) * 100 : 0 }));
+  });
+
   /* ── drill-down targets for the headline figures ────────────────────────── */
 
   protected openRequestsLink(summary: DashboardSummary): DrillDown {

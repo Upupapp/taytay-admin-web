@@ -74,6 +74,7 @@ export interface ChartRow {
                   <span
                     class="chart__bar"
                     aria-hidden="true"
+                    [class.chart__bar--top]="isLargest(row.value)"
                     [style.inline-size.%]="percentOf(row.value)"
                   ></span>
                 </span>
@@ -112,6 +113,17 @@ export class ChartTable {
    * looks identical to "none" — the distinction the eye is most likely to miss
    * and the one that matters most on a caseload.
    */
+  /**
+   * The one largest row, which the stacked layout picks out in gold as the boards do. A tie picks
+   * out none: gold on every row would single out nothing.
+   */
+  protected isLargest(value: number): boolean {
+    const max = this.largest();
+    return (
+      value > 0 && value === max && this.rows().filter((row) => row.value === max).length === 1
+    );
+  }
+
   protected percentOf(value: number): number {
     const max = this.largest();
     if (max <= 0 || value <= 0) {

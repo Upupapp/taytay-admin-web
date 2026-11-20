@@ -66,3 +66,17 @@
   color: var(--muted);
   font-weight: var(--fw-regular);
 }
+
+/* The dashboard's own crumb: its grid icon and its name, on the trail's line (Main board). */
+.crumbs--root {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.crumbs__icon {
+  flex: none;
+}

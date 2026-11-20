@@ -163,7 +163,10 @@
   --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', consolas, monospace;
 
   --fs-display: 42px; /* page title */
+  --fs-kpi-lg: 44px; /* the dashboard's headline counts (DL-231) */
   --fs-kpi: 38px; /* headline figure */
+  --fs-kpi-md: 36px; /* a figure in a row of four (DL-231) */
+  --fs-kpi-money: 34px; /* a peso total beside the counts (DL-231) */
   --fs-title-xl: 32px; /* sign-in title */
   --fs-title-lg: 26px; /* record title */
   --fs-title: 24px; /* card or dialog title */
@@ -247,7 +250,7 @@
   --space-6: 32px;
   --space-7: 48px;
 
-  --shell-sidebar-width: 264px;
+  --shell-sidebar-width: 256px;
   --shell-topbar-height: 60px;
 }
 

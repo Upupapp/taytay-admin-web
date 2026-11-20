@@ -156,6 +156,7 @@
     <div class="panels">
       <section class="card card--panel card--padded panel">
         <app-chart-table
+          class="chart-table--stacked"
           [caption]="copy.byStatusCaption"
           [summary]="copy.byStatusSummary"
           [labelHeader]="copy.statusHeader"
@@ -166,6 +167,7 @@
 
       <section class="card card--panel card--padded panel">
         <app-chart-table
+          class="chart-table--stacked"
           [caption]="copy.byBarangayCaption"
           [summary]="copy.byBarangaySummary"
           [labelHeader]="copy.barangayHeader"
@@ -177,6 +179,7 @@
       @if (summary.payouts) {
         <section class="card card--panel card--padded panel">
           <app-chart-table
+            class="chart-table--stacked"
             [caption]="copy.byCategoryCaption"
             [summary]="copy.byCategorySummary"
             [labelHeader]="copy.categoryHeader"
@@ -190,67 +193,123 @@
     <!-- ── The residents' app: only for whoever administers it, each figure behind its own key ── -->
     @if (summary.residentApp; as app) {
       <section class="app-figures" aria-labelledby="app-figures-heading">
-        <div class="app-figures__intro">
-          <h2 id="app-figures-heading" class="app-figures__heading">
-            {{ copy.residentAppHeading }}
-          </h2>
-          <p class="app-figures__notice">{{ copy.residentAppNotice }}</p>
+        <div class="app-figures__row">
+          <div class="app-figures__intro">
+            <span class="icon-tile icon-tile--gold app-figures__tile" aria-hidden="true">
+              <app-icon name="phone" [size]="20" [stroke]="2" />
+            </span>
+            <div class="app-figures__words">
+              <h2 id="app-figures-heading" class="app-figures__heading">
+                {{ copy.residentAppHeading }}
+              </h2>
+              <p class="app-figures__notice">{{ copy.residentAppNotice }}</p>
+            </div>
+          </div>
+
+          @if (app.accounts; as accounts) {
+            <a class="kpi metric" routerLink="/users">
+              <span class="kpi__label">
+                {{ copy.accounts }}
+                <span class="kpi__arrow" aria-hidden="true">
+                  <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
+                </span>
+              </span>
+              <span class="kpi__value metric__value">{{ accounts.registered }}</span>
+              <span class="kpi__hint">
+                {{ copy.accountsHint }}
+                @if (accountsNew(summary, accounts.registeredInPeriod); as fresh) {
+                  {{ fresh }}
+                }
+              </span>
+              <span class="visually-hidden">{{ copy.viewRecords }}</span>
+            </a>
+          }
+          @if (app.verificationsWaiting !== null) {
+            <a class="kpi metric" routerLink="/verification">
+              <span class="kpi__label">
+                {{ copy.verificationsWaiting }}
+                <span class="kpi__arrow" aria-hidden="true">
+                  <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
+                </span>
+              </span>
+              <span class="kpi__value metric__value">{{ app.verificationsWaiting }}</span>
+              <span class="kpi__hint">{{ copy.verificationsWaitingHint }}</span>
+              <span class="visually-hidden">{{ copy.viewRecords }}</span>
+            </a>
+          }
+          @if (app.digitalIdsActive !== null) {
+            <a class="kpi metric" routerLink="/digital-ids">
+              <span class="kpi__label">
+                {{ copy.digitalIdsActive }}
+                <span class="kpi__arrow" aria-hidden="true">
+                  <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
+                </span>
+              </span>
+              <span class="kpi__value metric__value">{{ app.digitalIdsActive }}</span>
+              <span class="kpi__hint">{{ copy.digitalIdsActiveHint }}</span>
+              <span class="visually-hidden">{{ copy.viewRecords }}</span>
+            </a>
+          }
         </div>
 
-        @if (app.accounts; as accounts) {
-          <a class="kpi metric" routerLink="/users">
-            <span class="kpi__label">
-              {{ copy.accounts }}
-              <span class="kpi__arrow" aria-hidden="true">
-                <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
-              </span>
-            </span>
-            <span class="kpi__value metric__value">{{ accounts.registered }}</span>
-            <span class="kpi__hint">
-              {{ copy.accountsHint }}
-              @if (accountsNew(summary, accounts.registeredInPeriod); as fresh) {
-                {{ fresh }}
-              }
-            </span>
-            <span class="visually-hidden">{{ copy.viewRecords }}</span>
-          </a>
-        }
-        @if (app.verificationsWaiting !== null) {
-          <a class="kpi metric" routerLink="/verification">
-            <span class="kpi__label">
-              {{ copy.verificationsWaiting }}
-              <span class="kpi__arrow" aria-hidden="true">
-                <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
-              </span>
-            </span>
-            <span class="kpi__value metric__value">{{ app.verificationsWaiting }}</span>
-            <span class="kpi__hint">{{ copy.verificationsWaitingHint }}</span>
-            <span class="visually-hidden">{{ copy.viewRecords }}</span>
-          </a>
-        }
-        @if (app.digitalIdsActive !== null) {
-          <a class="kpi metric" routerLink="/digital-ids">
-            <span class="kpi__label">
-              {{ copy.digitalIdsActive }}
-              <span class="kpi__arrow" aria-hidden="true">
-                <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
-              </span>
-            </span>
-            <span class="kpi__value metric__value">{{ app.digitalIdsActive }}</span>
-            <span class="kpi__hint">{{ copy.digitalIdsActiveHint }}</span>
-            <span class="visually-hidden">{{ copy.viewRecords }}</span>
-          </a>
-        }
-
+        <!-- One bar split by status, then the table it draws (Main board, DL-230). The bar is
+             decoration; every figure is in the table, and each row opens what it counted. -->
         @if (app.accounts) {
-          <section class="card card--panel card--padded panel app-figures__breakdown">
-            <app-chart-table
-              [caption]="copy.byVerificationCaption"
-              [summary]="copy.byVerificationSummary"
-              [labelHeader]="copy.verificationHeader"
-              [valueHeader]="copy.accountsHeader"
-              [rows]="verificationRows()"
-            />
+          <section
+            class="card card--panel card--padded panel app-figures__breakdown verification"
+            aria-labelledby="verification-heading"
+          >
+            <div class="verification__head">
+              <h3 id="verification-heading" class="verification__heading">
+                {{ copy.byVerificationCaption }}
+              </h3>
+              <p class="verification__summary">{{ copy.byVerificationSummary }}</p>
+            </div>
+            <div class="verification__bar" aria-hidden="true">
+              @for (part of verificationShares(); track part.key) {
+                @if (part.share > 0) {
+                  <span
+                    class="verification__part"
+                    [class]="'verification__part verification--' + part.key"
+                    [style.inline-size.%]="part.share"
+                  ></span>
+                }
+              }
+            </div>
+            <table class="verification__table">
+              <caption class="visually-hidden">
+                {{
+                  copy.byVerificationCaption
+                }}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">{{ copy.verificationHeader }}</th>
+                  <th scope="col" class="verification__count">{{ copy.accountsHeader }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of verificationRows(); track row.key) {
+                  <tr>
+                    <th scope="row">
+                      <span class="verification__label">
+                        <span
+                          [class]="'verification__dot verification--' + row.key"
+                          aria-hidden="true"
+                        ></span>
+                        <a
+                          class="verification__link"
+                          [routerLink]="row.routerLink"
+                          [queryParams]="row.queryParams ?? {}"
+                          >{{ row.label }}</a
+                        >
+                      </span>
+                    </th>
+                    <td class="verification__count">{{ row.value }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </section>
         }
       </section>
