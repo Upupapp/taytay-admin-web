@@ -1,0 +1,27 @@
+{
+  "boards": [
+    { "board": "SignIn", "route": "/sign-in", "signedOut": true },
+    { "board": "Main", "route": "/dashboard" },
+    { "board": "Residents", "route": "/residents" },
+    { "board": "ResidentRecord", "route": "/residents", "click": "main table tbody tr a" },
+    { "board": "ResidentRegister", "route": "/residents/new" },
+    { "board": "VerificationQueue", "route": "/verification" },
+    {
+      "board": "VerificationReview",
+      "route": "/verification",
+      "click": "main a[href*='/verification/'], main table tbody tr button"
+    },
+    { "board": "OfficeInbox", "route": "/inbox" },
+    { "board": "OfficeThread", "route": "/inbox", "click": "main a[href*='/inbox/']" },
+    { "board": "Users", "route": "/users" },
+    { "board": "AppDirectory", "route": "/directory" },
+    { "board": "CitizensOverview", "route": "/residents/overview" },
+    { "board": "CitizenRegistry", "route": "/residents" },
+    { "board": "SectorSeniors", "route": "/residents/sectors/senior-citizen" },
+    { "board": "SectorPWD", "route": "/residents/sectors/pwd" },
+    { "board": "SectorSoloParents", "route": "/residents/sectors/solo-parent" },
+    { "board": "CitizenImport", "route": "/residents/import" },
+    { "board": "CitizenIDs", "route": "/citizen-ids" },
+    { "board": "CitizenIDRecord", "route": "/citizen-ids", "click": "main table tbody tr a" }
+  ]
+}

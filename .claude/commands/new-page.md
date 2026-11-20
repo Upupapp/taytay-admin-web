@@ -3,6 +3,8 @@ description: Build a new console page from a design pattern, shared/ui and real 
 argument-hint: <feature/page and what it is for, e.g. "programs: enrolment list">
 ---
 
+When a board exists for this page, finish with /match-board <Board>.
+
 # New page: $ARGUMENTS
 
 Build the page named above so that it looks and behaves like every other screen of the console,

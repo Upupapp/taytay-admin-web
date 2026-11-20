@@ -45,3 +45,6 @@ Thumbs.db
 
 # Redesign reference (local only; Phase 5 copies it into docs/design/)
 /design/
+
+# Visual parity screenshots (tools/visual-parity.mjs)
+.parity/

@@ -11116,3 +11116,27 @@ What it found is fixed here; nothing in `DL-228` changes.
 5. **The Tulong section no longer says a page cannot take applications** — true until `DL-228`.
 
 The simulation (`flows-sim.mjs`) is kept with the session's tooling, not in this repository.
+
+## DL-230 — /match-board: a page takes its board's look; the repo keeps its behaviour
+
+**Status:** Settled (21 November 2026), at the owner's instruction, with the setup she supplied
+(`tools/visual-parity.mjs`, `tools/visual-parity.json`, `.claude/commands/match-board.md`,
+`docs/design/admin/DATA-GAPS.md`).
+
+**The rule.** Presentation only. Where a shared piece draws something different from the page's
+design board in `docs/design/admin/screens/`, the board outranks the shared piece, and the page gets
+its own markup and styles. Nothing is added that the repo does not do, and nothing the repo does is
+removed: routes, permissions, guards, inputs, live regions, wording in `*.copy.ts` and spec
+selectors stay. The Dark mode button stays where `DL-207` put it, in the top bar.
+
+**Panels without data.** A board panel whose figures the API does not send is left out, never
+invented. The grid around it is re-balanced so there is no hole, and the panel is listed in
+`docs/design/admin/DATA-GAPS.md` with the field and endpoint it needs.
+
+**What still outranks the board:** `CLAUDE.md`'s privacy, access and domain rules, every `check:*`
+script, tokens only, no shadows or glows, the focus ring, the four data states, and this log.
+
+**Tooling.** `npm run parity -- <Board>` (or `--all`, `--width 1280`) screenshots the board and the
+running console side by side into `.parity/`, which git ignores. It needs `npm start` (local-mock)
+running. Playwright is a dev dependency for this tool only. It never runs in the build or in
+`verify`.

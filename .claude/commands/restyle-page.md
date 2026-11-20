@@ -3,6 +3,8 @@ description: Restyle an existing console page to docs/design/DESIGN_SYSTEM.md wi
 argument-hint: <page or feature folder, e.g. "features/visits/visit-list-page">
 ---
 
+When a board exists for this page, finish with /match-board <Board>.
+
 # Restyle: $ARGUMENTS
 
 Bring the page named above onto the design system. **Presentation only**: every service, port,
