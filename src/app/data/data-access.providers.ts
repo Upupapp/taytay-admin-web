@@ -38,6 +38,7 @@ import {
   TULONG_SERVICE_REPOSITORY,
   ISSUANCE_REPOSITORY,
   RESIDENT_IMPORT_REPOSITORY,
+  ASSISTANCE_IMPORT_REPOSITORY,
   SECTOR_APPLICATION_REPOSITORY,
 } from '@domain/ports/repositories';
 import { SIGN_IN_METHOD } from '@domain/ports/sign-in-method';
@@ -149,6 +150,10 @@ export function provideDataAccess(): EnvironmentProviders {
     {
       provide: RESIDENT_IMPORT_REPOSITORY,
       useFactory: lazyPort((m) => m.HttpResidentImportRepository),
+    },
+    {
+      provide: ASSISTANCE_IMPORT_REPOSITORY,
+      useFactory: lazyPort((m) => m.HttpAssistanceImportRepository),
     },
     {
       provide: SECTOR_APPLICATION_REPOSITORY,

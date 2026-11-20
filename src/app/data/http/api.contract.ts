@@ -206,6 +206,13 @@ export const API_ENDPOINTS = {
    */
   officeImports: 'office/imports',
   /**
+   * Imports of the office's past assistance (`DL-228`, `request.import`): `GET` a cursor page,
+   * `POST` a file (multipart), `GET template`; one by `{id}`; `PUT {id}/mapping`,
+   * `POST {id}/rows/{row}/resolve` with a reason, `POST {id}/commit`, `POST {id}/withdraw` with a
+   * reason.
+   */
+  officeAssistanceImports: 'office/assistance-imports',
+  /**
    * Residents' sector applications (`DL-215`, `resident.update`): `GET` a cursor page by status;
    * one by `{id}`; `{id}/proofs/{mediaId}` as bytes; `POST {id}/approve` and `{id}/return`.
    */

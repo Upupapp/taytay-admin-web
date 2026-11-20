@@ -1,7 +1,7 @@
 <!-- The way out is the form's own Cancel, beside the submit (DL-227, pass 2). -->
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
-<app-import-steps [current]="1" />
+<app-import-steps [current]="1" [steps]="copy.steps" [label]="copy.stepsLabel" />
 
 <form
   class="card card--panel card--padded form-panel"
@@ -26,6 +26,7 @@
     @if (file(); as chosen) {
       <p class="status-line" role="status">{{ copy.upload.chosen(chosen.name, size(chosen)) }}</p>
     }
+    <app-import-template-download [load]="template" />
   </fieldset>
 
   @if (problem(); as message) {

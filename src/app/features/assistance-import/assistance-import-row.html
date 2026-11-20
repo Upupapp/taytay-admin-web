@@ -1,0 +1,214 @@
+<article
+  class="card card--padded stack"
+  [attr.aria-label]="review.rowLabel(row().row, row().sourceLine)"
+>
+  <h3 class="section-title">{{ review.rowLabel(row().row, row().sourceLine) }}</h3>
+
+  <div class="record-grid">
+    <section class="subpanel" [attr.aria-label]="review.rowLabel(row().row, row().sourceLine)">
+      @if (row().values === null) {
+        <p class="status-line">{{ review.noValues }}</p>
+      } @else {
+        <dl class="facts">
+          @for (cell of cells(); track cell.field) {
+            <div class="facts__row">
+              <dt>{{ cell.label }}</dt>
+              <dd>{{ cell.value }}</dd>
+            </div>
+          }
+        </dl>
+      }
+      @if (row().match; as match) {
+        <p class="status-line">
+          {{ match.how === 'proposed' ? review.proposed(match.label) : review.linked(match.label) }}
+          <a class="record-link" [routerLink]="['/residents', match.residentId]">{{
+            review.open
+          }}</a>
+        </p>
+      }
+      @if (row().willCreate) {
+        <p class="status-line">{{ review.willCreate }}</p>
+      }
+    </section>
+
+    @if (row().candidates.length > 0) {
+      <section class="subpanel subpanel--soft" [attr.aria-label]="review.candidatesHeading">
+        <h4 class="section-title">{{ review.candidatesHeading }}</h4>
+        <ul class="soft-list">
+          @for (candidate of row().candidates; track candidate.residentId) {
+            <li class="soft-row soft-row--stacked">
+              <a class="record-link" [routerLink]="['/residents', candidate.residentId]">{{
+                candidate.label
+              }}</a>
+              <span class="soft-row__meta">{{ strength(candidate) }}</span>
+              <ul class="soft-row__meta" [attr.aria-label]="review.signalsLabel(candidate.label)">
+                @for (signal of candidate.signals; track $index) {
+                  <li>{{ signalText(signal) }}</li>
+                }
+              </ul>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+
+  @if (row().resolution; as decided) {
+    <p class="status-line" role="status">
+      {{ review.decided(actionLabel(decided.action), decided.by ?? unknownPerson, decided.reason) }}
+    </p>
+  }
+  @if (!open()) {
+    <div>
+      <button type="button" class="btn btn--small" (click)="editing.set(true)">
+        {{ review.change }}
+      </button>
+    </div>
+  }
+
+  @if (open()) {
+    <form class="stack" novalidate (submit)="$event.preventDefault(); submit()">
+      <fieldset class="choice-list">
+        <legend class="field__label">{{ copy.legend }}</legend>
+
+        @for (candidate of row().candidates; track candidate.residentId) {
+          <label class="choice">
+            <input
+              type="radio"
+              [name]="'assistance-finding-' + row().row"
+              [checked]="action() === 'link' && residentId() === candidate.residentId"
+              (change)="choose('link', candidate.residentId)"
+            />
+            <span class="choice__text">
+              {{ copy.linkTo(candidate.label, strength(candidate)) }}
+              <span class="choice__hint">{{ copy.hints.link }}</span>
+            </span>
+          </label>
+        }
+
+        <label class="choice">
+          <input
+            type="radio"
+            [name]="'assistance-finding-' + row().row"
+            [checked]="action() === 'create'"
+            (change)="choose('create')"
+          />
+          <span class="choice__text">
+            {{ copy.actions.create }}
+            <span class="choice__hint">{{ copy.hints.create }}</span>
+          </span>
+        </label>
+
+        <label class="choice">
+          <input
+            type="radio"
+            [name]="'assistance-finding-' + row().row"
+            [checked]="action() === 'skip'"
+            (change)="choose('skip')"
+          />
+          <span class="choice__text">
+            {{ copy.actions.skip }}
+            <span class="choice__hint">{{ copy.hints.skip }}</span>
+          </span>
+        </label>
+      </fieldset>
+
+      @if (action() === 'create') {
+        <fieldset class="form-section">
+          <legend class="form-section__legend">{{ copy.actions.create }}</legend>
+          <p class="form-section__note">{{ copy.createLead }}</p>
+          @if (row().createProblems.length > 0) {
+            <div class="callout callout--warning">
+              <div class="stack">
+                <p>{{ copy.createProblems }}</p>
+                <ul>
+                  @for (line of row().createProblems; track $index) {
+                    <li>{{ line }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+          }
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">{{ copy.civilStatus }}</span>
+              <select class="field__input" (change)="chooseCivilStatus($event)">
+                <option value="" [selected]="draft().civilStatus === ''">{{ copy.keepRow }}</option>
+                @for (status of civilStatuses; track status) {
+                  <option [value]="status" [selected]="draft().civilStatus === status">
+                    {{ civilLabels[status] }}
+                  </option>
+                }
+              </select>
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.sex }}</span>
+              <select class="field__input" (change)="chooseSex($event)">
+                <option value="" [selected]="draft().sex === ''">{{ copy.keepRow }}</option>
+                @for (sex of sexes; track sex) {
+                  <option [value]="sex" [selected]="draft().sex === sex">
+                    {{ sexLabels[sex] }}
+                  </option>
+                }
+              </select>
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.birthDate }}</span>
+              <input
+                type="date"
+                class="field__input"
+                [value]="draft().birthDate"
+                (input)="typedField('birthDate', $event)"
+              />
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span class="field__label">{{ copy.streetAddress }}</span>
+              <input
+                type="text"
+                class="field__input"
+                maxlength="255"
+                [value]="draft().streetAddress"
+                (input)="typedField('streetAddress', $event)"
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">{{ copy.purok }}</span>
+              <input
+                type="text"
+                class="field__input"
+                maxlength="255"
+                [value]="draft().purokOrSitio"
+                (input)="typedField('purokOrSitio', $event)"
+              />
+            </label>
+          </div>
+        </fieldset>
+      }
+
+      <label class="field">
+        <span class="field__label">{{ copy.reason }}</span>
+        <textarea
+          class="field__input"
+          rows="2"
+          [attr.maxlength]="maxLength"
+          [attr.aria-describedby]="'assistance-finding-hint-' + row().row"
+          [value]="reason()"
+          (input)="typed($event)"
+        ></textarea>
+        <span class="field__hint" [id]="'assistance-finding-hint-' + row().row">{{
+          copy.reasonHint
+        }}</span>
+      </label>
+
+      @if (problem(); as message) {
+        <p class="callout callout--danger" role="alert">{{ message }}</p>
+      }
+
+      <div class="form-footer">
+        <button type="submit" class="btn btn--primary">{{ copy.submit }}</button>
+      </div>
+    </form>
+  }
+</article>

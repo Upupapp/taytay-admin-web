@@ -338,6 +338,7 @@ describe('navigation when the API cannot serve a module', () => {
       'platform-audit',
       'issuance',
       'resident-import',
+      'assistance-import',
       'sector-application',
     ]);
     const fixture = TestBed.createComponent(AppNav);

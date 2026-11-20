@@ -1,0 +1,291 @@
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <a page-actions class="btn" routerLink="/assistance-requests/import">{{ copy.backToImports }}</a>
+</app-page-header>
+
+<app-import-steps [current]="stepNumber()" [steps]="copy.steps" [label]="copy.stepsLabel" />
+
+<app-async-content
+  [state]="state()"
+  [content]="body"
+  [skeletonLines]="8"
+  [errorHeading]="copy.record.errorHeading"
+  (retryRequested)="retry()"
+/>
+
+<ng-template #body>
+  @if (record(); as record) {
+    <p class="status-line">{{ copy.record.file(record.fileName, record.rowCount) }}</p>
+
+    @if (problem(); as message) {
+      <div class="callout callout--danger" role="alert">
+        <div class="stack">
+          <p>{{ message }}</p>
+          @if (problemLines().length > 0) {
+            <ul>
+              @for (line of problemLines(); track $index) {
+                <li>{{ line }}</li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+    }
+
+    @switch (current()) {
+      @case ('map') {
+        <app-assistance-import-mapping-form [record]="record" (saved)="mapped($event)" />
+        <div class="form-footer">
+          <button type="button" class="btn btn--primary" (click)="goTo('review')">
+            {{ copy.map.next }}
+          </button>
+        </div>
+      }
+
+      @case ('review') {
+        <section class="card card--panel card--padded stack" aria-labelledby="assistance-review">
+          <h2 id="assistance-review" class="section-title">{{ copy.review.heading }}</h2>
+          <p class="status-line">{{ copy.review.lead }}</p>
+          <p class="status-line" role="status">
+            {{ copy.review.waiting(record.counts['needs-review']) }}
+          </p>
+
+          <ul class="tabs tabs--scroll" [attr.aria-label]="copy.review.tabsLabel">
+            @for (group of groups; track group) {
+              <li>
+                <button
+                  type="button"
+                  class="tab"
+                  [class.tab--active]="tab() === group"
+                  [attr.aria-pressed]="tab() === group"
+                  (click)="tab.set(group)"
+                >
+                  {{ copy.review.groups[group] }}
+                  <span class="tab__count">{{ record.counts[group] }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+
+          <p class="status-line">{{ copy.review.notes[tab()] }}</p>
+
+          @switch (tab()) {
+            @case ('duplicate') {
+              @if (rowsOf(record, 'duplicate').length === 0) {
+                <p class="note-box">{{ copy.review.none }}</p>
+              } @else {
+                <ul class="soft-list">
+                  @for (row of rowsOf(record, 'duplicate'); track row.row) {
+                    <li class="soft-row soft-row--stacked">
+                      <strong>{{ copy.review.rowLabel(row.row, row.sourceLine) }}</strong>
+                      <span class="soft-row__meta">{{ duplicateText(row) }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+            }
+            @case ('error') {
+              @if (rowsOf(record, 'error').length === 0) {
+                <p class="note-box">{{ copy.review.none }}</p>
+              } @else {
+                <ul class="soft-list">
+                  @for (row of rowsOf(record, 'error'); track row.row) {
+                    <li class="soft-row soft-row--stacked">
+                      <strong>{{ copy.review.rowLabel(row.row, row.sourceLine) }}</strong>
+                      @for (issue of row.problems; track $index) {
+                        <span class="soft-row__meta">
+                          @if (issue.field; as name) {
+                            {{ labelOf(record, name) }}:
+                          }
+                          {{ issue.message }}
+                        </span>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            }
+            @default {
+              @for (row of rowsOf(record, tab()); track row.row) {
+                <app-assistance-import-row
+                  [row]="row"
+                  [labels]="fieldLabels()"
+                  (resolved)="resolve(row, $event)"
+                />
+              } @empty {
+                <p class="note-box">{{ copy.review.none }}</p>
+              }
+            }
+          }
+
+          <div class="form-footer">
+            <button type="button" class="btn" (click)="goTo('map')">{{ copy.review.back }}</button>
+            <button type="button" class="btn btn--primary" (click)="goTo('commit')">
+              {{ copy.review.next }}
+            </button>
+          </div>
+        </section>
+      }
+
+      @case ('commit') {
+        <section class="card card--panel card--padded stack" aria-labelledby="assistance-commit">
+          <h2 id="assistance-commit" class="section-title">{{ copy.commit.heading }}</h2>
+          <p class="status-line">{{ copy.commit.lead }}</p>
+
+          <dl class="tally-row">
+            @for (group of groups; track group) {
+              <div class="tally">
+                <dt class="tally__label">{{ copy.commit.tally[group] }}</dt>
+                <dd class="tally__value">{{ record.counts[group] }}</dd>
+              </div>
+            }
+          </dl>
+
+          @if (blockers().length > 0) {
+            <div class="callout callout--warning" role="status">
+              <ul>
+                @for (blocker of blockers(); track blocker) {
+                  <li>{{ copy.commit.blockers[blocker] }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          <div class="effects" id="assistance-commit-effects">
+            <p class="effects__lead">{{ copy.commit.effectsLead }}</p>
+            <ul>
+              @for (effect of copy.commit.effects; track $index) {
+                <li>{{ effect }}</li>
+              }
+            </ul>
+          </div>
+
+          <div class="form-footer">
+            <button type="button" class="btn" (click)="goTo('review')">
+              {{ copy.commit.back }}
+            </button>
+            <button
+              type="button"
+              class="btn btn--primary"
+              aria-describedby="assistance-commit-effects"
+              [disabled]="committing() || blockers().length > 0"
+              (click)="commit()"
+            >
+              {{ committing() ? copy.commit.sending : copy.commit.submit }}
+            </button>
+          </div>
+        </section>
+      }
+
+      @case ('done') {
+        <section class="card card--panel card--padded stack" aria-labelledby="assistance-done">
+          <h2 id="assistance-done" class="section-title">{{ copy.done.heading }}</h2>
+          <p class="status-line">
+            {{ copy.done.lead(when(record.committedAt), record.committedBy ?? copy.unknownPerson) }}
+          </p>
+
+          @if (record.withdrawal; as withdrawal) {
+            <div class="callout callout--warning" role="status">
+              <div class="stack">
+                <p>
+                  {{
+                    copy.withdrawn.line(when(withdrawal.at), withdrawal.by ?? copy.unknownPerson)
+                  }}
+                  {{ copy.withdrawn.reason(withdrawal.reason) }}
+                </p>
+                <p>{{ copy.withdrawn.effect }}</p>
+              </div>
+            </div>
+          }
+
+          @if (record.result; as result) {
+            <dl class="tally-row">
+              @for (kind of tally; track kind) {
+                <div class="tally">
+                  <dt class="tally__label">{{ copy.done.tally[kind] }}</dt>
+                  <dd class="tally__value">{{ result[kind] }}</dd>
+                </div>
+              }
+            </dl>
+          }
+
+          @if (record.outcomes.length > 0) {
+            <div class="table-scroll" [appScrollRegion]="copy.done.caption">
+              <table class="simple-table">
+                <caption class="visually-hidden">
+                  {{
+                    copy.done.caption
+                  }}
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">{{ copy.done.columnRow }}</th>
+                    <th scope="col">{{ copy.done.columnLine }}</th>
+                    <th scope="col">{{ copy.done.columnOutcome }}</th>
+                    <th scope="col">{{ copy.done.columnNote }}</th>
+                    <th scope="col">{{ copy.done.columnRequest }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (outcome of record.outcomes; track outcome.row) {
+                    <tr>
+                      <td>{{ outcome.row }}</td>
+                      <td>{{ outcome.sourceLine }}</td>
+                      <td>
+                        {{
+                          outcome.outcome === null
+                            ? copy.done.noOutcome
+                            : copy.done.outcomes[outcome.outcome]
+                        }}
+                      </td>
+                      <td>{{ outcome.note ?? copy.done.none }}</td>
+                      <td>
+                        @if (outcome.requestId; as id) {
+                          <a class="record-link" [routerLink]="['/assistance-requests', id]">{{
+                            copy.done.open
+                          }}</a>
+                        } @else {
+                          {{ copy.done.none }}
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <div class="form-footer">
+            @if (canWithdraw(record)) {
+              <button type="button" class="btn" (click)="withdrawing.set(true)">
+                {{ copy.withdraw.button }}
+              </button>
+            }
+            <a class="btn" routerLink="/assistance-requests/import">{{ copy.done.another }}</a>
+            <a class="btn btn--primary" routerLink="/assistance-requests">{{
+              copy.done.requests
+            }}</a>
+          </div>
+        </section>
+
+        @if (withdrawing()) {
+          <app-assistance-import-withdraw
+            [summary]="record"
+            (withdrawn)="withdrawn()"
+            (dismissed)="withdrawing.set(false)"
+          />
+        }
+      }
+    }
+  } @else {
+    <div class="callout callout--warning">
+      <div class="stack">
+        <p>{{ copy.record.notFound }}</p>
+        <p>
+          <a class="record-link" routerLink="/assistance-requests/import">{{
+            copy.record.notFoundLink
+          }}</a>
+        </p>
+      </div>
+    </div>
+  }
+</ng-template>

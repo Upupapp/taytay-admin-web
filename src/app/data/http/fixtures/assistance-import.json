@@ -1,0 +1,178 @@
+{
+  "data": {
+    "id": "6a1b2c3d-4e5f-4a6b-8c7d-8e9f0a1b2c01",
+    "file_name": "tulong-2024.csv",
+    "kind": "csv",
+    "status": "open",
+    "row_count": 5,
+    "created_at": "2026-11-18T01:00:00.000Z",
+    "created_by": { "id": "0f1e2d3c-4b5a-4968-8776-655443322101", "name": "Fixture Officer" },
+    "committed_at": null,
+    "committed_by": null,
+    "result": null,
+    "withdrawal": null,
+    "columns": [
+      { "index": 0, "header": "Pangalan", "samples": ["Reyes, Ana"] },
+      { "index": 1, "header": "Brgy", "samples": ["San Juan"] },
+      { "index": 2, "header": "Uri ng tulong", "samples": ["AICS"] },
+      { "index": 3, "header": "Petsa ng pagbibigay", "samples": ["2024-03-04"] },
+      { "index": 4, "header": "Control No.", "samples": ["C-1"] }
+    ],
+    "fields": [
+      { "field": "full_name", "label": "Name", "required": false },
+      { "field": "last_name", "label": "Surname", "required": false },
+      { "field": "barangay", "label": "Barangay", "required": true },
+      { "field": "program", "label": "Type of assistance", "required": true },
+      { "field": "date_given", "label": "Date given", "required": true },
+      { "field": "control_number", "label": "Control no.", "required": false }
+    ],
+    "mapping": {
+      "full_name": 0,
+      "last_name": null,
+      "barangay": 1,
+      "program": 2,
+      "date_given": 3,
+      "control_number": 4
+    },
+    "missing_fields": [],
+    "counts": { "ready": 1, "needs_review": 1, "skipped": 1, "duplicate": 1, "error": 1 },
+    "rows": [
+      {
+        "row": 1,
+        "source_line": 2,
+        "group": "ready",
+        "values": {
+          "full_name": "Reyes, Ana",
+          "barangay": "San Juan",
+          "program": "AICS",
+          "date_given": "2024-03-04",
+          "control_number": "C-1"
+        },
+        "problems": [],
+        "match": {
+          "resident_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01",
+          "label": "Reyes, A.",
+          "how": "proposed"
+        },
+        "will_create": false,
+        "create_problems": [],
+        "candidates": [
+          {
+            "resident_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c01",
+            "label": "Reyes, A.",
+            "strength": "strong",
+            "signals": [
+              {
+                "attribute": "surname",
+                "outcome": "same",
+                "rule": "Surnames are the same, ignoring case and accents."
+              },
+              {
+                "attribute": "barangay",
+                "outcome": "same",
+                "rule": "The row and the record name the same barangay."
+              }
+            ]
+          }
+        ],
+        "duplicate": null,
+        "resolution": null
+      },
+      {
+        "row": 2,
+        "source_line": 3,
+        "group": "needs-review",
+        "values": {
+          "full_name": "Cruz, Juan",
+          "barangay": "Dolores",
+          "program": "AICS",
+          "date_given": "2024-04-01"
+        },
+        "problems": [],
+        "match": null,
+        "will_create": false,
+        "create_problems": ["civil_status: Required", "street_address: Required"],
+        "candidates": [
+          {
+            "resident_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c02",
+            "label": "Cruz, J.",
+            "strength": "moderate",
+            "signals": [
+              {
+                "attribute": "surname",
+                "outcome": "same",
+                "rule": "Surnames are the same, ignoring case and accents."
+              },
+              {
+                "attribute": "barangay",
+                "outcome": "differs",
+                "rule": "The row and the record name different barangays."
+              }
+            ]
+          }
+        ],
+        "duplicate": null,
+        "resolution": null
+      },
+      {
+        "row": 3,
+        "source_line": 4,
+        "group": "skipped",
+        "values": {
+          "full_name": "Santos, Lea",
+          "barangay": "Muzon",
+          "program": "AICS",
+          "date_given": "2024-05-06"
+        },
+        "problems": [],
+        "match": null,
+        "will_create": false,
+        "create_problems": [],
+        "candidates": [],
+        "duplicate": null,
+        "resolution": {
+          "action": "skip",
+          "resident_id": null,
+          "record": null,
+          "reason": "Listed twice in the source report.",
+          "by": { "id": "0f1e2d3c-4b5a-4968-8776-655443322101", "name": "Fixture Officer" },
+          "at": "2026-11-18T02:00:00.000Z"
+        }
+      },
+      {
+        "row": 4,
+        "source_line": 5,
+        "group": "duplicate",
+        "values": {
+          "full_name": "Reyes, Ana",
+          "barangay": "San Juan",
+          "program": "AICS",
+          "date_given": "2024-03-04",
+          "control_number": "C-1"
+        },
+        "problems": [],
+        "match": null,
+        "will_create": false,
+        "create_problems": [],
+        "candidates": [],
+        "duplicate": { "reason": "control-number", "of_row": 1, "of_request_reference": null },
+        "resolution": null
+      },
+      {
+        "row": 5,
+        "source_line": 6,
+        "group": "error",
+        "values": { "full_name": "Lim, Rosa", "barangay": "Nowhere" },
+        "problems": [{ "field": "barangay", "message": "That is not a Taytay barangay." }],
+        "match": null,
+        "will_create": false,
+        "create_problems": [],
+        "candidates": [],
+        "duplicate": null,
+        "resolution": null
+      }
+    ],
+    "outcomes": []
+  },
+  "meta": {}
+}

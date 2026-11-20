@@ -100,6 +100,7 @@ import {
   type ResidentImportId,
   type ResidentImportRepository,
   type ResidentImportSummary,
+  type ImportTemplate,
   type SectorApplication,
   type SectorApplicationDetail,
   type SectorApplicationId,
@@ -591,9 +592,12 @@ import {
 import { toOfficeAlerts, toTeamWork, toWorkQueue } from './mappers/work.mapper';
 import { list } from './mappers/wire';
 import { BarangayJoin } from './staff-repository';
+import { readTemplate } from './http-assistance-imports';
 
 // The staff adapter is bound eagerly, so it lives in a module of its own (`DL-224`).
 export { HttpStaffRepository } from './staff-repository';
+// The past-assistance import's adapter lives in a module of its own (`DL-228`).
+export { HttpAssistanceImportRepository } from './http-assistance-imports';
 
 /**
  * The adapters the Node API actually serves.
@@ -5534,6 +5538,11 @@ export class HttpResidentImportRepository implements ResidentImportRepository {
     return this.api
       .post(`${API_ENDPOINTS.officeImports}/${id}/commit`, {})
       .pipe(map(readImportSummary));
+  }
+
+  /** A header-only CSV whose every column the mapping recognises (`DL-228`). */
+  template(): Observable<ImportTemplate> {
+    return this.api.item(`${API_ENDPOINTS.officeImports}/template`).pipe(map(readTemplate));
   }
 }
 

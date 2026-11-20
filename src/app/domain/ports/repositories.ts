@@ -111,7 +111,14 @@ import type {
   ImportResolution,
   ResidentImport,
   ResidentImportSummary,
+  ImportTemplate,
 } from '../residents/resident-import';
+import type {
+  AssistanceImport,
+  AssistanceImportMapping,
+  AssistanceImportResolution,
+  AssistanceImportSummary,
+} from '../assistance/assistance-import';
 import type {
   SectorApplication,
   SectorApplicationDetail,
@@ -137,6 +144,7 @@ import type {
   OfficeThreadId,
   QuickLinkId,
   ResidentImportId,
+  AssistanceImportId,
   SectorApplicationId,
   TulongServiceId,
   VerificationRequestId,
@@ -2123,10 +2131,55 @@ export interface ResidentImportRepository {
 
   /** Writes the rows to the registry, refused while a field is unmapped or a match undecided. */
   commit(id: ResidentImportId): Observable<ResidentImportSummary>;
+
+  /** A header-only CSV whose every column the mapping recognises (`DL-228`). */
+  template(): Observable<ImportTemplate>;
 }
 
 export const RESIDENT_IMPORT_REPOSITORY = new InjectionToken<ResidentImportRepository>(
   'ResidentImportRepository',
+);
+
+/* ── importing the office's past assistance (`DL-228`) ───────────────────── */
+
+/**
+ * The office's old Tulong reports, imported as closed assistance requests (`request.import`).
+ * Nothing is filed until `commit`; every act answers the import read again by the server. A row is
+ * linked, created or skipped with a reason (`DL-73`), and a committed import is withdrawn — never
+ * deleted (`DL-225`).
+ */
+export interface AssistanceImportRepository {
+  /** One cursor page, newest first. No total. */
+  list(page: CursorRequest): Observable<CursorPage<AssistanceImportSummary>>;
+
+  /** Holds a .csv or .xlsx for checking, under a mapping the server guesses from its header. */
+  upload(file: File): Observable<AssistanceImportSummary>;
+
+  /** `null` for "not found or not yours", as the server answers both. */
+  get(id: AssistanceImportId): Observable<AssistanceImport | null>;
+
+  /** The whole mapping; refused once a row is resolved, because it would change what was decided. */
+  map(id: AssistanceImportId, mapping: AssistanceImportMapping): Observable<AssistanceImport>;
+
+  /** A finding on one row, with a reason kept with the officer's name; a later one is appended. */
+  resolve(
+    id: AssistanceImportId,
+    row: number,
+    resolution: AssistanceImportResolution,
+  ): Observable<AssistanceImport>;
+
+  /** Files the ready rows as closed requests, refused while a field is unmapped or a row waits. */
+  commit(id: AssistanceImportId): Observable<AssistanceImportSummary>;
+
+  /** Flags a committed import and its requests with a reason; nothing is deleted. */
+  withdraw(id: AssistanceImportId, reason: string): Observable<AssistanceImportSummary>;
+
+  /** A header-only CSV whose every column the mapping recognises. */
+  template(): Observable<ImportTemplate>;
+}
+
+export const ASSISTANCE_IMPORT_REPOSITORY = new InjectionToken<AssistanceImportRepository>(
+  'AssistanceImportRepository',
 );
 
 /* ── sector applications from the residents' app (`DL-215`) ──────────────── */

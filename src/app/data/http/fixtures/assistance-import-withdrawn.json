@@ -1,0 +1,49 @@
+{
+  "data": {
+    "id": "6a1b2c3d-4e5f-4a6b-8c7d-8e9f0a1b2c02",
+    "file_name": "tulong-2023.xlsx",
+    "kind": "xlsx",
+    "status": "withdrawn",
+    "row_count": 3,
+    "created_at": "2026-11-17T01:00:00.000Z",
+    "created_by": { "id": "0f1e2d3c-4b5a-4968-8776-655443322101", "name": "Fixture Officer" },
+    "committed_at": "2026-11-17T03:00:00.000Z",
+    "committed_by": { "id": "0f1e2d3c-4b5a-4968-8776-655443322101", "name": "Fixture Officer" },
+    "result": { "imported": 1, "skipped": 0, "duplicates": 1, "errors": 1, "residents_created": 0 },
+    "withdrawal": {
+      "at": "2026-11-18T05:00:00.000Z",
+      "by": { "id": "0f1e2d3c-4b5a-4968-8776-655443322101", "name": "Fixture Officer" },
+      "reason": "The report of the wrong year was imported."
+    },
+    "columns": [{ "index": 0, "header": "Pangalan", "samples": [] }],
+    "fields": [{ "field": "full_name", "label": "Name", "required": false }],
+    "mapping": { "full_name": 0 },
+    "missing_fields": [],
+    "counts": { "ready": 0, "needs_review": 0, "skipped": 0, "duplicate": 0, "error": 0 },
+    "rows": [],
+    "outcomes": [
+      {
+        "row": 1,
+        "source_line": 2,
+        "outcome": "imported",
+        "request_id": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d01",
+        "note": null
+      },
+      {
+        "row": 2,
+        "source_line": 3,
+        "outcome": "duplicate",
+        "request_id": null,
+        "note": "The same control number under the same programme is already in row 1 of this file."
+      },
+      {
+        "row": 3,
+        "source_line": 4,
+        "outcome": "error",
+        "request_id": null,
+        "note": "The date given is after today."
+      }
+    ]
+  },
+  "meta": {}
+}

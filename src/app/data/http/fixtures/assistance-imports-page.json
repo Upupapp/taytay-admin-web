@@ -1,0 +1,24 @@
+{
+  "data": [
+    {
+      "id": "6a1b2c3d-4e5f-4a6b-8c7d-8e9f0a1b2c02",
+      "file_name": "tulong-2023.xlsx",
+      "kind": "xlsx",
+      "status": "committed",
+      "row_count": 3,
+      "created_at": "2026-11-17T01:00:00.000Z",
+      "created_by": { "id": "0f1e2d3c-4b5a-4968-8776-655443322101", "name": "Fixture Officer" },
+      "committed_at": "2026-11-17T03:00:00.000Z",
+      "committed_by": { "id": "0f1e2d3c-4b5a-4968-8776-655443322101", "name": null },
+      "result": {
+        "imported": 1,
+        "skipped": 0,
+        "duplicates": 1,
+        "errors": 1,
+        "residents_created": 1
+      },
+      "withdrawal": null
+    }
+  ],
+  "meta": { "pagination": { "has_more": true, "next_cursor": "c2" } }
+}

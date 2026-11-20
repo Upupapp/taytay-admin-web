@@ -392,6 +392,36 @@ export const routes: Routes = [
               import('@features/requests/request-list-page').then((m) => m.RequestListPage),
           },
           {
+            // `DL-228`. The API grants `request.import` to intake, the head and the administrator,
+            // and refuses a caseload; this mirrors it and is not the protection (rule 4). Before
+            // `:id`, or "import" is read as a request id.
+            path: 'import',
+            title: 'Import past assistance — Taytay Social Welfare',
+            canActivate: [
+              servedGuard('assistance-import'),
+              permissionGuard('request.import'),
+              scopeGuard('assigned-cases'),
+            ],
+            loadComponent: () =>
+              import('@features/assistance-import/assistance-import-start-page').then(
+                (m) => m.AssistanceImportStartPage,
+              ),
+          },
+          {
+            // `DL-228`. One import, its step in the URL (`DL-62`).
+            path: 'import/:importId',
+            title: 'Import past assistance — Taytay Social Welfare',
+            canActivate: [
+              servedGuard('assistance-import'),
+              permissionGuard('request.import'),
+              scopeGuard('assigned-cases'),
+            ],
+            loadComponent: () =>
+              import('@features/assistance-import/assistance-import-page').then(
+                (m) => m.AssistanceImportPage,
+              ),
+          },
+          {
             path: 'new',
             title: 'New assistance request — Taytay Social Welfare',
             canActivate: [

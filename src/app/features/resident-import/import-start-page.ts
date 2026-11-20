@@ -28,10 +28,11 @@ import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
+import { ImportSteps } from '@shared/imports/import-steps';
+import { ImportTemplateDownload } from '@shared/imports/import-template-download';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 
-import { ImportSteps } from './import-steps';
 import { RESIDENT_IMPORT_COPY } from './resident-import.copy';
 
 const PAGE_SIZE = 20;
@@ -50,7 +51,15 @@ export const IMPORT_LIST_TOPICS: readonly LiveTopic[] = ['imports'];
 @Component({
   selector: 'app-import-start-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataFileField, DataTable, ImportSteps, ListChangedNotice, PageHeader, RouterLink],
+  imports: [
+    DataFileField,
+    DataTable,
+    ImportSteps,
+    ImportTemplateDownload,
+    ListChangedNotice,
+    PageHeader,
+    RouterLink,
+  ],
   templateUrl: './import-start-page.html',
   styleUrl: './resident-import.scss',
 })
@@ -63,6 +72,8 @@ export class ImportStartPage {
 
   protected readonly copy = RESIDENT_IMPORT_COPY;
   protected readonly limits = IMPORT_FILE_LIMITS;
+  /** The header-only template the API hands out (`DL-228`). */
+  protected readonly template = () => this.repository.template();
 
   protected readonly file = signal<File | null>(null);
   protected readonly problem = signal('');

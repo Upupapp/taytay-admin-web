@@ -24,6 +24,7 @@ import { join, relative } from 'node:path';
 export const ADAPTER_FILES = [
   'src/app/data/http/http-repositories.ts',
   'src/app/data/http/staff-repository.ts',
+  'src/app/data/http/http-assistance-imports.ts',
 ];
 
 /**

@@ -138,6 +138,10 @@ import DIGITAL_ID_HOLDER from './digital-id-holder.json';
 import DIGITAL_ID_LIST_PAGE from './digital-id-list-page.json';
 import OFFICE_RESIDENTS_SUMMARY from './office-residents-summary.json';
 import RESIDENT_IMPORT from './resident-import.json';
+import ASSISTANCE_IMPORT from './assistance-import.json';
+import ASSISTANCE_IMPORT_WITHDRAWN from './assistance-import-withdrawn.json';
+import ASSISTANCE_IMPORTS_PAGE from './assistance-imports-page.json';
+import IMPORT_TEMPLATE from './import-template.json';
 import SECTOR_APPLICATION_DETAIL from './sector-application-detail.json';
 import NEWS from './news.json';
 import NEWS_PAGE from './news-page.json';
@@ -465,6 +469,10 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['digital-id-list-page', DIGITAL_ID_LIST_PAGE, 'DigitalIdListEnvelope'],
     ['office-residents-summary', OFFICE_RESIDENTS_SUMMARY, 'OfficeResidentSummaryEnvelope'],
     ['resident-import', RESIDENT_IMPORT, 'ResidentImportEnvelope'],
+    ['assistance-import', ASSISTANCE_IMPORT, 'AssistanceImportEnvelope'],
+    ['assistance-import-withdrawn', ASSISTANCE_IMPORT_WITHDRAWN, 'AssistanceImportEnvelope'],
+    ['assistance-imports-page', ASSISTANCE_IMPORTS_PAGE, 'AssistanceImportListEnvelope'],
+    ['import-template', IMPORT_TEMPLATE, 'ImportTemplateEnvelope'],
     ['sector-application-detail', SECTOR_APPLICATION_DETAIL, 'SectorApplicationDetailEnvelope'],
     ['news', NEWS, 'NewsEnvelope'],
     ['news-page', NEWS_PAGE, 'NewsListEnvelope'],

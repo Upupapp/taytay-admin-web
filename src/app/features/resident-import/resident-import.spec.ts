@@ -2,9 +2,10 @@ import type { Provider } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, Subject, type Observable } from 'rxjs';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { LiveUpdates } from '@core/live/live-updates';
+import { IMPORT_TEMPLATE_COPY } from '@shared/imports/imports.copy';
 
 import {
   asId,
@@ -13,6 +14,7 @@ import {
   type CursorPage,
   type ImportMapping,
   type ImportResolution,
+  type ImportTemplate,
   type ResidentId,
   type ResidentImport,
   type ResidentImportId,
@@ -121,6 +123,14 @@ class Imports implements ResidentImportRepository {
     this.calls.push('commit');
     return of(SUMMARY);
   }
+  template(): Observable<ImportTemplate> {
+    this.calls.push('template');
+    return of({
+      fileName: 'citizens-template.csv',
+      contentType: 'text/csv',
+      content: 'Surname\r\n',
+    });
+  }
 }
 
 function configure(extra: readonly Provider[] = []): Imports {
@@ -145,6 +155,8 @@ async function settle(fixture: {
   fixture.detectChanges();
 }
 
+afterEach(() => vi.restoreAllMocks());
+
 const text = (root: HTMLElement): string => root.textContent?.replace(/\s+/g, ' ') ?? '';
 
 describe('Import citizens (DL-214)', () => {
@@ -168,6 +180,36 @@ describe('Import citizens (DL-214)', () => {
 
     expect(text(root)).toContain(RESIDENT_IMPORT_COPY.upload.wrongKind);
     expect(imports.calls.some((call) => call.startsWith('upload'))).toBe(false);
+  });
+
+  it('downloads the template from the upload step (DL-228)', async () => {
+    const imports = configure();
+    const create = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
+    const revoke = Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL');
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: () => 'blob:t' });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: () => undefined });
+    const clicked = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {
+      // jsdom does not navigate; the click is what hands the file to the browser.
+    });
+    try {
+      const fixture = TestBed.createComponent(ImportStartPage);
+      await settle(fixture);
+      const root = fixture.nativeElement as HTMLElement;
+      [...root.querySelectorAll<HTMLButtonElement>('button')]
+        .find((button) => button.textContent?.trim() === IMPORT_TEMPLATE_COPY.button)
+        ?.click();
+      await settle(fixture);
+      expect(imports.calls).toContain('template');
+      expect(clicked).toHaveBeenCalledTimes(1);
+      expect(text(root)).toContain(IMPORT_TEMPLATE_COPY.saved('citizens-template.csv'));
+      // Leaving the page revokes the file's address, while the stub still stands.
+      fixture.destroy();
+    } finally {
+      if (create === undefined) Reflect.deleteProperty(URL, 'createObjectURL');
+      else Object.defineProperty(URL, 'createObjectURL', create);
+      if (revoke === undefined) Reflect.deleteProperty(URL, 'revokeObjectURL');
+      else Object.defineProperty(URL, 'revokeObjectURL', revoke);
+    }
   });
 
   it('records a finding on a match only with a reason, and offers "the same person as" by name', async () => {

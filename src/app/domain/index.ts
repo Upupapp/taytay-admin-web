@@ -8,6 +8,7 @@ export * from './access/permission';
 export * from './access/permission-matrix';
 export * from './access/staff-user';
 export * from './assistance/assistance-request';
+export * from './assistance/assistance-import';
 export * from './assistance/transition-permissions';
 export * from './beneficiaries/assistance-timeline';
 export * from './beneficiaries/beneficiary';

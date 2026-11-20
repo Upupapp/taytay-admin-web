@@ -2,7 +2,7 @@
   <a page-actions class="btn" routerLink="/residents/import">{{ copy.cancel }}</a>
 </app-page-header>
 
-<app-import-steps [current]="stepNumber()" />
+<app-import-steps [current]="stepNumber()" [steps]="copy.steps" [label]="copy.stepsLabel" />
 
 <app-async-content
   [state]="state()"

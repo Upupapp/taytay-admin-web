@@ -172,6 +172,17 @@ export const IMPORT_FILE_LIMITS = {
 
 export const IMPORT_REASON_MAX_LENGTH = 500;
 
+/**
+ * A header-only template the API hands out (`DL-228`): every column its mapping recognises, and no
+ * sample row, because nothing in it is anybody's data. Saved by the browser as a file.
+ */
+export interface ImportTemplate {
+  readonly fileName: string;
+  readonly contentType: 'text/csv';
+  /** The CSV: a byte-order mark, so a spreadsheet reads ñ, and one header row. */
+  readonly content: string;
+}
+
 /** The wizard's steps after the upload, in order; the step is in the URL (`DL-62`). */
 export const IMPORT_STEPS = ['map', 'check', 'confirm', 'done'] as const;
 export type ImportStep = (typeof IMPORT_STEPS)[number];

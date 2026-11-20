@@ -33,12 +33,12 @@ import { failureReason } from '@shared/state/failure-reason';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { ImportSteps } from '@shared/imports/import-steps';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 
 import { ImportMappingForm } from './import-mapping-form';
 import { ImportRowFinding } from './import-row-finding';
-import { ImportSteps } from './import-steps';
 import { RESIDENT_IMPORT_COPY } from './resident-import.copy';
 
 const STEP_NUMBER: Readonly<Record<ImportStep, number>> = { map: 2, check: 3, confirm: 4, done: 5 };

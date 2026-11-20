@@ -47,7 +47,7 @@ let dialogs = 0;
             [value]="reason()"
             (input)="onReason($event)"
           ></textarea>
-          <p class="field__hint" [id]="hintId">{{ copy.reasonHint }}</p>
+          <p class="field__hint" [id]="hintId">{{ reasonHint() ?? copy.reasonHint }}</p>
           @if (showProblem()) {
             <p class="field__error" [id]="errorId">{{ reasonProblem() }}</p>
           }
@@ -90,6 +90,8 @@ export class ArchiveDialog {
   /** What the act does, said before its button. */
   readonly effects = input.required<readonly string[]>();
   readonly confirmLabel = input.required<string>();
+  /** Where the reason is kept, when it is not an archive history (a withdrawal, `DL-228`). */
+  readonly reasonHint = input<string | null>(null);
   readonly busy = input(false);
   /** The server's refusal, in plain words; the dialog stays open beneath it. */
   readonly problem = input<string | null>(null);

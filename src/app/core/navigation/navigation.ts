@@ -217,6 +217,18 @@ export const NAVIGATION: readonly NavSection[] = [
           'Bring in a list the office keeps, checking every row before the registry changes.',
       },
       {
+        // `DL-228`. The office's old Tulong reports, filed as closed requests after a person
+        // checks every row.
+        label: 'Import past assistance',
+        route: '/assistance-requests/import',
+        reads: ['assistance-import'],
+        glyph: 'IA',
+        permissions: ['request.import'],
+        closedTo: ['assigned-cases'],
+        description:
+          'Bring in the office’s old Tulong reports, checking every row before anything is filed.',
+      },
+      {
         // `DL-215`. Residents ask in the app to be recorded in a sector; the office decides.
         label: 'Sector applications',
         route: '/residents/sector-applications',

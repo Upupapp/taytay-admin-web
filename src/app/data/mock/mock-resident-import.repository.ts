@@ -20,6 +20,7 @@ import {
   type ImportResolution,
   type ImportResolutionRecord,
   type ImportRow,
+  type ImportTemplate,
   type ResidentDraft,
   type ResidentImport,
   type ResidentImportId,
@@ -227,6 +228,17 @@ export class MockResidentImportRepository implements ResidentImportRepository {
       },
     };
     return this.latency.respond(held.summary);
+  }
+
+  /** A header-only CSV of the fields' labels, as the server hands out: no sample row. */
+  template(): Observable<ImportTemplate> {
+    const denied = this.deny<ImportTemplate>();
+    if (denied) return denied;
+    return this.latency.respond({
+      fileName: 'import-citizens-template.csv',
+      contentType: 'text/csv',
+      content: `\uFEFF${FIELDS.map((spec) => spec.label).join(',')}\r\n`,
+    });
   }
 
   private deny<T>(): Observable<T> | null {

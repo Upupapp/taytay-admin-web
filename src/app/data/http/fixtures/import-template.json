@@ -1,0 +1,8 @@
+{
+  "data": {
+    "file_name": "taytay-past-assistance-template.csv",
+    "content_type": "text/csv",
+    "content": "\ufeffSurname,Given name,Barangay,Type of assistance,Date given\r\n"
+  },
+  "meta": {}
+}
