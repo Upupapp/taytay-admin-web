@@ -78,6 +78,9 @@ export const PERMISSIONS = [
   'request.reject',
   'request.schedule',
   'request.close',
+  // Importing the office's old Tulong reports as closed requests (`DL-228`, ADR 0005 s.3): intake's
+  // work, with the head and the administrator, like `resident.import`; never a caseload's.
+  'request.import',
   // Opens records flagged under a sensitive sector (VAWC survivors, CICL).
   'request.view-sensitive',
 
@@ -387,6 +390,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'resident.deactivate',
       'resident.export',
       'resident.import',
+      'request.import',
       'beneficiary.export',
       'case.close',
       'program.manage',
@@ -402,20 +406,20 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
       'staff.view',
       'saved-view.share',
 
-  /*
-   * FIELD VISITS — their own grants, as of TAB 03.
-   *
-   * The visit screens were guarded by `case.view` and this console had no
-   * `visit.*` key at all, while the API has always had two. A role holding
-   * `case.view` but not `visit.view` therefore saw the Field visits link, opened
-   * it, and was refused by the server — the "hides the wrong things and reveals
-   * the wrong things" failure this convergence exists to end.
-   *
-   * A visit is a record with its own lifecycle, screens and disclosure rules
-   * (`DL-85`, `DL-86`). Borrowing a case permission for it was convenience.
-   */
-  'visit.view',
-  'visit.manage',
+      /*
+       * FIELD VISITS — their own grants, as of TAB 03.
+       *
+       * The visit screens were guarded by `case.view` and this console had no
+       * `visit.*` key at all, while the API has always had two. A role holding
+       * `case.view` but not `visit.view` therefore saw the Field visits link, opened
+       * it, and was refused by the server — the "hides the wrong things and reveals
+       * the wrong things" failure this convergence exists to end.
+       *
+       * A visit is a record with its own lifecycle, screens and disclosure rules
+       * (`DL-85`, `DL-86`). Borrowing a case permission for it was convenience.
+       */
+      'visit.view',
+      'visit.manage',
       // The head is the office's publishing authority: an event goes out in the
       // MSWDO's name, and the command's "Events Manager" maps onto the role that
       // already answers for what the office says.
@@ -446,7 +450,7 @@ export const ROLE_DEFINITIONS: Readonly<Record<StaffRole, RoleDefinition>> = {
     label: 'Intake officer',
     description: 'Receives applicants, records requests and validates requirements.',
     scope: 'all-barangays',
-    permissions: [...INTAKE_PERMISSIONS, 'resident.import'],
+    permissions: [...INTAKE_PERMISSIONS, 'resident.import', 'request.import'],
   },
   'release-officer': {
     role: 'release-officer',

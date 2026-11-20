@@ -71,6 +71,7 @@
       "request.reject",
       "request.schedule",
       "request.close",
+      "request.import",
       "request.view-sensitive",
       "document.record",
       "document.download",

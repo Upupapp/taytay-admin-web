@@ -28,7 +28,9 @@ export interface PlatformAuditEntry {
 /**
  * Every action the API records at `2fd0566`, in words — and since `cc86189` the archive's acts
  * (`DL-225`), and since `dd8dbc3` a self-approval and an app account following the record kept
- * (`DL-226`), with the card photo, the import and the sector application acts it had no words for.
+ * (`DL-226`), with the card photo, the import and the sector application acts it had no words for;
+ * and since `6794f8d` the account link at verification, the past assistance import and the summary
+ * report (`DL-228`).
  * The old `*.deleted` and `saved_view.removed` stay: rows written before the API stopped
  * deleting still carry them. Read from the backend's
  * `audit.record(...)` calls; a code not here is shown as given and said to have no description in
@@ -128,6 +130,8 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_release.prepared': 'Prepared a release for an approved request — an amount or the goods',
   'office_release.scheduled': 'Scheduled a release into a payout session',
   'office_release.released': 'Recorded a release as handed over',
+  'office_release.imported':
+    'Imported a completed release from an old Tulong report; nobody here handed it over',
   'office_release.self_released':
     'Handed over a release for a request the same person approved — recorded, not refused',
   'office_release.acknowledged': 'Recorded how a beneficiary acknowledged a release',
@@ -137,6 +141,7 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_release_batch.manifest_composed': 'Composed the payout list for a session, to print',
   'office_report.exported': 'Exported a report as a file, its conditions written inside it',
   'office_report.person_level_read': 'Opened the report that names residents',
+  'office_report.summary_read': 'Ran the summary report',
   'office_report.person_level_exported': 'Exported the report that names residents, as a file',
   // Events (DL-192): each reason is kept beside the act, in office_event_acts.
   'office_event.created': 'Created an event as a draft',
@@ -161,6 +166,11 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_request.draft_created': 'Began an intake for an assistance request',
   'office_request.draft_updated': 'Changed an unfinished intake',
   'office_request.filed': 'Filed an assistance request and issued its control number',
+  // Past assistance imported from the office's old Tulong reports (DL-228, ADR 0005 s.3).
+  'office_request.imported':
+    'Imported a closed assistance request from an old Tulong report, on the report’s own dates',
+  'office_request.import_withdrawn':
+    'Withdrew an imported assistance request with its import, with a reason; it is kept, and no longer counted',
   'office_request.note_added': 'Added a note to an assistance request',
   'office_request.status_changed': 'Moved an assistance request on, with a reason',
   // DL-226: warned before the button and recorded, never refused, as a self-release is (DL-91).
@@ -193,7 +203,9 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'office_resident.updated': 'Changed a resident’s registry record',
   // A resident's app account and the registry record it reads (DL-215, DL-226).
   'resident_account.linked':
-    'Linked a resident’s app account to a registry record, with a reason, when approving a sector application',
+    'Linked a resident’s app account to a registry record, with a reason, when verifying the account or approving a sector application',
+  'resident_account.left_unlinked':
+    'Left a resident’s app account unlinked when verifying it, with a reason; nothing was linked',
   'resident_account.relinked':
     'Moved a resident’s app account to the record the office kept, when two records were found to be one person',
   'resident_account.not_relinked':
@@ -205,6 +217,21 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
     'Decided one row of an import, with a reason: a new person, a person already on the registry, or not imported',
   'resident_import.committed':
     'Confirmed an import: its rows became registry records or were attached to them, and the file’s cells were emptied',
+  // Importing past assistance from the office's old Tulong reports (DL-228): each act its own row.
+  'assistance_import.uploaded': 'Uploaded an old Tulong report to import; no request changed',
+  'assistance_import.mapped': 'Matched an old Tulong report’s columns to the request’s fields',
+  'assistance_import.row_resolved':
+    'Decided one row of a past assistance import, with a reason: a registry record, a new record, or not imported',
+  'assistance_import.committed':
+    'Confirmed a past assistance import: its rows became closed requests, and the file’s cells were emptied',
+  'assistance_import.row_skipped':
+    'Left one row of a past assistance import out, as an officer decided',
+  'assistance_import.row_duplicate':
+    'Left one row of a past assistance import out, because the same assistance is already recorded',
+  'assistance_import.row_error':
+    'Left one row of a past assistance import out, because it could not be read',
+  'assistance_import.withdrawn':
+    'Withdrew a past assistance import, with a reason; its requests are kept, and no longer counted',
   'office_visit.scheduled': 'Scheduled a home visit',
   'office_visit.observation_recorded': 'Recorded what was found on a home visit',
   'office_visit.checklist_item_set': 'Ticked or cleared a line of a home visit’s checklist',
