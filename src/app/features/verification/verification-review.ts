@@ -39,6 +39,8 @@ import {
   type TransitionGuidance,
 } from '@shared/cases/status-transition';
 import { ObjectUrls } from '@shared/media/object-urls';
+import { ACCOUNT_LINK_COPY } from '@shared/verification/account-link.copy';
+import { AccountLinkChoice, type AccountLinkState } from '@shared/verification/account-link-choice';
 import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
 import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { failureReason } from '@shared/state/failure-reason';
@@ -99,7 +101,15 @@ interface OpenedImage {
 @Component({
   selector: 'app-verification-review',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DisplayDatePipe, Icon, Modal, RouterLink, StatusBadge, StatusTransition],
+  imports: [
+    AccountLinkChoice,
+    DisplayDatePipe,
+    Icon,
+    Modal,
+    RouterLink,
+    StatusBadge,
+    StatusTransition,
+  ],
   templateUrl: './verification-review.html',
   styleUrl: './verification-review.scss',
 })
@@ -121,6 +131,9 @@ export class VerificationReview {
 
   /** What approving would confirm; `null` when the account gives no name to check. */
   protected readonly identity = computed(() => identityToConfirm(this.request()));
+  protected readonly linkCopy = ACCOUNT_LINK_COPY;
+  /** The registry decision the approval will carry (`DL-228`); `null` until the panel answers. */
+  protected readonly link = signal<AccountLinkState | null>(null);
   protected readonly moves = computed(() => reviewMovesFor(this.request()));
 
   /**
@@ -134,7 +147,9 @@ export class VerificationReview {
         approved: {
           reasonLabel: this.copy.approveLabel,
           reasonHint: this.copy.approveHint,
+          // The registry choice's own effect is said in its panel, before this form (`DL-228`).
           consequences: VERIFICATION_DECISION_EFFECTS.approved,
+          ...this.linkBlock(),
           ...(identity === null
             ? {}
             : { confirmation: { label: this.statement(identity), hint: this.copy.confirmHint } }),
@@ -181,6 +196,7 @@ export class VerificationReview {
         this.opened.set(false);
         this.warningOpen.set(false);
         this.outcome.set('');
+        this.link.set(null);
       });
     });
     this.destroyRef.onDestroy(() => this.discardImages());
@@ -235,9 +251,11 @@ export class VerificationReview {
   protected decide(event: StatusTransitionRequest<VerificationStatus>): void {
     const request = this.request();
     const identity = identityToConfirm(request);
+    const link = this.link();
+    const decision = link?.kind === 'ready' ? link.decision : null;
     const act =
       event.to === 'approved' && identity !== null
-        ? this.repository.approve(request.id, event.reason, identity)
+        ? this.repository.approve(request.id, event.reason, identity, decision)
         : event.to === 'rejected'
           ? this.repository.reject(request.id, event.reason)
           : null;
@@ -264,6 +282,15 @@ export class VerificationReview {
   }
 
   /** What the reviewer ticks: the very name, and the birth date when the account gives one. */
+  /** The approve button waits for a whole registry choice, and says so. */
+  private linkBlock(): { readonly blockedBy?: string } {
+    const link = this.link();
+    if (link === null) {
+      return { blockedBy: this.linkCopy.loading };
+    }
+    return link.kind === 'incomplete' ? { blockedBy: link.problem } : {};
+  }
+
   private statement(identity: ConfirmedIdentity): string {
     return identity.birthDate === null
       ? this.copy.confirmName(identity.name)

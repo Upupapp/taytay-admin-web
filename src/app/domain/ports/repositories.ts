@@ -205,6 +205,7 @@ import type {
   VerificationRequest,
 } from '../verification/verification-request';
 import type { InPersonCheck, InPersonVerification } from '../verification/in-person-verification';
+import type { AccountLinkDecision, RegistryMatches } from '../verification/account-link';
 import type {
   Family,
   FamilyDraft,
@@ -1601,7 +1602,15 @@ export interface VerificationRepository {
     id: VerificationRequestId,
     note: string,
     confirmed: ConfirmedIdentity,
+    accountLink: AccountLinkDecision | null,
   ): Observable<VerificationRequest>;
+
+  /**
+   * The registry records that may be this account's person (`DL-228`), for the reviewer deciding
+   * which one it is with the ID in hand. Labels, bands and signals in words — never a value
+   * (`DL-73`) — and the record the account is linked to now, if any.
+   */
+  registryMatches(accountId: AppAccountId): Observable<RegistryMatches>;
 
   /** Refuses it. The resident reads `reason` in the app as what was wrong. */
   reject(id: VerificationRequestId, reason: string): Observable<VerificationRequest>;

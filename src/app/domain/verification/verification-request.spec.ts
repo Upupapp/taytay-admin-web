@@ -39,6 +39,7 @@ function request(
     residentMessage: null,
     reviewNote: null,
     account: status === 'pending' ? { name: 'Ana Cruz', birthDate: null } : null,
+    registryOutcome: null,
   };
 }
 

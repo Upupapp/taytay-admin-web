@@ -13,8 +13,13 @@ import {
   mediaFor,
   reviewNoteProblem,
   selfieErased,
+  type AccountLinkDecision,
+  type AccountLinkOutcome,
   type AppAccountId,
   type ConfirmedIdentity,
+  type RegistryMatch,
+  type RegistryMatches,
+  type ResidentId,
   type InPersonCheck,
   type InPersonVerification,
   type InPersonVerificationId,
@@ -32,6 +37,7 @@ import {
 import { denyUnless } from './mock-access';
 import { MockAppAccountStore } from './mock-app-account.store';
 import { MockLatency } from './mock-latency';
+import { MockResidentStore } from './mock-resident.store';
 import { MOCK_VERIFICATION_REQUESTS, samplePlaceholder } from './seed/verification-requests.seed';
 
 /** The API's own ceiling on a page (`limit` maximum 50), kept so the mock pages like the server. */
@@ -56,6 +62,9 @@ export class MockVerificationRepository implements VerificationRepository {
   private readonly access = inject(ACCESS_CONTEXT);
 
   private readonly accounts = inject(MockAppAccountStore);
+  private readonly residents = inject(MockResidentStore);
+  /** Account → the registry record it is linked to, as the API's link rows hold it (`DL-228`). */
+  private readonly links = new Map<string, ResidentId>();
 
   private requests: readonly VerificationRequest[] = MOCK_VERIFICATION_REQUESTS;
   /** Each counter check by its key, with the body it was sent with, as the API keeps them. */
@@ -96,8 +105,73 @@ export class MockVerificationRepository implements VerificationRepository {
     id: VerificationRequestId,
     note: string,
     confirmed: ConfirmedIdentity,
+    accountLink: AccountLinkDecision | null,
   ): Observable<VerificationRequest> {
-    return this.decide(id, 'approved', note, confirmed);
+    return this.decide(id, 'approved', note, confirmed, accountLink);
+  }
+
+  /**
+   * The registry's proposals, as the API makes them (`DL-228`): records whose whole name is among
+   * the account's words, at most ten, each with signals and no value (`DL-73`). The mock compares
+   * names only, so every proposal is `weak` unless the barangay is known to agree.
+   */
+  registryMatches(accountId: AppAccountId): Observable<RegistryMatches> {
+    const denied = denyUnless<RegistryMatches>(this.access.currentUser(), 'verification.review');
+    if (denied) {
+      return denied;
+    }
+    const name =
+      this.accounts.find(accountId)?.name ??
+      this.requests.find((request) => request.accountId === accountId)?.account?.name ??
+      null;
+    const words = new Set(
+      (name ?? '')
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((word) => word !== ''),
+    );
+    const linkedResidentId = this.links.get(String(accountId)) ?? null;
+    const heldBy = new Set([...this.links.values()].map(String));
+    const has = (part: string): boolean =>
+      part
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((word) => word !== '')
+        .every((word) => words.has(word));
+    const matches: RegistryMatch[] = this.residents
+      .all()
+      .filter(
+        (resident) =>
+          resident.isActive &&
+          resident.id !== linkedResidentId &&
+          has(resident.name.last) &&
+          has(resident.name.first),
+      )
+      .slice(0, 10)
+      .map((resident) => ({
+        residentId: resident.id,
+        label: `${resident.name.last}, ${resident.name.first.charAt(0)}.`,
+        strength: 'weak' as const,
+        signals: [
+          {
+            attribute: 'surname',
+            outcome: 'same',
+            rule: 'Every word of the surname is in the account’s name.',
+          },
+          {
+            attribute: 'given-name',
+            outcome: 'same',
+            rule: 'Every word of the given name is in the account’s name.',
+          },
+          {
+            attribute: 'barangay',
+            outcome: 'not-comparable',
+            rule: 'The sample data compares names only.',
+          },
+        ] as const,
+        linkedToOtherAccount: heldBy.has(String(resident.id)),
+      }));
+    return this.latency.respond({ accountId, linkedResidentId, matches });
   }
 
   reject(id: VerificationRequestId, reason: string): Observable<VerificationRequest> {
@@ -169,6 +243,7 @@ export class MockVerificationRepository implements VerificationRepository {
       lastFour,
       check.confirmedName,
       corrected,
+      check.accountLink,
     ]);
     const prior = this.checks.get(intent.key);
     if (prior !== undefined) {
@@ -206,6 +281,11 @@ export class MockVerificationRepository implements VerificationRepository {
       );
     }
 
+    // One act, as on the server: a refused link verifies nothing (`DL-228`).
+    const linked = check.accountLink === null ? null : this.link(accountId, check.accountLink);
+    if (typeof linked === 'string') {
+      return refuse(linked, 'conflict');
+    }
     const now = asIsoDateTime(new Date());
     const renamed = corrected !== null && corrected !== account.name.trim() ? corrected : null;
     const waiting = this.requests.find(
@@ -233,6 +313,7 @@ export class MockVerificationRepository implements VerificationRepository {
       nameCorrected: renamed !== null,
       supersededRequestId: waiting?.id ?? null,
       verifiedAt: now,
+      registryOutcome: linked,
     };
     this.checks.set(intent.key, { body, record });
     return this.latency.respond(record);
@@ -243,6 +324,7 @@ export class MockVerificationRepository implements VerificationRepository {
     decision: VerificationDecision,
     note: string,
     confirmed: ConfirmedIdentity | null = null,
+    accountLink: AccountLinkDecision | null = null,
   ): Observable<VerificationRequest> {
     const denied = denyUnless<VerificationRequest>(
       this.access.currentUser(),
@@ -296,15 +378,53 @@ export class MockVerificationRepository implements VerificationRepository {
       }
     }
 
+    let outcome: AccountLinkOutcome | null = null;
+    if (decision === 'approved' && accountLink !== null) {
+      const linked = this.link(current.accountId, accountLink);
+      if (typeof linked === 'string') {
+        return throwError(() => new Error(linked));
+      }
+      outcome = linked;
+    }
+
     const decided: VerificationRequest = {
       ...current,
       account: null,
       status: decision,
       reviewedAt: asIsoDateTime(new Date()),
       reviewNote: note.trim(),
+      registryOutcome: outcome,
     };
     this.requests = this.requests.map((request) => (request.id === id ? decided : request));
 
     return this.latency.respond(decided);
+  }
+
+  /**
+   * The API's link rules and refusals, in its words (`DL-228`): a refusal is a sentence and nothing
+   * is linked. `create` makes no record here — the sample registry is not written from this port —
+   * so it answers as linked to nothing new.
+   */
+  private link(
+    accountId: AppAccountId,
+    decision: AccountLinkDecision,
+  ): AccountLinkOutcome | string {
+    if (this.links.has(String(accountId))) {
+      return 'This account is already linked to a registry record. Approve without a link.';
+    }
+    if (decision.decision === 'leave-unlinked') {
+      return { decision: 'leave-unlinked', residentId: null };
+    }
+    if (decision.decision === 'create') {
+      return { decision: 'create', residentId: null };
+    }
+    if ([...this.links.values()].some((held) => held === decision.residentId)) {
+      return 'That record is already linked to another app account.';
+    }
+    if (this.residents.find(decision.residentId) === undefined) {
+      return 'That registry record was not found.';
+    }
+    this.links.set(String(accountId), decision.residentId);
+    return { decision: 'link', residentId: decision.residentId };
   }
 }

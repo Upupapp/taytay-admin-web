@@ -13,6 +13,7 @@ import RATE_LIMITED from './rate-limited.json';
 import SIGNED_OUT from './signed-out.json';
 import VALIDATION_FAILED from './validation-failed.json';
 import IN_PERSON_VERIFICATION from './in-person-verification.json';
+import REGISTRY_MATCHES from './registry-matches.json';
 import VERIFICATION_APPROVED from './verification-approved.json';
 import VERIFICATION_REJECTED from './verification-rejected.json';
 import VERIFICATION_SUPERSEDED from './verification-superseded.json';
@@ -295,6 +296,7 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['verification-rejected', VERIFICATION_REJECTED, 'VerificationStaffEnvelope'],
     ['verification-superseded', VERIFICATION_SUPERSEDED, 'VerificationStaffEnvelope'],
     ['in-person-verification', IN_PERSON_VERIFICATION, 'InPersonVerificationEnvelope'],
+    ['registry-matches', REGISTRY_MATCHES, 'RegistryMatchesEnvelope'],
     ['threads-page', THREADS_PAGE, 'ThreadListEnvelope'],
     ['thread', THREAD, 'ThreadEnvelope'],
     ['thread-messages-page', THREAD_MESSAGES_PAGE, 'MessageListEnvelope'],

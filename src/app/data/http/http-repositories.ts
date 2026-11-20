@@ -23,7 +23,9 @@ import {
   DIGITAL_ID_SEARCH_MIN_LENGTH,
   mediaFor,
   selfieErased,
+  type AccountLinkDecision,
   type ConfirmedIdentity,
+  type RegistryMatches,
   type CursorPage,
   type CursorRequest,
   type AppNotification,
@@ -548,6 +550,8 @@ import {
   toInPersonVerification,
   toVerificationRequest,
   toWireInPersonCheck,
+  toWireVerificationApproval,
+  toRegistryProposals,
 } from './mappers/verification.mapper';
 import {
   toIssuanceFileGrant,
@@ -724,19 +728,38 @@ export class HttpVerificationRepository implements VerificationRepository {
       .pipe(map((answer) => ({ ...answer, items: answer.items.map(readVerification) })));
   }
 
-  /** `confirmed_…` go back exactly as `account_…` came, and the server compares them (`DL-197`). */
+  /**
+   * `confirmed_…` go back exactly as `account_…` came, and the server compares them (`DL-197`). The
+   * registry decision travels in the same body (`DL-228`): a refused link approves nothing.
+   */
   approve(
     id: VerificationRequestId,
     note: string,
     confirmed: ConfirmedIdentity,
+    accountLink: AccountLinkDecision | null,
   ): Observable<VerificationRequest> {
     return this.api
-      .post(`${API_ENDPOINTS.verificationRequests}/${id}/approve`, {
-        notes: note,
-        confirmed_name: confirmed.name,
-        confirmed_birthdate: confirmed.birthDate,
-      })
+      .post(
+        `${API_ENDPOINTS.verificationRequests}/${id}/approve`,
+        toWireVerificationApproval(note, confirmed, accountLink),
+      )
       .pipe(map(readVerification));
+  }
+
+  /** The registry's proposals for this account, read whole or refused (`DL-228`, `DL-73`). */
+  registryMatches(accountId: AppAccountId): Observable<RegistryMatches> {
+    return this.api.item(`${API_ENDPOINTS.adminUsers}/${accountId}/registry-matches`).pipe(
+      map((wire) => {
+        const matches = toRegistryProposals(wire);
+        if (matches === null) {
+          throw new Error(
+            'The registry records proposed for this account could not be read, so none is shown: ' +
+              'a proposal left out is a record nobody weighed.',
+          );
+        }
+        return matches;
+      }),
+    );
   }
 
   /** `notes` is the reason the resident reads in the app (`issues` on their copy). */

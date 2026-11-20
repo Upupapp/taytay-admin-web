@@ -154,6 +154,7 @@ function toRequest(row: SeedRow): VerificationRequest {
     reviewedAt: row.reviewed === undefined ? null : asIsoDateTime(row.reviewed),
     residentMessage: row.residentMessage ?? null,
     reviewNote: row.reviewNote ?? null,
+    registryOutcome: null,
     account:
       row.status === 'pending'
         ? {

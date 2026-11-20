@@ -7,8 +7,11 @@ import {
   asId,
   asIsoDate,
   VERIFICATION_REPOSITORY,
+  type AccountLinkDecision,
   type AppAccountId,
   type ConfirmedIdentity,
+  type RegistryMatches,
+  type ResidentId,
   type CursorPage,
   type CursorRequest,
   type InPersonVerification,
@@ -23,6 +26,8 @@ import {
 
 import { VerificationQueuePage } from './verification-queue-page';
 import { VerificationReview } from './verification-review';
+import { ACCOUNT_LINK_COPY } from '@shared/verification/account-link.copy';
+
 import { VERIFICATION_COPY } from './verification.copy';
 
 function request(n: number, status: VerificationStatus = 'pending'): VerificationRequest {
@@ -42,6 +47,7 @@ function request(n: number, status: VerificationStatus = 'pending'): Verificatio
     residentMessage: null,
     reviewNote: null,
     account: status === 'pending' ? { name: `Sample Person ${n}`, birthDate: null } : null,
+    registryOutcome: null,
   };
 }
 
@@ -53,7 +59,18 @@ class RecordingVerifications implements VerificationRepository {
     to: 'approved' | 'rejected';
     words: string;
     confirmed?: ConfirmedIdentity;
+    link?: AccountLinkDecision;
   }[] = [];
+  /**
+   * The registry's answer (`DL-228`). By default the account is linked already, so an approval
+   * carries no registry decision and the older tests read as they did.
+   */
+  matches: RegistryMatches = {
+    accountId: asId<AppAccountId>('account-1'),
+    linkedResidentId: asId<ResidentId>('resident-9'),
+    matches: [],
+  };
+  readonly matchReads: AppAccountId[] = [];
   /** What a decision fails with, or `null` to record it. */
   failWith: unknown = null;
   /** The first page's rows, when a test needs others than the default two. */
@@ -78,8 +95,14 @@ class RecordingVerifications implements VerificationRepository {
     id: VerificationRequestId,
     note: string,
     confirmed: ConfirmedIdentity,
+    link: AccountLinkDecision | null,
   ): Observable<VerificationRequest> {
-    return this.decide(id, 'approved', note, confirmed);
+    return this.decide(id, 'approved', note, confirmed, link ?? undefined);
+  }
+
+  registryMatches(accountId: AppAccountId): Observable<RegistryMatches> {
+    this.matchReads.push(accountId);
+    return of(this.matches);
   }
 
   reject(id: VerificationRequestId, reason: string): Observable<VerificationRequest> {
@@ -101,12 +124,18 @@ class RecordingVerifications implements VerificationRepository {
     to: 'approved' | 'rejected',
     words: string,
     confirmed?: ConfirmedIdentity,
+    link?: AccountLinkDecision,
   ): Observable<VerificationRequest> {
     if (this.failWith !== null) {
       const failure = this.failWith;
       return throwError(() => failure);
     }
-    this.decisions.push(confirmed === undefined ? { to, words } : { to, words, confirmed });
+    this.decisions.push({
+      to,
+      words,
+      ...(confirmed === undefined ? {} : { confirmed }),
+      ...(link === undefined ? {} : { link }),
+    });
     return of({ ...request(1), id, status: to, reviewNote: words });
   }
 }
@@ -268,8 +297,12 @@ describe('VerificationQueuePage', () => {
 /* ── the review ──────────────────────────────────────────────────────────── */
 
 describe('VerificationReview', () => {
-  function review(subject: VerificationRequest = request(1)) {
+  function review(
+    subject: VerificationRequest = request(1),
+    arrange: (fake: RecordingVerifications) => void = () => undefined,
+  ) {
     const repository = configure();
+    arrange(repository);
     const fixture = TestBed.createComponent(VerificationReview);
     fixture.componentRef.setInput('request', subject);
     const emitted: VerificationRequest[] = [];
@@ -637,6 +670,89 @@ describe('VerificationReview', () => {
       expect(after.querySelector('label.check')?.textContent).toContain('Sample Person 3');
       expect(box?.checked).toBe(false);
       expect(buttonNamed(after, VERIFICATION_COPY.review.confirm)?.disabled).toBe(true);
+    });
+
+    it('waits for the registry choice, says what it does, and sends it with the approval (DL-228)', async () => {
+      const { repository, fixture } = review(undefined, (fake) => {
+        fake.matches = {
+          accountId: asId<AppAccountId>('account-1'),
+          linkedResidentId: null,
+          matches: [
+            {
+              residentId: asId<ResidentId>('resident-1'),
+              label: 'Person, S.',
+              strength: 'strong',
+              signals: [{ attribute: 'barangay', outcome: 'same', rule: 'The same barangay.' }],
+              linkedToOtherAccount: false,
+            },
+            {
+              residentId: asId<ResidentId>('resident-2'),
+              label: 'Person, S.',
+              strength: 'weak',
+              signals: [],
+              linkedToOtherAccount: true,
+            },
+          ],
+        };
+      });
+      const element = await chooseApproval(fixture);
+      tick(element);
+      await settle(fixture);
+
+      // Signals in words, never a value; a record another account holds cannot be chosen.
+      expect(element.textContent).toContain('Barangay: the same — The same barangay.');
+      const radios = [...element.querySelectorAll<HTMLInputElement>('.choice input[type="radio"]')];
+      expect(radios.map((radio) => radio.disabled)).toEqual([false, true, false, false]);
+      expect(buttonNamed(element, VERIFICATION_COPY.review.confirm)?.disabled).toBe(true);
+      expect(element.textContent).toContain(ACCOUNT_LINK_COPY.problem.choose);
+
+      radios[0]?.click();
+      await settle(fixture);
+      expect(element.textContent).toContain(ACCOUNT_LINK_COPY.problem.reason);
+      const why = element.querySelector<HTMLTextAreaElement>('#verification-link-reason');
+      if (why === null) throw new Error('no reason field');
+      why.value = 'The ID and the record agree.';
+      why.dispatchEvent(new Event('input'));
+      await settle(fixture);
+
+      expect(element.textContent).toContain(ACCOUNT_LINK_COPY.effect.link('Person, S.'));
+      buttonNamed(element, VERIFICATION_COPY.review.confirm)?.click();
+      await settle(fixture);
+      expect(repository.decisions[0]?.link).toEqual({
+        decision: 'link',
+        residentId: 'resident-1',
+        reason: 'The ID and the record agree.',
+      });
+    });
+
+    it('can leave the account unlinked, with a reason, when no record has the name', async () => {
+      const { repository, fixture } = review(undefined, (fake) => {
+        fake.matches = {
+          accountId: asId<AppAccountId>('account-1'),
+          linkedResidentId: null,
+          matches: [],
+        };
+      });
+      const element = await chooseApproval(fixture);
+      tick(element);
+      await settle(fixture);
+      expect(element.textContent).toContain(ACCOUNT_LINK_COPY.noMatches);
+
+      const radios = [...element.querySelectorAll<HTMLInputElement>('.choice input[type="radio"]')];
+      radios[1]?.click();
+      await settle(fixture);
+      const why = element.querySelector<HTMLTextAreaElement>('#verification-link-reason');
+      if (why === null) throw new Error('no reason field');
+      why.value = 'Will check the paper registry first.';
+      why.dispatchEvent(new Event('input'));
+      await settle(fixture);
+      expect(element.textContent).toContain(ACCOUNT_LINK_COPY.effect['leave-unlinked']);
+      buttonNamed(element, VERIFICATION_COPY.review.confirm)?.click();
+      await settle(fixture);
+      expect(repository.decisions[0]?.link).toEqual({
+        decision: 'leave-unlinked',
+        reason: 'Will check the paper registry first.',
+      });
     });
 
     it('leaves only a rejection when the account gives no name, and says why', async () => {

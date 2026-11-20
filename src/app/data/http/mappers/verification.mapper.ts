@@ -1,12 +1,23 @@
 import {
+  ACCOUNT_LINK_DECISIONS,
+  REGISTRY_MATCH_ATTRIBUTES,
+  REGISTRY_MATCH_OUTCOMES,
+  REGISTRY_MATCH_STRENGTHS,
   VERIFICATION_STATUSES,
+  type AccountLinkDecision,
+  type AccountLinkOutcome,
   type AppAccountId,
+  type ConfirmedIdentity,
   type IdDocumentType,
   type InPersonCheck,
   type InPersonField,
   type InPersonVerification,
   type InPersonVerificationId,
   type MediaId,
+  type RegistryMatch,
+  type RegistryMatches,
+  type RegistryMatchSignal,
+  type ResidentId,
   type VerificationRequest,
   type VerificationRequestId,
   type WriteIntent,
@@ -115,7 +126,158 @@ export function toVerificationRequest(wire: unknown): VerificationRequest | null
             birthDate: date(field(wire, 'account_birthdate')),
           }
         : null,
+    registryOutcome: toAccountLinkOutcome(field(wire, 'account_link')),
   };
+}
+
+/**
+ * `AccountLinkOutcome` → the domain's (`DL-228`): what an approval or a counter check decided about
+ * the account's registry record. Absent, `null` or unreadable is "no decision recorded", which is
+ * what every request decided before the API asked reads as. A part of the request and of the counter
+ * check, read by their mappers, so it names no operation of its own.
+ */
+export function toAccountLinkOutcome(wire: unknown): AccountLinkOutcome | null {
+  const decision = oneOf(field(wire, 'decision'), ACCOUNT_LINK_DECISIONS);
+  if (decision === null) {
+    return null;
+  }
+  return { decision, residentId: id<ResidentId>(field(wire, 'resident_id')) };
+}
+
+/** `AccountLinkInput`, strict on the server: one of three shapes, nothing else. */
+export type AccountLinkWire =
+  | { readonly decision: 'link'; readonly resident_id: string; readonly reason: string }
+  | {
+      readonly decision: 'create';
+      readonly record: AccountLinkRecordWire;
+      readonly reason?: string;
+    }
+  | { readonly decision: 'leave-unlinked'; readonly reason: string };
+
+export interface AccountLinkRecordWire {
+  readonly first_name: string;
+  readonly middle_name: string | null;
+  readonly last_name: string;
+  readonly suffix: string | null;
+  readonly sex?: 'female' | 'male';
+  readonly birth_date?: string;
+  readonly civil_status: string;
+  readonly street_address?: string;
+}
+
+/**
+ * The reviewer's decision → `AccountLinkInput`. A sex, birth date or street left to the account is
+ * left out rather than sent `null` — the schema takes none — and so is an empty reason on `create`.
+ */
+export function toWireAccountLink(link: AccountLinkDecision): AccountLinkWire {
+  switch (link.decision) {
+    case 'link':
+      return { decision: 'link', resident_id: link.residentId, reason: link.reason };
+    case 'leave-unlinked':
+      return { decision: 'leave-unlinked', reason: link.reason };
+    case 'create': {
+      const record = link.record;
+      const wire: AccountLinkRecordWire = {
+        first_name: record.firstName,
+        middle_name: record.middleName,
+        last_name: record.lastName,
+        suffix: record.suffix,
+        civil_status: record.civilStatus,
+        ...(record.sex === null ? {} : { sex: record.sex }),
+        ...(record.birthDate === null ? {} : { birth_date: record.birthDate }),
+        ...(record.streetAddress === null ? {} : { street_address: record.streetAddress }),
+      };
+      return link.reason === null
+        ? { decision: 'create', record: wire }
+        : { decision: 'create', record: wire, reason: link.reason };
+    }
+  }
+}
+
+/** `VerificationApproval`: what the reviewer checked, sent back as read (`DL-197`), and the link. */
+export interface VerificationApprovalWire {
+  readonly notes: string;
+  readonly confirmed_name: string;
+  readonly confirmed_birthdate: string | null;
+  readonly account_link?: AccountLinkWire;
+}
+
+export function toWireVerificationApproval(
+  note: string,
+  confirmed: ConfirmedIdentity,
+  accountLink: AccountLinkDecision | null,
+): VerificationApprovalWire {
+  const body: VerificationApprovalWire = {
+    notes: note,
+    confirmed_name: confirmed.name,
+    confirmed_birthdate: confirmed.birthDate,
+  };
+  return accountLink === null ? body : { ...body, account_link: toWireAccountLink(accountLink) };
+}
+
+function toRegistrySignal(wire: unknown): RegistryMatchSignal | null {
+  const attribute = oneOf(field(wire, 'attribute'), REGISTRY_MATCH_ATTRIBUTES);
+  const outcome = oneOf(field(wire, 'outcome'), REGISTRY_MATCH_OUTCOMES);
+  const rule = str(field(wire, 'rule'));
+  return attribute === null || outcome === null || rule === null
+    ? null
+    : { attribute, outcome, rule };
+}
+
+function toRegistryMatch(wire: unknown): RegistryMatch | null {
+  const residentId = id<ResidentId>(field(wire, 'resident_id'));
+  const label = str(field(wire, 'label'));
+  const strength = oneOf(field(wire, 'strength'), REGISTRY_MATCH_STRENGTHS);
+  const held = flag(field(wire, 'linked_to_other_account'));
+  const signalsWire = field(wire, 'signals');
+  if (
+    residentId === null ||
+    label === null ||
+    strength === null ||
+    held === null ||
+    !Array.isArray(signalsWire)
+  ) {
+    return null;
+  }
+  const signals: RegistryMatchSignal[] = [];
+  for (const item of signalsWire) {
+    const signal = toRegistrySignal(item);
+    if (signal === null) {
+      return null;
+    }
+    signals.push(signal);
+  }
+  return { residentId, label, strength, signals, linkedToOtherAccount: held };
+}
+
+/**
+ * `GET admin/users/{id}/registry-matches` → the domain's (`DL-228`). Read **whole or not at all**:
+ * a proposal quietly dropped is a record the reviewer never weighed, so one unreadable match refuses
+ * the answer. Nothing here carries a value — the server sends none (`DL-73`).
+ *
+ * @consumes GET admin/users/{id}/registry-matches
+ */
+export function toRegistryProposals(wire: unknown): RegistryMatches | null {
+  const accountId = id<AppAccountId>(field(wire, 'user_id'));
+  const matchesWire = field(wire, 'matches');
+  const linked = field(wire, 'linked_resident_id');
+  const linkedResidentId = id<ResidentId>(linked);
+  if (
+    accountId === null ||
+    !Array.isArray(matchesWire) ||
+    (linked !== null && linkedResidentId === null)
+  ) {
+    return null;
+  }
+  const matches: RegistryMatch[] = [];
+  for (const item of matchesWire) {
+    const match = toRegistryMatch(item);
+    if (match === null) {
+      return null;
+    }
+    matches.push(match);
+  }
+  return { accountId, linkedResidentId, matches };
 }
 
 /** The domain's ID types back to the API's `snake_case`: `ID_TYPE_BY_WIRE`, the other way. */
@@ -138,6 +300,7 @@ export interface InPersonCheckWire {
   readonly confirmed_name: string;
   readonly id_shows_name: true;
   readonly corrected_name?: string;
+  readonly account_link?: AccountLinkWire;
 }
 
 /**
@@ -154,7 +317,11 @@ export function toWireInPersonCheck(check: InPersonCheck, intent: WriteIntent): 
     confirmed_name: check.confirmedName,
     id_shows_name: true,
   };
-  return check.correctedName === null ? body : { ...body, corrected_name: check.correctedName };
+  const named =
+    check.correctedName === null ? body : { ...body, corrected_name: check.correctedName };
+  return check.accountLink === null
+    ? named
+    : { ...named, account_link: toWireAccountLink(check.accountLink) };
 }
 
 /**
@@ -192,6 +359,7 @@ export function toInPersonVerification(wire: unknown): InPersonVerification | nu
     nameCorrected,
     supersededRequestId: id<VerificationRequestId>(field(wire, 'superseded_request_id')),
     verifiedAt,
+    registryOutcome: toAccountLinkOutcome(field(wire, 'account_link')),
   };
 }
 

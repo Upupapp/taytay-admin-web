@@ -5,6 +5,7 @@ import type {
   MediaId,
   VerificationRequestId,
 } from '../shared/ids';
+import type { AccountLinkOutcome } from './account-link';
 import { nextStatuses, type StatusCatalog, type StatusTransitions } from '../shared/status';
 
 /**
@@ -57,6 +58,11 @@ export interface VerificationRequest {
    * The API sends it only while the request awaits a decision; `null` on a decided request.
    */
   readonly account: AccountIdentity | null;
+  /**
+   * What the approval decided about the account's registry record (`DL-228`), or `null` when it
+   * carried no decision — every request decided before the API asked, and every rejection.
+   */
+  readonly registryOutcome: AccountLinkOutcome | null;
 }
 
 /**

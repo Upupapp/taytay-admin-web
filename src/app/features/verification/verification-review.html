@@ -141,6 +141,16 @@
           <span>{{ copy.notOpened }}</span>
         </p>
       }
+      @if (identity(); as confirmed) {
+        @if (approvalBar() === null) {
+          <app-account-link-choice
+            idPrefix="verification-link"
+            [accountId]="request().accountId"
+            [verifiedName]="confirmed.name"
+            (changed)="link.set($event)"
+          />
+        }
+      }
       <app-status-transition
         [catalog]="catalog"
         [transitions]="transitions"
@@ -169,6 +179,14 @@
       <p class="review__said">{{ copy.supersededSaid }}</p>
     } @else {
       <p class="review__said">{{ copy.alreadyDecided }}</p>
+    }
+    @if (request().registryOutcome; as recorded) {
+      <p class="review__said">
+        {{ linkCopy.recorded[recorded.decision] }}
+        @if (recorded.residentId; as residentId) {
+          <a [routerLink]="['/residents', residentId]">{{ linkCopy.openRecord }}</a>
+        }
+      </p>
     }
 
     <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->

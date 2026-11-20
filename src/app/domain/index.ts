@@ -80,6 +80,7 @@ export * from './visits/visit-capture';
 export * from './visits/visit-observation';
 export * from './verification/verification-request';
 export * from './verification/in-person-verification';
+export * from './verification/account-link';
 export * from './inbox/office-thread';
 export * from './offices/office';
 export * from './accounts/app-account';

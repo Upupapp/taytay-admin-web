@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { WriteIntent } from '@domain/index';
+import { asId, WriteIntent, type ResidentId } from '@domain/index';
 
 import IN_PERSON from '../fixtures/in-person-verification.json';
 import APPROVED from '../fixtures/verification-approved.json';
@@ -8,11 +8,17 @@ import REJECTED from '../fixtures/verification-rejected.json';
 import SUPERSEDED from '../fixtures/verification-superseded.json';
 import PAGE from '../fixtures/verification-requests-page.json';
 
+import MATCHES from '../fixtures/registry-matches.json';
+
 import {
+  toAccountLinkOutcome,
   toInPersonFieldErrors,
   toInPersonVerification,
+  toRegistryProposals,
   toVerificationRequest,
+  toWireAccountLink,
   toWireInPersonCheck,
+  toWireVerificationApproval,
 } from './verification.mapper';
 
 const WITH_BACK: Record<string, unknown> = { ...PAGE.data[0] };
@@ -38,6 +44,7 @@ describe('toVerificationRequest', () => {
       residentMessage: 'I took the photo again in daylight so the name can be read.',
       reviewNote: null,
       account: { name: 'Ana Cruz', birthDate: '1990-05-01' },
+      registryOutcome: null,
     });
   });
 
@@ -69,6 +76,7 @@ describe('toVerificationRequest', () => {
       [
         'account',
         'accountId',
+        'registryOutcome',
         'id',
         'idType',
         'images',
@@ -133,6 +141,7 @@ describe('the in-person check on the wire (DL-219)', () => {
     idLastFour: '4C7K',
     confirmedName: 'Ana Cruz',
     correctedName: null,
+    accountLink: null,
   } as const;
 
   it('sends the type in the API’s words, the four characters, the name shown and the tick', () => {
@@ -162,6 +171,7 @@ describe('the in-person check on the wire (DL-219)', () => {
       nameCorrected: false,
       supersededRequestId: '7c1e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e03',
       verifiedAt: '2026-11-12T03:15:00.000Z',
+      registryOutcome: { decision: 'link', residentId: '9b8a7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c01' },
     });
     expect(JSON.stringify(record)).not.toContain('4C7K');
   });
@@ -199,5 +209,115 @@ describe('the in-person check on the wire (DL-219)', () => {
       idShowsName: 'Invalid literal value, expected true',
     });
     expect(toInPersonFieldErrors(null)).toEqual({});
+  });
+});
+
+describe('the registry decision at verification (DL-228)', () => {
+  it('reads the proposals whole: a label, a band, signals in words, and nothing else', () => {
+    const read = toRegistryProposals(MATCHES.data);
+    expect(read?.linkedResidentId).toBeNull();
+    expect(read?.matches).toHaveLength(2);
+    expect(read?.matches[0]).toEqual(
+      expect.objectContaining({
+        label: 'Mercado, L.',
+        strength: 'strong',
+        linkedToOtherAccount: false,
+      }),
+    );
+    expect(read?.matches[1]?.linkedToOtherAccount).toBe(true);
+    expect(read?.matches[0]?.signals[0]).toEqual({
+      attribute: 'surname',
+      outcome: 'same',
+      rule: "Every word of the record's surname is in the account's name.",
+    });
+  });
+
+  it('refuses the answer when one proposal or one signal cannot be read', () => {
+    const [first, second] = MATCHES.data.matches;
+    expect(
+      toRegistryProposals({ ...MATCHES.data, matches: [first, { ...second, strength: 'certain' }] }),
+    ).toBeNull();
+    expect(
+      toRegistryProposals({
+        ...MATCHES.data,
+        matches: [{ ...first, signals: [{ attribute: 'income', outcome: 'same', rule: 'x' }] }],
+      }),
+    ).toBeNull();
+    expect(toRegistryProposals({ ...MATCHES.data, linked_resident_id: 42 })).toBeNull();
+  });
+
+  it('reads what an approval decided, and no decision as none', () => {
+    expect(toAccountLinkOutcome({ decision: 'leave-unlinked', resident_id: null })).toEqual({
+      decision: 'leave-unlinked',
+      residentId: null,
+    });
+    expect(toAccountLinkOutcome(null)).toBeNull();
+    expect(toVerificationRequest(APPROVED.data)?.registryOutcome).toEqual({
+      decision: 'leave-unlinked',
+      residentId: null,
+    });
+  });
+
+  it('sends each decision in the shape the API takes, leaving out what the account supplies', () => {
+    expect(
+      toWireAccountLink({ decision: 'link', residentId: asId<ResidentId>('r-1'), reason: 'Seen' }),
+    ).toEqual({ decision: 'link', resident_id: 'r-1', reason: 'Seen' });
+    expect(toWireAccountLink({ decision: 'leave-unlinked', reason: 'Two records' })).toEqual({
+      decision: 'leave-unlinked',
+      reason: 'Two records',
+    });
+    expect(
+      toWireAccountLink({
+        decision: 'create',
+        record: {
+          firstName: 'Ana',
+          middleName: null,
+          lastName: 'Cruz',
+          suffix: null,
+          sex: null,
+          birthDate: null,
+          civilStatus: 'single',
+          streetAddress: null,
+        },
+        reason: null,
+      }),
+    ).toEqual({
+      decision: 'create',
+      record: {
+        first_name: 'Ana',
+        middle_name: null,
+        last_name: 'Cruz',
+        suffix: null,
+        civil_status: 'single',
+      },
+    });
+  });
+
+  it('adds the decision to an approval and a counter check only when there is one', () => {
+    const confirmed = { name: 'Ana Cruz', birthDate: null };
+    expect(toWireVerificationApproval('Checked', confirmed, null)).toEqual({
+      notes: 'Checked',
+      confirmed_name: 'Ana Cruz',
+      confirmed_birthdate: null,
+    });
+    expect(
+      toWireVerificationApproval('Checked', confirmed, {
+        decision: 'leave-unlinked',
+        reason: 'Why',
+      }).account_link,
+    ).toEqual({ decision: 'leave-unlinked', reason: 'Why' });
+    const intent = new WriteIntent('9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d');
+    expect(
+      toWireInPersonCheck(
+        {
+          idType: 'philid',
+          idLastFour: '4C7K',
+          confirmedName: 'Ana Cruz',
+          correctedName: null,
+          accountLink: { decision: 'leave-unlinked', reason: 'Why' },
+        },
+        intent,
+      ).account_link,
+    ).toEqual({ decision: 'leave-unlinked', reason: 'Why' });
   });
 });

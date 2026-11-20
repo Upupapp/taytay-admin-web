@@ -31,6 +31,8 @@ import {
 import { failureReason } from '@shared/state/failure-reason';
 import { Modal } from '@shared/ui/modal/modal';
 
+import { AccountLinkChoice, type AccountLinkState } from './account-link-choice';
+
 import { VERIFY_IN_PERSON_COPY } from './verify-in-person.copy';
 
 type FieldErrors = Readonly<Record<InPersonField, string | null>>;
@@ -70,7 +72,7 @@ type FieldErrors = Readonly<Record<InPersonField, string | null>>;
 @Component({
   selector: 'app-verify-in-person-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Modal],
+  imports: [AccountLinkChoice, Modal],
   templateUrl: './verify-in-person-dialog.html',
   styleUrl: './verify-in-person-dialog.scss',
 })
@@ -106,16 +108,37 @@ export class VerifyInPersonDialog {
     correctedName: this.corrected(),
   }));
   private readonly problems = computed(() => inPersonProblems(this.subject(), this.draft()));
-  private readonly check = computed(() => toInPersonCheck(this.subject(), this.draft()));
+  /** The registry decision the check carries (`DL-228`); `null` until the panel answers. */
+  protected readonly link = signal<AccountLinkState | null>(null);
+  private readonly check = computed(() => {
+    const link = this.link();
+    return toInPersonCheck(
+      this.subject(),
+      this.draft(),
+      link?.kind === 'ready' ? link.decision : null,
+    );
+  });
+  /** What the registry choice still needs, said where the button waits. */
+  protected readonly linkProblem = computed(() => {
+    const link = this.link();
+    return link?.kind === 'incomplete' ? link.problem : null;
+  });
 
   /** The name the statement names: the one typed, or the account's. */
   protected readonly named = computed(() => this.corrected().trim() || this.subject().name);
-  protected readonly effects = computed(() =>
-    this.corrected().trim() === ''
-      ? IN_PERSON_EFFECTS
-      : [...IN_PERSON_EFFECTS, IN_PERSON_CORRECTION_EFFECT],
-  );
-  protected readonly ready = computed(() => this.seen() && this.check() !== null && !this.busy());
+  protected readonly effects = computed(() => {
+    const base =
+      this.corrected().trim() === ''
+        ? IN_PERSON_EFFECTS
+        : [...IN_PERSON_EFFECTS, IN_PERSON_CORRECTION_EFFECT];
+    const link = this.link();
+    return link?.kind === 'ready' ? [...base, link.effect] : base;
+  });
+  protected readonly ready = computed(() => {
+    const link = this.link();
+    const linkSettled = link !== null && link.kind !== 'incomplete';
+    return this.seen() && linkSettled && this.check() !== null && !this.busy();
+  });
 
   /**
    * What each field says is wrong: the server's word first, then the console's — but a choice not

@@ -392,14 +392,28 @@ if (
 
 /* ── 8. an approval says the ID shows the account's name ─────────────────── */
 
-if (!/approve\(\s*id:\s*VerificationRequestId,\s*note:\s*string,\s*confirmed:\s*ConfirmedIdentity,?\s*\)/.test(port)) {
+// The registry decision made with the ID in hand travels with the approval (`DL-228`).
+if (
+  !/approve\(\s*id:\s*VerificationRequestId,\s*note:\s*string,\s*confirmed:\s*ConfirmedIdentity,?\s*(?:accountLink:\s*AccountLinkDecision\s*\|\s*null,?\s*)?\)/.test(
+    port,
+  )
+) {
   failures.push(
     "VerificationRepository.approve does not take the ConfirmedIdentity the reviewer checked (DL-197).",
   );
 }
+// Sent as written in the adapter, or through the approval's one mapper (`DL-228`), which must say
+// it the same way.
+const SENT_BACK =
+  /confirmed_name:\s*confirmed\s*\.\s*name,\s*confirmed_birthdate:\s*confirmed\s*\.\s*birthDate/;
+const approvalMapper = /export function toWireVerificationApproval[\s\S]*?\n}\n/.exec(code(read(MAPPER)))?.[0] ?? '';
 if (
   !/approve\([\s\S]*?confirmed_name:\s*confirmed\s*\.\s*name,\s*confirmed_birthdate:\s*confirmed\s*\.\s*birthDate/.test(
     httpClass,
+  ) &&
+  !(
+    /approve\([\s\S]*?toWireVerificationApproval\(\s*note,\s*confirmed,/.test(httpClass) &&
+    SENT_BACK.test(approvalMapper)
   )
 ) {
   failures.push(

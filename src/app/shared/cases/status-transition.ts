@@ -59,6 +59,12 @@ export interface TransitionGuidance {
   readonly detail?: TransitionDetail;
   /** A statement this destination needs ticked, when it needs one. */
   readonly confirmation?: TransitionConfirmation;
+  /**
+   * What the screen still needs before this move can be sent, in a sentence — a choice made outside
+   * this control, such as the registry record a verification links (`DL-228`). The button waits,
+   * and the sentence says why.
+   */
+  readonly blockedBy?: string;
 }
 
 /**
@@ -188,6 +194,10 @@ export interface TransitionGuidance {
           </div>
         }
 
+        @if (chosenGuidance()?.blockedBy; as blocked) {
+          <p class="transition__problem" role="status">{{ blocked }}</p>
+        }
+
         <div class="transition__actions">
           <button
             type="button"
@@ -301,9 +311,16 @@ export class StatusTransition<TStatus extends string> {
   });
   protected readonly showDetailProblem = computed(() => this.detailTouched() && !this.detailOk());
 
-  /** Unticked whenever the chosen destination's guidance changes — another move, another record. */
-  protected readonly ticked = linkedSignal<TransitionGuidance | null, boolean>({
-    source: () => this.chosenGuidance(),
+  /** Unticked whenever the move or the statement it asks for changes — another move, another name. */
+  /**
+   * The move and the statement, as one value: a computed holds it, so a screen that re-words its
+   * consequences while somebody fills the form (`DL-228`) changes nothing here and unticks nothing.
+   */
+  private readonly statementKey = computed(
+    () => `${String(this.destination())}|${this.chosenGuidance()?.confirmation?.label ?? ''}`,
+  );
+  protected readonly ticked = linkedSignal<string, boolean>({
+    source: this.statementKey,
     computation: () => false,
   });
   protected readonly confirmationOk = computed(
@@ -316,6 +333,7 @@ export class StatusTransition<TStatus extends string> {
       this.reasonOk() &&
       this.detailOk() &&
       this.confirmationOk() &&
+      this.chosenGuidance()?.blockedBy === undefined &&
       !this.busy(),
   );
 

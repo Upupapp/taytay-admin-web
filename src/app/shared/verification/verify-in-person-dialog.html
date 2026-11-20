@@ -87,6 +87,13 @@
       </div>
     </fieldset>
 
+    <app-account-link-choice
+      idPrefix="in-person-link"
+      [accountId]="subject().accountId"
+      [verifiedName]="named()"
+      (changed)="link.set($event)"
+    />
+
     <!-- What the server does, between the fields and the statement and button that do it. -->
     <div class="effects" id="in-person-effects">
       <p class="effects__lead">{{ copy.lead }}</p>
@@ -116,7 +123,7 @@
     </div>
 
     @if (!ready() && !busy()) {
-      <p class="status-line">{{ copy.waiting }}</p>
+      <p class="status-line">{{ linkProblem() ?? copy.waiting }}</p>
     }
   </div>
 

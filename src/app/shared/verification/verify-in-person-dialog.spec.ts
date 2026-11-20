@@ -1,4 +1,5 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { EMPTY, of, throwError, type Observable } from 'rxjs';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -15,11 +16,14 @@ import {
   type InPersonOutcome,
   type InPersonVerification,
   type InPersonVerificationId,
+  type RegistryMatches,
+  type ResidentId,
   type VerificationRepository,
   type VerificationRequest,
   type WriteIntent,
 } from '@domain/index';
 
+import { ACCOUNT_LINK_COPY } from './account-link.copy';
 import { VerifyInPersonDialog } from './verify-in-person-dialog';
 import { VERIFY_IN_PERSON_COPY as COPY } from './verify-in-person.copy';
 
@@ -33,6 +37,7 @@ function recorded(check: InPersonCheck): InPersonVerification {
     nameCorrected: check.correctedName !== null,
     supersededRequestId: null,
     verifiedAt: asIsoDateTime('2026-11-12T03:15:00.000Z'),
+    registryOutcome: null,
   };
 }
 
@@ -54,6 +59,15 @@ class RecordingChecks implements VerificationRepository {
   openImage(): Observable<Blob> {
     return EMPTY;
   }
+  /** Linked already by default, so a check carries no registry decision (`DL-228`). */
+  matches: RegistryMatches = {
+    accountId: ACCOUNT,
+    linkedResidentId: asId<ResidentId>('resident-9'),
+    matches: [],
+  };
+  registryMatches(): Observable<RegistryMatches> {
+    return of(this.matches);
+  }
 
   verifyInPerson(
     accountId: AppAccountId,
@@ -74,7 +88,7 @@ function open(name = 'Ana Cruz') {
   const repository = new RecordingChecks();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
-    providers: [{ provide: VERIFICATION_REPOSITORY, useValue: repository }],
+    providers: [provideRouter([]), { provide: VERIFICATION_REPOSITORY, useValue: repository }],
   });
   const fixture = TestBed.createComponent(VerifyInPersonDialog);
   fixture.componentRef.setInput('subject', { accountId: ACCOUNT, name });
@@ -219,6 +233,7 @@ describe('VerifyInPersonDialog (DL-219)', () => {
           idLastFour: '4C7K',
           confirmedName: 'Ana Cruz',
           correctedName: null,
+          accountLink: null,
         },
       },
     ]);
@@ -344,5 +359,28 @@ describe('VerifyInPersonDialog (DL-219)', () => {
 
     expect(dismissedCount()).toBe(1);
     expect(repository.sent).toEqual([]);
+  });
+
+  it('waits for the registry choice, and sends it with the check (DL-228)', async () => {
+    const { repository, fixture } = open();
+    repository.matches = { accountId: ACCOUNT, linkedResidentId: null, matches: [] };
+    const root = await fillIn(fixture);
+
+    expect(button(root, COPY.confirm).disabled).toBe(true);
+    expect(root.textContent).toContain(ACCOUNT_LINK_COPY.problem.choose);
+
+    const radios = [...root.querySelectorAll<HTMLInputElement>('.choice input[type="radio"]')];
+    radios[1]?.click();
+    await settle(fixture);
+    type(root, '#in-person-link-reason', 'Checking the paper registry first.');
+    await settle(fixture);
+    expect(root.textContent).toContain(ACCOUNT_LINK_COPY.effect['leave-unlinked']);
+
+    button(root, COPY.confirm).click();
+    await settle(fixture);
+    expect(repository.sent[0]?.check.accountLink).toEqual({
+      decision: 'leave-unlinked',
+      reason: 'Checking the paper registry first.',
+    });
   });
 });

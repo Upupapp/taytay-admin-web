@@ -119,7 +119,9 @@ describe('MockVerificationRepository', () => {
     expect(decided.reviewedAt).not.toBeNull();
 
     await expect(
-      firstValueFrom(repository.approve(waiting.id, 'Selfie matches the ID photo.', ANY_NAME)),
+      firstValueFrom(
+        repository.approve(waiting.id, 'Selfie matches the ID photo.', ANY_NAME, null),
+      ),
     ).rejects.toThrow(/no longer pending/);
   });
 
@@ -127,9 +129,9 @@ describe('MockVerificationRepository', () => {
     const repository = signedInAs('system-administrator');
     const waiting = await firstPending(repository);
 
-    await expect(firstValueFrom(repository.approve(waiting.id, 'ok', ANY_NAME))).rejects.toThrow(
-      /needs a sentence/,
-    );
+    await expect(
+      firstValueFrom(repository.approve(waiting.id, 'ok', ANY_NAME, null)),
+    ).rejects.toThrow(/needs a sentence/);
   });
 
   it('refuses a request it does not hold', async () => {
@@ -141,6 +143,7 @@ describe('MockVerificationRepository', () => {
           asId<VerificationRequestId>('vr-nowhere'),
           'Selfie matches the ID.',
           ANY_NAME,
+          null,
         ),
       ),
     ).rejects.toThrow(/not found/);
@@ -154,15 +157,20 @@ describe('MockVerificationRepository', () => {
 
     await expect(
       firstValueFrom(
-        repository.approve(waiting.id, 'Selfie matches the ID photo.', {
-          ...identity,
-          name: 'Somebody Else',
-        }),
+        repository.approve(
+          waiting.id,
+          'Selfie matches the ID photo.',
+          {
+            ...identity,
+            name: 'Somebody Else',
+          },
+          null,
+        ),
       ),
     ).rejects.toThrow(/not the one confirmed/);
 
     const approved = await firstValueFrom(
-      repository.approve(waiting.id, 'Selfie matches the ID photo.', identity),
+      repository.approve(waiting.id, 'Selfie matches the ID photo.', identity, null),
     );
     expect(approved.status).toBe('approved');
     expect(approved.account).toBeNull();
@@ -175,7 +183,9 @@ describe('MockVerificationRepository', () => {
     if (nameless === undefined) throw new Error('the samples hold no nameless request');
 
     await expect(
-      firstValueFrom(repository.approve(nameless.id, 'Selfie matches the ID photo.', ANY_NAME)),
+      firstValueFrom(
+        repository.approve(nameless.id, 'Selfie matches the ID photo.', ANY_NAME, null),
+      ),
     ).rejects.toThrow(/gives no name/);
   });
 
@@ -197,7 +207,7 @@ describe('MockVerificationRepository', () => {
       /not found/,
     );
     await expect(
-      firstValueFrom(repository.approve(erased.id, 'Selfie matches the ID photo.', identity)),
+      firstValueFrom(repository.approve(erased.id, 'Selfie matches the ID photo.', identity, null)),
     ).rejects.toThrow(/withdrew their consent/);
     expect(await firstValueFrom(repository.openImage(erased, 'id-front'))).toBeInstanceOf(Blob);
   });
@@ -210,6 +220,7 @@ describe('MockVerificationRepository', () => {
       idLastFour: '4C7K',
       confirmedName: 'Rowena Samonte',
       correctedName: null,
+      accountLink: null,
       ...over,
     });
     const refusalOf = (work: Promise<unknown>): Promise<unknown> =>
@@ -327,4 +338,25 @@ describe('MockVerificationRepository', () => {
       expect(isPermissionDenied(refusal)).toBe(true);
     },
   );
+
+  it('records the registry decision with the approval, and proposes records without values (DL-228)', async () => {
+    const repository = signedInAs('system-administrator');
+    const waiting = await firstPending(repository);
+    const identity = identityToConfirm(waiting);
+    if (identity === null) throw new Error('the first waiting sample gives no name');
+
+    const proposals = await firstValueFrom(repository.registryMatches(waiting.accountId));
+    expect(proposals.accountId).toBe(waiting.accountId);
+    for (const match of proposals.matches) {
+      expect(match.signals.every((signal) => !('value' in signal))).toBe(true);
+    }
+
+    const approved = await firstValueFrom(
+      repository.approve(waiting.id, 'Selfie matches the ID photo.', identity, {
+        decision: 'leave-unlinked',
+        reason: 'Two records share the name; checking the paper file first.',
+      }),
+    );
+    expect(approved.registryOutcome).toEqual({ decision: 'leave-unlinked', residentId: null });
+  });
 });

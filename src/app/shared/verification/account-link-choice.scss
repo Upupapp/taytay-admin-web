@@ -1,0 +1,41 @@
+/* Layout only: `.field`, `.field-row`, `.choice-list`, `.choice` and `.callout` are the global
+   primitives and patterns (DL-120), and are not redefined. */
+
+.link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.link > * {
+  margin: 0;
+}
+
+.link__note,
+.link__said {
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}
+
+.link__signals {
+  margin: var(--space-1) 0 0;
+  padding-inline-start: var(--space-4);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
+}
+
+.link__open {
+  font-size: var(--fs-xs);
+}
+
+.link__record {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.link__problem {
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}

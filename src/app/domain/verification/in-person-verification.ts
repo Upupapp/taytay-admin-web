@@ -5,6 +5,7 @@ import type {
   IsoDateTime,
   VerificationRequestId,
 } from '../shared/ids';
+import type { AccountLinkDecision, AccountLinkOutcome } from './account-link';
 import type { IdDocumentType } from './verification-request';
 
 /**
@@ -28,6 +29,11 @@ export interface InPersonCheck {
   readonly confirmedName: string;
   /** The name as the ID shows it, when it is not the account's (`DL-198`); `null` when it is. */
   readonly correctedName: string | null;
+  /**
+   * The reviewer's decision about the account's registry record (`DL-228`), made in the same act;
+   * `null` sends none, and the account is left as it was.
+   */
+  readonly accountLink: AccountLinkDecision | null;
 }
 
 /**
@@ -42,6 +48,8 @@ export interface InPersonVerification {
   /** The waiting selfie request this closed as `superseded`, with its selfie erased, if any. */
   readonly supersededRequestId: VerificationRequestId | null;
   readonly verifiedAt: IsoDateTime;
+  /** What the server recorded about the registry record (`DL-228`); `null` when none was sent. */
+  readonly registryOutcome: AccountLinkOutcome | null;
 }
 
 /** A counter check the server recorded, with what was sent, so a screen can say what changed. */
@@ -117,10 +125,14 @@ export function inPersonProblems(
   return problems;
 }
 
-/** The check to send, or `null` while the draft has a problem. */
+/**
+ * The check to send, or `null` while the draft has a problem. `accountLink` is the reviewer's
+ * registry decision (`DL-228`), already whole; `null` sends none.
+ */
 export function toInPersonCheck(
   subject: InPersonSubject,
   draft: InPersonDraft,
+  accountLink: AccountLinkDecision | null = null,
 ): InPersonCheck | null {
   if (Object.keys(inPersonProblems(subject, draft)).length > 0 || draft.idType === null) {
     return null;
@@ -131,6 +143,7 @@ export function toInPersonCheck(
     idLastFour: draft.idLastFour.trim().toUpperCase(),
     confirmedName: subject.name,
     correctedName: corrected === '' ? null : corrected,
+    accountLink,
   };
 }
 

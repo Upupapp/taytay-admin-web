@@ -1,0 +1,222 @@
+<section class="link" [attr.aria-labelledby]="idPrefix() + '-heading'">
+  <h4 class="section-title link__heading" [id]="idPrefix() + '-heading'">{{ copy.heading }}</h4>
+  <p class="link__note">{{ copy.intro }}</p>
+
+  @let read = matches();
+  @if (read.kind === 'error') {
+    <div class="callout callout--warning link__failed" role="alert">
+      <p class="callout__title">{{ copy.failedHeading }}</p>
+      <p>{{ read.message }}</p>
+      <p>{{ copy.failedHint }}</p>
+      @if (read.retry; as retry) {
+        <button type="button" class="btn btn--secondary" (click)="retry()">{{ copy.retry }}</button>
+      }
+    </div>
+  } @else if (read.kind !== 'ready') {
+    <app-loading-indicator size="small" [message]="copy.loading" />
+  }
+
+  @if (linkedResidentId(); as linked) {
+    <p class="link__said">
+      {{ copy.alreadyLinked }}
+      <a [routerLink]="['/residents', linked]">{{ copy.openRecord }}</a>
+    </p>
+  } @else if (read.kind === 'ready' || read.kind === 'error') {
+    @if (read.kind === 'ready' && read.value.matches.length === 0) {
+      <p class="link__note">{{ copy.noMatches }}</p>
+    }
+
+    <fieldset class="choice-list">
+      <legend>{{ copy.legend }}</legend>
+      @if (read.kind === 'ready') {
+        @for (match of read.value.matches; track match.residentId) {
+          <label class="choice">
+            <input
+              type="radio"
+              [name]="idPrefix() + '-decision'"
+              [checked]="isChosen(match)"
+              [disabled]="match.linkedToOtherAccount"
+              [attr.aria-describedby]="idPrefix() + '-match-' + $index"
+              (change)="chooseMatch(match)"
+            />
+            <span class="choice__text">
+              {{ copy.linkTo(match.label) }}
+              <span class="choice__hint" [id]="idPrefix() + '-match-' + $index">
+                {{ copy.strength[match.strength] }}. {{ copy.strengthHint }}
+                @if (match.linkedToOtherAccount) {
+                  {{ copy.heldByOther }}
+                }
+              </span>
+              <ul class="link__signals">
+                @for (line of signalsOf(match); track $index) {
+                  <li>{{ line }}</li>
+                }
+              </ul>
+              <a class="link__open" [routerLink]="['/residents', match.residentId]">{{
+                copy.openRecord
+              }}</a>
+            </span>
+          </label>
+        }
+      }
+      <label class="choice">
+        <input
+          type="radio"
+          [name]="idPrefix() + '-decision'"
+          [checked]="draft().decision === 'create'"
+          (change)="choose('create')"
+        />
+        <span class="choice__text">
+          {{ copy.create }}
+          <span class="choice__hint">{{ copy.createHint }}</span>
+        </span>
+      </label>
+      <label class="choice">
+        <input
+          type="radio"
+          [name]="idPrefix() + '-decision'"
+          [checked]="draft().decision === 'leave-unlinked'"
+          (change)="choose('leave-unlinked')"
+        />
+        <span class="choice__text">
+          {{ copy.leave }}
+          <span class="choice__hint">{{ copy.leaveHint }}</span>
+        </span>
+      </label>
+    </fieldset>
+
+    @if (draft().decision === 'create') {
+      <div class="link__record">
+        <p class="link__note" [id]="idPrefix() + '-name-hint'">
+          {{ copy.nameHint(verifiedName()) }}
+        </p>
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label" [for]="idPrefix() + '-first'">{{ copy.firstName }}</label>
+            <input
+              class="field__input"
+              [id]="idPrefix() + '-first'"
+              maxlength="100"
+              [value]="draft().firstName"
+              [attr.aria-describedby]="idPrefix() + '-name-hint'"
+              (input)="typed('firstName', $event)"
+            />
+          </div>
+          <div class="field">
+            <label class="field__label" [for]="idPrefix() + '-middle'">{{ copy.middleName }}</label>
+            <input
+              class="field__input"
+              [id]="idPrefix() + '-middle'"
+              maxlength="100"
+              [value]="draft().middleName"
+              (input)="typed('middleName', $event)"
+            />
+          </div>
+          <div class="field">
+            <label class="field__label" [for]="idPrefix() + '-last'">{{ copy.lastName }}</label>
+            <input
+              class="field__input"
+              [id]="idPrefix() + '-last'"
+              maxlength="100"
+              [value]="draft().lastName"
+              [attr.aria-describedby]="idPrefix() + '-name-hint'"
+              (input)="typed('lastName', $event)"
+            />
+          </div>
+          <div class="field field--narrow">
+            <label class="field__label" [for]="idPrefix() + '-suffix'">{{ copy.suffix }}</label>
+            <input
+              class="field__input"
+              [id]="idPrefix() + '-suffix'"
+              maxlength="20"
+              [value]="draft().suffix"
+              (input)="typed('suffix', $event)"
+            />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label" [for]="idPrefix() + '-sex'">{{ copy.sex }}</label>
+            <select class="field__input" [id]="idPrefix() + '-sex'" (change)="chooseSex($event)">
+              <option value="" [selected]="draft().sex === null">{{ copy.sexFromAccount }}</option>
+              <option value="female" [selected]="draft().sex === 'female'">
+                {{ copy.sexes.female }}
+              </option>
+              <option value="male" [selected]="draft().sex === 'male'">
+                {{ copy.sexes.male }}
+              </option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label" [for]="idPrefix() + '-birth'">{{ copy.birthDate }}</label>
+            <input
+              class="field__input"
+              type="date"
+              [id]="idPrefix() + '-birth'"
+              [value]="draft().birthDate"
+              [attr.aria-describedby]="idPrefix() + '-birth-hint'"
+              (input)="typed('birthDate', $event)"
+            />
+            <p class="field__hint" [id]="idPrefix() + '-birth-hint'">{{ copy.birthDateHint }}</p>
+          </div>
+          <div class="field">
+            <label class="field__label" [for]="idPrefix() + '-civil'">{{ copy.civilStatus }}</label>
+            <select
+              class="field__input"
+              [id]="idPrefix() + '-civil'"
+              (change)="chooseCivilStatus($event)"
+            >
+              <option value="" [selected]="draft().civilStatus === null">
+                {{ copy.civilStatusChoose }}
+              </option>
+              @for (status of civilStatuses; track status) {
+                <option [value]="status" [selected]="draft().civilStatus === status">
+                  {{ civilLabels[status] }}
+                </option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" [for]="idPrefix() + '-street'">{{ copy.street }}</label>
+          <input
+            class="field__input"
+            [id]="idPrefix() + '-street'"
+            maxlength="200"
+            [value]="draft().streetAddress"
+            [attr.aria-describedby]="idPrefix() + '-street-hint'"
+            (input)="typed('streetAddress', $event)"
+          />
+          <p class="field__hint" [id]="idPrefix() + '-street-hint'">{{ copy.streetHint }}</p>
+        </div>
+      </div>
+    }
+
+    @if (draft().decision !== null) {
+      <div class="field">
+        <label class="field__label" [for]="idPrefix() + '-reason'">
+          {{ draft().decision === 'create' ? copy.reasonOptional : copy.reason }}
+        </label>
+        <textarea
+          class="field__input"
+          rows="2"
+          maxlength="500"
+          [id]="idPrefix() + '-reason'"
+          [value]="draft().reason"
+          [attr.aria-describedby]="idPrefix() + '-reason-hint'"
+          (input)="typed('reason', $event)"
+        ></textarea>
+        <p class="field__hint" [id]="idPrefix() + '-reason-hint'">
+          {{ draft().decision === 'create' ? copy.reasonOptionalHint : copy.reasonHint }}
+        </p>
+      </div>
+    }
+
+    @let current = state();
+    @if (current.kind === 'ready') {
+      <p class="callout link__effect">{{ current.effect }} {{ copy.refusedTogether }}</p>
+    } @else if (current.kind === 'incomplete') {
+      <p class="link__problem" role="status">{{ current.problem }}</p>
+    }
+  }
+</section>

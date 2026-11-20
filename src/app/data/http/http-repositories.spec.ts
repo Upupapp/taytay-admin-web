@@ -605,10 +605,12 @@ describe('the Node adapters', () => {
     it('approves with the note in notes, and sends back the name and birth date it confirmed', async () => {
       const id = asId<VerificationRequestId>(VERIFICATION_APPROVED.data.id);
       const decided = firstValueFrom(
-        verification.approve(id, 'Selfie matches the ID photo.', {
-          name: 'Ana Cruz',
-          birthDate: asIsoDate('1990-05-01'),
-        }),
+        verification.approve(
+          id,
+          'Selfie matches the ID photo.',
+          { name: 'Ana Cruz', birthDate: asIsoDate('1990-05-01') },
+          null,
+        ),
       );
 
       const request = http.expectOne({
@@ -688,6 +690,7 @@ describe('the Node adapters', () => {
         idLastFour: '4C7K',
         confirmedName: 'Ana Cruz',
         correctedName: null,
+        accountLink: null,
       } as const;
       const url = `${BASE}/admin/users/${account}/in-person-verifications`;
 

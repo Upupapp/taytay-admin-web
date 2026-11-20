@@ -29,6 +29,7 @@ import {
   type NameCorrection,
   type Office,
   type OfficeId,
+  type ResidentId,
   type OfficeRepository,
   type OfficeRoleChange,
   type Permission,
@@ -176,6 +177,7 @@ class RecordingChecks implements Pick<VerificationRepository, 'verifyInPerson'> 
       idType: check.idType,
       nameCorrected: check.correctedName !== null,
       supersededRequestId: this.superseding ? asId<VerificationRequestId>('vr-1') : null,
+      registryOutcome: null,
       verifiedAt: asIsoDateTime('2026-11-12T03:15:00.000Z'),
     });
   }
@@ -194,6 +196,8 @@ function configure(
     approve: () => EMPTY,
     reject: () => EMPTY,
     openImage: () => EMPTY,
+    registryMatches: (accountId) =>
+      of({ accountId, linkedResidentId: asId<ResidentId>('resident-9'), matches: [] }),
     verifyInPerson: (accountId, check, intent) => checks.verifyInPerson(accountId, check, intent),
   };
   const offices: OfficeRepository = { list: () => of(OFFICES) };
@@ -861,6 +865,7 @@ describe('AccountInPerson (DL-219)', () => {
           idLastFour: '0042',
           confirmedName: 'Person r',
           correctedName: null,
+          accountLink: null,
         },
       },
     ]);
