@@ -121,3 +121,11 @@
 .assessment__approve > .field + .field {
   margin-block-start: 0;
 }
+
+/* How the request came in: a title, sentences, its facts. The global `.callout` lays its children
+   in a row (an icon beside its words), which squeezed each of these into a sliver of a column and
+   broke a source reference one character to a line. Here they stack, as on intake's notices. */
+.assessment__origin {
+  flex-direction: column;
+  gap: var(--space-2);
+}

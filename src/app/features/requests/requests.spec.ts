@@ -1139,6 +1139,22 @@ describe('how a request came in (DL-228)', () => {
     expect(element.textContent).toContain('Advice, never a decision');
   });
 
+  for (const [id, role, kind] of [
+    ['req-0001', 'mswdo-head', 'imported'],
+    ['req-0002', 'intake-officer', 'online'],
+  ] as const) {
+    it(`stacks the ${kind} notice, so no value is squeezed into a sliver of a column`, async () => {
+      const fixture = await openAssessment(id, role, ArrivedRequests);
+      const notice = html(fixture).querySelector<HTMLElement>('.assessment__origin');
+      expect(notice).not.toBeNull();
+      if (notice === null) return;
+      expect(getComputedStyle(notice).flexDirection).toBe('column');
+      for (const facts of notice.querySelectorAll('dl')) {
+        expect(facts.classList).toContain('facts--pairs');
+      }
+    });
+  }
+
   it('names how each request came in, in the list', async () => {
     const fixture = await openList();
     const headers = [...html(fixture).querySelectorAll('th')].map((th) => th.textContent?.trim());
