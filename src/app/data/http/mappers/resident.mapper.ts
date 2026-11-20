@@ -11,6 +11,11 @@ import {
   type VulnerabilitySector,
 } from '@domain/residents/resident';
 import type { ResidentField, ResidentView } from '@domain/residents/resident-disclosure';
+import {
+  APP_ACCOUNT_LINK_ACTS,
+  RESIDENT_ORIGIN_KINDS,
+  type ResidentProvenance,
+} from '@domain/residents/resident-profile';
 import type { BarangayId, ResidentId, StaffUserId } from '@domain/shared/ids';
 import { centavos } from '@domain/shared/money';
 
@@ -138,6 +143,39 @@ export function toResident(wire: unknown, barangays: BarangayIndex): Resident | 
       createdBy: id<StaffUserId>(field(wire, 'created_by')),
       updatedAt,
       updatedBy: id<StaffUserId>(field(wire, 'updated_by')),
+    },
+  };
+}
+
+/**
+ * Where the record came from and whether an app account reads it, from the record's own read
+ * (`app_account`, `origin`). `null` when either is missing or unreadable: the page then says it is
+ * not known, never "no account".
+ */
+export function toResidentProvenance(wire: unknown): ResidentProvenance | null {
+  const origin = field(wire, 'origin');
+  const kind = oneOf(field(origin, 'kind'), RESIDENT_ORIGIN_KINDS);
+  const at = dateTime(field(origin, 'at'));
+  const account = field(wire, 'app_account');
+  if (kind === null || at === null || account === undefined) {
+    return null;
+  }
+  let appAccount: ResidentProvenance['appAccount'] = null;
+  if (account !== null) {
+    const act = oneOf(field(account, 'act'), APP_ACCOUNT_LINK_ACTS);
+    const linkedSince = dateTime(field(account, 'linked_since'));
+    if (act === null || linkedSince === null) {
+      return null;
+    }
+    appAccount = { act, linkedSince };
+  }
+  return {
+    appAccount,
+    origin: {
+      kind,
+      importId: str(field(origin, 'import_id')),
+      fileName: str(field(origin, 'file_name')),
+      at,
     },
   };
 }

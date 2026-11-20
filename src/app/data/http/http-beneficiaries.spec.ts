@@ -31,6 +31,7 @@ import OFFICE_IDENTITY_PREVIEW from './fixtures/office-identity-preview.json';
 import OFFICE_PROGRAM_UTILIZATION from './fixtures/office-program-utilization.json';
 import OFFICE_PROGRAM_UTILIZATION_WITHHELD from './fixtures/office-program-utilization-withheld.json';
 import OFFICE_RESIDENT from './fixtures/office-resident.json';
+import OFFICE_RESIDENT_DETAIL from './fixtures/office-resident-detail.json';
 import OFFICE_RESIDENT_FAMILIES from './fixtures/office-resident-families.json';
 import {
   HttpBeneficiaryRepository,
@@ -267,12 +268,22 @@ describe('the beneficiary registry over the API (DL-187)', () => {
 
     const read = firstValueFrom(residents.getProfile(MARIA));
     barangays();
-    http.expectOne(`${BASE}/office/residents/${MARIA}`).flush(OFFICE_RESIDENT);
+    http.expectOne(`${BASE}/office/residents/${MARIA}`).flush(OFFICE_RESIDENT_DETAIL);
     http.expectOne((r) => r.url === `${BASE}/office/households`).flush(empty);
     http
       .expectOne(`${BASE}/office/residents/${MARIA}/assistance-history`)
       .flush(OFFICE_ASSISTANCE_HISTORY);
     const profile = await read;
+    // The record's own read says where it came from and whether an app account reads it.
+    expect(profile?.provenance).toEqual({
+      appAccount: { act: 'verification', linkedSince: '2026-11-08T03:00:00.000Z' },
+      origin: {
+        kind: 'citizen-import',
+        importId: '5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d01',
+        fileName: 'dolores-masterlist-2025.csv',
+        at: '2026-11-06T02:00:00.000Z',
+      },
+    });
     expect(profile?.history.kind).toBe('read');
     if (profile?.history.kind === 'read') {
       expect(profile.history.history.goodsReceivedCount).toBe(1);
@@ -308,12 +319,10 @@ describe('the beneficiary registry over the API (DL-187)', () => {
     }
 
     const one = firstValueFrom(programs.utilizationFor(MEDICAL));
-    http
-      .expectOne(`${BASE}/office/program-utilization/${MEDICAL}`)
-      .flush({
-        data: { readable: true, utilization: OFFICE_PROGRAM_UTILIZATION.data.rows[0] },
-        meta: {},
-      });
+    http.expectOne(`${BASE}/office/program-utilization/${MEDICAL}`).flush({
+      data: { readable: true, utilization: OFFICE_PROGRAM_UTILIZATION.data.rows[0] },
+      meta: {},
+    });
     expect((await one).kind).toBe('read');
 
     const refused = firstValueFrom(programs.utilizationSummary());

@@ -26,6 +26,8 @@ import {
   type HouseholdMemberView,
   type ResidentField,
   type ResidentId,
+  type ResidentAppAccount,
+  type ResidentOrigin,
   type ResidentProfile,
   type VulnerabilitySector,
   FAMILY_REPOSITORY,
@@ -156,6 +158,17 @@ export class ResidentDetailPage {
   readonly id = input.required<string>();
 
   protected readonly copy = RESIDENTS_COPY.detail;
+
+  /** Where the record came from, in words; an import names its file. */
+  protected originLine(origin: ResidentOrigin): string {
+    const file = origin.fileName ?? this.copy.originFileUnknown;
+    return this.copy.origin[origin.kind](file);
+  }
+
+  /** How the app account came to read the record, in words. */
+  protected accountLine(account: ResidentAppAccount): string {
+    return this.copy.appAccount[account.act];
+  }
   protected readonly listCopy = RESIDENTS_COPY.list;
   protected readonly requestStatuses = ASSISTANCE_STATUS_CATALOG;
   protected readonly payoutStatuses = RELEASE_STATUS_CATALOG;

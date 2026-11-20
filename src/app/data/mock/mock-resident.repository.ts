@@ -212,6 +212,11 @@ export class MockResidentRepository implements ResidentRepository {
       history: userHasPermission(user, 'beneficiary.view')
         ? { kind: 'read', history: historySummaryFor(resident.id) }
         : { kind: 'unavailable', because: ASSISTANCE_HISTORY_NOT_YOURS },
+      // The mock's seed is typed in, and no seeded resident has an app account.
+      provenance: {
+        appAccount: null,
+        origin: { kind: 'counter', importId: null, fileName: null, at: resident.audit.createdAt },
+      },
     });
   }
 

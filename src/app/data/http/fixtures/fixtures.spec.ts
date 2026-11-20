@@ -28,6 +28,7 @@ import USER_OFFICE_ROLE_CHANGED from './user-office-role-changed.json';
 import USER_ROLE_CHANGED from './user-role-changed.json';
 import USERS_PAGE from './users-page.json';
 import OFFICE_RESIDENT from './office-resident.json';
+import OFFICE_RESIDENT_DETAIL from './office-resident-detail.json';
 import OFFICE_RESIDENTS_PAGE from './office-residents-page.json';
 import OFFICE_HOUSEHOLD from './office-household.json';
 import OFFICE_HOUSEHOLD_CONFLICT from './office-household-conflict.json';
@@ -311,6 +312,7 @@ describe('the Node fixtures, held to the vendored spec', () => {
     ['users-page', USERS_PAGE, 'UserListEnvelope'],
     ['office-residents-page', OFFICE_RESIDENTS_PAGE, 'OfficeResidentListEnvelope'],
     ['office-resident', OFFICE_RESIDENT, 'OfficeResidentEnvelope'],
+    ['office-resident-detail', OFFICE_RESIDENT_DETAIL, 'OfficeResidentDetailEnvelope'],
     ['office-households-page', OFFICE_HOUSEHOLDS_PAGE, 'OfficeHouseholdListEnvelope'],
     ['office-household', OFFICE_HOUSEHOLD, 'OfficeHouseholdEnvelope'],
     ['office-household-conflict', OFFICE_HOUSEHOLD_CONFLICT, 'ErrorEnvelope'],

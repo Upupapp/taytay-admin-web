@@ -429,6 +429,7 @@ import {
 import { toPlatformAuditEntry } from './mappers/platform-audit.mapper';
 import {
   toResident,
+  toResidentProvenance,
   toResidentView,
   toWireReason,
   toWireResidentDraft,
@@ -2004,6 +2005,7 @@ export class HttpResidentRepository implements ResidentRepository {
                         : detail.members.filter((member) => member.view.resident.id !== id),
                   },
                   history,
+                  provenance: toResidentProvenance(wire),
                 }),
               ),
             );

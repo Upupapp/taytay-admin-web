@@ -183,6 +183,28 @@ export const RESIDENTS_COPY = {
     no: 'No',
     created: 'Registered',
     updated: 'Last updated',
+    // Where the record came from and whether an app account reads it (backend ADR 0004, section 3).
+    // Nothing about the account itself is shown: the API sends none of it.
+    originLabel: 'Came from',
+    origin: {
+      'citizen-import': (file: string) => `The citizen import “${file}”`,
+      'assistance-import': (file: string) =>
+        `A row of the past assistance import “${file}”, which had no record for the person`,
+      verification: () => 'Made by the reviewer who verified the resident’s app account',
+      counter: () => 'Typed in by office staff',
+    },
+    originFileUnknown: 'a file whose name was not recorded',
+    appAccountLabel: 'App account',
+    appAccount: {
+      'sector-application': 'Linked when the office approved a sector application from the app',
+      verification: 'Linked when the office verified the app account',
+      relink:
+        'Moved to this record when a duplicate record of the person was resolved as the same person',
+    },
+    appAccountSince: 'since',
+    noAppAccount:
+      'None linked. The resident cannot apply for Tulong from the app until the office links an account to this record, usually when it verifies the account.',
+    provenanceUnknown: 'Not said by the server for this record.',
 
     noHousehold: 'This resident is not linked to a household.',
     noFamily: 'No other members are recorded in this household.',

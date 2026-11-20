@@ -544,6 +544,28 @@
               <dt>{{ copy.updated }}</dt>
               <dd>{{ profile.view.resident.audit.updatedAt | displayDate: 'date-time' }}</dd>
             </div>
+            @if (profile.provenance; as provenance) {
+              <div class="facts__row">
+                <dt>{{ copy.originLabel }}</dt>
+                <dd>{{ originLine(provenance.origin) }}</dd>
+              </div>
+              <div class="facts__row">
+                <dt>{{ copy.appAccountLabel }}</dt>
+                <dd>
+                  @if (provenance.appAccount; as account) {
+                    {{ accountLine(account) }}, {{ copy.appAccountSince }}
+                    {{ account.linkedSince | displayDate: 'date' }}
+                  } @else {
+                    {{ copy.noAppAccount }}
+                  }
+                </dd>
+              </div>
+            } @else {
+              <div class="facts__row">
+                <dt>{{ copy.appAccountLabel }}</dt>
+                <dd>{{ copy.provenanceUnknown }}</dd>
+              </div>
+            }
           </dl>
         </section>
       </div>

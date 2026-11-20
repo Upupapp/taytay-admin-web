@@ -84,6 +84,48 @@ export interface ResidentProfile {
    */
   readonly householdMembers: HouseholdComposition;
   readonly history: AssistanceHistoryReading;
+  /**
+   * Where the record came from and whether an app account reads it, as the record's own read says
+   * (backend ADR 0004, section 3). `null` when the read did not say, which the page words as not
+   * known rather than as "no account".
+   */
+  readonly provenance: ResidentProvenance | null;
+}
+
+/** How an app account came to read this record. */
+export const APP_ACCOUNT_LINK_ACTS = ['sector-application', 'verification', 'relink'] as const;
+export type AppAccountLinkAct = (typeof APP_ACCOUNT_LINK_ACTS)[number];
+
+/** Where a registry record came from. `counter` is a record a staff member typed in. */
+export const RESIDENT_ORIGIN_KINDS = [
+  'citizen-import',
+  'assistance-import',
+  'verification',
+  'counter',
+] as const;
+export type ResidentOriginKind = (typeof RESIDENT_ORIGIN_KINDS)[number];
+
+/**
+ * Whether an app account reads the record, and since when. Nothing about the account itself — no
+ * name, email or mobile — is held: the worker needs to know the family can apply from the app, not
+ * how to reach the account.
+ */
+export interface ResidentAppAccount {
+  readonly act: AppAccountLinkAct;
+  readonly linkedSince: IsoDateTime;
+}
+
+export interface ResidentOrigin {
+  readonly kind: ResidentOriginKind;
+  /** The import's id and its file's name, for a record an import created; `null` otherwise. */
+  readonly importId: string | null;
+  readonly fileName: string | null;
+  readonly at: IsoDateTime;
+}
+
+export interface ResidentProvenance {
+  readonly appAccount: ResidentAppAccount | null;
+  readonly origin: ResidentOrigin;
 }
 
 /**

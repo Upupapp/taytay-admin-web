@@ -39,6 +39,7 @@ import { HttpFamilyRepository, HttpResidentRepository } from '@data/http/http-re
 import {
   ACCESS_CONTEXT,
   asId,
+  asIsoDateTime,
   ASSISTANCE_HISTORY_NOT_YOURS,
   emptyPage,
   notConnectedSentence,
@@ -164,6 +165,48 @@ class HistoryNotConnectedRepository extends MockResidentRepository {
             },
       ),
     );
+  }
+}
+
+/** A record a citizen import made, read by an account the office linked when it verified it. */
+@Injectable()
+class ImportedAndLinkedRepository extends MockResidentRepository {
+  override getProfile(id: ResidentId): Observable<ResidentProfile | null> {
+    return super.getProfile(id).pipe(
+      map((profile): ResidentProfile | null =>
+        profile === null
+          ? null
+          : {
+              ...profile,
+              provenance: {
+                appAccount: {
+                  act: 'verification',
+                  linkedSince: asIsoDateTime('2026-11-08T03:00:00.000Z'),
+                },
+                origin: {
+                  kind: 'citizen-import',
+                  importId: 'imp-1',
+                  fileName: 'dolores-masterlist-2025.csv',
+                  at: asIsoDateTime('2026-11-06T02:00:00.000Z'),
+                },
+              },
+            },
+      ),
+    );
+  }
+}
+
+/** A read that did not say where the record came from. */
+@Injectable()
+class ProvenanceUnsaidRepository extends MockResidentRepository {
+  override getProfile(id: ResidentId): Observable<ResidentProfile | null> {
+    return super
+      .getProfile(id)
+      .pipe(
+        map((profile): ResidentProfile | null =>
+          profile === null ? null : { ...profile, provenance: null },
+        ),
+      );
   }
 }
 
@@ -484,6 +527,25 @@ describe('a resident can be traced without searching four more lists', () => {
     expect(outOfScope.textContent).toContain('not available');
     expect(missing.textContent).toContain('not available');
     expect(outOfScope.textContent).not.toContain('Bautista');
+  });
+
+  it('says where the record came from and whether an app account reads it, and nothing of the account', async () => {
+    const typed = html(await openDetail('res-0001', 'intake-officer'));
+    expect(typed.textContent).toContain('Typed in by office staff');
+    expect(typed.textContent).toContain('cannot apply for Tulong from the app');
+
+    const imported = html(
+      await openDetail('res-0001', 'intake-officer', null, [], ImportedAndLinkedRepository),
+    );
+    expect(imported.textContent).toContain('The citizen import “dolores-masterlist-2025.csv”');
+    expect(imported.textContent).toContain('Linked when the office verified the app account');
+    expect(imported.textContent).not.toContain('cannot apply for Tulong from the app');
+
+    const unsaid = html(
+      await openDetail('res-0001', 'intake-officer', null, [], ProvenanceUnsaidRepository),
+    );
+    expect(unsaid.textContent).toContain('Not said by the server for this record.');
+    expect(unsaid.textContent).not.toContain('cannot apply for Tulong from the app');
   });
 
   it('offers retiring only to a role that may deactivate', async () => {
