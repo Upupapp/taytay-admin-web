@@ -258,3 +258,9 @@
     padding-inline: var(--space-3);
   }
 }
+
+/* The roomy rows (`class="data-table--roomy"` on the host): the queue boards give each row more
+   air than a registry, one request to a line (VerificationQueue). */
+:host(.data-table--roomy) .table td {
+  padding-block: 14px;
+}

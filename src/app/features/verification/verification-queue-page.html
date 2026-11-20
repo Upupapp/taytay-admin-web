@@ -1,14 +1,14 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+<app-page-header class="page-header--wide" [title]="copy.title" [subtitle]="copy.subtitle" />
 
 <section class="card card--panel card--padded queue" aria-labelledby="verification-queue-heading">
   <h2 id="verification-queue-heading" class="visually-hidden">{{ copy.caption }}</h2>
 
-  <div class="toolbar queue__toolbar">
-    <div class="field queue__filter">
-      <label class="field__label" for="verification-status">{{ copy.filterLabel }}</label>
+  <div class="queue__toolbar">
+    <div class="queue__filter">
+      <label class="queue__show" for="verification-status">{{ copy.filterLabel }}</label>
       <select
         id="verification-status"
-        class="field__input field__input--pill"
+        class="field__input field__input--pill queue__select"
         aria-describedby="verification-order"
         [value]="filterValue()"
         (change)="onFilter($event)"
@@ -20,12 +20,12 @@
         }
         <option value="all" [selected]="filterValue() === 'all'">{{ copy.filterAll }}</option>
       </select>
-      <p class="field__hint" id="verification-order">{{ copy.order }}</p>
     </div>
+    <p class="queue__order" id="verification-order">{{ copy.order }}</p>
   </div>
 
   <p class="callout callout--warning queue__notice">
-    <app-icon name="info" [size]="18" [stroke]="2" />
+    <app-icon class="queue__notice-icon" name="shield" [size]="18" [stroke]="2" />
     <span>{{ copy.noAccountDetail }}</span>
   </p>
 
@@ -41,6 +41,7 @@
       }
 
       <app-data-table
+        class="data-table--roomy"
         [columns]="columns()"
         [rows]="rows()"
         [rowKey]="rowKey"
@@ -105,7 +106,7 @@
   >
     {{ copy.review }}
     <span class="btn__arrow" aria-hidden="true">
-      <app-icon name="arrowRight" [size]="14" [stroke]="2.2" />
+      <app-icon name="arrowUpRight" [size]="13" [stroke]="2.4" />
     </span>
   </button>
 </ng-template>

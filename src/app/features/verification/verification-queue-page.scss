@@ -6,12 +6,44 @@
   gap: var(--space-4);
 }
 
+/* The board's toolbar: "Show" and its control on the left, the order on the right. The control
+   stays the select the spec drives; it takes the board's pill look. */
+.queue__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 .queue__filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.queue__show {
+  color: var(--text2);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+}
+
+.queue__select {
   min-inline-size: 220px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.queue__order {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
 }
 
 .queue__notice {
   margin: 0;
+  padding: var(--space-3) var(--space-4);
   font-size: var(--fs-label);
   text-wrap: pretty;
 }
@@ -19,6 +51,10 @@
 .queue__notice app-icon {
   flex: none;
   margin-block-start: 1px;
+}
+
+.queue__notice-icon {
+  color: var(--gold);
 }
 
 .queue__sent {
@@ -31,14 +67,22 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  color: var(--text);
 }
 
 .queue__id .icon-tile {
+  background: var(--soft);
   color: var(--link);
 }
 
 .queue__more {
   margin-block-start: var(--space-3);
+}
+
+.queue__more .btn {
+  min-block-size: var(--h-btn);
+  padding-inline: 20px;
+  border-color: var(--field-line);
 }
 
 .queue__problem {

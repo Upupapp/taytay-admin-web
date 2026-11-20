@@ -12,7 +12,7 @@ Checked against `openapi.json` at console `1eadbc0`.
 |---|---|---|
 | Main | Requests received — weekly line, last 8 weeks, "this week / on last week" | `GET office/dashboard`: `requests.received_by_week[]` |
 | Main | Releases handed over — by day, last 7 days | `GET office/dashboard`: `payouts.handed_over_by_day[]` |
-| VerificationQueue | KPI row: oldest waiting, decided last 7 days (approved / rejected), sent last 7 days by day | `GET admin/verification-requests` `meta.stats` |
+| VerificationQueue | KPI row: awaiting review (the list sends cursors and no total, `DL-161`), oldest waiting with its sent time, decided last 7 days (approved / rejected), sent last 7 days by day | `GET admin/verification-requests` `meta.stats { pending, oldest_pending_at, decided_7d { approved, rejected }, sent_by_day[7] }` |
 | CitizensOverview | Citizens on the registry — 12-month line | `GET office/residents/summary`: `residents.by_month[]` |
 | CitizensOverview | From the registry to a Digital ID — funnel under the page filter | summary: `funnel { on_registry, on_app, verified, active_ids }` |
 | CitizensOverview | This month — turning 60, leaving the children's count, Solo Parent IDs due, PWD IDs expiring | summary: `this_month {}` |

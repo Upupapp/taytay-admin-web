@@ -194,7 +194,6 @@ export class VerificationQueuePage {
     {
       key: 'review',
       header: this.copy.columnAction,
-      hideHeader: true,
       align: 'end',
       cell: this.actionCell(),
     },

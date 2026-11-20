@@ -38,6 +38,12 @@
   text-wrap: pretty;
 }
 
+/* The wide lead (`class="page-header--wide"` on the host): a board whose subtitle runs the whole
+   820px of the title block rather than a reading measure (VerificationQueue). */
+:host(.page-header--wide) .page-header__subtitle {
+  max-inline-size: none;
+}
+
 .page-header__actions {
   display: flex;
   flex-wrap: wrap;
