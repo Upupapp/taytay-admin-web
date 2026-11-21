@@ -21,6 +21,7 @@ import { ScrollRegion } from '../ui/scroll-region/scroll-region';
               <span
                 class="tab"
                 [class.tab--active]="$index + 1 === current()"
+                [class.tab--done]="$index + 1 < current()"
                 [attr.aria-current]="$index + 1 === current() ? 'step' : null"
               >
                 <span class="step-number" aria-hidden="true">{{ $index + 1 }}</span>
@@ -46,9 +47,59 @@ import { ScrollRegion } from '../ui/scroll-region/scroll-region';
 
     .steps__scroll > .tabs {
       inline-size: max-content;
-      min-inline-size: 0;
+      min-inline-size: 100%;
       max-inline-size: none;
       overflow: visible;
+      gap: var(--space-2);
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+    }
+
+    /* The import boards' stepper: a box per step sharing the row, its number in a circle; the
+       current step filled, the ones behind it in green words. The number and aria-current carry
+       the state, the colour only repeats it. */
+    li {
+      display: flex;
+      flex: 1 0 150px;
+    }
+
+    .tab {
+      flex: 1;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--r-lg);
+      background: var(--soft2);
+      color: var(--muted);
+      font-size: var(--fs-sm);
+    }
+
+    .step-number {
+      inline-size: 28px;
+      block-size: 28px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: var(--fs-xs);
+    }
+
+    .tab--active {
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+
+    .tab--active .step-number {
+      background: var(--gold);
+      color: var(--deep);
+    }
+
+    .tab--done {
+      color: var(--green-ink);
+    }
+
+    .tab--done .step-number {
+      background: var(--green-tint);
+      color: var(--green-ink);
     }
   `,
 })

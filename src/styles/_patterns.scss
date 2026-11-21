@@ -1513,6 +1513,50 @@ a.kpi:focus-visible .kpi__arrow {
   cursor: pointer;
 }
 
+/* ── File drop ────────────────────────────────────────────────────────────
+   A data file field drawn as the import boards' drop area (`class="file-drop"` on
+   `<app-data-file-field>`): a dashed, centred box, the label as its heading, the picker's
+   button as the primary pill. Nothing is dropped: the picker is still the only way in. */
+.file-drop .field {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-block-size: 220px;
+  padding: var(--space-5);
+  border: 2px dashed var(--line2);
+  border-radius: var(--r-card-sm);
+  background: var(--soft2);
+  color: var(--text2);
+  text-align: center;
+}
+
+.file-drop .field__label {
+  color: var(--ink);
+  font-size: var(--fs-subheading);
+  font-weight: var(--fw-bold);
+}
+
+.file-drop .field__hint {
+  max-inline-size: 640px;
+  font-size: var(--fs-xs);
+}
+
+.file-drop .field input[type='file'] {
+  inline-size: auto;
+  max-inline-size: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.file-drop .field input[type='file']::file-selector-button {
+  min-block-size: var(--h-btn);
+  padding: 0 18px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: var(--fs-control);
+}
+
 /* ── Step list ────────────────────────────────────────────────────────────
    The sections of one form as numbered pills in a `.tabs` strip (intake).
    The current step is `.tab--active` and `aria-current="step"`. */

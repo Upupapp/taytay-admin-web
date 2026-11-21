@@ -5,3 +5,19 @@
   display: grid;
   gap: var(--space-4);
 }
+
+// The board's panels (CitizenImport): 20/22 padding, 24 radius, 14 between their parts.
+.import-start__panel {
+  gap: 14px;
+}
+
+// The upload is the panel's own section: no inner box, its legend the panel's heading.
+.import-start__section {
+  padding: 0;
+  border: 0;
+}
+
+.import-start__section > .form-section__legend {
+  margin-block-end: 14px;
+  padding-inline: 0;
+}

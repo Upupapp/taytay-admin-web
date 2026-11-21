@@ -30,6 +30,9 @@ Checked against `openapi.json` at console `1eadbc0`.
 | CitizenIDRecord | Facts: card photo (approved selfie or card photo), times checked | `GET admin/users/{id}/digital-id`: `photo_source`, `checks_count` |
 | CitizenIDRecord | Card history — checked, issued, suspended, replaced, with when and by whom (the panel keeps its not-connected state) | `GET admin/digital-ids/{id}/events[]` from the app audit trail |
 | CitizenIDRecord | Under the name: purok, verified date and the ID type verified with | `GET admin/users/{id}/digital-id`: `holder { purok_or_sitio, verified_at, id_type }` |
+| CitizenImport | "Where is the list from?" — RBI or census, OSCA, PDAO, solo parent, 4Ps, another spreadsheet (the upload panel takes the row) | `POST office/imports` multipart: `source` (the API takes `file` only) |
+| CitizenImport | "Barangay this list covers" under the file | `POST office/imports` multipart: `barangay_id` |
+| CitizenImport | Past imports: Source column | `GET office/imports` item: `source` |
 
 ## Sent by the API but not shown yet (UI work only)
 

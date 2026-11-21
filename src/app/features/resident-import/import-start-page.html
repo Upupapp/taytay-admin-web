@@ -1,17 +1,18 @@
 <!-- The way out is the form's own Cancel, beside the submit (DL-227, pass 2). -->
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+<app-page-header class="page-header--wide" [title]="copy.title" [subtitle]="copy.subtitle" />
 
 <app-import-steps [current]="1" [steps]="copy.steps" [label]="copy.stepsLabel" />
 
 <form
-  class="card card--panel card--padded form-panel"
+  class="card card--padded form-panel import-start__panel"
   novalidate
   (submit)="$event.preventDefault(); upload()"
 >
-  <fieldset class="form-section">
+  <fieldset class="form-section import-start__section">
     <legend class="form-section__legend">{{ copy.upload.heading }}</legend>
     <!-- The limits stand before the picker, because the picker is a button that acts. -->
     <app-data-file-field
+      class="file-drop"
       inputId="import-file"
       [label]="copy.upload.label"
       [limits]="copy.upload.limits"
@@ -57,7 +58,7 @@
   </div>
 </form>
 
-<section class="card card--panel card--padded stack" aria-labelledby="import-recent">
+<section class="card card--padded stack import-start__panel" aria-labelledby="import-recent">
   <h2 id="import-recent" class="section-title">{{ copy.recent.heading }}</h2>
 
   @if (failure(); as message) {
@@ -72,6 +73,7 @@
   }
 
   <app-data-table
+    class="data-table--framed"
     [caption]="copy.recent.caption"
     [columns]="columns()"
     [rows]="rows()"
