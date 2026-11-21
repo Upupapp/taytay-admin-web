@@ -200,6 +200,10 @@ a.overview-kpi:focus-visible .overview-kpi__label {
   background: var(--tile-sky);
 }
 
+.overview-kpi__tile--red {
+  background: var(--tile-red);
+}
+
 .overview-kpi__tile--gold {
   background: var(--tile-gold);
   color: var(--tile-gold-ink);
@@ -257,9 +261,22 @@ a.overview-kpi:focus-visible .overview-kpi__label {
   grid-column: span 5;
 }
 
+/* The board's 12-month line beside the barangays, "This month" across, imports beside the tidy
+   list (DL-232). Without the imports panel the disclosure takes its place beside the tidy list. */
+.overview-panel--growth {
+  grid-column: span 8;
+}
+
+.overview-panel--month,
 .overview-panel--disclosure {
+  grid-column: span 12;
+}
+
+.overview-panel--imports,
+.overview-panel--tidy + .overview-panel--disclosure {
   grid-column: span 7;
 }
+
 
 .overview-panel__head {
   display: flex;
@@ -296,11 +313,12 @@ a.overview-kpi:focus-visible .overview-kpi__label {
 
   .overview-panel--third,
   .overview-panel--tidy,
-  .overview-panel--disclosure {
+  .overview-panel--imports,
+  .overview-panel--tidy + .overview-panel--disclosure {
     grid-column: span 6;
   }
 
-  .overview-panel--third:nth-child(3) {
+  .overview-panel--growth {
     grid-column: span 12;
   }
 }

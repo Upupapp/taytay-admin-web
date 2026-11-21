@@ -309,6 +309,13 @@ const barangaySelect = (element: HTMLElement) =>
 
 /* ── The URL is the query ─────────────────────────────────────────────────── */
 
+/** A tab's words, without the count the API sends beside it (DL-232). */
+function tabLabel(tab: Element): string | undefined {
+  const copy = tab.cloneNode(true) as Element;
+  copy.querySelectorAll('.tab__count').forEach((count) => count.remove());
+  return copy.textContent?.trim();
+}
+
 describe('the resident filter lives in the URL', () => {
   const params = (values: Record<string, string>) => ({
     get: (name: string) => values[name] ?? null,
@@ -383,9 +390,7 @@ describe('the resident list', () => {
   it('offers a protected sector as a filter only to a role cleared for it', async () => {
     // The sector filter is a row of tabs since the CitizenRegistry restyle (DL-209).
     const tabs = (element: HTMLElement) =>
-      Array.from(element.querySelectorAll('.residents__sectors .tab')).map((tab) =>
-        tab.textContent?.trim(),
-      );
+      Array.from(element.querySelectorAll('.residents__sectors .tab')).map(tabLabel);
     const intake = tabs(html(await openList('intake-officer')));
     expect(intake).toContain('PWD');
     expect(intake).not.toContain('VAWC survivors');
@@ -396,7 +401,7 @@ describe('the resident list', () => {
   it('marks the chosen sector tab in words as well as fill, and All when none is chosen', async () => {
     const current = (element: HTMLElement) =>
       Array.from(element.querySelectorAll('.residents__sectors .tab[aria-current="true"]')).map(
-        (tab) => tab.textContent?.trim(),
+        tabLabel,
       );
     expect(current(html(await openList()))).toEqual([RESIDENTS_COPY.list.allSectorsTab]);
     expect(current(html(await openList('intake-officer', '/residents?sector=pwd')))).toEqual([

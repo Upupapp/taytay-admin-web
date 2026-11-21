@@ -19,8 +19,11 @@ import { SessionStore } from '@core/auth/session.store';
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
 import {
+  barangayName,
   isResidentFilterActive,
   isSensitiveSector,
+  REGISTRY_APP_STANDING_CATALOG,
+  registryAppStanding,
   RESIDENT_AGE_GROUP_LABELS,
   RESIDENT_AGE_GROUPS,
   RESIDENT_REPOSITORY,
@@ -31,11 +34,15 @@ import {
   VULNERABILITY_SECTORS,
   type CursorPage,
   type ResidentAgeGroup,
+  type RegistryAppAccount,
+  type RegistryAppStanding,
   type ResidentFilter,
+  type ResidentSummary,
   type ResidentView,
   type Sex,
   type VulnerabilitySector,
 } from '@domain/index';
+import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
 import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { SEARCH_DEBOUNCE_MS } from '@shared/state/debounced';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
@@ -45,9 +52,10 @@ import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-n
 import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { SavedViewsBar } from '@shared/ui/saved-views/saved-views-bar';
+import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 
-import { residentColumns, sectorChipClass } from './resident-columns';
+import { registryColumns, residentColumns, sectorChipClass } from './resident-columns';
 import { RESIDENTS_COPY } from './residents.copy';
 import { readResidentQuery, residentFilterParams } from './resident-query';
 
@@ -88,6 +96,7 @@ export const RESIDENT_LIST_TOPICS: readonly LiveTopic[] = ['residents'];
     PageHeader,
     RouterLink,
     SavedViewsBar,
+    StatusBadge,
   ],
   templateUrl: './resident-list-page.html',
   styleUrl: './resident-list-page.scss',
@@ -130,6 +139,9 @@ export class ResidentListPage {
     viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('nameCell');
   private readonly statusCell =
     viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('statusCell');
+  private readonly appCell = viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('appCell');
+
+  protected readonly appCatalog = REGISTRY_APP_STANDING_CATALOG;
 
   private readonly query = toSignal(
     this.route.queryParamMap.pipe(map((params) => readResidentQuery(params))),
@@ -203,13 +215,74 @@ export class ResidentListPage {
 
   protected readonly rowKey = (view: ResidentView): string => view.resident.id;
 
-  protected readonly columns = computed<readonly TableColumn<ResidentView>[]>(() =>
-    residentColumns(this.copy, {
+  protected readonly columns = computed<readonly TableColumn<ResidentView>[]>(() => {
+    const [name, barangay, age, sectors, status] = residentColumns(this.copy, {
       name: this.nameCell(),
       sectors: this.sectorsCell(),
       status: this.statusCell(),
-    }),
+    });
+    return [
+      ...(name === undefined ? [] : [name]),
+      ...(barangay === undefined ? [] : [{ ...barangay, cell: this.barangayCell() }]),
+      ...[age, sectors].filter(
+        (column): column is TableColumn<ResidentView> => column !== undefined,
+      ),
+      ...registryColumns(this.copy, { app: this.appCell() }),
+      ...(status === undefined ? [] : [status]),
+    ];
+  });
+
+  private readonly barangayCell =
+    viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('barangayCell');
+
+  /**
+   * A count on each sector tab, from the registry summary under the same barangay, age group and
+   * sex as the list (`DL-232`); a withheld count says so, and nothing is shown until it is read.
+   */
+  private readonly tabSummary = toSignal(
+    toObservable(
+      computed(() => {
+        const filter = this.filter();
+        return {
+          ...(filter.barangayId === undefined ? {} : { barangayId: filter.barangayId }),
+          ...(filter.ageGroup === undefined ? {} : { ageGroup: filter.ageGroup }),
+          ...(filter.sex === undefined ? {} : { sex: filter.sex }),
+        };
+      }),
+    ).pipe(
+      switchMap((filter) =>
+        // Counts beside the tabs: a failed re-read keeps them, and the list reports for the page.
+        liveViewState(() => this.repository.summary(filter), this.live.changes(RESIDENT_LIST_TOPICS)),
+      ),
+    ),
+    { initialValue: LOADING as ViewState<ResidentSummary> },
   );
+
+  /** The tab's count, `null` before the summary is read (or when it could not be). */
+  protected tabCount(sector: VulnerabilitySector | null): string | null {
+    const summary = valueOf(this.tabSummary());
+    if (summary === null) return null;
+    if (sector === null) return summary.residents.current.toLocaleString('en-PH');
+    const row = summary.bySector.rows.find((candidate) => candidate.key === sector);
+    if (row === undefined) return null;
+    return row.isWithheld ? this.copy.withheld : row.value.toLocaleString('en-PH');
+  }
+
+  protected appStanding(account: RegistryAppAccount | null): RegistryAppStanding {
+    return registryAppStanding(account);
+  }
+
+  protected barangayLabel(view: ResidentView): string {
+    return barangayName(view.resident.address.barangayId);
+  }
+
+  /** Birth date and sex under the name, as the registry board writes them. */
+  protected nameMeta(view: ResidentView): string {
+    const born = formatDisplayDate(view.resident.birthDate);
+    return [born === null ? '' : this.copy.born(born), SEX_LABELS[view.resident.sex]]
+      .filter((part) => part !== '')
+      .join(' · ');
+  }
 
   protected detailLink(view: ResidentView): string {
     return `/residents/${view.resident.id}`;

@@ -14,16 +14,19 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
-import { NotConnected } from '@core/access/not-connected';
 import { SessionStore } from '@core/auth/session.store';
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
+  REGISTRY_APP_STANDING_CATALOG,
+  registryAppStanding,
   RESIDENT_REPOSITORY,
   TAYTAY_BARANGAYS,
   VULNERABILITY_SECTOR_LABELS,
   type CursorPage,
+  type RegistryAppAccount,
+  type RegistryAppStanding,
   type ResidentFilter,
   type ResidentView,
   type VulnerabilitySector,
@@ -40,8 +43,15 @@ import { Icon } from '@shared/ui/icon/icon';
 import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
-import { residentColumns, sectorChipClass } from './resident-columns';
+import {
+  appColumn,
+  residentColumns,
+  sectorCardColumns,
+  sectorChipClass,
+} from './resident-columns';
+import { SectorFigures } from './sector-figures';
 import { readResidentFilter } from './resident-query';
 import {
   RESIDENTS_COPY,
@@ -85,10 +95,11 @@ type SectorAct = { readonly kind: 'add' } | { readonly kind: 'end'; readonly vie
     InitialsPipe,
     ListChangedNotice,
     Modal,
-    NotConnected,
     PageHeader,
     PersonPicker,
     RouterLink,
+    SectorFigures,
+    StatusBadge,
   ],
   templateUrl: './sector-page.html',
   styleUrls: ['./resident-list-page.scss', './sector-page.scss'],
@@ -122,6 +133,13 @@ export class SectorPage {
     viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('statusCell');
   private readonly endCell =
     viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('endCell');
+  private readonly appCell = viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('appCell');
+
+  protected readonly appCatalog = REGISTRY_APP_STANDING_CATALOG;
+
+  protected appStanding(account: RegistryAppAccount | null): RegistryAppStanding {
+    return registryAppStanding(account);
+  }
 
   /** Search and barangay from the URL; the sector is always the page's own. */
   private readonly urlFilter = toSignal(
@@ -201,7 +219,16 @@ export class SectorPage {
       name: this.nameCell(),
       sectors: this.sectorsCell(),
       status: this.statusCell(),
-    }),
+    }).flatMap((column) =>
+      // The sector's own card columns and the app's after the age, as its board draws them (DL-232).
+      column.key === 'age'
+        ? [
+            column,
+            ...sectorCardColumns(this.sector(), this.listCopy),
+            appColumn(this.listCopy, this.appCell()),
+          ]
+        : [column],
+    ),
     ...(this.canChange()
       ? [{ key: 'end', header: this.copy.columnEnd, hideHeader: true, cell: this.endCell() }]
       : []),

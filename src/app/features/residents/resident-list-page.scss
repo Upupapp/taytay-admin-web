@@ -131,3 +131,15 @@
     border-radius: var(--r-card);
   }
 }
+
+/* A second line under a name or a barangay, as the registry board writes it (DL-232). */
+.residents__stack {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.residents__sub {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}

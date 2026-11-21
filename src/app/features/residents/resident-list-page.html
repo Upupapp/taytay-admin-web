@@ -34,8 +34,11 @@
         [replaceUrl]="true"
         [class.tab--active]="!filter().sector"
         [attr.aria-current]="!filter().sector ? 'true' : null"
-        >{{ copy.allSectorsTab }}</a
-      >
+        >{{ copy.allSectorsTab }}
+        @if (tabCount(null); as count) {
+          <span class="tab__count">{{ count }}</span>
+        }
+      </a>
     </li>
     @for (sector of sectors(); track sector) {
       <li>
@@ -47,8 +50,11 @@
           [replaceUrl]="true"
           [class.tab--active]="filter().sector === sector"
           [attr.aria-current]="filter().sector === sector ? 'true' : null"
-          >{{ sectorTab(sector) }}</a
-        >
+          >{{ sectorTab(sector) }}
+          @if (tabCount(sector); as count) {
+            <span class="tab__count">{{ count }}</span>
+          }
+        </a>
       </li>
     }
   </ul>
@@ -191,11 +197,35 @@
 <ng-template #nameCell let-view>
   <span class="residents__who">
     <span class="avatar" aria-hidden="true">{{ view.listedName | initials }}</span>
-    <a class="record-link residents__name" [routerLink]="detailLink(view)">{{ view.listedName }}</a>
+    <span class="residents__stack">
+      <a class="record-link residents__name" [routerLink]="detailLink(view)">{{
+        view.listedName
+      }}</a>
+      <span class="residents__sub">{{ nameMeta(view) }}</span>
+    </span>
     @if (view.isProtected) {
       <span class="chip chip--danger residents__protected">{{ copy.restricted }}</span>
     }
   </span>
+</ng-template>
+
+<!-- The barangay, with the purok or sitio under it when one was recorded and sent (DL-232). -->
+<ng-template #barangayCell let-view>
+  <span class="residents__stack">
+    <span>{{ barangayLabel(view) }}</span>
+    @if (view.resident.address.purokOrSitio; as purok) {
+      <span class="residents__sub">{{ purok }}</span>
+    }
+  </span>
+</ng-template>
+
+<!-- Where the record stands with the residents' app, in words; the tint repeats it (DL-232). -->
+<ng-template #appCell let-view>
+  @if (view.registry; as registry) {
+    <app-status-badge [catalog]="appCatalog" [status]="appStanding(registry.appAccount)" />
+  } @else {
+    <span class="residents__none">{{ copy.notSent }}</span>
+  }
 </ng-template>
 
 <ng-template #sectorsCell let-view>

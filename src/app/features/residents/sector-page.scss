@@ -1,29 +1,11 @@
-// The sector mock-ups (SectorSeniors, SectorPWD, SectorSoloParents): the figures and the needs
-// attention panels side by side, then the list across the page. Layout only; the registry's own
-// rules come from resident-list-page.scss.
+// The sector mock-ups (SectorSeniors, SectorPWD, SectorSoloParents): the sector's figures, then
+// the list across the page (DL-232). Layout only; the registry's own rules come from
+// resident-list-page.scss.
 
 .sector {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
-  align-items: start;
-  gap: var(--space-4);
-}
-
-.sector__list {
-  grid-column: 1 / -1;
-}
-
-.sector__gaps {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
-  gap: var(--space-3) var(--space-4);
-}
-
-.sector__gap {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-4);
 }
 
 /* The search hint and the order note are two lines, not two ends of one row. */

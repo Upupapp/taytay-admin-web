@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 
 import { SessionStore } from '@core/auth/session.store';
 import {
+  RESIDENT_IMPORT_REPOSITORY,
+  UNSERVED_PORTS,
   asIsoDate,
   asIsoDateTime,
   RESIDENT_REPOSITORY,
@@ -49,7 +51,14 @@ const SUMMARY: ResidentSummary = {
     previousFrom: asIsoDate('2026-10-01'),
     previousTo: asIsoDate('2026-10-31'),
   },
-  residents: { current: 120, previous: 100 },
+  residents: {
+    current: 120,
+    previous: 100,
+    byMonth: [
+      { month: '2026-10', figure: { value: 100, withheld: false } },
+      { month: '2026-11', figure: { value: 120, withheld: false } },
+    ],
+  },
   registered: { current: { value: null, withheld: true }, previous: { value: 9, withheld: false } },
   byBarangay: series(
     'by-barangay',
@@ -70,6 +79,23 @@ const SUMMARY: ResidentSummary = {
     [{ key: 'senior.female', label: 'Seniors, female', value: 18 }],
     18,
   ),
+  totalBySex: { female: 18, male: 0 },
+  funnel: {
+    onRegistry: 120,
+    onApp: { value: 40, withheld: false },
+    verified: { value: 20, withheld: false },
+    activeIds: { value: null, withheld: true },
+  },
+  thisMonth: {
+    month: '2026-11',
+    turning60: { value: 6, withheld: false },
+    turning18: { value: null, withheld: true },
+    soloParentIdsDue: { value: 0, withheld: false },
+    pwdIdsExpiring: { value: 0, withheld: false },
+  },
+  coverage: null,
+  attention: null,
+  byDisabilityType: null,
   recordsToTidy: [
     { key: 'missing-contact', count: 7, basis: 'No mobile and no email.', lastRunAt: null },
     { key: 'possible-duplicates', count: null, basis: 'Name and birth date.', lastRunAt: null },
@@ -98,6 +124,11 @@ function configure(
       {
         provide: SessionStore,
         useValue: { user: signal(null), permissions: signal(new Set<Permission>(granted)) },
+      },
+      { provide: UNSERVED_PORTS, useValue: [] },
+      {
+        provide: RESIDENT_IMPORT_REPOSITORY,
+        useValue: { list: () => of({ items: [], hasMore: false, nextCursor: null }) },
       },
     ],
   });

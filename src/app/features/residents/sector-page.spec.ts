@@ -166,12 +166,24 @@ describe('a sector page', () => {
     expect(element.querySelector('h1')?.textContent).toContain(
       SECTOR_PAGES['senior-citizen'].title,
     );
-    expect(element.querySelectorAll('tbody tr').length).toBeGreaterThan(0);
-    const headers = Array.from(element.querySelectorAll('thead th')).map((th) =>
+    // The list's own table, not the figures' tables above it (DL-232).
+    const list = element.querySelector('.sector__list') ?? element;
+    expect(list.querySelectorAll('tbody tr').length).toBeGreaterThan(0);
+    const headers = Array.from(list.querySelectorAll('thead th')).map((th) =>
       th.textContent?.trim(),
     );
-    expect(headers.slice(0, 5)).toEqual(['Resident', 'Barangay', 'Age', 'Sectors', 'Status']);
-    for (const row of Array.from(element.querySelectorAll('tbody tr'))) {
+    // The registry's columns, with the sector's own card and the app's after the age (DL-232).
+    expect(headers.slice(0, 8)).toEqual([
+      'Resident',
+      'Barangay',
+      'Age',
+      'Senior Citizen ID',
+      'Social pension',
+      'App and Digital ID',
+      'Sectors',
+      'Status',
+    ]);
+    for (const row of Array.from(list.querySelectorAll('tbody tr'))) {
       expect(row.textContent).toContain('Senior citizen');
     }
   });
@@ -196,16 +208,22 @@ describe('a sector page', () => {
     expect(current.map((tab) => tab.textContent?.trim())).toEqual(['Solo parents']);
   });
 
-  it('names the figures the API does not send, in their own panels', async () => {
+  it('draws the figures the API sends above the list (DL-232)', async () => {
     const element = html((await open('intake-officer', 'senior-citizen')).fixture);
+    const headings = Array.from(element.querySelectorAll('app-sector-figures h2')).map((heading) =>
+      heading.textContent?.trim(),
+    );
+    expect(headings).toEqual(['By barangay', 'Age bands', 'Benefits and IDs', 'Needs attention']);
+    expect(element.querySelectorAll('app-sector-figures .sector-figures__kpi').length).toBe(4);
+    expect(element.querySelector('app-not-connected')).toBeNull();
+  });
+
+  it('names the one figure nothing records: the children in a solo parent’s care', async () => {
+    const element = html((await open('intake-officer', 'solo-parent')).fixture);
     const notes = Array.from(element.querySelectorAll('app-not-connected [role="note"]')).map(
       (note) => note.textContent?.trim(),
     );
-    expect(notes).toEqual([
-      notSentSentence('sector-counts'),
-      notSentSentence('sector-attention'),
-      notSentSentence('sector-fields'),
-    ]);
+    expect(notes).toEqual([notSentSentence('children-in-care')]);
   });
 
   it('says the sector is empty, apart from a search with no match', async () => {

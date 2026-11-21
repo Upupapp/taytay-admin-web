@@ -170,3 +170,29 @@
   font-size: var(--fs-label);
   font-weight: var(--fw-semibold);
 }
+
+/* Female and male under the pyramid, taken before suppression (DL-232). */
+.overview-sexes {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.overview-sexes__total {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  border-radius: var(--r-lg);
+  background: var(--soft2);
+  color: var(--text2);
+  font-size: var(--fs-sm);
+}
+
+.overview-sexes__total b {
+  font-family: var(--font-display);
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-medium);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}

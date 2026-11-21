@@ -167,9 +167,13 @@
       }
     </section>
 
-    <!-- The board's breakdowns, four columns each; its 12-month line, registry-to-ID funnel, "This
-       month" and recent imports wait on the API (docs/design/admin/DATA-GAPS.md). -->
+    <!-- The board's rows: the 12-month line beside the barangays; the funnel, sectors and age and
+       sex; this month across; records to tidy beside recent imports (DL-232). -->
     <div class="overview-grid">
+      <section class="overview-panel overview-panel--growth" aria-labelledby="registry-growth">
+        <app-registry-growth [months]="summary.residents.byMonth" />
+      </section>
+
       <section class="overview-panel overview-panel--third" aria-labelledby="overview-barangay">
         <h2 id="overview-barangay" class="overview-panel__title">{{ copy.byBarangay }}</h2>
         <app-chart-table
@@ -184,6 +188,10 @@
         @if (summary.byBarangay.suppressionNotice; as notice) {
           <p class="overview-panel__note">{{ notice }}</p>
         }
+      </section>
+
+      <section class="overview-panel overview-panel--third" aria-labelledby="registry-funnel">
+        <app-registry-funnel [funnel]="summary.funnel" [showLink]="opensCards()" />
       </section>
 
       <section class="overview-panel overview-panel--third" aria-labelledby="overview-sector">
@@ -293,12 +301,26 @@
             [rows]="ageSexRows(summary.byAgeSex)"
           />
         }
+        <!-- Taken before suppression, like the series total, and said so (DL-105). -->
+        <div class="overview-sexes">
+          <span class="overview-sexes__total">
+            <b>{{ summary.totalBySex.female }}</b>{{ panels.femaleTotal }}
+          </span>
+          <span class="overview-sexes__total">
+            <b>{{ summary.totalBySex.male }}</b>{{ panels.maleTotal }}
+          </span>
+        </div>
         <p class="overview-panel__note">
-          {{ copy.total(summary.byAgeSex.total) }} {{ copy.byAgeSexNote }}
+          {{ copy.total(summary.byAgeSex.total) }} {{ panels.sexTotalsNote }}
+          {{ copy.byAgeSexNote }}
         </p>
         @if (summary.byAgeSex.suppressionNotice; as notice) {
           <p class="overview-panel__note">{{ notice }}</p>
         }
+      </section>
+
+      <section class="overview-panel overview-panel--month" aria-labelledby="registry-this-month">
+        <app-registry-this-month [thisMonth]="summary.thisMonth" />
       </section>
 
       <!-- Conditions of the records, counted: never a list of who (DL-98, DL-103). -->
@@ -332,6 +354,25 @@
           }
         </ul>
       </section>
+
+      @if (servesImports) {
+        <section
+          class="overview-panel overview-panel--imports"
+          aria-labelledby="registry-imports"
+          *appHasPermission="'resident.import'"
+        >
+          <app-recent-imports />
+        </section>
+      } @else {
+        <section
+          class="overview-panel overview-panel--imports"
+          aria-labelledby="registry-imports-gap"
+          *appHasPermission="'resident.import'"
+        >
+          <h2 id="registry-imports-gap" class="overview-panel__title">{{ panels.importsHeading }}</h2>
+          <app-not-connected port="resident-import" />
+        </section>
+      }
 
       <aside
         class="overview-panel overview-panel--disclosure"

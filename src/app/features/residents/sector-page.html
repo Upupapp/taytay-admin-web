@@ -29,23 +29,8 @@
 </nav>
 
 <div class="sector">
-  <!-- What the API does not send yet, named once in one compact row above the list, each under
-       the heading of the panel it would be (DL-175), rather than two cards and a third note that
-       pushed the list below the fold (DL-227, pass 2). -->
-  <div class="card card--padded sector__gaps">
-    <section class="sector__gap" aria-labelledby="sector-figures-heading">
-      <h2 class="eyebrow" id="sector-figures-heading">{{ copy.figuresHeading }}</h2>
-      <app-not-connected figure="sector-counts" />
-    </section>
-    <section class="sector__gap" aria-labelledby="sector-attention-heading">
-      <h2 class="eyebrow" id="sector-attention-heading">{{ copy.attentionHeading }}</h2>
-      <app-not-connected figure="sector-attention" />
-    </section>
-    <section class="sector__gap" aria-labelledby="sector-fields-heading">
-      <h2 class="eyebrow" id="sector-fields-heading">{{ copy.fieldsHeading }}</h2>
-      <app-not-connected figure="sector-fields" />
-    </section>
-  </div>
+  <!-- The sector's figures, under the same barangay as the list (DL-232). -->
+  <app-sector-figures [sector]="sector()" [barangayId]="filter().barangayId" />
 
   <section
     class="card card--panel card--padded stack residents sector__list"
@@ -169,6 +154,15 @@
     <span class="residents__dot" aria-hidden="true"></span>
     {{ view.resident.isActive ? listCopy.active : listCopy.retired }}
   </span>
+</ng-template>
+
+<!-- Where the record stands with the residents' app, in words; the tint repeats it (DL-232). -->
+<ng-template #appCell let-view>
+  @if (view.registry; as registry) {
+    <app-status-badge [catalog]="appCatalog" [status]="appStanding(registry.appAccount)" />
+  } @else {
+    <span class="residents__none">{{ listCopy.notSent }}</span>
+  }
 </ng-template>
 
 <ng-template #endCell let-view>

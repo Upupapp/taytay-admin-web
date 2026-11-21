@@ -1,0 +1,286 @@
+/* The insides of the registry panels the citizens' boards draw (DL-232). The page that places a
+   panel owns its box (padding, radius, background) and its span; these are its contents. */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-inline-size: 0;
+  block-size: 100%;
+}
+
+.registry-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.registry-panel__title {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-section);
+  font-weight: var(--fw-bold);
+}
+
+.registry-panel__aside,
+.registry-panel__note {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.registry-panel__link {
+  color: var(--link);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-semibold);
+}
+
+.registry-growth__chart {
+  flex: 1 1 auto;
+}
+
+/* ── The funnel: four steps, each narrower, centred ──────────────────────── */
+.registry-funnel {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.registry-funnel__step {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-block-size: 46px;
+  padding: 0 var(--space-4);
+  border-radius: var(--r-tile);
+  color: var(--on-primary);
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
+}
+
+.registry-funnel__step b {
+  font-family: var(--font-display);
+  font-size: var(--fs-title-sm);
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.registry-funnel__step--0 {
+  inline-size: 100%;
+  background: var(--primary);
+}
+
+.registry-funnel__step--1 {
+  inline-size: 88%;
+  background: var(--bar);
+}
+
+.registry-funnel__step--2 {
+  inline-size: 76%;
+  background: var(--sky);
+}
+
+.registry-funnel__step--3 {
+  inline-size: 64%;
+  background: var(--gold);
+  color: var(--navy);
+}
+
+/* ── This month: the heading beside four figures ─────────────────────────── */
+.registry-month {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-6);
+}
+
+.registry-month__title {
+  flex: 0 0 auto;
+}
+
+.registry-month__list {
+  flex: 1 1 600px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.registry-month__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 14px;
+  border-radius: var(--r-tile);
+  background: var(--soft2);
+}
+
+.registry-month__figure,
+.sector-attention__figure {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: var(--fw-medium);
+  line-height: 1.05;
+  letter-spacing: var(--ls-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.registry-month__label {
+  color: var(--text2);
+  font-size: var(--fs-label);
+  line-height: 1.35;
+}
+
+/* ── Recent imports ──────────────────────────────────────────────────────── */
+.registry-imports {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.registry-imports__item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--line);
+}
+
+.registry-imports__tile,
+.sector-attention__tile {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  inline-size: var(--tile-sm);
+  block-size: var(--tile-sm);
+  border-radius: var(--r-md);
+  background: var(--soft);
+  color: var(--ink);
+}
+
+.registry-imports__words {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.registry-imports__name,
+.sector-attention__label {
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  overflow-wrap: anywhere;
+}
+
+.registry-imports__meta,
+.registry-imports__source,
+.registry-imports__other,
+.sector-attention__basis {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.registry-imports__outcome {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  color: var(--text2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  text-align: end;
+}
+
+/* ── A sector's needs-attention counts ───────────────────────────────────── */
+.sector-attention {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 14px;
+}
+
+/* A card each, as the sector boards draw them: tile and figure, then what it counts and how. */
+.sector-attention__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--r-xl);
+  background: var(--soft2);
+}
+
+.sector-attention__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* ── A sector's benefits and IDs ─────────────────────────────────────────── */
+.sector-coverage {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sector-coverage__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  color: var(--text2);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.sector-coverage__track {
+  block-size: 8px;
+  border-radius: var(--r-pill);
+  background: var(--soft);
+  overflow: hidden;
+}
+
+.sector-coverage__track i {
+  display: block;
+  block-size: 100%;
+  border-radius: var(--r-pill);
+  background: var(--bar);
+}
+
+.sector-coverage__figure {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (width <= 1100px) {
+  .registry-month__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (width <= 700px) {
+  .registry-month__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

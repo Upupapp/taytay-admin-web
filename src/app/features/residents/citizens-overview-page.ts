@@ -12,6 +12,8 @@ import { map, switchMap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { SessionStore } from '@core/auth/session.store';
+import { NotConnected } from '@core/access/not-connected';
+import { ServedPorts } from '@core/access/served-ports';
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
 import {
@@ -47,6 +49,13 @@ import { Icon } from '@shared/ui/icon/icon';
 import type { IconName } from '@shared/ui/icon/icons';
 
 import { CITIZENS_OVERVIEW_COPY } from './citizens-overview.copy';
+import { RecentImports } from './recent-imports';
+import {
+  RegistryFunnelPanel,
+  RegistryGrowth,
+  RegistryThisMonthPanel,
+} from './registry-panels';
+import { REGISTRY_PANELS_COPY } from './registry-panels.copy';
 
 /** An ISO 8601 date-time inside a sentence the API wrote. */
 const ISO_TIMESTAMP = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})/g;
@@ -83,9 +92,17 @@ const HEADLINE_TILES: Readonly<Record<string, { icon: IconName; tone: string }>>
   'senior-citizen': { icon: 'senior', tone: 'navy' },
   pwd: { icon: 'accessible', tone: 'sky' },
   'solo-parent': { icon: 'soloParent', tone: 'gold' },
+  'on-app': { icon: 'phone', tone: 'green' },
+  'active-ids': { icon: 'idCard', tone: 'red' },
 };
 
-export const CITIZENS_OVERVIEW_TOPICS: readonly LiveTopic[] = ['residents', 'beneficiaries'];
+/** The registry, its duplicates, and — for the funnel and the app tiles — app verification and cards. */
+export const CITIZENS_OVERVIEW_TOPICS: readonly LiveTopic[] = [
+  'residents',
+  'beneficiaries',
+  'verification',
+  'digital-ids',
+];
 
 interface Headline {
   readonly key: string;
@@ -116,7 +133,18 @@ interface Headline {
 @Component({
   selector: 'app-citizens-overview-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, ChartTable, HasPermissionDirective, Icon, RouterLink],
+  imports: [
+    AsyncContent,
+    ChartTable,
+    HasPermissionDirective,
+    Icon,
+    NotConnected,
+    RecentImports,
+    RegistryFunnelPanel,
+    RegistryGrowth,
+    RegistryThisMonthPanel,
+    RouterLink,
+  ],
   templateUrl: './citizens-overview-page.html',
   styleUrls: ['./citizens-overview-page.scss', './citizens-overview-panels.scss'],
 })
@@ -129,6 +157,7 @@ export class CitizensOverviewPage {
   private readonly live = inject(LiveUpdates);
 
   protected readonly copy = CITIZENS_OVERVIEW_COPY;
+  protected readonly panels = REGISTRY_PANELS_COPY;
   protected readonly barangays = TAYTAY_BARANGAYS;
   protected readonly ageGroups = RESIDENT_AGE_GROUPS;
   protected readonly sexes = SEXES;
@@ -164,6 +193,16 @@ export class CitizensOverviewPage {
   );
 
   protected readonly filtered = computed(() => isResidentSummaryFiltered(this.filter()));
+
+  /** The recent imports panel reads the import list, which only some adapter sets serve. */
+  protected readonly servesImports = inject(ServedPorts).serves('resident-import');
+
+  /** The funnel links to the card list only for a reader its route lets in (rule 8). */
+  protected readonly opensCards = computed(
+    () =>
+      this.session.permissions().has('digital-id.verify') ||
+      this.session.permissions().has('digital-id.manage'),
+  );
 
   /** The registry's own parameters for this filter: what every link adds its row to. */
   private readonly base = computed(() =>
@@ -206,6 +245,32 @@ export class CitizensOverviewPage {
         figures.push(this.sectorHeadline(sector, row));
       }
     }
+    // The app and its cards under the same filter (DL-232). Neither keeps its state at an earlier
+    // instant, so neither has a previous period to compare with (backend ADR 0006).
+    const { onApp, verified, activeIds } = summary.funnel;
+    figures.push(
+      {
+        key: 'on-app',
+        label: this.panels.funnelSteps.onApp,
+        hint:
+          verified.value === null
+            ? this.copy.appVerifiedWithheld
+            : this.copy.appVerified(verified.value),
+        value: onApp.value,
+        delta: null,
+        compared: false,
+        link: null,
+      },
+      {
+        key: 'active-ids',
+        label: this.panels.funnelSteps.activeIds,
+        hint: this.copy.activeIdsHint,
+        value: activeIds.value,
+        delta: null,
+        compared: false,
+        link: null,
+      },
+    );
     return figures;
   }
 

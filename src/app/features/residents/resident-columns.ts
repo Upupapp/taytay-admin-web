@@ -3,18 +3,22 @@ import type { TemplateRef } from '@angular/core';
 import {
   ageInYears,
   barangayName,
+  type ResidentSectorDetail,
   type ResidentView,
   type VulnerabilitySector,
 } from '@domain/index';
+import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 
-import type { RESIDENTS_COPY } from './residents.copy';
+import type { RESIDENTS_COPY, SectorPageSector } from './residents.copy';
 
 type Cell = TemplateRef<{ $implicit: ResidentView }>;
 
 /**
  * The registry's columns, defined once: the registry and each sector page list the same people the
- * same way (`DL-210`), so a sector page cannot drift into showing a field the registry does not.
+ * same way (`DL-210`). Since the API sends them (`DL-232`), the registry adds its app, household
+ * and updated columns (`registryColumns`), and a sector page adds the two of its own card it is
+ * about (`sectorCardColumns`) — each read from what the server sent, already redacted.
  */
 export function residentColumns(
   copy: (typeof RESIDENTS_COPY)['list'],
@@ -59,4 +63,90 @@ const SECTOR_CHIP: Partial<Record<VulnerabilitySector, string>> = {
 
 export function sectorChipClass(sector: VulnerabilitySector): string {
   return SECTOR_CHIP[sector] ?? 'chip';
+}
+
+type ListCopy = (typeof RESIDENTS_COPY)['list'];
+
+/** The registry board's columns after the sectors: app and Digital ID, household, updated. */
+export function registryColumns(
+  copy: ListCopy,
+  cells: { readonly app: Cell },
+): readonly TableColumn<ResidentView>[] {
+  return [
+    appColumn(copy, cells.app),
+    {
+      key: 'household',
+      header: copy.columnHousehold,
+      value: (view) => {
+        const registry = view.registry;
+        if (registry === undefined) return copy.notSent;
+        if (registry.householdWithheld) return copy.withheld;
+        return registry.householdReference ?? copy.householdNone;
+      },
+    },
+    {
+      key: 'updated',
+      header: copy.columnUpdated,
+      value: (view) => formatDisplayDate(view.resident.audit.updatedAt) ?? copy.notSent,
+    },
+  ];
+}
+
+/** "App and Digital ID": the standing the row's app facts say (`DL-232`). */
+export function appColumn(copy: ListCopy, cell: Cell): TableColumn<ResidentView> {
+  return { key: 'app', header: copy.columnApp, cell };
+}
+
+/** A sector page's own two columns: its card's number, and what the board shows beside it. */
+export function sectorCardColumns(
+  sector: SectorPageSector,
+  copy: ListCopy,
+): readonly TableColumn<ResidentView>[] {
+  const words = copy.sectorColumns[sector];
+  const detail = (view: ResidentView): ResidentSectorDetail | null | undefined =>
+    view.registry === undefined
+      ? undefined
+      : (view.registry.sectorDetails.find((entry) => entry.sector === sector) ?? null);
+  const withheldOr = (entry: ResidentSectorDetail | null | undefined, shown: string | null) =>
+    entry === undefined
+      ? copy.notSent
+      : entry === null
+        ? copy.notRecorded
+        : shown !== null
+          ? shown
+          : entry.detailsWithheld
+            ? copy.withheld
+            : null;
+  return [
+    {
+      key: 'card',
+      header: words.id,
+      value: (view) => {
+        const entry = detail(view);
+        return withheldOr(entry, entry?.idNumber ?? null) ?? copy.cardNone;
+      },
+    },
+    {
+      key: 'card-second',
+      header: words.second,
+      value: (view) => {
+        const entry = detail(view);
+        switch (sector) {
+          case 'senior-citizen': {
+            const pension = entry?.socialPension ?? null;
+            return (
+              withheldOr(entry, pension === null ? null : pension ? copy.yes : copy.no) ??
+              copy.notRecorded
+            );
+          }
+          case 'pwd':
+            return withheldOr(entry, entry?.disabilityType ?? null) ?? copy.notRecorded;
+          case 'solo-parent':
+            return (
+              withheldOr(entry, formatDisplayDate(entry?.validUntil ?? null)) ?? copy.notRecorded
+            );
+        }
+      },
+    },
+  ];
 }
