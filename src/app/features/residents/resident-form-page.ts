@@ -44,7 +44,7 @@ import { debouncedTerm } from '@shared/state/debounced';
 import { failureReason } from '@shared/state/failure-reason';
 import { IDLE, LOADING, valueOf, toViewState, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
-import { PageHeader } from '@shared/ui/page-header/page-header';
+import { Icon } from '@shared/ui/icon/icon';
 
 import { RESIDENTS_COPY } from './residents.copy';
 
@@ -110,7 +110,7 @@ const BLANK: FormModel = {
 @Component({
   selector: 'app-resident-form-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, PageHeader, PersonNamePipe, RouterLink],
+  imports: [AsyncContent, Icon, PersonNamePipe, RouterLink],
   templateUrl: './resident-form-page.html',
   styleUrl: './resident-form-page.scss',
 })

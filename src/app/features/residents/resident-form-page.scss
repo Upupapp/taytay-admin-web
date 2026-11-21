@@ -1,4 +1,53 @@
-// ResidentRegister mock-up as a page: one panel, two columns of bordered fieldsets, a footer.
+// ResidentRegister board as a page: one panel — its head (icon tile, title, lead), then two
+// columns of bordered fieldsets and a footer, each band split by a hairline.
+
+.register {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.register__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px var(--space-5);
+  border-block-end: 1px solid var(--soft);
+}
+
+.register__icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--tile-md);
+  block-size: var(--tile-md);
+  border-radius: var(--r-lg);
+  background: var(--gold-tint);
+  color: var(--gold-ink);
+}
+
+.register__text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+}
+
+.register__title {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: var(--fw-medium);
+  letter-spacing: -0.01em;
+}
+
+.register__lead {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
 
 .form {
   display: flex;
@@ -122,6 +171,7 @@
   align-items: flex-start;
   gap: var(--space-3);
   max-inline-size: 640px;
+  padding: 20px var(--space-5) var(--space-5);
 }
 
 .form__blocked-body {
