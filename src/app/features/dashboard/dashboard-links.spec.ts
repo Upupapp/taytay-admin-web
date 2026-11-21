@@ -190,7 +190,13 @@ describe('a dashboard figure’s narrowing reaches the request its list sends (D
       );
       const request = http.expectOne((r) => r.url === `${BASE}/admin/users`);
       expect(request.request.params.get('verification_status')).toBe(status);
-      request.flush(EMPTY_PAGE);
+      request.flush({
+        ...EMPTY_PAGE,
+        meta: {
+          ...EMPTY_PAGE.meta,
+          counts: { residents: 0, verified: 0, staff: 0, admins: 0, staff_without_office: 0 },
+        },
+      });
       await page;
     }
   });

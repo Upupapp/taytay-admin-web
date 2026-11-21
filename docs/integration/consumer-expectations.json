@@ -89,6 +89,13 @@
       "optional": []
     },
     {
+      "method": "GET",
+      "path": "admin/digital-ids",
+      "consumer": "digital-id.mapper.ts#toDigitalIdFunnel",
+      "required": [],
+      "optional": []
+    },
+    {
       "method": "POST",
       "path": "admin/digital-ids/{id}/reissue",
       "consumer": "digital-id.mapper.ts#toDigitalIdCard",
@@ -959,6 +966,13 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "admin/users",
+      "consumer": "app-account.mapper.ts#toAppAccountCounts",
+      "required": [],
+      "optional": []
+    },
+    {
       "method": "POST",
       "path": "admin/users/{id}/card-photos",
       "consumer": "digital-id.mapper.ts#toCardPhoto",
@@ -984,6 +998,17 @@
       "optional": []
     },
     {
+      "method": "GET",
+      "path": "admin/users/{id}/digital-id",
+      "consumer": "digital-id.mapper.ts#toDigitalIdCardRecord",
+      "required": [],
+      "optional": [
+        "checks_count",
+        "holder",
+        "photo_source"
+      ]
+    },
+    {
       "method": "POST",
       "path": "admin/users/{id}/digital-id",
       "consumer": "digital-id.mapper.ts#toDigitalIdCard",
@@ -996,6 +1021,20 @@
         "status"
       ],
       "optional": []
+    },
+    {
+      "method": "GET",
+      "path": "admin/users/{id}/digital-id/events",
+      "consumer": "digital-id.mapper.ts#toDigitalIdEvent",
+      "required": [
+        "action",
+        "card_id",
+        "created_at",
+        "id"
+      ],
+      "optional": [
+        "actor"
+      ]
     },
     {
       "method": "POST",
@@ -1095,6 +1134,13 @@
         "reviewed_at",
         "selfie_erased_at"
       ]
+    },
+    {
+      "method": "GET",
+      "path": "admin/verification-requests",
+      "consumer": "verification.mapper.ts#toVerificationQueueStats",
+      "required": [],
+      "optional": []
     },
     {
       "method": "POST",
@@ -3198,6 +3244,7 @@
       "consumer": "resident-import.mapper.ts#toResidentImportSummary",
       "required": [],
       "optional": [
+        "barangay_id",
         "committed_at",
         "committed_by",
         "created_at",
@@ -3207,6 +3254,7 @@
         "kind",
         "result",
         "row_count",
+        "source",
         "status"
       ]
     },
@@ -3216,6 +3264,7 @@
       "consumer": "resident-import.mapper.ts#toResidentImportSummary",
       "required": [],
       "optional": [
+        "barangay_id",
         "committed_at",
         "committed_by",
         "created_at",
@@ -3225,6 +3274,7 @@
         "kind",
         "result",
         "row_count",
+        "source",
         "status"
       ]
     },
@@ -3250,6 +3300,7 @@
       "consumer": "resident-import.mapper.ts#toResidentImportSummary",
       "required": [],
       "optional": [
+        "barangay_id",
         "committed_at",
         "committed_by",
         "created_at",
@@ -3259,6 +3310,7 @@
         "kind",
         "result",
         "row_count",
+        "source",
         "status"
       ]
     },
@@ -4029,48 +4081,44 @@
       "method": "GET",
       "path": "office/residents",
       "consumer": "resident.mapper.ts#toResidentView",
-      "required": [
-        "withheld"
-      ],
+      "required": [],
       "optional": [
         "given_name_masked",
-        "is_protected"
+        "is_protected",
+        "withheld"
       ]
     },
     {
       "method": "POST",
       "path": "office/residents",
       "consumer": "resident.mapper.ts#toResidentView",
-      "required": [
-        "withheld"
-      ],
+      "required": [],
       "optional": [
         "given_name_masked",
-        "is_protected"
+        "is_protected",
+        "withheld"
       ]
     },
     {
       "method": "GET",
       "path": "office/residents/{id}",
       "consumer": "resident.mapper.ts#toResidentView",
-      "required": [
-        "withheld"
-      ],
+      "required": [],
       "optional": [
         "given_name_masked",
-        "is_protected"
+        "is_protected",
+        "withheld"
       ]
     },
     {
       "method": "PATCH",
       "path": "office/residents/{id}",
       "consumer": "resident.mapper.ts#toResidentView",
-      "required": [
-        "withheld"
-      ],
+      "required": [],
       "optional": [
         "given_name_masked",
-        "is_protected"
+        "is_protected",
+        "withheld"
       ]
     },
     {
@@ -4087,12 +4135,11 @@
       "method": "POST",
       "path": "office/residents/{id}/deactivate",
       "consumer": "resident.mapper.ts#toResidentView",
-      "required": [
-        "withheld"
-      ],
+      "required": [],
       "optional": [
         "given_name_masked",
-        "is_protected"
+        "is_protected",
+        "withheld"
       ]
     },
     {
@@ -4113,12 +4160,11 @@
       "method": "POST",
       "path": "office/residents/{id}/reactivate",
       "consumer": "resident.mapper.ts#toResidentView",
-      "required": [
-        "withheld"
-      ],
+      "required": [],
       "optional": [
         "given_name_masked",
-        "is_protected"
+        "is_protected",
+        "withheld"
       ]
     },
     {
@@ -4185,24 +4231,22 @@
       "method": "POST",
       "path": "office/residents/{id}/sectors",
       "consumer": "resident.mapper.ts#toResidentView",
-      "required": [
-        "withheld"
-      ],
+      "required": [],
       "optional": [
         "given_name_masked",
-        "is_protected"
+        "is_protected",
+        "withheld"
       ]
     },
     {
       "method": "POST",
       "path": "office/residents/{id}/sectors/{sector}/end",
       "consumer": "resident.mapper.ts#toResidentView",
-      "required": [
-        "withheld"
-      ],
+      "required": [],
       "optional": [
         "given_name_masked",
-        "is_protected"
+        "is_protected",
+        "withheld"
       ]
     },
     {
@@ -4212,14 +4256,19 @@
       "required": [],
       "optional": [
         "as_of",
+        "attention",
         "by_age_sex",
         "by_barangay",
+        "by_disability_type",
         "by_sector",
+        "coverage",
         "disclosure",
+        "funnel",
         "period",
         "records_to_tidy",
         "registered",
-        "residents"
+        "residents",
+        "this_month"
       ]
     },
     {
@@ -4598,6 +4647,13 @@
       "optional": [
         "last_message_at"
       ]
+    },
+    {
+      "method": "GET",
+      "path": "threads",
+      "consumer": "office-thread.mapper.ts#toInboxCounts",
+      "required": [],
+      "optional": []
     },
     {
       "method": "GET",

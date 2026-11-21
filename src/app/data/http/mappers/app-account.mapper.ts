@@ -3,13 +3,14 @@ import {
   STAFF_ROLES,
   type AccountBarangay,
   type AppAccount,
+  type AppAccountCounts,
   type AppAccountId,
   type BarangayId,
   type OfficeId,
   type OfficeRoleChange,
 } from '@domain/index';
 
-import { field, id, oneOf, str } from './wire';
+import { field, id, int, oneOf, str } from './wire';
 
 /**
  * `UserListItem` → `AppAccount` (`DL-168`).
@@ -94,4 +95,29 @@ export function toAccountBarangay(wire: unknown): AccountBarangay | null {
   const barangayId = id<BarangayId>(field(wire, 'id'));
   const name = str(field(wire, 'name'));
   return barangayId === null || name === null ? null : { id: barangayId, name };
+}
+
+/**
+ * `meta.counts` beside the account list (`DL-232`): open accounts by kind, whole. Every figure is
+ * required; none is the number of rows in the page.
+ *
+ * @consumes GET admin/users
+ */
+export function toAppAccountCounts(meta: unknown): AppAccountCounts | null {
+  const counts = field(meta, 'counts');
+  const residents = int(field(counts, 'residents'));
+  const verified = int(field(counts, 'verified'));
+  const staff = int(field(counts, 'staff'));
+  const admins = int(field(counts, 'admins'));
+  const staffWithoutOffice = int(field(counts, 'staff_without_office'));
+  if (
+    residents === null ||
+    verified === null ||
+    staff === null ||
+    admins === null ||
+    staffWithoutOffice === null
+  ) {
+    return null;
+  }
+  return { residents, verified, staff, admins, staffWithoutOffice };
 }

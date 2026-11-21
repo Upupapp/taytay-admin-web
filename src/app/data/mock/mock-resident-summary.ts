@@ -22,8 +22,13 @@ import {
   type Resident,
   type ResidentSummary,
   type ResidentSummaryFilter,
+  type SectorAttention,
+  type SectorCoverage,
   type SummaryFigure,
 } from '@domain/index';
+
+import { mockAppLinkOf, mockSectorDetailsOf } from './mock-registry-facts';
+import { demoMonthEnds, demoNow, manilaDay } from './mock-time-series';
 
 /**
  * The Citizens overview counted over the mock registry, the way the API's `summary.ts` counts it
@@ -71,6 +76,13 @@ export function mockResidentSummary(
       current: active.length,
       previous: active.filter((resident) => new Date(resident.audit.createdAt) < period.from)
         .length,
+      // The registry at each month's end, ended on the demo's today (see mock-time-series).
+      byMonth: demoMonthEnds(12).map((end) => ({
+        month: end.slice(0, 7),
+        figure: figure(
+          active.filter((resident) => manilaDay(resident.audit.createdAt) <= end).length,
+        ),
+      })),
     },
     registered: {
       current: figure(createdBetween(period.from, now)),
@@ -110,6 +122,32 @@ export function mockResidentSummary(
         })),
       ),
     ),
+    totalBySex: {
+      female: active.filter((resident) => resident.sex === 'female').length,
+      male: active.filter((resident) => resident.sex === 'male').length,
+    },
+    funnel: {
+      onRegistry: active.length,
+      onApp: figure(active.filter((resident) => mockAppLinkOf(resident) !== null).length),
+      verified: figure(
+        active.filter((resident) => mockAppLinkOf(resident)?.verified === true).length,
+      ),
+      activeIds: figure(
+        active.filter((resident) => mockAppLinkOf(resident)?.cardStatus === 'active').length,
+      ),
+    },
+    thisMonth: thisMonthOf(active),
+    coverage: coverageOf(active, filter.sector),
+    attention: attentionOf(active, filter.sector),
+    byDisabilityType:
+      filter.sector === 'pwd'
+        ? series(
+            'by-disability-type',
+            'Persons with disability by type of disability',
+            'Type of disability',
+            disabilityRows(active),
+          )
+        : null,
     recordsToTidy: [
       {
         key: 'missing-contact',
@@ -133,6 +171,124 @@ export function mockResidentSummary(
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The sectors whose cards and benefits the sector pages count (backend ADR 0006). */
+const CARDED = ['senior-citizen', 'pwd', 'solo-parent'] as const;
+type CardedSector = (typeof CARDED)[number];
+
+function isCarded(sector: ResidentSummaryFilter['sector']): sector is CardedSector {
+  return CARDED.some((carded) => carded === sector);
+}
+
+/** The demo's month, as the API's `this_month` counts it, on the demo's today. */
+function thisMonthOf(active: readonly Resident[]): ResidentSummary['thisMonth'] {
+  const today = manilaDay(demoNow());
+  const year = Number(today.slice(0, 4));
+  const month = today.slice(5, 7);
+  const turning = (age: number) =>
+    active.filter(
+      (resident) =>
+        resident.birthDate.slice(5, 7) === month &&
+        Number(resident.birthDate.slice(0, 4)) === year - age,
+    ).length;
+  const ending = (sector: CardedSector) =>
+    active.filter((resident) =>
+      mockSectorDetailsOf(resident, true).some(
+        (detail) =>
+          detail.sector === sector && detail.validUntil?.slice(0, 7) === today.slice(0, 7),
+      ),
+    ).length;
+  return {
+    month: today.slice(0, 7),
+    turning60: figure(turning(60)),
+    turning18: figure(turning(18)),
+    soloParentIdsDue: figure(ending('solo-parent')),
+    pwdIdsExpiring: figure(ending('pwd')),
+  };
+}
+
+function coverageOf(
+  active: readonly Resident[],
+  sector: ResidentSummaryFilter['sector'],
+): SectorCoverage | null {
+  if (!isCarded(sector)) return null;
+  const details = active.map((resident) =>
+    mockSectorDetailsOf(resident, true).find((detail) => detail.sector === sector),
+  );
+  return {
+    sectorIdOnFile: figure(details.filter((detail) => (detail?.idNumber ?? null) !== null).length),
+    socialPension:
+      sector === 'senior-citizen'
+        ? figure(details.filter((detail) => detail?.socialPension === true).length)
+        : null,
+    appAccounts: figure(active.filter((resident) => mockAppLinkOf(resident) !== null).length),
+    digitalIds: figure(
+      active.filter((resident) => mockAppLinkOf(resident)?.cardStatus === 'active').length,
+    ),
+  };
+}
+
+/** The milestone birthdays RA 11982 marks with a cash gift (checked against its text, DL-232). */
+const MILESTONE_AGES = [80, 85, 90, 95, 100] as const;
+
+function attentionOf(
+  active: readonly Resident[],
+  sector: ResidentSummaryFilter['sector'],
+): readonly SectorAttention[] | null {
+  if (!isCarded(sector)) return null;
+  const year = Number(manilaDay(demoNow()).slice(0, 4));
+  const age = (resident: Resident) => year - Number(resident.birthDate.slice(0, 4));
+  const noId = active.filter(
+    (resident) =>
+      !mockSectorDetailsOf(resident, true).some(
+        (detail) => detail.sector === sector && detail.idNumber !== null,
+      ),
+  ).length;
+  const rows: SectorAttention[] = [];
+  if (sector === 'senior-citizen') {
+    rows.push(
+      {
+        key: 'milestone-birthdays',
+        label: `Turning ${MILESTONE_AGES.join(', ')} in ${year}`,
+        figure: figure(
+          active.filter((resident) =>
+            MILESTONE_AGES.some((milestone) => milestone === age(resident)),
+          ).length,
+        ),
+        basis:
+          `Senior citizens under this filter whose birth year makes them ${MILESTONE_AGES.join(', ')} in ${year}: ` +
+          'the birthdays RA 11982 marks with a cash gift. It counts birthdays and decides nothing.',
+      },
+      {
+        key: 'centenarians',
+        label: 'Aged 100 or more',
+        figure: figure(active.filter((resident) => age(resident) >= 100).length),
+        basis:
+          'Senior citizens under this filter whose birth year makes them 100 or more this year.',
+      },
+    );
+  }
+  rows.push({
+    key: 'no-sector-id',
+    label: 'No sector ID on file',
+    figure: figure(noId),
+    basis: 'Members of this sector whose latest sector record holds no ID number.',
+  });
+  return rows;
+}
+
+function disabilityRows(active: readonly Resident[]): ReportRow[] {
+  const counts = new Map<string, number>();
+  for (const resident of active) {
+    const type = mockSectorDetailsOf(resident, true).find(
+      (detail) => detail.sector === 'pwd',
+    )?.disabilityType;
+    if (type !== undefined && type !== null) counts.set(type, (counts.get(type) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([type, value]) => ({ key: type.toLowerCase(), label: type, value }));
+}
 
 function isProtected(key: string): boolean {
   return VULNERABILITY_SECTORS.some((sector) => sector === key && isSensitiveSector(sector));
@@ -159,7 +315,11 @@ function series(key: string, title: string, labelHeader: string, rows: ReportRow
 }
 
 /** A protected sector's row stays, withheld, for a reader not cleared to see it counted. */
-function protect(counted: ReportSeries, every: readonly ReportRow[], cleared: boolean): ReportSeries {
+function protect(
+  counted: ReportSeries,
+  every: readonly ReportRow[],
+  cleared: boolean,
+): ReportSeries {
   if (cleared) return counted;
   return {
     ...counted,

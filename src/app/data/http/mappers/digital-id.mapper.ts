@@ -3,8 +3,12 @@ import {
   type AppAccountId,
   type TakenCardPhoto,
   type CardPhotoConsent,
+  CARD_PHOTO_SOURCES,
   type DigitalIdCard,
+  type DigitalIdCardFacts,
   type DigitalIdCounts,
+  type DigitalIdEvent,
+  type DigitalIdFunnel,
   type DigitalIdHolder,
   type DigitalIdId,
   type DigitalIdListing,
@@ -54,6 +58,73 @@ export function toDigitalIdCard(wire: unknown): DigitalIdCard | null {
   }
 
   return { id: cardId, number, photo, status, issuedAt, expiresAt };
+}
+
+/**
+ * The card record's own read: the card with its facts (`DL-232`).
+ *
+ * | wire                     | domain                         | if absent or malformed     |
+ * | ------------------------ | ------------------------------ | -------------------------- |
+ * | the card's six fields    | as `toDigitalIdCard`           | the card is not readable   |
+ * | `photo_source`           | `record.photoSource`           | the card is not readable   |
+ * | `checks_count`           | `record.checksCount`           | the card is not readable   |
+ * | `holder.purok_or_sitio`  | `record.holder.purokOrSitio`   | none recorded              |
+ * | `holder.verified_at`     | `record.holder.verifiedAt`     | not verified, or not said  |
+ * | `holder.id_type`         | `record.holder.idType`         | none recorded              |
+ *
+ * @consumes GET admin/users/{id}/digital-id
+ */
+export function toDigitalIdCardRecord(wire: unknown): DigitalIdCard | null {
+  const card = toDigitalIdCard(wire);
+  const rawSource = field(wire, 'photo_source');
+  const photoSource = rawSource === null ? null : oneOf(rawSource, CARD_PHOTO_SOURCES);
+  const checksCount = int(field(wire, 'checks_count'));
+  const holder = field(wire, 'holder');
+  const rawVerified = field(holder, 'verified_at');
+  const verifiedAt = rawVerified === null ? null : dateTime(rawVerified);
+  if (
+    card === null ||
+    (rawSource !== null && photoSource === null) ||
+    checksCount === null ||
+    checksCount < 0 ||
+    (rawVerified !== null && verifiedAt === null)
+  ) {
+    return null;
+  }
+  const record: DigitalIdCardFacts = {
+    photoSource,
+    checksCount,
+    holder: {
+      purokOrSitio: str(field(holder, 'purok_or_sitio')),
+      verifiedAt,
+      idType: str(field(holder, 'id_type')),
+    },
+  };
+  return { ...card, record };
+}
+
+/**
+ * One row of a holder's card history (`DL-232`), as the audit trail recorded it: the action is kept
+ * in the trail's own word, and a row missing its id, card or time is not readable.
+ *
+ * @consumes GET admin/users/{id}/digital-id/events
+ */
+export function toDigitalIdEvent(wire: unknown): DigitalIdEvent | null {
+  const eventId = str(field(wire, 'id'));
+  const action = str(field(wire, 'action'));
+  const card = id<DigitalIdId>(field(wire, 'card_id'));
+  const at = dateTime(field(wire, 'created_at'));
+  if (eventId === null || action === null || card === null || at === null) {
+    return null;
+  }
+  const actor = field(wire, 'actor');
+  return {
+    id: eventId,
+    action,
+    card,
+    at,
+    actorName: actor === null ? null : str(field(actor, 'name')),
+  };
 }
 
 /**
@@ -113,6 +184,8 @@ export function toWireDigitalIdVerify(payload: string): DigitalIdVerifyWire {
  * | `holder.id`             | `holder.account`       | the row is not readable   |
  * | `holder.name`           | `holder.name`          | no name shown             |
  * | `holder.barangay.name`  | `holder.barangayName`  | no barangay given         |
+ * | `holder.email`          | `holder.email`         | closed account: none      |
+ * | `holder.verified_at`    | `holder.verifiedAt`    | closed account: none      |
  *
  * **Not read**: the barangay's id, which the list only filters by. The row carries no photo; the
  * card record reads it with the card.
@@ -152,6 +225,8 @@ export function toDigitalIdListing(wire: unknown): DigitalIdListing | null {
       account,
       name: str(field(holder, 'name')),
       barangayName: str(field(field(holder, 'barangay'), 'name')),
+      email: str(field(holder, 'email')),
+      verifiedAt: dateTime(field(holder, 'verified_at')),
     },
   };
 }
@@ -189,6 +264,32 @@ export function toDigitalIdCounts(meta: unknown): DigitalIdCounts | null {
   }
 
   return { active, expiring, expired, suspended, revoked };
+}
+
+/**
+ * `meta.funnel` to `DigitalIdFunnel` (`DL-232`): municipality-wide, never narrowed by the list's
+ * filter. Every figure is required, like the counts.
+ *
+ * @consumes GET admin/digital-ids
+ */
+export function toDigitalIdFunnel(meta: unknown): DigitalIdFunnel | null {
+  const funnel = field(meta, 'funnel');
+  const appAccounts = int(field(funnel, 'app_accounts'));
+  const pendingVerification = int(field(funnel, 'pending_verification'));
+  const rawOldest = field(funnel, 'oldest_pending_at');
+  const oldestPendingAt = rawOldest === null ? null : dateTime(rawOldest);
+  const verified = int(field(funnel, 'verified'));
+  const verifiedWithoutCard = int(field(funnel, 'verified_without_card'));
+  if (
+    appAccounts === null ||
+    pendingVerification === null ||
+    (rawOldest !== null && oldestPendingAt === null) ||
+    verified === null ||
+    verifiedWithoutCard === null
+  ) {
+    return null;
+  }
+  return { appAccounts, pendingVerification, oldestPendingAt, verified, verifiedWithoutCard };
 }
 
 /**

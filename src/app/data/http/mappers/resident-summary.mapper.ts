@@ -1,10 +1,16 @@
 import {
   RECORDS_TO_TIDY_KINDS,
   RESIDENT_SUMMARY_PERIODS,
+  SECTOR_ATTENTION_KINDS,
+  type MonthFigure,
   type RecordsToTidy,
+  type RegistryFunnel,
+  type RegistryThisMonth,
   type ReportSeries,
   type ResidentSummary,
   type ResidentSummaryPeriodRange,
+  type SectorAttention,
+  type SectorCoverage,
   type SummaryDisclosure,
   type SummaryFigure,
 } from '@domain/index';
@@ -21,10 +27,17 @@ import { date, dateTime, field, int, list, oneOf, str } from './wire';
  * | `as_of`              | `asOf`          | the summary is not readable     |
  * | `period.*`           | `period`        | the summary is not readable     |
  * | `residents.*`        | `residents`     | the summary is not readable     |
+ * | `residents.by_month[]` | `residents.byMonth` | the summary is not readable |
  * | `registered.*`       | `registered`    | the summary is not readable     |
  * | `by_barangay`        | `byBarangay`    | the summary is not readable     |
  * | `by_sector`          | `bySector`      | the summary is not readable     |
  * | `by_age_sex`         | `byAgeSex`      | the summary is not readable     |
+ * | `by_age_sex.total_by_sex` | `totalBySex` | the summary is not readable    |
+ * | `funnel.*`           | `funnel`        | the summary is not readable     |
+ * | `this_month.*`       | `thisMonth`     | the summary is not readable     |
+ * | `coverage` (or null) | `coverage`      | the summary is not readable     |
+ * | `attention[]` (or null) | `attention`  | the summary is not readable     |
+ * | `by_disability_type` (or null) | `byDisabilityType` | the summary is not readable |
  * | `records_to_tidy[]`  | `recordsToTidy` | the summary is not readable     |
  * | `disclosure.*`       | `disclosure`    | the summary is not readable     |
  *
@@ -50,6 +63,18 @@ export function toResidentSummary(wire: unknown, barangays: BarangayIndex): Resi
   const byBarangay = toAggregateSeries(field(wire, 'by_barangay'));
   const bySector = toAggregateSeries(field(wire, 'by_sector'));
   const byAgeSex = toAggregateSeries(field(wire, 'by_age_sex'));
+  const byMonth = whole(field(residents, 'by_month'), toMonthFigure);
+  const sexWire = field(field(wire, 'by_age_sex'), 'total_by_sex');
+  const female = count(field(sexWire, 'female'));
+  const male = count(field(sexWire, 'male'));
+  const funnel = toFunnel(field(wire, 'funnel'));
+  const thisMonth = toThisMonth(field(wire, 'this_month'));
+  const coverageWire = field(wire, 'coverage');
+  const coverage = coverageWire === null ? null : toCoverage(coverageWire);
+  const attentionWire = field(wire, 'attention');
+  const attention = attentionWire === null ? null : whole(attentionWire, toAttention);
+  const disabilityWire = field(wire, 'by_disability_type');
+  const byDisabilityType = disabilityWire === null ? null : toAggregateSeries(disabilityWire);
   const tidyWire = field(wire, 'records_to_tidy');
   const tidy = Array.isArray(tidyWire) ? list(tidyWire, toRecordsToTidy) : null;
   const disclosure = toDisclosure(field(wire, 'disclosure'));
@@ -64,6 +89,14 @@ export function toResidentSummary(wire: unknown, barangays: BarangayIndex): Resi
     byBarangay === null ||
     bySector === null ||
     byAgeSex === null ||
+    byMonth === null ||
+    female === null ||
+    male === null ||
+    funnel === null ||
+    thisMonth === null ||
+    coverage === undefined ||
+    (attentionWire !== null && attention === null) ||
+    (disabilityWire !== null && byDisabilityType === null) ||
     tidy === null ||
     !Array.isArray(tidyWire) ||
     tidy.length !== tidyWire.length ||
@@ -75,11 +108,17 @@ export function toResidentSummary(wire: unknown, barangays: BarangayIndex): Resi
   return {
     asOf,
     period,
-    residents: { current: residentsNow, previous: residentsBefore },
+    residents: { current: residentsNow, previous: residentsBefore, byMonth },
     registered: { current: registeredNow, previous: registeredBefore },
     byBarangay: rekeyBarangays(byBarangay, barangays),
     bySector,
     byAgeSex,
+    totalBySex: { female, male },
+    funnel,
+    thisMonth,
+    coverage,
+    attention: attentionWire === null ? null : attention,
+    byDisabilityType: disabilityWire === null ? null : byDisabilityType,
     recordsToTidy: tidy,
     disclosure,
   };
@@ -91,7 +130,13 @@ function toPeriod(wire: unknown): ResidentSummaryPeriodRange | null {
   const to = date(field(wire, 'to'));
   const previousFrom = date(field(wire, 'previous_from'));
   const previousTo = date(field(wire, 'previous_to'));
-  if (kind === null || from === null || to === null || previousFrom === null || previousTo === null) {
+  if (
+    kind === null ||
+    from === null ||
+    to === null ||
+    previousFrom === null ||
+    previousTo === null
+  ) {
     return null;
   }
   return { kind, from, to, previousFrom, previousTo };
@@ -105,6 +150,87 @@ function toFigure(wire: unknown): SummaryFigure | null {
   const value = int(raw);
   if (value !== null && value >= 0 && withheld === null) return { value, withheld: false };
   return null;
+}
+
+/** A count: a whole number, never negative. */
+function count(wire: unknown): number | null {
+  const value = int(wire);
+  return value !== null && value >= 0 ? value : null;
+}
+
+/** Every element read, or `null` if any one cannot be — a shorter series would misstate it. */
+function whole<T>(wire: unknown, read: (item: unknown) => T | null): readonly T[] | null {
+  if (!Array.isArray(wire)) return null;
+  const items = wire.map(read);
+  return items.every((item): item is T => item !== null) ? items : null;
+}
+
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+function month(wire: unknown): string | null {
+  const value = str(wire);
+  return value !== null && MONTH.test(value) ? value : null;
+}
+
+function toMonthFigure(wire: unknown): MonthFigure | null {
+  const at = month(field(wire, 'month'));
+  const figure = toFigure(wire);
+  return at === null || figure === null ? null : { month: at, figure };
+}
+
+function toFunnel(wire: unknown): RegistryFunnel | null {
+  const onRegistry = count(field(wire, 'on_registry'));
+  const onApp = toFigure(field(wire, 'on_app'));
+  const verified = toFigure(field(wire, 'verified'));
+  const activeIds = toFigure(field(wire, 'active_ids'));
+  if (onRegistry === null || onApp === null || verified === null || activeIds === null) return null;
+  return { onRegistry, onApp, verified, activeIds };
+}
+
+function toThisMonth(wire: unknown): RegistryThisMonth | null {
+  const at = month(field(wire, 'month'));
+  const turning60 = toFigure(field(wire, 'turning_60'));
+  const turning18 = toFigure(field(wire, 'turning_18'));
+  const soloParentIdsDue = toFigure(field(wire, 'solo_parent_ids_due'));
+  const pwdIdsExpiring = toFigure(field(wire, 'pwd_ids_expiring'));
+  if (
+    at === null ||
+    turning60 === null ||
+    turning18 === null ||
+    soloParentIdsDue === null ||
+    pwdIdsExpiring === null
+  ) {
+    return null;
+  }
+  return { month: at, turning60, turning18, soloParentIdsDue, pwdIdsExpiring };
+}
+
+/** `undefined` when unreadable, so the wire's deliberate `null` stays an absence. */
+function toCoverage(wire: unknown): SectorCoverage | undefined {
+  const sectorIdOnFile = toFigure(field(wire, 'sector_id_on_file'));
+  const pensionWire = field(wire, 'social_pension');
+  const socialPension = pensionWire === null ? null : toFigure(pensionWire);
+  const appAccounts = toFigure(field(wire, 'app_accounts'));
+  const digitalIds = toFigure(field(wire, 'digital_ids'));
+  if (
+    sectorIdOnFile === null ||
+    (pensionWire !== null && socialPension === null) ||
+    appAccounts === null ||
+    digitalIds === null
+  ) {
+    return undefined;
+  }
+  return { sectorIdOnFile, socialPension, appAccounts, digitalIds };
+}
+
+/** A count nobody can check is not shown (`DL-98`): no basis, no row — and so no summary. */
+function toAttention(wire: unknown): SectorAttention | null {
+  const key = oneOf(field(wire, 'key'), SECTOR_ATTENTION_KINDS);
+  const label = str(field(wire, 'label'))?.trim() ?? '';
+  const basis = str(field(wire, 'basis'))?.trim() ?? '';
+  const figure = toFigure(wire);
+  if (key === null || label === '' || basis === '' || figure === null) return null;
+  return { key, label, figure, basis };
 }
 
 function toRecordsToTidy(wire: unknown): RecordsToTidy | null {

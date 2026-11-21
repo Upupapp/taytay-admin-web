@@ -50,13 +50,13 @@ describe('NotConnected for a figure a served port does not send (DL-210)', () =>
   it('says the same sentence about the figure, never that there are none', async () => {
     TestBed.resetTestingModule();
     const fixture = TestBed.createComponent(NotConnected);
-    fixture.componentRef.setInput('figure', 'sector-counts');
+    fixture.componentRef.setInput('figure', 'children-in-care');
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
-    expect(element.textContent?.trim()).toBe(notSentSentence('sector-counts'));
-    expect(notSentSentence('sector-counts')).toMatch(/^Not connected yet: /);
-    expect(notSentSentence('sector-counts')).toContain(UNSERVED_FIGURES['sector-counts']);
-    expect(notSentSentence('sector-counts')).toContain(
+    expect(element.textContent?.trim()).toBe(notSentSentence('children-in-care'));
+    expect(notSentSentence('children-in-care')).toMatch(/^Not connected yet: /);
+    expect(notSentSentence('children-in-care')).toContain(UNSERVED_FIGURES['children-in-care']);
+    expect(notSentSentence('children-in-care')).toContain(
       'This is not a statement that there are none.',
     );
     expect(element.querySelector('p')?.getAttribute('role')).toBe('note');

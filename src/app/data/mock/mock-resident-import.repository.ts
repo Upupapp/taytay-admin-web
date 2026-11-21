@@ -25,8 +25,12 @@ import {
   type ResidentImport,
   type ResidentImportId,
   type ResidentImportRepository,
+  type BarangayId,
   type ResidentImportSummary,
+  type ResidentImportUploadDetails,
 } from '@domain/index';
+
+import { daysBeforeAnchor } from './seed/seed-utils';
 
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
@@ -46,6 +50,38 @@ const FIELDS: readonly ImportFieldSpec[] = [
   { field: 'streetAddress', label: 'Street address', required: false },
   { field: 'mobile', label: 'Mobile number', required: false },
   { field: 'email', label: 'Email', required: false },
+];
+
+/** Sample data: committed lists dated around the seed's anchor. */
+const SAMPLE_IMPORTS: readonly ResidentImportSummary[] = [
+  {
+    id: asId<ResidentImportId>('import-sample-0001'),
+    fileName: 'osca-seniors-san-juan.csv',
+    kind: 'csv',
+    status: 'committed',
+    rowCount: 48,
+    createdAt: daysBeforeAnchor(9, 10),
+    createdBy: 'Marisol Alcantara',
+    committedAt: daysBeforeAnchor(9, 11),
+    committedBy: 'Marisol Alcantara',
+    result: { created: 31, attached: 14, skipped: 2, errors: 1 },
+    source: 'osca',
+    barangayId: asId<BarangayId>('brgy-san-juan'),
+  },
+  {
+    id: asId<ResidentImportId>('import-sample-0002'),
+    fileName: 'rbi-dolores-2026.csv',
+    kind: 'csv',
+    status: 'committed',
+    rowCount: 120,
+    createdAt: daysBeforeAnchor(23, 9),
+    createdBy: 'Jomar Reyes',
+    committedAt: daysBeforeAnchor(23, 10),
+    committedBy: 'Jomar Reyes',
+    result: { created: 96, attached: 20, skipped: 4, errors: 0 },
+    source: 'rbi-census',
+    barangayId: asId<BarangayId>('brgy-dolores'),
+  },
 ];
 
 interface HeldImport {
@@ -70,7 +106,15 @@ export class MockResidentImportRepository implements ResidentImportRepository {
   private readonly latency = inject(MockLatency);
   private readonly access = inject(ACCESS_CONTEXT);
   private readonly store = inject(MockResidentStore);
-  private imports: HeldImport[] = [];
+  /** Two committed sample lists, so the demo's past imports and recent imports are not empty. */
+  private imports: HeldImport[] = SAMPLE_IMPORTS.map((summary) => ({
+    summary,
+    headers: [],
+    cells: [],
+    mapping: guessMapping([]),
+    resolutions: new Map(),
+    outcomes: [],
+  }));
   private issued = 0;
 
   list(page: CursorRequest): Observable<CursorPage<ResidentImportSummary>> {
@@ -87,7 +131,7 @@ export class MockResidentImportRepository implements ResidentImportRepository {
     });
   }
 
-  upload(file: File): Observable<ResidentImportSummary> {
+  upload(file: File, details?: ResidentImportUploadDetails): Observable<ResidentImportSummary> {
     const denied = this.deny<ResidentImportSummary>();
     if (denied) return denied;
     if (!file.name.toLowerCase().endsWith('.csv')) {
@@ -119,6 +163,8 @@ export class MockResidentImportRepository implements ResidentImportRepository {
             committedAt: null,
             committedBy: null,
             result: null,
+            source: details?.source ?? null,
+            barangayId: details?.barangayId ?? null,
           },
           headers,
           cells: rows,
@@ -192,7 +238,11 @@ export class MockResidentImportRepository implements ResidentImportRepository {
     const held = this.find(id);
     if (held === undefined) return throwError(() => new Error('That import was not found.'));
     const view = this.view(held);
-    if (view.status === 'committed' || view.missingFields.length > 0 || view.counts.unresolved > 0) {
+    if (
+      view.status === 'committed' ||
+      view.missingFields.length > 0 ||
+      view.counts.unresolved > 0
+    ) {
       return throwError(
         () => new Error('Every required field needs a column, and every match a decision, first.'),
       );

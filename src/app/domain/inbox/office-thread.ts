@@ -168,5 +168,25 @@ export function replyProblem(body: string): 'empty' | 'too-long' | null {
  * that has no office.
  */
 export type InboxListing =
-  | { readonly kind: 'threads'; readonly page: CursorPage<OfficeThread> }
+  | {
+      readonly kind: 'threads';
+      readonly page: CursorPage<OfficeThread>;
+      /** The reader's own threads by status, whole, never narrowed by the list's filter. */
+      readonly counts: InboxCounts;
+    }
   | { readonly kind: 'no-office' };
+
+/**
+ * The inbox's figures beside every page (`DL-232`, backend ADR 0006): open, closed, and the threads
+ * with something the office has not read. Never the number of rows on screen (`DL-161`).
+ */
+export interface InboxCounts {
+  readonly open: number;
+  readonly closed: number;
+  readonly unread: number;
+}
+
+/** The inbox narrowed to one status; no status is every thread. */
+export interface InboxFilter {
+  readonly status?: ThreadStatus;
+}

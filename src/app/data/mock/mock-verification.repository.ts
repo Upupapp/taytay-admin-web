@@ -23,12 +23,13 @@ import {
   type InPersonCheck,
   type InPersonVerification,
   type InPersonVerificationId,
-  type CursorPage,
   type CursorRequest,
   type VerificationDecision,
   type VerificationFilter,
   type VerificationImageKind,
   type VerificationRepository,
+  type VerificationListPage,
+  type VerificationQueueStats,
   type VerificationRequest,
   type VerificationRequestId,
   type WriteIntent,
@@ -38,6 +39,7 @@ import { denyUnless } from './mock-access';
 import { MockAppAccountStore } from './mock-app-account.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
+import { countByDay, demoDays, demoNow } from './mock-time-series';
 import { MOCK_VERIFICATION_REQUESTS, samplePlaceholder } from './seed/verification-requests.seed';
 
 /** The API's own ceiling on a page (`limit` maximum 50), kept so the mock pages like the server. */
@@ -76,8 +78,8 @@ export class MockVerificationRepository implements VerificationRepository {
   list(
     filter: VerificationFilter,
     page: CursorRequest,
-  ): Observable<CursorPage<VerificationRequest>> {
-    const denied = denyUnless<CursorPage<VerificationRequest>>(
+  ): Observable<VerificationListPage> {
+    const denied = denyUnless<VerificationListPage>(
       this.access.currentUser(),
       'verification.review',
     );
@@ -98,7 +100,34 @@ export class MockVerificationRepository implements VerificationRepository {
       items: matching.slice(start, end),
       hasMore,
       nextCursor: hasMore ? String(end) : null,
+      stats: this.stats(),
     });
+  }
+
+  /**
+   * The queue's figures as the API counts them beside every page (`DL-232`), over the whole sample
+   * queue and ended on the demo's today (see mock-time-series).
+   */
+  private stats(): VerificationQueueStats {
+    const now = demoNow().getTime();
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const pending = this.requests.filter((request) => request.status === 'pending');
+    const decided = this.requests.filter(
+      (request) =>
+        request.reviewedAt !== null && Date.parse(request.reviewedAt) >= weekAgo,
+    );
+    return {
+      pending: pending.length,
+      oldestPendingAt: pending.map((request) => request.submittedAt).sort()[0] ?? null,
+      decided7d: {
+        approved: decided.filter((request) => request.status === 'approved').length,
+        rejected: decided.filter((request) => request.status === 'rejected').length,
+      },
+      sentByDay: countByDay(
+        demoDays(7),
+        this.requests.map((request) => request.submittedAt),
+      ),
+    };
   }
 
   approve(

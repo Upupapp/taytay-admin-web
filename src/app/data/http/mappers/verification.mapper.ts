@@ -18,12 +18,13 @@ import {
   type RegistryMatches,
   type RegistryMatchSignal,
   type ResidentId,
+  type VerificationQueueStats,
   type VerificationRequest,
   type VerificationRequestId,
   type WriteIntent,
 } from '@domain/index';
 
-import { date, dateTime, field, flag, id, oneOf, str } from './wire';
+import { date, dateTime, field, flag, id, int, oneOf, str } from './wire';
 
 /** The API's ID types are `snake_case`; the domain's are kebab case, like every other union. */
 const ID_TYPE_BY_WIRE: Readonly<Record<string, IdDocumentType>> = {
@@ -136,6 +137,46 @@ export function toVerificationRequest(wire: unknown): VerificationRequest | null
  * what every request decided before the API asked reads as. A part of the request and of the counter
  * check, read by their mappers, so it names no operation of its own.
  */
+/**
+ * `meta.stats` beside the queue's page (`DL-232`): every figure required, because a KPI row with a
+ * guessed figure is worse than none. Never the number of rows in this page.
+ *
+ * @consumes GET admin/verification-requests
+ */
+export function toVerificationQueueStats(meta: unknown): VerificationQueueStats | null {
+  const stats = field(meta, 'stats');
+  const pending = int(field(stats, 'pending'));
+  const rawOldest = field(stats, 'oldest_pending_at');
+  const oldestPendingAt = rawOldest === null ? null : dateTime(rawOldest);
+  const decided = field(stats, 'decided_7d');
+  const approved = int(field(decided, 'approved'));
+  const rejected = int(field(decided, 'rejected'));
+  const daysWire = field(stats, 'sent_by_day');
+  const days = Array.isArray(daysWire)
+    ? daysWire.map((entry) => {
+        const day = date(field(entry, 'date'));
+        const count = int(field(entry, 'count'));
+        return day === null || count === null || count < 0 ? null : { date: day, count };
+      })
+    : null;
+  if (
+    pending === null ||
+    (rawOldest !== null && oldestPendingAt === null) ||
+    approved === null ||
+    rejected === null ||
+    days === null ||
+    days.some((day) => day === null)
+  ) {
+    return null;
+  }
+  return {
+    pending,
+    oldestPendingAt,
+    decided7d: { approved, rejected },
+    sentByDay: days.filter((day): day is NonNullable<typeof day> => day !== null),
+  };
+}
+
 export function toAccountLinkOutcome(wire: unknown): AccountLinkOutcome | null {
   const decision = oneOf(field(wire, 'decision'), ACCOUNT_LINK_DECISIONS);
   if (decision === null) {

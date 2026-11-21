@@ -34,8 +34,10 @@ import {
   type VerificationFilter,
   type VerificationImageKind,
   type VerificationRepository,
+  type VerificationListPage,
   type VerificationRequest,
   type VerificationRequestId,
+  type InboxFilter,
   type InboxListing,
   type MediaId,
   type Office,
@@ -48,6 +50,7 @@ import {
   type AccountRole,
   type AppAccount,
   type AppAccountFilter,
+  type AppAccountListPage,
   type AppAccountId,
   type AppAccountRepository,
   type OfficeId,
@@ -89,6 +92,7 @@ import {
   type TakenCardPhoto,
   type CardPhotoConsent,
   type DigitalIdCard,
+  type DigitalIdEvent,
   type DigitalIdHolder,
   type DigitalIdListFilter,
   type DigitalIdListPage,
@@ -100,6 +104,7 @@ import {
   type ResidentImportId,
   type ResidentImportRepository,
   type ResidentImportSummary,
+  type ResidentImportUploadDetails,
   type ImportTemplate,
   type SectorApplication,
   type SectorApplicationDetail,
@@ -408,12 +413,16 @@ import { toNotification } from './mappers/notification.mapper';
 import {
   toAccountBarangay,
   toAppAccount,
+  toAppAccountCounts,
   toWireOfficeRoleChange,
 } from './mappers/app-account.mapper';
 import {
   toCardPhoto,
   toDigitalIdCard,
+  toDigitalIdCardRecord,
   toDigitalIdCounts,
+  toDigitalIdEvent,
+  toDigitalIdFunnel,
   toDigitalIdHolder,
   toDigitalIdListing,
   toWireCardPhoto,
@@ -477,7 +486,12 @@ import {
   toWireServiceDraft,
   toWireServiceImage,
 } from './mappers/tulong-service.mapper';
-import { toOfficeThread, toPostedMessage, toThreadMessage } from './mappers/office-thread.mapper';
+import {
+  toInboxCounts,
+  toOfficeThread,
+  toPostedMessage,
+  toThreadMessage,
+} from './mappers/office-thread.mapper';
 import {
   toHouseholdDetail,
   toHouseholdRefusal,
@@ -551,6 +565,7 @@ import {
 } from './mappers/case.mapper';
 import { toSavedView, toWireSavedViewDraft } from './mappers/saved-view.mapper';
 import {
+  toVerificationQueueStats,
   toInPersonFieldErrors,
   toInPersonVerification,
   toVerificationRequest,
@@ -728,13 +743,23 @@ export class HttpVerificationRepository implements VerificationRepository {
    * page. Dropping it would show one fewer resident waiting for an answer, with no error anywhere —
    * and that resident would wait indefinitely for a review nobody can see is owed.
    */
-  list(
-    filter: VerificationFilter,
-    page: CursorRequest,
-  ): Observable<CursorPage<VerificationRequest>> {
+  list(filter: VerificationFilter, page: CursorRequest): Observable<VerificationListPage> {
     return this.api
-      .cursorPage(API_ENDPOINTS.verificationRequests, page, { status: filter.status ?? undefined })
-      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readVerification) })));
+      .cursorPageWithMeta(API_ENDPOINTS.verificationRequests, page, {
+        status: filter.status ?? undefined,
+      })
+      .pipe(
+        map(({ page: answer, meta }) => {
+          const stats = toVerificationQueueStats(meta);
+          if (stats === null) {
+            throw new Error(
+              'The review queue’s figures could not be read, so the queue is not shown with a ' +
+                'guessed count of who is waiting.',
+            );
+          }
+          return { ...answer, items: answer.items.map(readVerification), stats };
+        }),
+      );
   }
 
   /**
@@ -883,11 +908,20 @@ export class HttpOfficeInboxRepository implements OfficeInboxRepository {
    * conversations" concludes residents are quiet, when the truth is that this account cannot see
    * them. A later empty page needs no question — the first page already answered it.
    */
-  list(page: CursorRequest): Observable<InboxListing> {
-    return this.api.cursorPage(API_ENDPOINTS.threads, page).pipe(
-      map((answer): CursorPage<OfficeThread> => ({ ...answer, items: answer.items.map(readThread) })),
-      switchMap((answer) => {
-        const listing: InboxListing = { kind: 'threads', page: answer };
+  list(page: CursorRequest, filter: InboxFilter = {}): Observable<InboxListing> {
+    return this.api.cursorPageWithMeta(API_ENDPOINTS.threads, page, { status: filter.status }).pipe(
+      map(({ page: raw, meta }) => {
+        const counts = toInboxCounts(meta);
+        if (counts === null) {
+          throw new Error(
+            'The inbox’s counts could not be read, so the inbox is not shown beside a guessed figure.',
+          );
+        }
+        const answer: CursorPage<OfficeThread> = { ...raw, items: raw.items.map(readThread) };
+        return { answer, counts };
+      }),
+      switchMap(({ answer, counts }) => {
+        const listing: InboxListing = { kind: 'threads', page: answer, counts };
         if (answer.items.length > 0 || (page.cursor ?? null) !== null) {
           return of(listing);
         }
@@ -966,13 +1000,26 @@ export class HttpAppAccountRepository implements AppAccountRepository {
   private readonly api = inject(ApiClient);
 
   /** One page, read whole or not at all: an account the mapper cannot read refuses the page. */
-  list(page: CursorRequest, filter: AppAccountFilter = {}): Observable<CursorPage<AppAccount>> {
+  list(page: CursorRequest, filter: AppAccountFilter = {}): Observable<AppAccountListPage> {
     return this.api
-      .cursorPage(API_ENDPOINTS.adminUsers, page, {
+      .cursorPageWithMeta(API_ENDPOINTS.adminUsers, page, {
         // The open residents' accounts with this status, as the dashboard counts them (`DL-186`).
         verification_status: filter.verificationStatus,
+        // Open resident accounts holding no active or suspended card (`DL-232`).
+        card: filter.card,
       })
-      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readAccount) })));
+      .pipe(
+        map(({ page: answer, meta }) => {
+          const counts = toAppAccountCounts(meta);
+          if (counts === null) {
+            throw new Error(
+              'The accounts’ counts could not be read, so the list is not shown beside a guessed ' +
+                'figure.',
+            );
+          }
+          return { ...answer, items: answer.items.map(readAccount), counts };
+        }),
+      );
   }
 
   changeRole(id: AppAccountId, role: AccountRole): Observable<AppAccount> {
@@ -1667,7 +1714,13 @@ export class HttpDigitalIdRepository implements DigitalIdRepository {
   cardOf(account: AppAccountId): Observable<DigitalIdCard | null> {
     return this.api
       .optionalItem(`${API_ENDPOINTS.adminUsers}/${account}/digital-id`)
-      .pipe(map((wire) => (wire === null ? null : readCard(wire))));
+      .pipe(map((wire) => (wire === null ? null : readCardRecord(wire))));
+  }
+
+  cardHistory(account: AppAccountId, page: CursorRequest): Observable<CursorPage<DigitalIdEvent>> {
+    return this.api
+      .cursorPage(`${API_ENDPOINTS.adminUsers}/${account}/digital-id/events`, page)
+      .pipe(map((answer) => ({ ...answer, items: readCardEvents(answer.items) })));
   }
 
   /** With no photo named, the API chooses: the latest reviewed selfie, else the newest card photo. */
@@ -1717,9 +1770,10 @@ function readDigitalIdListPage(
   meta: unknown,
 ): DigitalIdListPage {
   const counts = toDigitalIdCounts(meta);
+  const funnel = toDigitalIdFunnel(meta);
   const items = answer.items.map(toDigitalIdListing);
 
-  if (counts === null || items.some((item) => item === null)) {
+  if (counts === null || funnel === null || items.some((item) => item === null)) {
     throw new Error(
       'The cards from the server could not be read, so none is shown rather than some: a card left ' +
         'out of the list is one an officer concludes was never issued.',
@@ -1731,6 +1785,7 @@ function readDigitalIdListPage(
     hasMore: answer.hasMore,
     nextCursor: answer.nextCursor,
     counts,
+    funnel,
   };
 }
 
@@ -1743,6 +1798,29 @@ function readCardPhoto(wire: unknown): TakenCardPhoto {
     );
   }
   return photo;
+}
+
+function readCardRecord(wire: unknown): DigitalIdCard {
+  const card = toDigitalIdCardRecord(wire);
+  if (card === null) {
+    throw new Error(
+      'The card from the server could not be read, so it is not shown: a card with a guessed status ' +
+        'or expiry is one somebody acts on wrongly.',
+    );
+  }
+  return card;
+}
+
+/** Every row, or none: a history with a row left out reads as an act that never happened. */
+function readCardEvents(items: readonly unknown[]): readonly DigitalIdEvent[] {
+  const events = items.map(toDigitalIdEvent);
+  if (events.some((event) => event === null)) {
+    throw new Error(
+      'The card history from the server could not be read whole, so none of it is shown: a row ' +
+        'left out reads as an act that never happened.',
+    );
+  }
+  return events.filter((event): event is DigitalIdEvent => event !== null);
 }
 
 function readCard(wire: unknown): DigitalIdCard {
@@ -5548,15 +5626,30 @@ export class HttpResidentImportRepository implements ResidentImportRepository {
   private readonly barangayJoin = new BarangayJoin();
 
   list(page: CursorRequest): Observable<CursorPage<ResidentImportSummary>> {
-    return this.api
-      .cursorPage(API_ENDPOINTS.officeImports, page)
-      .pipe(map((answer) => ({ ...answer, items: answer.items.map(readImportSummary) })));
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api.cursorPage(API_ENDPOINTS.officeImports, page).pipe(
+          map((answer) => ({
+            ...answer,
+            items: answer.items.map((wire) => readImportSummary(wire, barangays)),
+          })),
+        ),
+      ),
+    );
   }
 
-  upload(file: File): Observable<ResidentImportSummary> {
-    return this.api
-      .postForm(API_ENDPOINTS.officeImports, toWireImportUpload(file))
-      .pipe(map(readImportSummary));
+  upload(file: File, details?: ResidentImportUploadDetails): Observable<ResidentImportSummary> {
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) => {
+        const barangay =
+          details?.barangayId === undefined || details.barangayId === null
+            ? null
+            : barangays.toApi(details.barangayId);
+        return this.api
+          .postForm(API_ENDPOINTS.officeImports, toWireImportUpload(file, details, barangay))
+          .pipe(map((wire) => readImportSummary(wire, barangays)));
+      }),
+    );
   }
 
   /** `null` for "not found **or** not yours" — the server answers both with a 404. */
@@ -5598,9 +5691,13 @@ export class HttpResidentImportRepository implements ResidentImportRepository {
   }
 
   commit(id: ResidentImportId): Observable<ResidentImportSummary> {
-    return this.api
-      .post(`${API_ENDPOINTS.officeImports}/${id}/commit`, {})
-      .pipe(map(readImportSummary));
+    return this.barangayJoin.read().pipe(
+      switchMap((barangays) =>
+        this.api
+          .post(`${API_ENDPOINTS.officeImports}/${id}/commit`, {})
+          .pipe(map((wire) => readImportSummary(wire, barangays))),
+      ),
+    );
   }
 
   /** A header-only CSV whose every column the mapping recognises (`DL-228`). */
@@ -5609,8 +5706,8 @@ export class HttpResidentImportRepository implements ResidentImportRepository {
   }
 }
 
-function readImportSummary(wire: unknown): ResidentImportSummary {
-  const summary = toResidentImportSummary(wire);
+function readImportSummary(wire: unknown, barangays: BarangayIndex): ResidentImportSummary {
+  const summary = toResidentImportSummary(wire, barangays);
   if (summary === null) {
     throw new Error(
       'An import from the server could not be read, so none is shown rather than a guess about ' +

@@ -112,6 +112,7 @@ import type {
   ImportResolution,
   ResidentImport,
   ResidentImportSummary,
+  ResidentImportUploadDetails,
   ImportTemplate,
 } from '../residents/resident-import';
 import type {
@@ -167,6 +168,7 @@ import type {
   IssuanceRequestSummary,
 } from '../issuance/issuance-request';
 import type {
+  InboxFilter,
   InboxListing,
   OfficeThread,
   ThreadMessage,
@@ -177,6 +179,7 @@ import type {
   AccountRole,
   AppAccount,
   AppAccountFilter,
+  AppAccountListPage,
   NameCorrection,
   OfficeRoleChange,
 } from '../accounts/app-account';
@@ -197,7 +200,7 @@ import type {
   ArchivedFeatureFlag,
 } from '../app-config/app-config';
 import type { ArchiveEvent } from '../shared/archive';
-import type { DigitalIdCard, DigitalIdHolder } from '../digital-ids/digital-id';
+import type { DigitalIdCard, DigitalIdEvent, DigitalIdHolder } from '../digital-ids/digital-id';
 import type { DigitalIdListFilter, DigitalIdListPage } from '../digital-ids/digital-id-list';
 import type { TakenCardPhoto, CardPhotoConsent } from '../digital-ids/card-photo';
 import type { PlatformAuditEntry } from '../platform-audit/platform-audit';
@@ -211,6 +214,7 @@ import type {
   ConfirmedIdentity,
   VerificationFilter,
   VerificationImageKind,
+  VerificationListPage,
   VerificationRequest,
 } from '../verification/verification-request';
 import type { InPersonCheck, InPersonVerification } from '../verification/in-person-verification';
@@ -1609,9 +1613,10 @@ export const DASHBOARD_REPOSITORY = new InjectionToken<DashboardRepository>('Das
 export interface VerificationRepository {
   /**
    * One cursor page of the queue, newest first as the server orders it. Browsable, so a page: the
-   * screen says more are available, never "page 1 of N" — the server sends no total (`DL-161`).
+   * screen says more are available, never "page 1 of N" — the server sends no total (`DL-161`);
+   * the queue's own figures come beside it (`DL-232`).
    */
-  list(filter: VerificationFilter, page: CursorRequest): Observable<CursorPage<VerificationRequest>>;
+  list(filter: VerificationFilter, page: CursorRequest): Observable<VerificationListPage>;
 
   /**
    * Marks the account verified. The note is for the office; the resident never sees it.
@@ -1679,7 +1684,7 @@ export interface OfficeInboxRepository {
    * One cursor page, newest activity first as the server orders it — or `no-office` when an empty
    * answer means the account has no office rather than that nobody wrote (`InboxListing`).
    */
-  list(page: CursorRequest): Observable<InboxListing>;
+  list(page: CursorRequest, filter?: InboxFilter): Observable<InboxListing>;
 
   /** One conversation, by id — the page a reload or a shared link must be able to answer. */
   thread(id: OfficeThreadId): Observable<OfficeThread>;
@@ -1739,7 +1744,7 @@ export interface AppAccountRepository {
    * One cursor page, newest first as the server orders it. No total (`DL-161`). With a verification
    * status, the open residents' accounts with it — the ones the dashboard counts (`DL-186`).
    */
-  list(page: CursorRequest, filter?: AppAccountFilter): Observable<CursorPage<AppAccount>>;
+  list(page: CursorRequest, filter?: AppAccountFilter): Observable<AppAccountListPage>;
 
   /**
    * Changes the role. Refused by the server for the caller's own account. No reason is taken: the
@@ -1973,6 +1978,12 @@ export interface DigitalIdRepository {
   cardOf(account: AppAccountId): Observable<DigitalIdCard | null>;
 
   /**
+   * The holder's card history, a cursor page at a time, newest first (`DL-232`): the audit rows on
+   * every card the account was issued. No total (`DL-161`).
+   */
+  cardHistory(account: AppAccountId, page: CursorRequest): Observable<CursorPage<DigitalIdEvent>>;
+
+  /**
    * A new card. With a card photo named, that photo; with none, the API's own choice: the latest
    * approved, unerased ID-review selfie, or failing one the newest card photo (`DL-221`).
    */
@@ -2125,8 +2136,11 @@ export interface ResidentImportRepository {
   /** One cursor page, newest first. No total. */
   list(page: CursorRequest): Observable<CursorPage<ResidentImportSummary>>;
 
-  /** Holds a .csv or .xlsx for checking, under a mapping the server guesses from its header. */
-  upload(file: File): Observable<ResidentImportSummary>;
+  /**
+   * Holds a .csv or .xlsx for checking, under a mapping the server guesses from its header, with
+   * where the list came from and the barangay it covers when the officer says them (`DL-232`).
+   */
+  upload(file: File, details?: ResidentImportUploadDetails): Observable<ResidentImportSummary>;
 
   /** `null` for "not found or not yours", as the server answers both. */
   get(id: ResidentImportId): Observable<ResidentImport | null>;

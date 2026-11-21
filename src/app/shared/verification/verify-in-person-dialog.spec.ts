@@ -11,7 +11,6 @@ import {
   InPersonRefusedError,
   VERIFICATION_REPOSITORY,
   type AppAccountId,
-  type CursorPage,
   type InPersonCheck,
   type InPersonOutcome,
   type InPersonVerification,
@@ -19,6 +18,7 @@ import {
   type RegistryMatches,
   type ResidentId,
   type VerificationRepository,
+  type VerificationListPage,
   type VerificationRequest,
   type WriteIntent,
 } from '@domain/index';
@@ -47,7 +47,7 @@ class RecordingChecks implements VerificationRepository {
   /** What the next check fails with, once, or `null` to record it. */
   failWith: unknown = null;
 
-  list(): Observable<CursorPage<VerificationRequest>> {
+  list(): Observable<VerificationListPage> {
     return EMPTY;
   }
   approve(): Observable<VerificationRequest> {

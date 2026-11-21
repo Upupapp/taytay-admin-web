@@ -1,6 +1,7 @@
 import {
   THREAD_STATUSES,
   type AppAccountId,
+  type InboxCounts,
   type MediaId,
   type OfficeId,
   type OfficeThread,
@@ -142,4 +143,19 @@ export function toPostedMessage(wire: unknown): ThreadMessage | null {
   }
 
   return message;
+}
+
+/**
+ * `meta.counts` beside the inbox (`DL-232`): the reader's own threads, open, closed and unread,
+ * never narrowed by the list's status. Every figure required.
+ *
+ * @consumes GET threads
+ */
+export function toInboxCounts(meta: unknown): InboxCounts | null {
+  const counts = field(meta, 'counts');
+  const open = int(field(counts, 'open'));
+  const closed = int(field(counts, 'closed'));
+  const unread = int(field(counts, 'unread'));
+  if (open === null || closed === null || unread === null) return null;
+  return { open, closed, unread };
 }

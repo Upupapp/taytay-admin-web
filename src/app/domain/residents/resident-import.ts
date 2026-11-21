@@ -29,6 +29,30 @@ export interface ResidentImportSummary {
   readonly committedBy: string | null;
   /** What became of the rows, once committed. */
   readonly result: ResidentImportResult | null;
+  /** Where the officer said the list came from; `null` when not said (`DL-232`). */
+  readonly source: ResidentImportSource | null;
+  /**
+   * The barangay the officer said the list covers; `null` when not said or not one this console
+   * knows. A record of what was said: it moves and filters no row.
+   */
+  readonly barangayId: BarangayId | null;
+}
+
+/** Where a list came from, as the officer says it at upload. Kept as said; never changed after. */
+export const RESIDENT_IMPORT_SOURCES = [
+  'rbi-census',
+  'osca',
+  'pdao',
+  'solo-parent-office',
+  'four-ps',
+  'other-spreadsheet',
+] as const;
+export type ResidentImportSource = (typeof RESIDENT_IMPORT_SOURCES)[number];
+
+/** What the officer says about a file as it is sent; both are optional. */
+export interface ResidentImportUploadDetails {
+  readonly source: ResidentImportSource | null;
+  readonly barangayId: BarangayId | null;
 }
 
 export const RESIDENT_IMPORT_KINDS = ['csv', 'xlsx'] as const;

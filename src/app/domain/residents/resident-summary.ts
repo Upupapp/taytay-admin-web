@@ -14,14 +14,37 @@ import type { ResidentAgeGroup, Sex, VulnerabilitySector } from './resident';
 export interface ResidentSummary {
   readonly asOf: IsoDateTime;
   readonly period: ResidentSummaryPeriodRange;
-  /** Active records under the filter: now, and as the period began. Taken before suppression. */
-  readonly residents: { readonly current: number; readonly previous: number };
+  /**
+   * Active records under the filter: now, and as the period began. Taken before suppression.
+   * `byMonth` is the registry at the end of each of the last twelve Manila months, the current one
+   * as it stands, oldest first — each point a count of people, so each may be withheld.
+   */
+  readonly residents: {
+    readonly current: number;
+    readonly previous: number;
+    readonly byMonth: readonly MonthFigure[];
+  };
   /** Records created this period (to date) and in the whole previous one; each may be withheld. */
   readonly registered: { readonly current: SummaryFigure; readonly previous: SummaryFigure };
   readonly byBarangay: ReportSeries;
   /** Sectors overlap: one person may be counted under several. */
   readonly bySector: ReportSeries;
   readonly byAgeSex: ReportSeries;
+  /**
+   * Female and male under the age-and-sex series, **taken before suppression** like a series total
+   * and labelled so (`DL-105`): a reader adding the visible cells is not misled.
+   */
+  readonly totalBySex: { readonly female: number; readonly male: number };
+  /** From the registry to a Digital ID under the same filter (`DL-232`). */
+  readonly funnel: RegistryFunnel;
+  /** This Manila month: birthdays that move a person between age groups, sector IDs ending. */
+  readonly thisMonth: RegistryThisMonth;
+  /** With a sector filter of senior citizens, PWD or solo parents only; `null` otherwise. */
+  readonly coverage: SectorCoverage | null;
+  /** With the same three sector filters only; `null` otherwise. Advice, never a decision. */
+  readonly attention: readonly SectorAttention[] | null;
+  /** With the PWD filter only. Free-text types under the threshold are pooled server-side. */
+  readonly byDisabilityType: ReportSeries | null;
   readonly recordsToTidy: readonly RecordsToTidy[];
   readonly disclosure: SummaryDisclosure;
 }
@@ -38,6 +61,63 @@ export interface ResidentSummaryPeriodRange {
 export interface SummaryFigure {
   readonly value: number | null;
   readonly withheld: boolean;
+}
+
+/** One month of a series of people: `YYYY-MM`, and its figure (withheld below the threshold). */
+export interface MonthFigure {
+  readonly month: string;
+  readonly figure: SummaryFigure;
+}
+
+/**
+ * The registry's way to a Digital ID: the total, then the records linked to an open app account,
+ * those whose account is verified, and those holding an active card. The three after the total are
+ * people, each withheld below the threshold.
+ */
+export interface RegistryFunnel {
+  readonly onRegistry: number;
+  readonly onApp: SummaryFigure;
+  readonly verified: SummaryFigure;
+  readonly activeIds: SummaryFigure;
+}
+
+/**
+ * What the registry says falls in this Manila month. "Due" and "expiring" mean the latest sector
+ * record's recorded validity ends this month — a recorded date, not a rule. It decides nothing.
+ */
+export interface RegistryThisMonth {
+  /** `YYYY-MM`. */
+  readonly month: string;
+  readonly turning60: SummaryFigure;
+  readonly turning18: SummaryFigure;
+  readonly soloParentIdsDue: SummaryFigure;
+  readonly pwdIdsExpiring: SummaryFigure;
+}
+
+/** A sector's benefits and IDs, each a count of people. `socialPension` is for seniors only. */
+export interface SectorCoverage {
+  readonly sectorIdOnFile: SummaryFigure;
+  readonly socialPension: SummaryFigure | null;
+  readonly appAccounts: SummaryFigure;
+  readonly digitalIds: SummaryFigure;
+}
+
+export const SECTOR_ATTENTION_KINDS = [
+  'milestone-birthdays',
+  'centenarians',
+  'no-sector-id',
+] as const;
+export type SectorAttentionKind = (typeof SECTOR_ATTENTION_KINDS)[number];
+
+/**
+ * A count a sector page puts in "Needs attention", with the label and the rule the API counted by
+ * (`DL-98`). It gates nothing, and the count is of people, so it may be withheld.
+ */
+export interface SectorAttention {
+  readonly key: SectorAttentionKind;
+  readonly label: string;
+  readonly figure: SummaryFigure;
+  readonly basis: string;
 }
 
 /**
@@ -74,8 +154,7 @@ export interface ResidentSummaryFilter {
 }
 
 export type SummaryDelta =
-  | { readonly direction: 'up' | 'down'; readonly amount: number }
-  | { readonly direction: 'same' };
+  { readonly direction: 'up' | 'down'; readonly amount: number } | { readonly direction: 'same' };
 
 /**
  * How a figure moved from the previous period: `null` when either side was withheld, because a

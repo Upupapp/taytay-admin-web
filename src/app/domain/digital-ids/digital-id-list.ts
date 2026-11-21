@@ -27,6 +27,10 @@ export interface DigitalIdListHolder {
   readonly name: string | null;
   /** The barangay's name as the API gives it, or `null` when the account names none. */
   readonly barangayName: string | null;
+  /** The account's email (`DL-232`); `null` once the account is closed. */
+  readonly email: string | null;
+  /** When the account was verified; `null` once closed. */
+  readonly verifiedAt: IsoDateTime | null;
 }
 
 /**
@@ -67,8 +71,25 @@ export interface DigitalIdCounts {
   readonly revoked: number;
 }
 
+/**
+ * From sign-up to card, municipality-wide, beside every page (`DL-232`, backend ADR 0006): never
+ * narrowed by the list's own filter, and never read as a count of the rows in this list.
+ */
+export interface DigitalIdFunnel {
+  /** Open resident accounts on the app. */
+  readonly appAccounts: number;
+  /** Accounts whose ID review is waiting. */
+  readonly pendingVerification: number;
+  /** When the longest-waiting of those was sent; `null` when none waits. */
+  readonly oldestPendingAt: IsoDateTime | null;
+  readonly verified: number;
+  /** Verified accounts holding no active or suspended card. */
+  readonly verifiedWithoutCard: number;
+}
+
 export interface DigitalIdListPage extends CursorPage<DigitalIdListing> {
   readonly counts: DigitalIdCounts;
+  readonly funnel: DigitalIdFunnel;
 }
 
 /** The shortest search the API accepts; a shorter one is refused before it is sent. */

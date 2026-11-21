@@ -121,13 +121,9 @@ export function notConnectedSentence(port: DataPort): string {
  * asked — never that the office has none (`DL-112`).
  */
 export const UNSERVED_FIGURES = {
-  'sector-counts': 'counts of a sector’s members (by barangay, age band, benefit or ID)',
-  'sector-attention':
-    'which of a sector’s members need attention (an ID or a renewal due, a milestone birthday)',
-  'sector-fields': 'a sector’s own fields (ID number, validity, social pension, disability type)',
-  // `DL-211`. The API keeps no list of a card's past states, and its audit trail is read whole.
-  'card-history':
-    'a card’s history (when it was issued, suspended or replaced, and when it was checked)',
+  // `DL-232`. The sector counts, attention cards and fields are served since backend ADR 0006; the
+  // registry records parentage, not care, so nothing records the children in a solo parent's care.
+  'children-in-care': 'the children in a solo parent’s care (nothing in the registry records them)',
 } as const satisfies Readonly<Record<string, string>>;
 
 export type UnservedFigure = keyof typeof UNSERVED_FIGURES;

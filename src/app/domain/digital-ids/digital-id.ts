@@ -19,6 +19,40 @@ export interface DigitalIdCard {
   readonly status: DigitalIdStatus;
   readonly issuedAt: IsoDateTime;
   readonly expiresAt: IsoDateTime;
+  /** What the card record's own read says beside the card (`DL-232`); absent on an act's answer. */
+  readonly record?: DigitalIdCardFacts;
+}
+
+/** Where the photo printed on the card came from. */
+export const CARD_PHOTO_SOURCES = ['selfie', 'card-photo'] as const;
+export type CardPhotoSource = (typeof CARD_PHOTO_SOURCES)[number];
+
+/**
+ * The card record's facts (`GET admin/users/{id}/digital-id`, backend ADR 0006): the photo's
+ * source, how many times this card was checked, and the holder's purok, verified date and the ID
+ * type the account was verified with. Each `null` when not recorded.
+ */
+export interface DigitalIdCardFacts {
+  readonly photoSource: CardPhotoSource | null;
+  readonly checksCount: number;
+  readonly holder: {
+    readonly purokOrSitio: string | null;
+    readonly verifiedAt: IsoDateTime | null;
+    readonly idType: string | null;
+  };
+}
+
+/**
+ * One row of a holder's card history: an act on any card the account was issued, as the audit trail
+ * recorded it (`DL-232`) — keyed on the person, because a reissue makes a new card. `action` is the
+ * trail's own word; `actorName` the staff account that acted, `null` when none is named.
+ */
+export interface DigitalIdEvent {
+  readonly id: string;
+  readonly action: string;
+  readonly card: DigitalIdId;
+  readonly at: IsoDateTime;
+  readonly actorName: string | null;
 }
 
 /**

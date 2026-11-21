@@ -63,7 +63,14 @@ describe('digital ID mappers (DL-171)', () => {
       expired: false,
       issuedAt: '2026-10-01T02:00:00.000Z',
       expiresAt: '2027-10-01T02:00:00.000Z',
-      holder: { account: '0f1e2d3c-4b5a-4968-8776-655443322103', name: null, barangayName: null },
+      holder: {
+        account: '0f1e2d3c-4b5a-4968-8776-655443322103',
+        name: null,
+        barangayName: null,
+        // Closed: the email and verified date go with the name (DL-232).
+        email: null,
+        verifiedAt: null,
+      },
     });
     expect(toDigitalIdListing({ ...LIST_PAGE.data[0], expired: 'no' })).toBeNull();
   });

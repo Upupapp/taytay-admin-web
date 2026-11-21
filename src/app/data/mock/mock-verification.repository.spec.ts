@@ -82,7 +82,8 @@ describe('MockVerificationRepository', () => {
     const first = await firstValueFrom(repository.list({ status: 'pending' }, { limit: 20 }));
     expect(first.items).toHaveLength(20);
     expect(first.hasMore).toBe(true);
-    expect(Object.keys(first).sort()).toEqual(['hasMore', 'items', 'nextCursor']);
+    // No total: the queue's own figures come beside the page, never a count of it (DL-232).
+    expect(Object.keys(first).sort()).toEqual(['hasMore', 'items', 'nextCursor', 'stats']);
 
     const sent = first.items.map((item) => item.submittedAt);
     expect([...sent].sort().reverse()).toEqual(sent);

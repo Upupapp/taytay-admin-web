@@ -17,7 +17,10 @@ import {
   type BarangayId,
   type CursorRequest,
   type DigitalIdCard,
+  type CursorPage,
   type DigitalIdCounts,
+  type DigitalIdEvent,
+  type DigitalIdFunnel,
   type DigitalIdHolder,
   type DigitalIdId,
   type DigitalIdListFilter,
@@ -31,7 +34,7 @@ import {
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
 import { MOCK_APP_ACCOUNTS } from './seed/app-accounts.seed';
-import { samplePlaceholder } from './seed/verification-requests.seed';
+import { MOCK_VERIFICATION_REQUESTS, samplePlaceholder } from './seed/verification-requests.seed';
 
 /**
  * The prefix of every sample QR code the mock accepts, and a `check:bundle` seed marker. A sample
@@ -93,6 +96,11 @@ const SEED: readonly HeldCard[] = [
     barangay: asId<BarangayId>('brgy-santa-ana'),
   },
 ];
+
+/** Whether a sample account holds a current (not revoked) seeded card (`DL-232`). */
+export function mockHoldsCard(account: AppAccountId): boolean {
+  return SEED.some((held) => held.account === account && held.card.status !== 'revoked');
+}
 
 /** The seed's cards as issued, for the mock dashboard's count of cards in force (`DL-182`). */
 export const MOCK_SEED_DIGITAL_IDS: readonly DigitalIdCard[] = SEED.map((held) => held.card);
@@ -158,7 +166,66 @@ export class MockDigitalIdRepository implements DigitalIdRepository {
       hasMore,
       nextCursor: hasMore ? String(end) : null,
       counts,
+      funnel: this.funnel(),
     });
+  }
+
+  /** The holder's card history: each seeded card's issue, and its suspension or revocation. */
+  cardHistory(account: AppAccountId, page: CursorRequest): Observable<CursorPage<DigitalIdEvent>> {
+    const denied = denyUnless<CursorPage<DigitalIdEvent>>(
+      this.access.currentUser(),
+      'digital-id.manage',
+    );
+    if (denied) return denied;
+    const events = this.cards
+      .filter((held) => held.account === account)
+      .flatMap((held): DigitalIdEvent[] => {
+        const issued: DigitalIdEvent = {
+          id: `${held.card.id}-issued`,
+          action: 'digital_id.issued',
+          card: held.card.id,
+          at: held.card.issuedAt,
+          actorName: 'Marisol Alcantara',
+        };
+        return held.card.status === 'active'
+          ? [issued]
+          : [
+              {
+                id: `${held.card.id}-${held.card.status}`,
+                action: `digital_id.${held.card.status}`,
+                card: held.card.id,
+                at: asIsoDateTime(new Date(Date.parse(held.card.issuedAt) + 30 * DAY_MS)),
+                actorName: 'Marisol Alcantara',
+              },
+              issued,
+            ];
+      })
+      .sort((a, b) => b.at.localeCompare(a.at));
+    const start = page.cursor ? Number(page.cursor) : 0;
+    const end = start + page.limit;
+    const hasMore = end < events.length;
+    return this.latency.respond({
+      items: events.slice(start, end),
+      hasMore,
+      nextCursor: hasMore ? String(end) : null,
+    });
+  }
+
+  /** Sign-up to card over the whole sample app, as the API counts it beside every page. */
+  private funnel(): DigitalIdFunnel {
+    const residents = MOCK_APP_ACCOUNTS.filter(
+      (account) => account.role === 'registered' || account.role === 'verified',
+    );
+    const pending = MOCK_VERIFICATION_REQUESTS.filter((request) => request.status === 'pending');
+    const oldest = pending.map((request) => request.submittedAt).sort()[0] ?? null;
+    const verified = residents.filter((account) => account.role === 'verified');
+    return {
+      appAccounts: residents.length,
+      pendingVerification: pending.length,
+      oldestPendingAt: oldest,
+      verified: verified.length,
+      verifiedWithoutCard: verified.filter((account) => this.current(account.id) === null).length,
+    };
   }
 
   check(payload: string): Observable<DigitalIdHolder> {
@@ -186,7 +253,24 @@ export class MockDigitalIdRepository implements DigitalIdRepository {
   cardOf(account: AppAccountId): Observable<DigitalIdCard | null> {
     const denied = denyUnless<DigitalIdCard | null>(this.access.currentUser(), 'digital-id.manage');
     if (denied) return denied;
-    return this.latency.respond(this.current(account)?.card ?? null);
+    const held = this.current(account);
+    if (held === null) return this.latency.respond(null);
+    const approved = MOCK_VERIFICATION_REQUESTS.find(
+      (request) => request.accountId === account && request.status === 'approved',
+    );
+    // The record read's facts (DL-232), sample: the photo is the approved selfie when there is one.
+    return this.latency.respond({
+      ...held.card,
+      record: {
+        photoSource: approved === undefined ? 'card-photo' : 'selfie',
+        checksCount: held.card.status === 'active' ? 3 : 1,
+        holder: {
+          purokOrSitio: 'Purok 2',
+          verifiedAt: approved?.reviewedAt ?? null,
+          idType: approved?.idType ?? null,
+        },
+      },
+    });
   }
 
   issue(account: AppAccountId, photo?: MediaId): Observable<DigitalIdCard> {
@@ -309,6 +393,11 @@ export class MockDigitalIdRepository implements DigitalIdRepository {
         account: held.account,
         name: this.holderName(held),
         barangayName: barangayName(held.barangay),
+        email: MOCK_APP_ACCOUNTS.find((entry) => entry.id === held.account)?.email ?? null,
+        verifiedAt:
+          MOCK_VERIFICATION_REQUESTS.find(
+            (request) => request.accountId === held.account && request.status === 'approved',
+          )?.reviewedAt ?? null,
       },
     };
   }

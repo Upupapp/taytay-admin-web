@@ -13,7 +13,12 @@ describe('resident summary mapper (DL-213)', () => {
   it('reads the figures as the server sent them, a withheld one as withheld', () => {
     const summary = toResidentSummary(SUMMARY.data, BARANGAYS);
 
-    expect(summary?.residents).toEqual({ current: 1204, previous: 1180 });
+    expect(summary?.residents).toMatchObject({ current: 1204, previous: 1180 });
+    expect(summary?.residents.byMonth).toHaveLength(12);
+    expect(summary?.totalBySex).toEqual({ female: 120, male: 0 });
+    expect(summary?.funnel.activeIds).toEqual({ value: null, withheld: true });
+    expect(summary?.thisMonth.turning60).toEqual({ value: 9, withheld: false });
+    expect(summary?.coverage).toBeNull();
     expect(summary?.registered.current).toEqual({ value: null, withheld: true });
     expect(summary?.registered.previous).toEqual({ value: 24, withheld: false });
     expect(summary?.byBarangay.total).toBe(1204);

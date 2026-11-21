@@ -31,7 +31,6 @@ import {
   type ResidentSummary,
   type ResidentSummaryFilter,
   type ResidentView,
-
   isSensitiveSector,
   type VulnerabilitySector,
 } from '@domain/index';
@@ -42,6 +41,7 @@ import { MockAssistanceRequestStore } from './mock-assistance-request.store';
 import { MockCaseStore } from './mock-case.store';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
+import { mockRegistryFactsOf } from './mock-registry-facts';
 import { mockResidentSummary } from './mock-resident-summary';
 
 /**
@@ -134,7 +134,7 @@ export class MockResidentRepository implements ResidentRepository {
     return this.latency.respond({
       // Only the page in hand is disclosed — the policy runs over 20 records,
       // not over the whole registry, so a large result set stays cheap.
-      items: sorted.slice(start, end).map((resident) => this.disclose(resident, user)),
+      items: sorted.slice(start, end).map((resident) => this.withRegistry(resident, user)),
       hasMore,
       nextCursor: hasMore ? String(end) : null,
     });
@@ -173,9 +173,8 @@ export class MockResidentRepository implements ResidentRepository {
     if (!resident || !this.readable(user, resident)) {
       return this.latency.respond(null);
     }
-    return this.latency.respond(this.disclose(resident, user));
+    return this.latency.respond(this.withRegistry(resident, user));
   }
-
 
   getProfile(id: ResidentId): Observable<ResidentProfile | null> {
     const user = this.access.currentUser();
@@ -199,7 +198,7 @@ export class MockResidentRepository implements ResidentRepository {
     const clearance = householdClearance((permission) => userHasPermission(user, permission));
 
     return this.latency.respond({
-      view: this.disclose(resident, user),
+      view: this.withRegistry(resident, user),
       household:
         household === null ? null : discloseHousehold(household, isProtected, clearance).household,
       // The mock holds a role for every membership, so it can always answer.
@@ -342,6 +341,17 @@ export class MockResidentRepository implements ResidentRepository {
     return this.latency.respond(undefined);
   }
 
+  /** The list and the record read: the record and the registry facts sent beside it (`DL-232`). */
+  private withRegistry(resident: Resident, user: AuthenticatedUser | null): ResidentView {
+    const view = this.disclose(resident, user);
+    return {
+      ...view,
+      registry: mockRegistryFactsOf(view.resident, (permission) =>
+        userHasPermission(user, permission),
+      ),
+    };
+  }
+
   private disclose(resident: Resident, user: AuthenticatedUser | null): ResidentView {
     return discloseResident(resident, (permission: Permission) =>
       userHasPermission(user, permission),
@@ -435,7 +445,11 @@ function matchesFilter(resident: Resident, filter: ResidentFilter, cleared: bool
  * who sees only "Mercado, M.".
  */
 function matchesNames(resident: Resident, search: string | undefined, cleared: boolean): boolean {
-  const words = (search ?? '').trim().toLowerCase().split(/\s+/).filter((word) => word !== '');
+  const words = (search ?? '')
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((word) => word !== '');
   const givenShown = cleared || !hasSensitiveSector(resident);
   const given = givenShown ? [resident.name.first, resident.name.middle ?? ''] : [];
   return words.every(

@@ -14,9 +14,9 @@ import {
   type AccountRole,
   type AppAccount,
   type AppAccountFilter,
+  type AppAccountListPage,
   type AppAccountId,
   type AppAccountRepository,
-  type CursorPage,
   type CursorRequest,
   type NameCorrection,
   type OfficeId,
@@ -28,6 +28,7 @@ import { MockOfficeRegistry } from './mock-archive';
 import { mockVerificationOf } from './mock-account-verification';
 import { MockLatency } from './mock-latency';
 import { MockAppAccountStore } from './mock-app-account.store';
+import { mockHoldsCard } from './mock-digital-id.repository';
 import { MOCK_OFFICES } from './seed/offices.seed';
 
 /** The API's own ceiling on a page (`limit` maximum 50), kept so the mock pages like the server. */
@@ -56,30 +57,44 @@ export class MockAppAccountRepository implements AppAccountRepository {
     return this.store.accounts;
   }
 
-  list(page: CursorRequest, filter: AppAccountFilter = {}): Observable<CursorPage<AppAccount>> {
-    const denied = denyUnless<CursorPage<AppAccount>>(this.access.currentUser(), 'user.view');
+  list(page: CursorRequest, filter: AppAccountFilter = {}): Observable<AppAccountListPage> {
+    const denied = denyUnless<AppAccountListPage>(this.access.currentUser(), 'user.view');
     if (denied) {
       return denied;
     }
     // With a status: the open residents' accounts with it, as the dashboard counts them (`DL-186`).
     const status = filter.verificationStatus;
-    const accounts =
-      status === undefined
-        ? this.accounts
-        : this.accounts.filter(
-            (account) =>
-              (account.role === 'registered' || account.role === 'verified') &&
-              mockVerificationOf(account.id, account.role) === status,
-          );
+    const isResident = (account: AppAccount) =>
+      account.role === 'registered' || account.role === 'verified';
+    const accounts = this.accounts
+      .filter(
+        (account) =>
+          status === undefined ||
+          (isResident(account) && mockVerificationOf(account.id, account.role) === status),
+      )
+      // With `card: none`, resident accounts holding no current sample card (DL-232).
+      .filter(
+        (account) =>
+          filter.card === undefined || (isResident(account) && !mockHoldsCard(account.id)),
+      );
     const start = page.cursor ? Number.parseInt(page.cursor, 10) || 0 : 0;
     const limit = Math.min(Math.max(1, page.limit), LARGEST_PAGE);
     const end = start + limit;
     const hasMore = end < accounts.length;
 
+    const staff = this.accounts.filter((account) => account.role === 'staff');
     return this.latency.respond({
       items: accounts.slice(start, end),
       hasMore,
       nextCursor: hasMore ? String(end) : null,
+      // The whole list's counts by kind, never narrowed by the filter, as the API sends them.
+      counts: {
+        residents: this.accounts.filter(isResident).length,
+        verified: this.accounts.filter((account) => account.role === 'verified').length,
+        staff: staff.length,
+        admins: this.accounts.filter((account) => account.role === 'admin').length,
+        staffWithoutOffice: staff.filter((account) => account.officeId === null).length,
+      },
     });
   }
 

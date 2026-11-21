@@ -10,7 +10,14 @@ import {
   type ResidentDraft,
   type VulnerabilitySector,
 } from '@domain/residents/resident';
-import type { ResidentField, ResidentView } from '@domain/residents/resident-disclosure';
+import {
+  REGISTRY_CARD_STATUSES,
+  type RegistryAppAccount,
+  type ResidentField,
+  type ResidentRegistryFacts,
+  type ResidentSectorDetail,
+  type ResidentView,
+} from '@domain/residents/resident-disclosure';
 import {
   APP_ACCOUNT_LINK_ACTS,
   RESIDENT_ORIGIN_KINDS,
@@ -40,7 +47,10 @@ import { bool, date, dateTime, field, id, int, oneOf, str } from './wire';
  * | `is_active`               | `resident.isActive`            | —                                |
  * | `is_protected`            | `isProtected`                  | —                                |
  * | `given_name_masked`       | which name `listedName` shows  | —                                |
- * | `withheld`                | `withheld`                     | a field it cannot name: not readable |
+ * | `withheld`                | `withheld`; `household` goes to `registry.householdWithheld` | a field it cannot name: not readable |
+ * | `household_reference`     | `registry.householdReference`  | `registry` absent (a read that does not send it) |
+ * | `app_account{verified,digital_id_status}` | `registry.appAccount` | `registry` absent      |
+ * | `sector_details[]`        | `registry.sectorDetails`       | `registry` absent                |
  * | `created_*`, `updated_*`  | `resident.audit`               | the record is not readable       |
  *
  * **The server has already redacted the record** (`DL-38`): this mapper applies no disclosure rule
@@ -69,7 +79,14 @@ import { bool, date, dateTime, field, id, int, oneOf, str } from './wire';
  */
 export function toResidentView(wire: unknown, barangays: BarangayIndex): ResidentView | null {
   const resident = toResident(wire, barangays);
-  const withheld = toWithheld(field(wire, 'withheld'));
+  const rawWithheld = field(wire, 'withheld');
+  // The household is withheld beside the record, not as a field of its form: kept apart, so a
+  // screen that refuses to edit a redacted record is not refused by it (backend ADR 0006).
+  const householdWithheld = Array.isArray(rawWithheld) && rawWithheld.includes('household');
+  const withheld = toWithheld(
+    Array.isArray(rawWithheld) ? rawWithheld.filter((entry) => entry !== 'household') : rawWithheld,
+  );
+  const registry = toRegistryFacts(wire, householdWithheld);
 
   if (resident === null || withheld === null) {
     return null;
@@ -83,6 +100,75 @@ export function toResidentView(wire: unknown, barangays: BarangayIndex): Residen
     withheld,
     listedName: masked ? formatProtectedName(resident.name) : formatPersonNameListed(resident.name),
     fullName: masked ? formatProtectedName(resident.name) : formatPersonName(resident.name),
+    ...(registry === null ? {} : { registry }),
+  };
+}
+
+/**
+ * The registry facts the list and the record read send (`DL-232`), or `null` when this read does
+ * not send them or one is unreadable — the screen then says "not sent", never "none".
+ */
+function toRegistryFacts(wire: unknown, householdWithheld: boolean): ResidentRegistryFacts | null {
+  const reference = field(wire, 'household_reference');
+  const account = field(wire, 'app_account');
+  const details = field(wire, 'sector_details');
+  if (reference === undefined || account === undefined || !Array.isArray(details)) {
+    return null;
+  }
+  const appAccount = account === null ? null : toRegistryAppAccount(account);
+  const sectorDetails = details.map(toSectorDetail);
+  if (
+    (reference !== null && str(reference) === null) ||
+    appAccount === undefined ||
+    !sectorDetails.every((detail): detail is ResidentSectorDetail => detail !== null)
+  ) {
+    return null;
+  }
+  return {
+    householdReference: reference === null ? null : str(reference),
+    householdWithheld,
+    appAccount,
+    sectorDetails,
+  };
+}
+
+/** `undefined` when unreadable; a `null` verified or card status is "not for this reader". */
+function toRegistryAppAccount(wire: unknown): RegistryAppAccount | undefined {
+  const linkedSince = dateTime(field(wire, 'linked_since'));
+  const rawVerified = field(wire, 'verified');
+  const rawCard = field(wire, 'digital_id_status');
+  const cardStatus =
+    rawCard === null || rawCard === undefined ? null : oneOf(rawCard, REGISTRY_CARD_STATUSES);
+  if (
+    linkedSince === null ||
+    (rawVerified !== null && rawVerified !== undefined && typeof rawVerified !== 'boolean') ||
+    (rawCard !== null && rawCard !== undefined && cardStatus === null)
+  ) {
+    return undefined;
+  }
+  return {
+    linkedSince,
+    verified: typeof rawVerified === 'boolean' ? rawVerified : null,
+    cardStatus,
+  };
+}
+
+function toSectorDetail(wire: unknown): ResidentSectorDetail | null {
+  const sector = oneOf(field(wire, 'sector'), VULNERABILITY_SECTORS);
+  const since = date(field(wire, 'since'));
+  const pension = field(wire, 'social_pension');
+  if (sector === null || since === null) {
+    return null;
+  }
+  return {
+    sector,
+    since,
+    idNumber: str(field(wire, 'id_number')),
+    issuedOn: date(field(wire, 'issued_on')),
+    validUntil: date(field(wire, 'valid_until')),
+    socialPension: typeof pension === 'boolean' ? pension : null,
+    disabilityType: str(field(wire, 'disability_type')),
+    detailsWithheld: bool(field(wire, 'details_withheld')),
   };
 }
 

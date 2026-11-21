@@ -6,7 +6,10 @@ import {
   hasSensitiveSector,
   isSensitiveSector,
   type Resident,
+  type VulnerabilitySector,
 } from './resident';
+import type { IsoDate, IsoDateTime } from '../shared/ids';
+import type { StatusCatalog } from '../shared/status';
 
 /**
  * The attributes of a resident record that are not disclosed by default.
@@ -60,6 +63,135 @@ export interface ResidentView {
   readonly listedName: string;
   /** `Given Surname` — already masked when the viewer is not cleared. */
   readonly fullName: string;
+  /**
+   * What the registry list and the record read send beside the record (`DL-232`); absent where
+   * the read does not send it (a household's members, a write's answer). Already redacted by the
+   * server, like the record.
+   */
+  readonly registry?: ResidentRegistryFacts;
+}
+
+/** A digital ID's standing as a registry row says it: `none` is an account holding no card. */
+export const REGISTRY_CARD_STATUSES = ['active', 'suspended', 'expired', 'none'] as const;
+export type RegistryCardStatus = (typeof REGISTRY_CARD_STATUSES)[number];
+
+/**
+ * The residents' app as a registry row says it. `verified` and `cardStatus` are `null` — "not for
+ * this reader", never "no" — without the keys that already open the account and its card
+ * (`user.view`, `digital-id.manage`; backend ADR 0006).
+ */
+export interface RegistryAppAccount {
+  readonly linkedSince: IsoDateTime;
+  readonly verified: boolean | null;
+  readonly cardStatus: RegistryCardStatus | null;
+}
+
+/**
+ * One current sector and what the office saw on its card. The number is masked to its last four
+ * characters (`DL-183`); number, dates, pension and disability are the identity tier's, so without
+ * `resident.view-sensitive` they are `null` and `detailsWithheld` says so.
+ */
+export interface ResidentSectorDetail {
+  readonly sector: VulnerabilitySector;
+  readonly since: IsoDate;
+  readonly idNumber: string | null;
+  readonly issuedOn: IsoDate | null;
+  readonly validUntil: IsoDate | null;
+  /** Senior citizens only. */
+  readonly socialPension: boolean | null;
+  /** PWD only, free text as recorded. */
+  readonly disabilityType: string | null;
+  readonly detailsWithheld: boolean;
+}
+
+/**
+ * Where a registry record stands with the residents' app, as the registry boards' "App and Digital
+ * ID" column says it — derived from what the row was sent, never stored. `on-app` is a record an
+ * account reads, for a reader not sent whether it is verified or holds a card.
+ */
+export type RegistryAppStanding =
+  | 'not-on-app'
+  | 'on-app'
+  | 'unverified'
+  | 'verified-no-card'
+  | 'card-active'
+  | 'card-suspended'
+  | 'card-expired';
+
+export const REGISTRY_APP_STANDING_CATALOG: StatusCatalog<RegistryAppStanding> = {
+  'not-on-app': {
+    value: 'not-on-app',
+    label: 'Not on the app',
+    tone: 'neutral',
+    description: 'No residents’ app account reads this record.',
+  },
+  'on-app': {
+    value: 'on-app',
+    label: 'On the app',
+    tone: 'info',
+    description:
+      'An app account reads this record. Whether it is verified or holds a card is not sent to your role.',
+  },
+  unverified: {
+    value: 'unverified',
+    label: 'On the app, not verified',
+    tone: 'info',
+    description: 'An app account reads this record and has not been verified.',
+  },
+  'verified-no-card': {
+    value: 'verified-no-card',
+    label: 'Verified, no card',
+    tone: 'warning',
+    description: 'The account is verified and holds no Digital ID.',
+  },
+  'card-active': {
+    value: 'card-active',
+    label: 'Digital ID active',
+    tone: 'success',
+    description: 'The account holds a Digital ID that is active and not past its date.',
+  },
+  'card-suspended': {
+    value: 'card-suspended',
+    label: 'Card suspended',
+    tone: 'danger',
+    description: 'The account’s Digital ID is suspended.',
+  },
+  'card-expired': {
+    value: 'card-expired',
+    label: 'Card expired',
+    tone: 'danger',
+    description: 'The account’s Digital ID is past its date.',
+  },
+};
+
+/** The standing a row's app facts say. */
+export function registryAppStanding(account: RegistryAppAccount | null): RegistryAppStanding {
+  if (account === null) return 'not-on-app';
+  switch (account.cardStatus) {
+    case 'active':
+      return 'card-active';
+    case 'suspended':
+      return 'card-suspended';
+    case 'expired':
+      return 'card-expired';
+    case 'none':
+      return account.verified === true ? 'verified-no-card' : 'unverified';
+    case null:
+      return account.verified === null ? 'on-app' : account.verified ? 'on-app' : 'unverified';
+  }
+}
+
+export interface ResidentRegistryFacts {
+  /**
+   * The household the record lives in now. `null` when it lives in none **or** when withheld —
+   * `householdWithheld` tells the two apart (`household.view`). Not a field of the record's form,
+   * so it is not one of `withheld`, which gates editing.
+   */
+  readonly householdReference: string | null;
+  readonly householdWithheld: boolean;
+  /** `null`: no app account reads the record. */
+  readonly appAccount: RegistryAppAccount | null;
+  readonly sectorDetails: readonly ResidentSectorDetail[];
 }
 
 export type PermissionCheck = (permission: Permission) => boolean;
@@ -148,7 +280,11 @@ export function discloseMember(
     ...view,
     resident: {
       ...view.resident,
-      address: { barangayId: view.resident.address.barangayId, purokOrSitio: null, streetAddress: null },
+      address: {
+        barangayId: view.resident.address.barangayId,
+        purokOrSitio: null,
+        streetAddress: null,
+      },
     },
     withheld: view.withheld.includes('exactAddress')
       ? view.withheld

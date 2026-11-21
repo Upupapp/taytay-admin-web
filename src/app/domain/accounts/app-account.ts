@@ -1,6 +1,7 @@
 import type { StaffRole } from '../access/permission';
 import type { AccountVerificationStatus } from '../dashboard/dashboard-summary';
 import type { AppAccountId, BarangayId, OfficeId } from '../shared/ids';
+import type { CursorPage } from '../shared/pagination';
 import type { StatusCatalog, StatusTransitions } from '../shared/status';
 
 /**
@@ -44,6 +45,27 @@ export interface AppAccount {
  */
 export interface AppAccountFilter {
   readonly verificationStatus?: AccountVerificationStatus;
+  /**
+   * `none`: open resident accounts holding no active or suspended card — with `verified`, the
+   * residents ready for one (`DL-232`). Accounts, not cards, so never rows of the card list.
+   */
+  readonly card?: 'none';
+}
+
+/**
+ * The account list's counts by kind, beside every page (`DL-232`, backend ADR 0006): open accounts,
+ * whole, never narrowed by the list's own filter — and never read as a count of the rows on screen.
+ */
+export interface AppAccountCounts {
+  readonly residents: number;
+  readonly verified: number;
+  readonly staff: number;
+  readonly admins: number;
+  readonly staffWithoutOffice: number;
+}
+
+export interface AppAccountListPage extends CursorPage<AppAccount> {
+  readonly counts: AppAccountCounts;
 }
 
 /* ── roles, defined once (rule 7) ────────────────────────────────────────── */

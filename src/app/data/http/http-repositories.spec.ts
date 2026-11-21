@@ -813,7 +813,13 @@ describe('the Node adapters', () => {
 
       http
         .expectOne((r) => r.url === `${BASE}/threads`)
-        .flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
+        .flush({
+          data: [],
+          meta: {
+            pagination: { has_more: false, next_cursor: null },
+            counts: { open: 0, closed: 0, unread: 0 },
+          },
+        });
       http.expectOne(`${BASE}/me`).flush({
         ...ME_STAFF,
         data: { ...ME_STAFF.data, office_id: null, permissions: ['household.view-counts'] },
@@ -827,7 +833,13 @@ describe('the Node adapters', () => {
 
       http
         .expectOne((r) => r.url === `${BASE}/threads`)
-        .flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
+        .flush({
+          data: [],
+          meta: {
+            pagination: { has_more: false, next_cursor: null },
+            counts: { open: 0, closed: 0, unread: 0 },
+          },
+        });
       http.expectOne(`${BASE}/me`).flush(ME_STAFF);
 
       const answer = await listing;
@@ -839,7 +851,13 @@ describe('the Node adapters', () => {
 
       http
         .expectOne((r) => r.url === `${BASE}/threads`)
-        .flush({ data: [], meta: { pagination: { has_more: false, next_cursor: null } } });
+        .flush({
+          data: [],
+          meta: {
+            pagination: { has_more: false, next_cursor: null },
+            counts: { open: 0, closed: 0, unread: 0 },
+          },
+        });
       http.expectNone(`${BASE}/me`);
 
       expect((await listing).kind).toBe('threads');
@@ -3565,8 +3583,27 @@ describe('the Node adapters', () => {
       const held = firstValueFrom(cards.cardOf(account));
       http
         .expectOne({ method: 'GET', url: `${BASE}/admin/users/${account}/digital-id` })
-        .flush(DIGITAL_ID_CARD);
-      expect((await held)?.number).toBe('TAY-2026-000123');
+        .flush({
+          ...DIGITAL_ID_CARD,
+          // The record read's facts beside the card (DL-232).
+          data: {
+            ...DIGITAL_ID_CARD.data,
+            photo_source: 'selfie',
+            checks_count: 2,
+            holder: {
+              purok_or_sitio: 'Purok 3',
+              verified_at: '2026-10-28T03:00:00.000Z',
+              id_type: 'umid',
+            },
+          },
+        });
+      const card = await held;
+      expect(card?.number).toBe('TAY-2026-000123');
+      expect(card?.record).toEqual({
+        photoSource: 'selfie',
+        checksCount: 2,
+        holder: { purokOrSitio: 'Purok 3', verifiedAt: '2026-10-28T03:00:00.000Z', idType: 'umid' },
+      });
 
       const none = firstValueFrom(cards.cardOf(account));
       http
@@ -3742,11 +3779,32 @@ describe('the Node adapters', () => {
       const imports = TestBed.inject(HttpResidentImportRepository);
       const file = new File(['Surname\nReyes'], 'census.csv', { type: 'text/csv' });
       const done = firstValueFrom(imports.upload(file));
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush(BARANGAYS);
       const request = http.expectOne({ method: 'POST', url: `${BASE}/office/imports` });
       expect(request.request.body).toBeInstanceOf(FormData);
       expect([...(request.request.body as FormData).keys()]).toEqual(['file']);
       request.flush({ data: { ...RESIDENT_IMPORT.data }, meta: {} });
       expect((await done).fileName).toBe('census.csv');
+    });
+
+    it('sends where the list is from and the barangay, when said, and reads them back (DL-232)', async () => {
+      const imports = TestBed.inject(HttpResidentImportRepository);
+      const file = new File(['Surname\nReyes'], 'census.csv', { type: 'text/csv' });
+      const done = firstValueFrom(
+        imports.upload(file, {
+          source: 'osca',
+          barangayId: asId<BarangayId>('brgy-san-juan'),
+        }),
+      );
+      http.expectOne({ method: 'GET', url: `${BASE}/barangays` }).flush(BARANGAYS);
+      const request = http.expectOne({ method: 'POST', url: `${BASE}/office/imports` });
+      const form = request.request.body as FormData;
+      expect(form.get('source')).toBe('osca');
+      expect(form.get('barangay_id')).toBe('6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04');
+      request.flush({ data: { ...RESIDENT_IMPORT.data }, meta: {} });
+      const summary = await done;
+      expect(summary.source).toBe('osca');
+      expect(summary.barangayId).toBe('brgy-san-juan');
     });
 
     it('sends the whole mapping by PUT and a finding by POST, and reads the import back', async () => {

@@ -10,6 +10,7 @@ import {
   type AppAccountId,
   type CursorPage,
   type CursorRequest,
+  type InboxFilter,
   type InboxListing,
   type MediaId,
   type OfficeInboxRepository,
@@ -64,17 +65,26 @@ export class MockOfficeInboxRepository implements OfficeInboxRepository {
   /** Each reply by the key it was sent under, so a retry is answered as the API answers it. */
   private readonly sentUnder = new Map<string, ThreadMessage>();
 
-  list(page: CursorRequest): Observable<InboxListing> {
+  list(page: CursorRequest, filter: InboxFilter = {}): Observable<InboxListing> {
     const denied = denyUnless<InboxListing>(this.access.currentUser(), KEY);
     if (denied) {
       return denied;
     }
 
     const ordered = this.threads
-      .slice()
+      .filter((thread) => filter.status === undefined || thread.status === filter.status)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.id.localeCompare(a.id));
 
-    return this.latency.respond<InboxListing>({ kind: 'threads', page: pageOf(ordered, page) });
+    return this.latency.respond<InboxListing>({
+      kind: 'threads',
+      page: pageOf(ordered, page),
+      // The whole inbox by status, never narrowed by the filter, as the API counts it (DL-232).
+      counts: {
+        open: this.threads.filter((thread) => thread.status === 'open').length,
+        closed: this.threads.filter((thread) => thread.status === 'closed').length,
+        unread: this.threads.filter((thread) => thread.unreadCount > 0).length,
+      },
+    });
   }
 
   thread(id: OfficeThreadId): Observable<OfficeThread> {

@@ -5,6 +5,8 @@ import type {
   MediaId,
   VerificationRequestId,
 } from '../shared/ids';
+import type { DayCount } from '../dashboard/dashboard-summary';
+import type { CursorPage } from '../shared/pagination';
 import type { AccountLinkOutcome } from './account-link';
 import { nextStatuses, type StatusCatalog, type StatusTransitions } from '../shared/status';
 
@@ -317,3 +319,21 @@ export interface VerificationFilter {
 }
 
 export const DEFAULT_VERIFICATION_FILTER: VerificationFilter = { status: 'pending' };
+
+/**
+ * The queue's figures, beside every page of it (`DL-232`, backend ADR 0006): how many wait, since
+ * when the oldest has waited, how many were decided and sent in the last seven Manila days. Never
+ * narrowed by the list's status filter, and never read as a count of the rows on screen (`DL-161`).
+ * Queue decisions only: an in-person verification is not one.
+ */
+export interface VerificationQueueStats {
+  readonly pending: number;
+  readonly oldestPendingAt: IsoDateTime | null;
+  readonly decided7d: { readonly approved: number; readonly rejected: number };
+  /** Requests sent per Manila day, today and the six before, oldest first. */
+  readonly sentByDay: readonly DayCount[];
+}
+
+export interface VerificationListPage extends CursorPage<VerificationRequest> {
+  readonly stats: VerificationQueueStats;
+}

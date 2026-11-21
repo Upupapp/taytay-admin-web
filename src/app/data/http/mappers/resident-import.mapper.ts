@@ -4,6 +4,7 @@ import {
   IMPORT_GROUPS,
   IMPORT_OUTCOMES,
   RESIDENT_IMPORT_KINDS,
+  RESIDENT_IMPORT_SOURCES,
   RESIDENT_IMPORT_STATUSES,
   type ImportCandidate,
   type ImportColumn,
@@ -21,6 +22,7 @@ import {
   type ResidentImportId,
   type ResidentImportResult,
   type ResidentImportSummary,
+  type ResidentImportUploadDetails,
 } from '@domain/index';
 
 import type { BarangayIndex } from './resident.mapper';
@@ -65,13 +67,18 @@ function actor(value: unknown): string | null | undefined {
 
 /**
  * `ResidentImportSummary` → `ResidentImportSummary` (`DL-214`). Every field is required; `created_by`
- * and `committed_by` are read for the name only.
+ * and `committed_by` are read for the name only. `source` and `barangay_id` are what the officer
+ * said at upload (`DL-232`), `null` when not said; a barangay this console does not know is `null`
+ * too, because the list only names it and moves nothing by it.
  *
  * @consumes GET office/imports
  * @consumes POST office/imports
  * @consumes POST office/imports/{id}/commit
  */
-export function toResidentImportSummary(wire: unknown): ResidentImportSummary | null {
+export function toResidentImportSummary(
+  wire: unknown,
+  barangays: BarangayIndex,
+): ResidentImportSummary | null {
   const importId = id<ResidentImportId>(field(wire, 'id'));
   const fileName = str(field(wire, 'file_name'));
   const kind = oneOf(field(wire, 'kind'), RESIDENT_IMPORT_KINDS);
@@ -84,6 +91,16 @@ export function toResidentImportSummary(wire: unknown): ResidentImportSummary | 
   const committedBy = actor(field(wire, 'committed_by'));
   const rawResult = field(wire, 'result');
   const result = rawResult === null ? null : toResult(rawResult);
+  const rawSource = field(wire, 'source');
+  const source =
+    rawSource === null || rawSource === undefined
+      ? null
+      : oneOf(rawSource, RESIDENT_IMPORT_SOURCES);
+  const rawBarangay = field(wire, 'barangay_id');
+  const barangayId =
+    rawBarangay === null || rawBarangay === undefined
+      ? null
+      : barangays.toConsole(str(rawBarangay));
 
   if (
     importId === null ||
@@ -95,7 +112,8 @@ export function toResidentImportSummary(wire: unknown): ResidentImportSummary | 
     createdBy === undefined ||
     (rawCommittedAt !== null && committedAt === null) ||
     committedBy === undefined ||
-    (rawResult !== null && result === null)
+    (rawResult !== null && result === null) ||
+    (rawSource !== null && rawSource !== undefined && source === null)
   ) {
     return null;
   }
@@ -111,6 +129,8 @@ export function toResidentImportSummary(wire: unknown): ResidentImportSummary | 
     committedAt,
     committedBy,
     result,
+    source,
+    barangayId,
   };
 }
 
@@ -135,7 +155,7 @@ function toResult(wire: unknown): ResidentImportResult | null {
  * @consumes POST office/imports/{id}/rows/{row}/resolve
  */
 export function toResidentImport(wire: unknown, barangays: BarangayIndex): ResidentImport | null {
-  const summary = toResidentImportSummary(wire);
+  const summary = toResidentImportSummary(wire, barangays);
   const columns = every(field(wire, 'columns'), toColumn);
   const fields = every(field(wire, 'fields'), toFieldSpec);
   const mapping = toMapping(field(wire, 'mapping'));
@@ -357,11 +377,24 @@ export function toWireImportResolve(resolution: ImportResolution): ResidentImpor
     : { action: resolution.action, reason };
 }
 
-/** The upload's one multipart field. The file keeps its own name, which the API keeps as the import's. */
+/**
+ * The upload's multipart fields. The file keeps its own name, which the API keeps as the import's;
+ * `source` and `barangay_id` are sent only when the officer said them (`DL-232`).
+ */
 export interface ResidentImportUploadWire {
   readonly file: Blob;
+  readonly source?: string;
+  readonly barangay_id?: string;
 }
 
-export function toWireImportUpload(file: File): ResidentImportUploadWire {
-  return { file };
+export function toWireImportUpload(
+  file: File,
+  details: ResidentImportUploadDetails | undefined,
+  barangayApiId: string | null,
+): ResidentImportUploadWire {
+  return {
+    file,
+    ...(details?.source ? { source: details.source } : {}),
+    ...(barangayApiId === null ? {} : { barangay_id: barangayApiId }),
+  };
 }
