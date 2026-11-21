@@ -382,6 +382,13 @@ function follows(first: Node | null | undefined, second: Node | null | undefined
 
 /* ── the page ────────────────────────────────────────────────────────────── */
 
+/** A tab's words, without the count the API sends beside it (DL-232). */
+function tabLabel(tab: Element): string | undefined {
+  const copy = tab.cloneNode(true) as Element;
+  copy.querySelectorAll('.tab__count').forEach((count) => count.remove());
+  return copy.textContent?.trim();
+}
+
 describe('DirectoryPage (DL-170)', () => {
   it('says residents see it, before anything else', async () => {
     configure();
@@ -399,9 +406,10 @@ describe('DirectoryPage (DL-170)', () => {
     const element = await settle(fixture);
 
     expect(
-      [...element.querySelectorAll('.directory-tabs__link')].map((a) => a.textContent?.trim()),
+      [...element.querySelectorAll('.directory-tabs__link')].map(tabLabel),
     ).toEqual(['Tulong pages', 'Hotlines']);
-    expect(element.querySelector('[aria-current="page"]')?.textContent?.trim()).toBe('Hotlines');
+    const current = element.querySelector('[aria-current="page"]');
+    expect(current === null ? undefined : tabLabel(current)).toBe('Hotlines');
     expect(element.querySelector('app-hotlines-section')).not.toBeNull();
     expect(element.querySelector('app-offices-section')).toBeNull();
   });
@@ -423,7 +431,8 @@ describe('DirectoryPage (DL-170)', () => {
     fixture.componentRef.setInput('archived', 'true');
     const element = await settle(fixture);
 
-    expect(hotlines.listed).toEqual([true]);
+    // The page's figures read the list in use (DL-232); the section reads the archived one.
+    expect(hotlines.listed.filter((archived) => archived)).toEqual([true]);
     const tabs = [...element.querySelectorAll('app-archive-tabs a')];
     expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['In use', 'Archived']);
     expect(tabs.map((tab) => tab.getAttribute('href'))).toEqual([
@@ -439,7 +448,9 @@ describe('DirectoryPage (DL-170)', () => {
     fixture.componentRef.setInput('archived', 'yes');
     await settle(fixture);
 
-    expect(offices.listed).toEqual([false]);
+    // Once for the section, once for the page's figures (DL-232): both the list in use.
+    expect(offices.listed.every((archived) => !archived)).toBe(true);
+    expect(offices.listed.length).toBeGreaterThan(0);
   });
 });
 

@@ -12,6 +12,16 @@ export const INBOX_COPY = {
       'Residents writing to an office from the residents’ app, and the office’s replies. Your ' +
       'office’s conversations — or, for an administrator, every office’s.',
     caption: 'Conversations',
+    /* The inbox's own figures and status tabs (DL-232). */
+    figuresLabel: 'Inbox figures',
+    figures: {
+      open: { label: 'Open conversations', hint: 'Either side may write.' },
+      unread: { label: 'Unread by the office', hint: 'Conversations with a message nobody here has read.' },
+      closed: { label: 'Closed', hint: 'Nobody can write in these again.' },
+    },
+    tabsLabel: 'Status',
+    tabAll: 'All',
+    tabs: { open: 'Open', closed: 'Closed' },
     order: 'Newest activity first, as the server sends them.',
     noName:
       'The server names each resident only by an account number, so a conversation shows what ' +

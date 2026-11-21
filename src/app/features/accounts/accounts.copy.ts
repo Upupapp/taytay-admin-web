@@ -13,6 +13,18 @@ export const ACCOUNTS_COPY = {
     subtitle:
       'Every account in the residents’ app — residents and staff — and who may use this console.',
     caption: 'Accounts',
+  /* The board's "Accounts by role" figures (DL-232): open accounts, whole. */
+  figuresLabel: 'Accounts by role',
+  figures: {
+    residents: { label: 'Resident accounts', hint: 'Residents and verified residents.' },
+    verified: { label: 'Verified residents', hint: 'Verified through an ID review or in person.' },
+    staff: {
+      label: 'Staff and administrators',
+      hint: (staff: number, admins: number) =>
+        `${staff} staff · ${admins} ${admins === 1 ? 'administrator' : 'administrators'}`,
+    },
+    noOffice: { label: 'Staff with no office', hint: 'They answer no office’s inbox yet.' },
+  },
     order: 'Newest accounts first, as the server sends them.',
     minimum:
       'Shown: name, email, role and office — what deciding who is staff needs. The server also ' +

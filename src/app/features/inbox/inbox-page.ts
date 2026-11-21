@@ -9,8 +9,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
-import { switchMap, tap } from 'rxjs';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { map, switchMap, tap } from 'rxjs';
 
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
@@ -18,8 +18,10 @@ import {
   OFFICE_INBOX_REPOSITORY,
   OFFICE_REPOSITORY,
   THREAD_STATUS_CATALOG,
+  THREAD_STATUSES,
   type CursorPage,
   type InboxListing,
+  type ThreadStatus,
   type OfficeThread,
 } from '@domain/index';
 import { officeDirectory } from '@shared/offices/office-directory';
@@ -30,6 +32,7 @@ import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-n
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
+import { FigureTiles, type FigureTile } from '@shared/ui/figure-tiles/figure-tiles';
 import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
@@ -64,6 +67,7 @@ export const INBOX_TOPICS: readonly LiveTopic[] = ['threads'];
     AsyncContent,
     DataTable,
     DisplayDatePipe,
+    FigureTiles,
     Icon,
     ListChangedNotice,
     PageHeader,
@@ -78,6 +82,28 @@ export class InboxPage {
   private readonly offices = inject(OFFICE_REPOSITORY);
   private readonly destroyRef = inject(DestroyRef);
   private readonly live = inject(LiveUpdates);
+  private readonly route = inject(ActivatedRoute);
+
+  /** The status tab, from the URL (`DL-232`): none is every conversation. */
+  protected readonly status = toSignal(
+    this.route.queryParamMap.pipe(map((params) => readStatus(params.get('status')))),
+    { initialValue: readStatus(this.route.snapshot.queryParamMap.get('status')) },
+  );
+  protected readonly statuses = THREAD_STATUSES;
+
+  /** The three figures the board draws above the list (`DL-232`). */
+  protected readonly figures = computed<readonly FigureTile[] | null>(() => {
+    const counts = this.counts();
+    if (counts === null) return null;
+    const tile = (key: 'open' | 'unread' | 'closed', dot: FigureTile['dot']): FigureTile => ({
+      key,
+      label: this.copy.figures[key].label,
+      value: counts[key].toLocaleString('en-PH'),
+      hint: this.copy.figures[key].hint,
+      dot,
+    });
+    return [tile('open', 'bar'), tile('unread', 'red'), tile('closed', 'muted')];
+  });
 
   protected readonly copy = INBOX_COPY.list;
   protected readonly noOffice = INBOX_COPY.noOffice;
@@ -108,16 +134,20 @@ export class InboxPage {
    * hint is held and the notice offers the reload instead.
    */
   protected readonly first = toSignal(
-    toObservable(this.generation).pipe(
+    toObservable(computed(() => ({ status: this.status(), generation: this.generation() }))).pipe(
       tap(() => {
         this.further.set([]);
         this.moreFailed.set(false);
         this.loadingMore.set(false);
         this.listChanged.set(false);
       }),
-      switchMap(() =>
+      switchMap(({ status }) =>
         liveViewState(
-          () => this.repository.list({ limit: PAGE_SIZE, cursor: null }),
+          () =>
+            this.repository.list(
+              { limit: PAGE_SIZE, cursor: null },
+              status === undefined ? {} : { status },
+            ),
           unlessPaged(
             this.live.changes(INBOX_TOPICS),
             () => this.further().length > 0 || this.loadingMore(),
@@ -136,6 +166,12 @@ export class InboxPage {
   protected readonly firstPage = computed<CursorPage<OfficeThread> | null>(() => {
     const listing = valueOf(this.first());
     return listing?.kind === 'threads' ? listing.page : null;
+  });
+
+  /** The reader's threads by status, from beside the first page; never the rows on screen. */
+  protected readonly counts = computed(() => {
+    const listing = valueOf(this.first());
+    return listing?.kind === 'threads' ? listing.counts : null;
   });
 
   protected readonly rows = computed<readonly OfficeThread[]>(() => [
@@ -196,8 +232,9 @@ export class InboxPage {
     this.loadingMore.set(true);
     this.moreFailed.set(false);
 
+    const status = this.status();
     this.repository
-      .list({ limit: PAGE_SIZE, cursor })
+      .list({ limit: PAGE_SIZE, cursor }, status === undefined ? {} : { status })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (listing) => {
@@ -213,4 +250,8 @@ export class InboxPage {
         },
       });
   }
+}
+
+function readStatus(value: string | null): ThreadStatus | undefined {
+  return THREAD_STATUSES.find((status) => status === value);
 }

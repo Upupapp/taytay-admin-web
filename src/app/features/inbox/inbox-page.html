@@ -1,5 +1,10 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
+<!-- The inbox's own figures, from beside its first page (DL-232): never the rows on screen. -->
+@if (figures(); as tiles) {
+  <app-figure-tiles [tiles]="tiles" [label]="copy.figuresLabel" />
+}
+
 <section class="card card--panel card--padded inbox" aria-labelledby="inbox-heading">
   <h2 id="inbox-heading" class="visually-hidden">{{ copy.caption }}</h2>
 
@@ -20,6 +25,44 @@
         </div>
       } @else {
         <div class="inbox__intro">
+          <nav class="inbox__tabs" [attr.aria-label]="copy.tabsLabel">
+            <ul class="tabs">
+              <li>
+                <a
+                  class="tab"
+                  [routerLink]="[]"
+                  [queryParams]="{ status: null }"
+                  queryParamsHandling="merge"
+                  [replaceUrl]="true"
+                  [class.tab--active]="status() === undefined"
+                  [attr.aria-current]="status() === undefined ? 'true' : null"
+                >
+                  {{ copy.tabAll }}
+                  @if (counts(); as counts) {
+                    <span class="tab__count">{{ counts.open + counts.closed }}</span>
+                  }
+                </a>
+              </li>
+              @for (option of statuses; track option) {
+                <li>
+                  <a
+                    class="tab"
+                    [routerLink]="[]"
+                    [queryParams]="{ status: option }"
+                    queryParamsHandling="merge"
+                    [replaceUrl]="true"
+                    [class.tab--active]="status() === option"
+                    [attr.aria-current]="status() === option ? 'true' : null"
+                  >
+                    {{ copy.tabs[option] }}
+                    @if (counts(); as counts) {
+                      <span class="tab__count">{{ counts[option] }}</span>
+                    }
+                  </a>
+                </li>
+              }
+            </ul>
+          </nav>
           <p class="callout callout--warning inbox__notice">{{ copy.noName }}</p>
         </div>
         @if (officesUnnamed()) {

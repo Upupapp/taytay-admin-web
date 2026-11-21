@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { EMPTY, of, throwError, type Observable } from 'rxjs';
+import { EMPTY, of, throwError, type Observable, map } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionService } from '@core/access/permission.service';
@@ -21,10 +21,10 @@ import {
   type AccountRole,
   type AppAccount,
   type AppAccountFilter,
+  type AppAccountListPage,
   type AppAccountId,
   type AppAccountRepository,
   type BarangayId,
-  type CursorPage,
   type CursorRequest,
   type NameCorrection,
   type Office,
@@ -91,6 +91,8 @@ function account(
 }
 
 /** Records every call, so a test can say what was — and was not — asked of the data layer. */
+const ACCOUNT_COUNTS = { residents: 3, verified: 1, staff: 1, admins: 1, staffWithoutOffice: 0 };
+
 class RecordingAccounts implements AppAccountRepository {
   readonly listed: CursorRequest[] = [];
   readonly filters: (AppAccountFilter | undefined)[] = [];
@@ -101,7 +103,7 @@ class RecordingAccounts implements AppAccountRepository {
   barangayReads = 0;
   failWith: unknown = null;
 
-  list(page: CursorRequest, filter?: AppAccountFilter): Observable<CursorPage<AppAccount>> {
+  list(page: CursorRequest, filter?: AppAccountFilter): Observable<AppAccountListPage> {
     this.listed.push(page);
     this.filters.push(filter);
     return of(
@@ -116,7 +118,7 @@ class RecordingAccounts implements AppAccountRepository {
             hasMore: true,
             nextCursor: 'cursor-2',
           },
-    );
+    ).pipe(map((answer) => ({ ...answer, counts: ACCOUNT_COUNTS })));
   }
 
   changeRole(id: AppAccountId, role: AccountRole): Observable<AppAccount> {

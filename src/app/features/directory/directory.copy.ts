@@ -11,6 +11,22 @@ export const DIRECTORY_COPY = {
       'them about a service, and the numbers they can call. A change here reaches every resident ' +
       'the next time the app loads.',
     sectionsLabel: 'Directory sections',
+    /* The board's three figures, each section's records in use (DL-232). */
+    figuresLabel: 'What residents see',
+    figures: {
+      offices: {
+        label: 'Offices in the app',
+        hint: (banners: number) => `${banners} ${banners === 1 ? 'has a banner' : 'have a banner'}`,
+      },
+      services: {
+        label: 'Tulong pages',
+        hint: (featured: number) => `${featured} featured on the home screen`,
+      },
+      hotlines: {
+        label: 'Hotlines shown',
+        hint: (kept: number) => `of ${kept} ${kept === 1 ? 'line' : 'lines'} kept here`,
+      },
+    },
     noSection: 'Your account holds none of the keys for this directory.',
     sections: {
       offices: 'Offices',

@@ -1,5 +1,10 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
+<!-- Each section's records in use, read whole as the section reads them (DL-232). -->
+@if (figures.tiles().length > 0) {
+  <app-figure-tiles [tiles]="figures.tiles()" [label]="copy.figuresLabel" />
+}
+
 @if (offered().length > 1) {
   <nav class="directory-tabs" [attr.aria-label]="copy.sectionsLabel">
     <ul class="tabs">
@@ -12,6 +17,10 @@
             [attr.aria-current]="current() === tab.key ? 'page' : null"
           >
             {{ copy.sections[tab.key] }}
+            @let count = figures.counts()[tab.key];
+            @if (count !== null) {
+              <span class="tab__count">{{ count }}</span>
+            }
           </a>
         </li>
       }

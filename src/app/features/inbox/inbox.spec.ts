@@ -65,6 +65,9 @@ function message(n: number, sender: string, attachments: readonly string[] = [])
 }
 
 /** Records every call, so a test can say what was — and was not — asked of the data layer. */
+/** The inbox's figures beside every page (DL-232). */
+const COUNTS = { open: 2, closed: 1, unread: 1 };
+
 class RecordingInbox implements OfficeInboxRepository {
   readonly listed: CursorRequest[] = [];
   readonly opened: MediaId[] = [];
@@ -92,10 +95,11 @@ class RecordingInbox implements OfficeInboxRepository {
       return of({ kind: 'no-office' });
     }
     if (this.answer === 'empty') {
-      return of({ kind: 'threads', page: { items: [], hasMore: false, nextCursor: null } });
+      return of({ kind: 'threads', page: { items: [], hasMore: false, nextCursor: null }, counts: COUNTS });
     }
     return of({
       kind: 'threads',
+      counts: COUNTS,
       page: page.cursor
         ? { items: [thread(3)], hasMore: false, nextCursor: null }
         : { items: [thread(1), thread(2)], hasMore: true, nextCursor: 'cursor-2' },
@@ -528,6 +532,7 @@ describe('the inbox keeps itself current (DL-222)', () => {
 
     answer.next({
       kind: 'threads',
+      counts: COUNTS,
       page: { items: [thread(4), thread(1), thread(2)], hasMore: true, nextCursor: 'cursor-2' },
     });
     answer.complete();

@@ -24,6 +24,7 @@ import {
   takesAnOffice,
   type AccountVerificationStatus,
   type AppAccount,
+  type AppAccountListPage,
   type AppAccountFilter,
   type CursorPage,
 } from '@domain/index';
@@ -37,6 +38,7 @@ import { Icon } from '@shared/ui/icon/icon';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Modal } from '@shared/ui/modal/modal';
+import { FigureTiles, type FigureTile } from '@shared/ui/figure-tiles/figure-tiles';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -66,6 +68,7 @@ export const ACCOUNTS_TOPICS: readonly LiveTopic[] = ['users'];
   selector: 'app-accounts-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FigureTiles,
     AccountPanel,
     AsyncContent,
     DataTable,
@@ -146,8 +149,46 @@ export class AccountsPage {
         ),
       ),
     ),
-    { initialValue: LOADING as ViewState<CursorPage<AppAccount>> },
+    { initialValue: LOADING as ViewState<AppAccountListPage> },
   );
+
+  /** "Accounts by role", whole and never narrowed by the filter (`DL-232`). */
+  protected readonly figures = computed<readonly FigureTile[] | null>(() => {
+    const counts = valueOf(this.first())?.counts;
+    if (counts === undefined) return null;
+    const words = this.copy.figures;
+    const figure = (n: number) => n.toLocaleString('en-PH');
+    return [
+      {
+        key: 'residents',
+        label: words.residents.label,
+        value: figure(counts.residents),
+        hint: words.residents.hint,
+        dot: 'gold',
+      },
+      {
+        key: 'verified',
+        label: words.verified.label,
+        value: figure(counts.verified),
+        hint: words.verified.hint,
+        dot: 'green',
+      },
+      {
+        key: 'staff',
+        label: words.staff.label,
+        value: figure(counts.staff + counts.admins),
+        hint: words.staff.hint(counts.staff, counts.admins),
+        dot: 'bar',
+      },
+      {
+        key: 'no-office',
+        label: words.noOffice.label,
+        value: figure(counts.staffWithoutOffice),
+        hint: words.noOffice.hint,
+        dot: 'red',
+      },
+    ];
+  });
 
   protected readonly rows = computed<readonly AppAccount[]>(() => [
     ...(valueOf(this.first())?.items ?? []),
