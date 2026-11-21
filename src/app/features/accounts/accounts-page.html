@@ -116,7 +116,13 @@
 </ng-template>
 
 @if (selected(); as account) {
-  <app-modal [open]="true" size="large" [heading]="copy.drawerHeading" (dismissed)="close()">
+  <app-modal
+    class="modal--xwide"
+    [open]="true"
+    size="large"
+    [heading]="copy.drawerHeading"
+    (dismissed)="close()"
+  >
     <div modal-body>
       <app-account-panel
         [account]="account"

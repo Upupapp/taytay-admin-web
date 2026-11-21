@@ -13,7 +13,7 @@
     },
     { "board": "OfficeInbox", "route": "/inbox" },
     { "board": "OfficeThread", "route": "/inbox", "click": "main a[href*='/inbox/']" },
-    { "board": "Users", "route": "/users" },
+    { "board": "Users", "route": "/users", "click": "main table tbody tr:nth-child(2) button" },
     { "board": "AppDirectory", "route": "/directory" },
     { "board": "CitizensOverview", "route": "/residents/overview" },
     { "board": "CitizenRegistry", "route": "/residents" },

@@ -85,9 +85,9 @@
 
       @if (!takesAnOffice()) {
         @if (currentOfficeName(); as office) {
-          <p class="panel__note">{{ copy.officeKept(office) }}</p>
+          <p class="panel__note panel__note--plain">{{ copy.officeKept(office) }}</p>
         }
-        <p class="panel__note">{{ copy.officeNotStaff }}</p>
+        <p class="panel__note panel__note--plain">{{ copy.officeNotStaff }}</p>
       } @else if (!canAssignOffice()) {
         <p class="panel__note">{{ copy.noOfficeGrant }}</p>
       } @else if (offices().kind === 'error') {
@@ -145,7 +145,9 @@
             }
           </button>
         } @else {
-          <p class="panel__note">{{ copy.officeUnchanged }}</p>
+          <p class="panel__note panel__note--plain panel__note--muted">
+            {{ copy.officeUnchanged }}
+          </p>
         }
       }
     </section>

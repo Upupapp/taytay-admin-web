@@ -125,3 +125,13 @@
 :host(.modal--wide) .modal__body {
   padding-block-start: 20px;
 }
+
+/* The wider manage dialog (`class="modal--xwide"` on the host): the Users board's 1060px dialog,
+   wide enough that an account's facts sit in pairs beside its role. */
+:host(.modal--xwide) .modal__panel--large {
+  max-inline-size: 1060px;
+}
+
+:host(.modal--xwide) .modal__body {
+  padding-block-start: 20px;
+}

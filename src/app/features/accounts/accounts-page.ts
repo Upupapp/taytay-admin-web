@@ -177,7 +177,6 @@ export class AccountsPage {
     {
       key: 'manage',
       header: this.copy.columnAction,
-      hideHeader: true,
       align: 'end',
       cell: this.actionCell(),
     },

@@ -15,6 +15,12 @@
   min-inline-size: 280px;
 }
 
+/* The board's small muted label over the pill select. */
+.accounts__filter .field__label {
+  color: var(--muted);
+  font-size: var(--fs-2xs);
+}
+
 .accounts__notice {
   flex: 1 1 320px;
   margin: 0;

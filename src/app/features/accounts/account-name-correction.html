@@ -1,7 +1,7 @@
 @if (applies() && canCorrect()) {
   <section class="subpanel panel__block" aria-labelledby="account-name-correction">
     <h3 id="account-name-correction" class="section-title">{{ copy.heading }}</h3>
-    <p class="panel__note">{{ copy.intro }}</p>
+    <p class="panel__note panel__note--plain">{{ copy.intro }}</p>
 
     @if (own()) {
       <p class="panel__note">{{ copy.ownAccount }}</p>

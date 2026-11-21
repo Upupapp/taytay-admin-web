@@ -2,18 +2,18 @@
   <h3 id="account-office-role" class="section-title">{{ copy.heading }}</h3>
 
   @if (current(); as role) {
-    <p class="panel__note">{{ copy.now(label(role)) }}</p>
+    <p class="panel__note panel__now">{{ copy.now(label(role)) }}</p>
   } @else if (takesOne()) {
-    <p class="panel__note">{{ copy.nowNone }}</p>
+    <p class="panel__note panel__now">{{ copy.nowNone }}</p>
   }
   @if (currentBarangay(); as confined) {
     <p class="panel__note">{{ confined }}</p>
   }
 
   @if (account().role === 'admin') {
-    <p class="panel__note">{{ copy.administrator }}</p>
+    <p class="panel__note panel__note--plain">{{ copy.administrator }}</p>
   } @else if (!takesOne()) {
-    <p class="panel__note">{{ copy.notStaff }}</p>
+    <p class="panel__note panel__note--plain">{{ copy.notStaff }}</p>
   } @else if (own()) {
     <p class="panel__note">{{ copy.ownAccount }}</p>
   } @else if (!canChange()) {
