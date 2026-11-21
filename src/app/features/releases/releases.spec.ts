@@ -323,6 +323,19 @@ describe('releasing what you approved', () => {
   });
 });
 
+describe('a release that has been handed over', () => {
+  it('says the cheque, e-wallet or receipt number it was released under', async () => {
+    const fixture = await openDetail('dsb-0002');
+    expect(html(fixture).querySelector('.facts')?.textContent).toContain('CHK-0098412');
+  });
+
+  it('offers no "Record the release" panel once nothing is left to record', async () => {
+    const fixture = await openDetail('dsb-0002', staffUser('system-administrator', 'staff-head'));
+    expect(html(fixture).querySelector('#record-heading')).toBeNull();
+    expect(html(fixture).querySelector('.release__warning')).toBeNull();
+  });
+});
+
 /* ── Criterion: a representative must present authority ───────────────────── */
 
 describe('recording who collected', () => {

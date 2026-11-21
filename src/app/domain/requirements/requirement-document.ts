@@ -33,8 +33,10 @@ export const DOCUMENT_SOURCES: readonly DocumentSource[] = [
   'external-verification',
 ];
 
+// `uploaded` is also what the API answers for a file the resident sent from the app, so its
+// label says how the office holds it, never who sent it: the version's "received by" line does.
 export const DOCUMENT_SOURCE_LABELS: Readonly<Record<DocumentSource, string>> = {
-  uploaded: 'Uploaded by staff',
+  uploaded: 'Uploaded as a file',
   scanned: 'Scanned at the office',
   encoded: 'Encoded from a paper copy',
   'external-verification': 'Confirmed with the issuing office',

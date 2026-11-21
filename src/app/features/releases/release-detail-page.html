@@ -62,6 +62,12 @@
                 <dd>{{ release.releasedAt | displayDate }}</dd>
               </div>
             }
+            @if (release.instrumentReference) {
+              <div class="facts__item">
+                <dt>{{ copy.instrument }}</dt>
+                <dd>{{ release.instrumentReference }}</dd>
+              </div>
+            }
           </dl>
 
           @if (release.remarks) {
@@ -74,14 +80,16 @@
           <p class="callout release__boundary">{{ copy.boundaryNotice }}</p>
         </section>
 
-        @if (canRelease()) {
+        <!-- Only while something is left to record: a released or claimed payout keeps no
+             "Record the release" panel, and no warning about a hand-over already made. -->
+        @if (canRecordRelease() || canAcknowledge()) {
           <section class="card card--padded release__panel" aria-labelledby="record-heading">
             <h2 class="section-title release__heading" id="record-heading">
               {{ copy.releaseHeading }}
             </h2>
 
             <!-- Computed against who actually approved, not against a role. -->
-            @if (wouldSelfRelease()) {
+            @if (wouldSelfRelease() && canRecordRelease()) {
               <p class="callout callout--warning release__warning" role="status">
                 <span class="callout__title release__warning-title">{{
                   copy.selfReleaseHeading

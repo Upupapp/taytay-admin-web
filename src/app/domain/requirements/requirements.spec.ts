@@ -1,4 +1,5 @@
 import {
+  DOCUMENT_SOURCE_LABELS,
   DOCUMENT_UPLOAD_POLICY,
   EXPIRY_WARNING_DAYS,
   REQUIREMENT_OBLIGATIONS,
@@ -328,5 +329,12 @@ describe('asking an applicant for a document', () => {
     expect(isDocumentRequestOverdue(base, today)).toBe(true);
     expect(isDocumentRequestOverdue({ ...base, state: 'answered' }, today)).toBe(false);
     expect(isDocumentRequestOverdue({ ...base, neededBy: null }, today)).toBe(false);
+  });
+});
+
+describe('document source labels', () => {
+  it('never says staff uploaded a file: a resident app upload is uploaded too', () => {
+    expect(DOCUMENT_SOURCE_LABELS.uploaded).toBe('Uploaded as a file');
+    expect(Object.values(DOCUMENT_SOURCE_LABELS).join(' ')).not.toMatch(/by staff/i);
   });
 });
