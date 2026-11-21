@@ -31,6 +31,7 @@ export type ProgramCategory =
   | 'medical-assistance'
   | 'burial-assistance'
   | 'educational-assistance'
+  | 'transportation-assistance'
   | 'food-and-relief'
   | 'livelihood'
   | 'senior-citizen'
@@ -214,6 +215,7 @@ export const PROGRAM_CATEGORY_LABELS: Readonly<Record<ProgramCategory, string>> 
   'medical-assistance': 'Medical assistance',
   'burial-assistance': 'Burial assistance',
   'educational-assistance': 'Educational assistance',
+  'transportation-assistance': 'Transportation assistance',
   'food-and-relief': 'Food and relief',
   livelihood: 'Livelihood',
   'senior-citizen': 'Senior citizen',

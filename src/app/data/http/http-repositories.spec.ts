@@ -25,6 +25,7 @@ import {
   isTransferRefused,
   VULNERABILITY_FACTOR_CODES,
   PERMISSIONS,
+  PROGRAM_CATEGORY_LABELS,
   SignInError,
   toProgramDraft,
   type AppAccountId,
@@ -2160,6 +2161,16 @@ describe('the Node adapters', () => {
       expect(
         template?.requirements.find((entry) => entry.obligation === 'conditional')?.appliesWhen,
       ).toBe('When somebody other than the applicant files the request on their behalf.');
+    });
+
+    it('reads a municipal transportation programme under its own category, never as AICS', () => {
+      const program = toAssistanceProgram({
+        ...OFFICE_PROGRAM.data,
+        category: 'transportation-assistance',
+      });
+      expect(program?.category).toBe('transportation-assistance');
+      expect(PROGRAM_CATEGORY_LABELS['transportation-assistance']).toBe('Transportation assistance');
+      expect(toAssistanceProgram({ ...OFFICE_PROGRAM.data, category: 'transportation' })).toBeNull();
     });
 
     it('saves the whole draft in the API’s words, creating with POST and changing with PATCH', async () => {
