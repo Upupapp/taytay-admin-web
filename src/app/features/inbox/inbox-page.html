@@ -20,11 +20,7 @@
         </div>
       } @else {
         <div class="inbox__intro">
-          <p class="callout callout--warning inbox__notice">
-            <app-icon name="info" [size]="18" [stroke]="2" />
-            <span>{{ copy.noName }}</span>
-          </p>
-          <p class="status-line inbox__order">{{ copy.order }}</p>
+          <p class="callout callout--warning inbox__notice">{{ copy.noName }}</p>
         </div>
         @if (officesUnnamed()) {
           <p class="status-line" role="status">{{ copy.officesUnnamed }}</p>
@@ -47,6 +43,7 @@
           <div class="list-more inbox__more">
             <p class="status-line" role="status">
               {{ copy.shown(rows().length) }} {{ hasMore() ? copy.moreAvailable : copy.noMore }}
+              <span class="inbox__order">{{ copy.order }}</span>
             </p>
             @if (hasMore()) {
               <button
@@ -97,7 +94,11 @@
 </ng-template>
 
 <ng-template #unreadCell let-thread>
-  <span class="chip" [class.chip--warning]="thread.unreadCount > 0">
+  <span
+    class="chip inbox__unread"
+    [class.chip--danger]="thread.unreadCount > 0"
+    [class.inbox__unread--none]="thread.unreadCount === 0"
+  >
     {{ copy.unread(thread.unreadCount) }}
   </span>
 </ng-template>

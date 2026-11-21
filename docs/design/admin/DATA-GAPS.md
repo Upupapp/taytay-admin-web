@@ -33,6 +33,8 @@ Checked against `openapi.json` at console `1eadbc0`.
 | CitizenImport | "Where is the list from?" — RBI or census, OSCA, PDAO, solo parent, 4Ps, another spreadsheet (the upload panel takes the row) | `POST office/imports` multipart: `source` (the API takes `file` only) |
 | CitizenImport | "Barangay this list covers" under the file | `POST office/imports` multipart: `barangay_id` |
 | CitizenImport | Past imports: Source column | `GET office/imports` item: `source` |
+| OfficeInbox | KPI row: open conversations, unread by the office, closed (the list sends cursors and no total, `DL-161`) | `GET threads` `meta.counts { open, closed, unread }` |
+| OfficeInbox | Status tabs All / Open / Closed with a count on each (the notice takes the row) | `GET threads?status=open\|closed` and `meta.counts` |
 
 ## Sent by the API but not shown yet (UI work only)
 

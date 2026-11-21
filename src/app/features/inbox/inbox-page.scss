@@ -19,26 +19,18 @@
 .inbox__intro {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--space-3);
-  margin-block-end: var(--space-3);
 }
 
+/* The board's notice: a gold box with no icon, beside where the status tabs would be. */
 .inbox__notice {
   flex: 1 1 360px;
   margin: 0;
-  padding-block: 10px;
+  padding: 10px 14px;
+  border-radius: var(--r-field);
   font-size: var(--fs-label);
   text-wrap: pretty;
-}
-
-.inbox__notice app-icon {
-  flex: none;
-  margin-block-start: 1px;
-}
-
-.inbox__order {
-  margin: 0;
 }
 
 .inbox__subject {
@@ -46,6 +38,7 @@
   align-items: center;
   gap: var(--space-3);
   color: var(--ink);
+  font-weight: var(--fw-semibold);
   text-decoration: none;
 }
 
@@ -65,7 +58,7 @@
   inline-size: 10px;
   block-size: 10px;
   border-radius: var(--r-pill);
-  background: var(--line2);
+  background: transparent;
 }
 
 .inbox__subject--unread {
@@ -73,7 +66,7 @@
 }
 
 .inbox__subject--unread .inbox__dot {
-  background: var(--link);
+  background: var(--red);
 }
 
 .inbox__office {
@@ -94,8 +87,13 @@
   white-space: nowrap;
 }
 
+.inbox__unread--none {
+  background: var(--soft);
+  color: var(--muted);
+}
+
 .inbox__more {
-  margin-block-start: var(--space-3);
+  margin-block-start: var(--space-1);
 }
 
 .inbox__problem {
