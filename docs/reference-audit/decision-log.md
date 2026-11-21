@@ -11308,3 +11308,30 @@ The backend's `documents_sent_at` (A10) is the app's to show; the console reads 
 
 **Easiest to reverse:** one textarea and one check in `assessment-page`; the field is optional on
 the wire.
+
+## DL-238 — the Main board carries no registry figure; the registry's figures stay on Citizen overview
+
+**Status:** Settled (22 November 2026), from the demo rehearsal's C2 ("a citizen import changes only
+the Citizen overview"). Judged against the boards and `DATA-GAPS.md`; **nothing is changed**.
+
+1. **The boards do not draw one.** The owner's Main board (`docs/design/admin/screens/Main.dc.html`,
+   settled with the owner's screenshot in `DL-233`) draws two rows: casework and money (open
+   requests, awaiting approval, scheduled payouts, released) and the residents' app (resident
+   accounts, ID reviews waiting, Digital IDs in force). No registry count, and `DATA-GAPS.md` lists
+   none as waiting. The registry's size, its change over the period, and its breakdowns are the
+   Citizen overview board's (`DL-213`, `DL-232`), and its report is the citizen registry report
+   (`DL-234`).
+2. **Main is what is owed and what moved; the registry is a stock.** Every Main tile is something a
+   person acts on or money that left the office. An import adds records nobody owes anything on, and
+   a tile that grows by hundreds after an import would sit beside "Awaiting approval: 4" as if it
+   were work.
+3. **A second home for the same figure is a second place to read it differently**, and a board
+   decision is the owner's (`DL-233`); a migration of layout needs an explicit instruction (CLAUDE.md
+   rule 10).
+
+So an import shows where the boards put it: on Citizen overview and in the registry list. The
+rehearsal's expectation is met by saying so in the demo script, not by a tile. "Resident accounts"
+on Main counts app accounts and says so in its hint; an imported record has no account until the
+office links one.
+
+**Easiest to reverse:** a tile on Main reading `/office/residents/summary`, if the owner asks.
