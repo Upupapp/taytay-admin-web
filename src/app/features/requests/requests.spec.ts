@@ -945,6 +945,47 @@ describe('reviewing documents', () => {
     expect(buttonNamed(documents, 'Needs a fresh copy')).toBeDefined();
   });
 
+  it('says the applicant will read the note before any button, and records it apart from the remarks (DL-237)', async () => {
+    const fixture = await openAssessment('req-0002', 'intake-officer');
+    const documents = html(fixture).querySelector('#documents-heading')?.parentElement;
+    const item = documents?.querySelector('li');
+    const note = item?.querySelector<HTMLTextAreaElement>('textarea[maxlength="500"]');
+    expect(note).toBeTruthy();
+    const hint = item?.querySelector(`#${note?.getAttribute('aria-describedby') ?? 'none'}`);
+    expect(hint?.textContent).toContain('The applicant will see this in the app');
+    // Said above the buttons it goes with, never after them.
+    const fresh = buttonNamed(item, 'Needs a fresh copy');
+    expect(
+      hint !== null && hint !== undefined && fresh !== undefined
+        ? hint.compareDocumentPosition(fresh) & Node.DOCUMENT_POSITION_FOLLOWING
+        : 0,
+    ).toBeTruthy();
+
+    const remarks = Array.from(item?.querySelectorAll('label.field') ?? [])
+      .find((label) => label.querySelector('.field__label')?.textContent?.trim() === 'Remarks')
+      ?.querySelector<HTMLInputElement>('input');
+    if (remarks === null || remarks === undefined || note === null || note === undefined) {
+      throw new Error('The review fields are missing.');
+    }
+    remarks.value = 'Blurred scan.';
+    remarks.dispatchEvent(new Event('input'));
+    note.value = 'The photo is too dark to read. Please send a clearer one.';
+    note.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+
+    // Verifying asks the applicant for nothing, so the note is refused rather than dropped.
+    buttonNamed(item, 'Verify')?.click();
+    await fixture.whenStable();
+    expect(item?.querySelector('.field__error')?.textContent).toContain('Clear it to verify');
+
+    fresh?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(html(fixture).textContent).toContain(
+      'The applicant was told: The photo is too dark to read. Please send a clearer one.',
+    );
+  });
+
   it('offers nothing on a protected request to an account its words are withheld from, and says why', async () => {
     const element = html(await openAssessment('req-0006', 'intake-officer'));
     const documents = element.querySelector('#documents-heading')?.parentElement;

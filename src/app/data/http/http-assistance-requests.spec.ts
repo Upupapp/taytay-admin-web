@@ -731,7 +731,32 @@ describe('assistance requests over the API (DL-177, DL-178)', () => {
       );
       barangays();
       const post = http.expectOne(`${REQUESTS}/${CASEWORK_ID}/requirements/${CERTIFICATE_ID}/review`);
-      expect(post.request.body).toEqual({ status: 'needs-replacement', remarks: 'Torn.' });
+      expect(post.request.body).toEqual({
+        status: 'needs-replacement',
+        remarks: 'Torn.',
+        applicant_note: null,
+      });
+      post.flush(OFFICE_REQUEST_CASEWORK);
+      await saved;
+    });
+
+    it('sends the note for the applicant apart from the remarks (DL-237)', async () => {
+      const saved = firstValueFrom(
+        requests.reviewRequirement(
+          CASEWORK_ID,
+          CERTIFICATE_ID,
+          'needs-replacement',
+          'Torn; second time.',
+          ' The copy is torn. Please send a whole one. ',
+        ),
+      );
+      barangays();
+      const post = http.expectOne(`${REQUESTS}/${CASEWORK_ID}/requirements/${CERTIFICATE_ID}/review`);
+      expect(post.request.body).toEqual({
+        status: 'needs-replacement',
+        remarks: 'Torn; second time.',
+        applicant_note: 'The copy is torn. Please send a whole one.',
+      });
       post.flush(OFFICE_REQUEST_CASEWORK);
       await saved;
     });

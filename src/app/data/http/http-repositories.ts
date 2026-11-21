@@ -3167,6 +3167,7 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     requirementId: RequirementId,
     status: RequirementStatus,
     remarks: string | null,
+    applicantNote: string | null = null,
   ): Observable<AssistanceRequest> {
     const verdict = REVIEW_VERDICTS.find((candidate) => candidate === status);
     if (verdict === undefined) {
@@ -3180,7 +3181,7 @@ export class HttpAssistanceRequestRepository implements AssistanceRequestReposit
     return this.saved(
       this.api.post(
         `${API_ENDPOINTS.officeAssistanceRequests}/${id}/requirements/${requirementId}/review`,
-        toWireRequirementReview(verdict, remarks),
+        toWireRequirementReview(verdict, remarks, applicantNote),
       ),
     );
   }

@@ -84,6 +84,8 @@ import {
   type RequirementId,
   type SocialWorker,
   type RequirementStatus,
+  APPLICANT_NOTE_REFUSED,
+  asksTheApplicant,
   type ResidentId,
   type StaffUserId,
   type StatusChange,
@@ -812,6 +814,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     requirementId: RequirementId,
     status: RequirementStatus,
     remarks: string | null,
+    applicantNote: string | null = null,
   ): Observable<AssistanceRequest> {
     const user = this.access.currentUser();
     const found = this.locateWritable<AssistanceRequest>(id, requirementId, 'request.intake');
@@ -829,6 +832,10 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     const needsWords = REVIEW_NEEDS_WORDS[verdict];
     if (words === '' && needsWords !== null) {
       return throwError(() => new Error(needsWords));
+    }
+    const note = applicantNote?.trim() ?? '';
+    if (note !== '' && !asksTheApplicant(verdict)) {
+      return throwError(() => new Error(APPLICANT_NOTE_REFUSED));
     }
     if (verdict !== 'waived' && found.requirement.submittedAt === null) {
       return throwError(
@@ -848,6 +855,7 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
           reviewedBy: user?.id ?? null,
           reviewedAt: now,
           remarks: words === '' ? requirement.remarks : words,
+          applicantNote: note === '' ? null : note,
         })),
       ),
     );
@@ -963,6 +971,8 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
       // it is a separate act by a person.
       status: 'submitted',
       submittedAt: now,
+      // The note was about the copy just replaced (backend ADR 0009): the server clears it too.
+      applicantNote: null,
     }));
 
     // What the applicant was asked to bring is answered by bringing it.
@@ -1601,6 +1611,7 @@ function requirementsFrom(
       appliesWhen: entry.appliesWhen,
       applicabilityDecidedBy: null,
       applicabilityDecidedAt: null,
+      applicantNote: null,
       applicabilityReason: null,
       accepts: DOCUMENT_UPLOAD_POLICY,
       submittedAt: entry.presented ? asIsoDateTime(new Date()) : null,

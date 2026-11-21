@@ -176,6 +176,18 @@ export type RequirementStatus =
   | 'expired'
   | 'needs-replacement';
 
+/**
+ * The verdicts that ask the applicant for something: refused, lapsed, or in need of a new copy. Only
+ * these may carry a note for her (`DL-237`, backend ADR 0009), and the server refuses one on any other.
+ */
+export function asksTheApplicant(status: RequirementStatus): boolean {
+  return status === 'rejected' || status === 'expired' || status === 'needs-replacement';
+}
+
+/** The refusal of a note for the applicant on a verdict that asks her for nothing. */
+export const APPLICANT_NOTE_REFUSED =
+  'A note for the applicant goes with a document she is asked to send again. Nothing was sent.';
+
 export const REQUIREMENT_STATUS_CATALOG: StatusCatalog<RequirementStatus> = {
   pending: {
     value: 'pending',
@@ -249,6 +261,12 @@ export interface SubmittedRequirement {
   readonly reviewedBy: StaffUserId | null;
   readonly reviewedAt: IsoDateTime | null;
   readonly remarks: string | null;
+  /**
+   * What the office wrote for the applicant about this document on its latest review, which she
+   * reads in the app (`DL-237`, backend ADR 0009). Never the remarks, which stay in the office.
+   * `null` when nothing was written, after a new copy, and when withheld with the remarks.
+   */
+  readonly applicantNote: string | null;
   /**
    * What the office accepts as this document's file, as the server publishes it on every
    * requirement (`accepts`). A screen refuses a file by this before anything is sent; the server

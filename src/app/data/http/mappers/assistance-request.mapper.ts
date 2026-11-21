@@ -666,14 +666,18 @@ export const REVIEW_VERDICTS: readonly ReviewVerdict[] = [
 export interface RequirementReviewWire {
   readonly status: ReviewVerdict;
   readonly remarks: string | null;
+  /** What the applicant reads in the app about this document (backend ADR 0009); never `remarks`. */
+  readonly applicant_note: string | null;
 }
 
 export function toWireRequirementReview(
   status: ReviewVerdict,
   remarks: string | null,
+  applicantNote: string | null = null,
 ): RequirementReviewWire {
   const words = remarks?.trim() ?? '';
-  return { status, remarks: words === '' ? null : words };
+  const note = applicantNote?.trim() ?? '';
+  return { status, remarks: words === '' ? null : words, applicant_note: note === '' ? null : note };
 }
 
 /** What `POST …/requirements/{requirementId}/applicability` reads (`OfficeRequirementRuling`). */
@@ -876,6 +880,7 @@ function toRequirement(value: unknown): SubmittedRequirement | null {
     reviewedBy: id<StaffUserId>(field(value, 'reviewed_by')),
     reviewedAt: dateTime(field(value, 'reviewed_at')),
     remarks: str(field(value, 'remarks')),
+    applicantNote: str(field(value, 'applicant_note')),
     accepts,
     // One document per requirement, and the server holds none apart from its versions: the
     // requirement's id stands for it (`DL-178`).

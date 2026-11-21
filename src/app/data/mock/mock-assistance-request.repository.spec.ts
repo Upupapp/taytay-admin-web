@@ -610,8 +610,32 @@ describe('the mock holds phase 2b to the server’s rules (DL-178)', () => {
       expect(needs.requirements[0]).toMatchObject({
         status: 'needs-replacement',
         remarks: 'Torn in half.',
+        applicantNote: null,
       });
       expect(needs.requirements[0]?.reviewedAt).not.toBeNull();
+    });
+
+    it('keeps a note for the applicant apart from the remarks, only on a verdict that asks her (DL-237)', async () => {
+      const repo = repository();
+      const presented = await requirementOf(repo, IN_INTAKE);
+      await expect(
+        firstValueFrom(
+          repo.reviewRequirement(IN_INTAKE, presented.id, 'verified', null, 'Thank you.'),
+        ),
+      ).rejects.toThrow(/send again/);
+      const asked = await firstValueFrom(
+        repo.reviewRequirement(
+          IN_INTAKE,
+          presented.id,
+          'needs-replacement',
+          'Blurred.',
+          'The photo is too dark. Please send a clearer one.',
+        ),
+      );
+      expect(asked.requirements[0]).toMatchObject({
+        remarks: 'Blurred.',
+        applicantNote: 'The photo is too dark. Please send a clearer one.',
+      });
     });
 
     it('reads a requirement submitted again when a new version is recorded, even after it was verified', async () => {

@@ -11286,3 +11286,25 @@ a withheld cell no longer repeat "withheld" after "Withheld": "too few people to
 identifying someone; not a zero", and "a sector protected by law (RA 9262, RA 9344); your account
 does not count it". The mocks and fixtures carry the server's new words. No figure, threshold or
 rule changed.
+
+## DL-237 — a note the applicant reads, written apart from the remarks
+
+**Status:** Settled (22 November 2026), from the demo rehearsal's A9. The console's side of backend
+ADR 0009; contract re-vendored at backend `a74c97d`. Keeps the rule that the office's remarks on a
+document never reach the applicant (backend ADR 0003, C).
+
+1. **Its own field, labelled before any button.** Beside the remarks, a presented document's review
+   offers "Note for the applicant (optional)", up to 500 characters, whose hint says first "The
+   applicant will see this in the app, under the document's name". The remarks' hint now ends "Kept
+   in the office", so the officer knows which words travel.
+2. **Only with a verdict that asks her for something** — Reject, Needs a fresh copy, Expired
+   (`asksTheApplicant` in the domain). A note typed before Verify or Waive is refused on screen with
+   a sentence, never dropped quietly: whoever wrote to the applicant believes she will read it. The
+   server refuses it too (**422**).
+3. **The office sees what it told her.** A requirement carries `applicantNote`; the checklist prints
+   "The applicant was told: …" under the remarks. A new copy clears it, as the server does.
+
+The backend's `documents_sent_at` (A10) is the app's to show; the console reads no resident row.
+
+**Easiest to reverse:** one textarea and one check in `assessment-page`; the field is optional on
+the wire.

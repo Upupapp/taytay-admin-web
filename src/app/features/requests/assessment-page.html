@@ -497,6 +497,11 @@
                 } @else if (requirement.remarks) {
                   <p class="status-line assessment__note">{{ requirement.remarks }}</p>
                 }
+                @if (requirement.applicantNote) {
+                  <p class="status-line assessment__note">
+                    {{ copy.noteForApplicantShown }} {{ requirement.applicantNote }}
+                  </p>
+                }
                 @if (canReviewDocuments() && workable(request)) {
                   <label class="field">
                     <span class="field__label">{{ copy.remarks }}</span>
@@ -508,6 +513,22 @@
                     />
                     <span class="field__hint">{{ copy.remarksHint }}</span>
                   </label>
+                  @if (requirement.submittedAt) {
+                    <label class="field">
+                      <span class="field__label">{{ copy.noteForApplicant }}</span>
+                      <textarea
+                        class="field__input"
+                        rows="2"
+                        maxlength="500"
+                        [attr.aria-describedby]="'applicant-note-hint-' + requirement.id"
+                        [value]="applicantNoteValue(requirement.id)"
+                        (input)="onApplicantNote(requirement.id, $event)"
+                      ></textarea>
+                      <span class="field__hint" [id]="'applicant-note-hint-' + requirement.id">{{
+                        copy.noteForApplicantHint
+                      }}</span>
+                    </label>
+                  }
                   @if (reviewProblemFor(requirement.id); as problem) {
                     <p class="field__error" role="alert">{{ problem }}</p>
                   }

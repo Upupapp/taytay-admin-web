@@ -92,6 +92,7 @@ import {
   isWithheldFromReader,
   type RequirementId,
   type RequirementStatus,
+  asksTheApplicant,
   type ResidentProfile,
   type AssistanceProgram,
   type DocumentVersionDraft,
@@ -1090,6 +1091,21 @@ export class AssessmentPage {
     return this.remarksFor()[requirementId] ?? '';
   }
 
+  /**
+   * What the applicant will read about a document in the app, typed apart from the remarks
+   * (`DL-237`): the remarks are the office's working words and never reach her.
+   */
+  protected readonly applicantNoteFor = signal<Record<string, string>>({});
+
+  protected onApplicantNote(requirementId: string, event: Event): void {
+    const value = (event.target as HTMLTextAreaElement).value;
+    this.applicantNoteFor.update((current) => ({ ...current, [requirementId]: value }));
+  }
+
+  protected applicantNoteValue(requirementId: string): string {
+    return this.applicantNoteFor()[requirementId] ?? '';
+  }
+
   /** Where the applicant must be told why, a review carries words — as the server requires. */
   protected readonly reviewProblem = signal<{
     readonly requirementId: string;
@@ -1098,9 +1114,15 @@ export class AssessmentPage {
 
   protected review(requirementId: RequirementId, status: RequirementStatus): void {
     const remarks = this.remarksValue(requirementId).trim();
+    const note = this.applicantNoteValue(requirementId).trim();
     const needsWords = this.copy.reviewNeedsWords[status];
     if (remarks === '' && needsWords !== null) {
       this.reviewProblem.set({ requirementId, message: needsWords });
+      return;
+    }
+    // Never dropped quietly: an officer who wrote to the applicant believes she will read it.
+    if (note !== '' && !asksTheApplicant(status)) {
+      this.reviewProblem.set({ requirementId, message: this.copy.noteForApplicantOnlyWhenAsking });
       return;
     }
     this.reviewProblem.set(null);
@@ -1110,9 +1132,13 @@ export class AssessmentPage {
         requirementId,
         status,
         remarks === '' ? null : remarks,
+        note === '' ? null : note,
       ),
       this.copy.reviewed,
-      () => this.remarksFor.update((current) => ({ ...current, [requirementId]: '' })),
+      () => {
+        this.remarksFor.update((current) => ({ ...current, [requirementId]: '' }));
+        this.applicantNoteFor.update((current) => ({ ...current, [requirementId]: '' }));
+      },
     );
   }
 

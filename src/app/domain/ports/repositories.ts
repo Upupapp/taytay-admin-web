@@ -838,12 +838,17 @@ export interface AssistanceRequestRepository {
     assessment: AssessmentDraft,
   ): Observable<AssistanceRequest>;
 
-  /** Marks one presented document verified, rejected or waived. */
+  /**
+   * Marks one presented document verified, rejected or waived. `applicantNote` is what the applicant
+   * will read about it in the app (`DL-237`): only with a verdict that asks her for something
+   * (`asksTheApplicant`), and never the remarks.
+   */
   reviewRequirement(
     id: AssistanceRequestId,
     requirementId: RequirementId,
     status: RequirementStatus,
     remarks: string | null,
+    applicantNote?: string | null,
   ): Observable<AssistanceRequest>;
 
   /**

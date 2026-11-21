@@ -55,6 +55,7 @@
         "reviewed_by": null,
         "reviewed_at": null,
         "remarks": null,
+        "applicant_note": null,
         "accepts": {
           "mime_types": ["application/pdf", "image/jpeg", "image/png"],
           "max_bytes": 10485760
@@ -114,6 +115,7 @@
         "reviewed_by": null,
         "reviewed_at": null,
         "remarks": null,
+        "applicant_note": null,
         "accepts": {
           "mime_types": ["application/pdf", "image/jpeg", "image/png"],
           "max_bytes": 10485760

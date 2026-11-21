@@ -506,6 +506,7 @@ describe('the case study', () => {
           appliesWhen: null,
           applicabilityDecidedBy: null,
           applicabilityDecidedAt: null,
+          applicantNote: null,
           accepts: DOCUMENT_UPLOAD_POLICY,
           applicabilityReason: null,
           submittedAt: null,

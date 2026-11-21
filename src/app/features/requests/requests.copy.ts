@@ -229,7 +229,14 @@ export const REQUESTS_COPY = {
     waive: 'Waive',
     needsReplacement: 'Needs a fresh copy',
     remarks: 'Remarks',
-    remarksHint: 'Required to reject, to ask for a fresh copy, or to waive.',
+    remarksHint: 'Required to reject, to ask for a fresh copy, or to waive. Kept in the office.',
+    // DL-237: the one field on this panel the applicant reads, said before any button.
+    noteForApplicant: 'Note for the applicant (optional)',
+    noteForApplicantHint:
+      'The applicant will see this in the app, under the document’s name. Say what is wrong and what to send instead. It goes with Reject, Needs a fresh copy or Expired.',
+    noteForApplicantOnlyWhenAsking:
+      'A note for the applicant goes with Reject, Needs a fresh copy or Expired. Clear it to verify or waive.',
+    noteForApplicantShown: 'The applicant was told:',
     onlyWaive:
       'Nothing has been presented for this yet, so it can only be excused. Record the document first to check it.',
     reviewed: 'The review has been recorded.',
