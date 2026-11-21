@@ -1,4 +1,4 @@
-<a class="back-link" routerLink="/inbox">
+<a class="back-link btn btn--secondary thread__back" routerLink="/inbox">
   <app-icon name="arrowRight" class="back-link__arrow" [size]="16" [stroke]="2" />
   {{ copy.back }}
 </a>
@@ -11,11 +11,20 @@
 >
   <ng-template #threadContent>
     @if (current(); as conversation) {
-      <app-page-header [title]="conversation.subject" />
+      <header class="thread__title">
+        <span class="thread__tile" aria-hidden="true">
+          <app-icon name="building" [size]="24" />
+        </span>
+        <div class="thread__title-text">
+          <h1>{{ conversation.subject }}</h1>
+          <p>{{ officeName() }}</p>
+        </div>
+        <app-status-badge [catalog]="catalog" [status]="conversation.status" />
+      </header>
 
       <div class="thread__layout">
         <section
-          class="card card--padded thread__block thread__messages-block"
+          class="card card--panel card--padded thread__block thread__messages-block"
           aria-labelledby="thread-messages"
         >
           <div class="thread__head">
@@ -33,7 +42,7 @@
               @if (hasEarlier()) {
                 <button
                   type="button"
-                  class="btn btn--secondary"
+                  class="btn btn--secondary thread__earlier"
                   [disabled]="loadingEarlier()"
                   (click)="showEarlier()"
                 >
@@ -52,61 +61,66 @@
                   >
                     <p class="thread__meta">
                       <strong>{{ authorLabel(conversation, message) }}</strong>
+                      <span aria-hidden="true">·</span>
                       <time [attr.datetime]="message.sentAt">
                         {{ message.sentAt | displayDate: 'date-time' }}
                       </time>
                     </p>
-                    <p class="thread__body">{{ message.body }}</p>
+                    <div class="thread__bubble">
+                      <p class="thread__body">{{ message.body }}</p>
 
-                    @if (message.attachments.length > 0) {
-                      <div class="thread__images">
-                        <p class="thread__note">
-                          {{ copy.imagesHeading(message.attachments.length) }}.
-                          {{ copy.imagesClosed }}
-                        </p>
-                        @for (media of message.attachments; track media; let n = $index) {
-                          @let image = imageState(media);
-                          @if (image === null) {
-                            <button
-                              type="button"
-                              class="btn btn--secondary"
-                              (click)="askToOpen(message, media)"
+                      @if (message.attachments.length > 0) {
+                        <div class="thread__images">
+                          <p class="thread__note">
+                            <strong class="thread__images-heading"
+                              >{{ copy.imagesHeading(message.attachments.length) }}.</strong
                             >
-                              {{ copy.showImage(n + 1) }}
-                            </button>
-                          } @else if (image.kind === 'loading') {
-                            <p class="thread__note" role="status">{{ copy.imageLoading }}</p>
-                          } @else if (image.kind === 'error') {
-                            <p class="thread__problem" role="alert">{{ copy.imageFailed }}</p>
-                            <button
-                              type="button"
-                              class="btn btn--secondary"
-                              (click)="askToOpen(message, media)"
-                            >
-                              {{ copy.showImage(n + 1) }}
-                            </button>
-                          } @else if (image.kind === 'ready') {
-                            <figure class="thread__figure">
-                              <img
-                                class="thread__image"
-                                [src]="image.value"
-                                [alt]="copy.imageAlt(n + 1)"
-                              />
-                              <figcaption>
-                                {{ copy.imageLabel(n + 1) }}. {{ copy.imageKept }}
-                              </figcaption>
-                            </figure>
-                            <button
-                              type="button"
-                              class="btn btn--secondary"
-                              (click)="hideImage(media)"
-                            >
-                              {{ copy.hideImage(n + 1) }}
-                            </button>
+                            {{ copy.imagesClosed }}
+                          </p>
+                          @for (media of message.attachments; track media; let n = $index) {
+                            @let image = imageState(media);
+                            @if (image === null) {
+                              <button
+                                type="button"
+                                class="btn btn--secondary"
+                                (click)="askToOpen(message, media)"
+                              >
+                                {{ copy.showImage(n + 1) }}
+                              </button>
+                            } @else if (image.kind === 'loading') {
+                              <p class="thread__note" role="status">{{ copy.imageLoading }}</p>
+                            } @else if (image.kind === 'error') {
+                              <p class="thread__problem" role="alert">{{ copy.imageFailed }}</p>
+                              <button
+                                type="button"
+                                class="btn btn--secondary"
+                                (click)="askToOpen(message, media)"
+                              >
+                                {{ copy.showImage(n + 1) }}
+                              </button>
+                            } @else if (image.kind === 'ready') {
+                              <figure class="thread__figure">
+                                <img
+                                  class="thread__image"
+                                  [src]="image.value"
+                                  [alt]="copy.imageAlt(n + 1)"
+                                />
+                                <figcaption>
+                                  {{ copy.imageLabel(n + 1) }}. {{ copy.imageKept }}
+                                </figcaption>
+                              </figure>
+                              <button
+                                type="button"
+                                class="btn btn--secondary"
+                                (click)="hideImage(media)"
+                              >
+                                {{ copy.hideImage(n + 1) }}
+                              </button>
+                            }
                           }
-                        }
-                      </div>
-                    }
+                        </div>
+                      }
+                    </div>
                   </li>
                 } @empty {
                   <li class="thread__note">{{ copy.noMessages }}</li>
@@ -117,17 +131,23 @@
         </section>
 
         <section
-          class="card card--padded thread__block thread__reply"
+          class="thread__block thread__reply"
+          [class.card]="open()"
+          [class.card--panel]="open()"
+          [class.card--padded]="open()"
           aria-labelledby="thread-reply"
         >
-          <h2 id="thread-reply" class="thread__heading">{{ copy.replyHeading }}</h2>
+          <!-- Closed, the board draws only the closing sentence; the heading stays for a reader. -->
+          <h2 id="thread-reply" class="thread__heading" [class.visually-hidden]="!open()">
+            {{ copy.replyHeading }}
+          </h2>
           @if (open()) {
             <div class="field">
               <label class="field__label" for="thread-reply-body">{{ copy.replyLabel }}</label>
               <textarea
                 id="thread-reply-body"
                 class="field__input thread__draft"
-                rows="5"
+                rows="4"
                 [attr.maxlength]="limits.maximum"
                 [attr.aria-describedby]="'thread-reply-hint thread-reply-count'"
                 [attr.aria-invalid]="attempted() && draftProblem() !== null"
@@ -135,64 +155,68 @@
                 (input)="onDraft($event)"
               ></textarea>
               <p id="thread-reply-hint" class="field__hint">{{ copy.replyHint }}</p>
-              <p id="thread-reply-count" class="field__hint">
-                {{ copy.replyCount(draftLength(), limits.maximum) }}
-              </p>
               @if (attempted() && draftProblem() === 'empty') {
                 <p class="thread__problem" role="alert">{{ copy.replyEmpty }}</p>
               } @else if (attempted() && draftProblem() === 'too-long') {
                 <p class="thread__problem" role="alert">{{ copy.replyTooLong }}</p>
               }
             </div>
-            <p class="thread__note thread__aside-note">{{ copy.replyNoImages }}</p>
-            <button
-              type="button"
-              class="btn btn--primary thread__send"
-              [disabled]="busy()"
-              (click)="send()"
-            >
-              {{ busy() ? copy.sending : copy.send }}
-            </button>
+            <p class="thread__note">{{ copy.replyNoImages }}</p>
+            <div class="thread__send-row">
+              <p id="thread-reply-count" class="thread__note thread__count">
+                {{ copy.replyCount(draftLength(), limits.maximum) }}
+              </p>
+              <button
+                type="button"
+                class="btn btn--primary thread__send"
+                [disabled]="busy()"
+                (click)="send()"
+              >
+                {{ busy() ? copy.sending : copy.send }}
+              </button>
+            </div>
           } @else {
-            <p class="thread__note thread__aside-note">{{ copy.closedNote }}</p>
+            <p class="thread__closed">{{ copy.closedNote }}</p>
           }
         </section>
 
-        <section
-          class="card card--padded thread__block thread__details"
-          aria-labelledby="thread-details"
-        >
-          <h2 id="thread-details" class="thread__heading">{{ copy.detailsHeading }}</h2>
-          <dl class="facts thread__facts">
-            <div>
-              <dt>{{ copy.office }}</dt>
-              <dd>{{ officeName() }}</dd>
-            </div>
-            <div>
-              <dt>{{ copy.status }}</dt>
-              <dd><app-status-badge [catalog]="catalog" [status]="conversation.status" /></dd>
-            </div>
-            <div>
-              <dt>{{ copy.started }}</dt>
-              <dd>
-                <time [attr.datetime]="conversation.createdAt">
-                  {{ conversation.createdAt | displayDate: 'date-time' }}
-                </time>
-              </dd>
-            </div>
-            <div>
-              <dt>{{ copy.unread }}</dt>
-              <dd>{{ listCopy.unread(conversation.unreadCount) }}</dd>
-            </div>
-          </dl>
-          <p class="thread__note">{{ copy.resident }}</p>
+        <div class="thread__side">
+          <section
+            class="card card--deep thread__block thread__details"
+            aria-labelledby="thread-details"
+          >
+            <h2 id="thread-details" class="thread__eyebrow">{{ copy.detailsHeading }}</h2>
+            <dl class="facts thread__facts">
+              <div class="facts__row--wide">
+                <dt>{{ copy.office }}</dt>
+                <dd>{{ officeName() }}</dd>
+              </div>
+              <div>
+                <dt>{{ copy.status }}</dt>
+                <dd><app-status-badge [catalog]="catalog" [status]="conversation.status" /></dd>
+              </div>
+              <div>
+                <dt>{{ copy.started }}</dt>
+                <dd>
+                  <time [attr.datetime]="conversation.createdAt">
+                    {{ conversation.createdAt | displayDate: 'date-time' }}
+                  </time>
+                </dd>
+              </div>
+              <div class="facts__row--wide">
+                <dt>{{ copy.unread }}</dt>
+                <dd>{{ listCopy.unread(conversation.unreadCount) }}</dd>
+              </div>
+            </dl>
+            <p class="thread__note">{{ copy.resident }}</p>
+          </section>
 
-          <div class="thread__acts">
+          <div class="card thread__block thread__acts">
             @if (conversation.unreadCount > 0) {
               <p class="thread__note">{{ readEffect }}</p>
               <button
                 type="button"
-                class="btn btn--primary"
+                class="btn btn--primary thread__act"
                 [disabled]="busy()"
                 (click)="markRead()"
               >
@@ -204,7 +228,7 @@
             @if (open()) {
               <button
                 type="button"
-                class="btn btn--danger-soft"
+                class="btn btn--danger-soft thread__act"
                 [disabled]="busy()"
                 (click)="askToClose()"
               >
@@ -214,7 +238,7 @@
               <p class="thread__note">{{ copy.closedNote }}</p>
             }
           </div>
-        </section>
+        </div>
       </div>
     }
   </ng-template>

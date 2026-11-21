@@ -43,7 +43,6 @@ import { failed, LOADING, ready, valueOf, type ViewState } from '@shared/state/v
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Icon } from '@shared/ui/icon/icon';
 import { Modal } from '@shared/ui/modal/modal';
-import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
 import { INBOX_COPY } from './inbox.copy';
@@ -109,7 +108,7 @@ interface ImageRequest {
 @Component({
   selector: 'app-thread-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, DisplayDatePipe, Icon, Modal, PageHeader, RouterLink, StatusBadge],
+  imports: [AsyncContent, DisplayDatePipe, Icon, Modal, RouterLink, StatusBadge],
   templateUrl: './thread-page.html',
   styleUrl: './thread-page.scss',
 })

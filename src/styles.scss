@@ -173,6 +173,7 @@
   --fs-kpi-md: 36px; /* a figure in a row of four (DL-231) */
   --fs-kpi-money: 34px; /* a peso total beside the counts (DL-231) */
   --fs-kpi-sm: 28px; /* a figure in a row of five or six (DL-231) */
+  --fs-title-2xl: 36px; /* a conversation's title beside its tile (DL-231) */
   --fs-title-xl: 32px; /* sign-in title */
   --fs-title-lg: 26px; /* record title */
   --fs-title: 24px; /* card or dialog title */
@@ -230,6 +231,7 @@
   --tile-sm: 36px;
   --tile-lg: 56px;
   --tile-md: 48px; /* a form panel's head tile (DL-231) */
+  --tile-xl: 52px; /* a conversation's head tile (DL-231) */
 
   /* The pre-redesign names (`--c-*`, `--radius-*`, `--shadow-*`,
      `--font-sans`, `--brand-primary*`) were retired in Phase 4 once no

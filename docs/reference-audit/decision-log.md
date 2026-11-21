@@ -11151,7 +11151,8 @@ four), `--fs-kpi-money` 34px (a peso total beside counts), `--fs-kpi-sm` 28px (a
 of five or six), `--fs-hero` 34px (a hero band's title), `--r-card-sm` 22px (a figure tile, a
 filter card), `--gold-hover` (a gold button under the pointer) and `--bar-female` (the second series
 in the age-and-sex pyramid, decoration beside words) and `--tile-md` 48px (the icon tile at the head
-of a form panel, ResidentRegister). `--shell-sidebar-width` is 256px, the
+of a form panel, ResidentRegister), `--tile-xl` 52px and `--fs-title-2xl` 36px (the office tile
+and the subject at the head of a conversation, OfficeThread). `--shell-sidebar-width` is 256px, the
 boards' sidebar, not 264px. A later board that needs a value the scale lacks adds it here.
 
 **The shell.** The sidebar runs the page's full height, never less than the window, with the account

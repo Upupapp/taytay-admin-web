@@ -3,17 +3,78 @@
    column, after them: a reader meets the messages before a decision about
    them (DOM order). Every author, warning and outcome is text in the DOM. */
 
+/* The board's page: back pill, the subject beside its tile, then the two columns, 18 apart. */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.thread__back {
+  align-self: flex-start;
+  min-block-size: var(--h-btn-sm);
+  margin: 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.thread__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-block-end: 18px;
+}
+
+.thread__tile {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--tile-xl);
+  block-size: var(--tile-xl);
+  border-radius: var(--r-lg);
+  background: var(--gold-tint);
+  color: var(--gold-ink);
+}
+
+.thread__title-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+}
+
+.thread__title-text h1 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-title-2xl);
+  font-weight: var(--fw-medium);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.thread__title-text p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-control);
+}
+
 .thread__layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  grid-template-columns: minmax(0, 1fr) 360px;
   grid-template-rows: auto 1fr;
-  gap: var(--space-4);
+  gap: 18px;
   align-items: start;
 }
 
-.thread__details {
+.thread__side {
+  display: flex;
+  flex-direction: column;
   grid-column: 2;
   grid-row: 1 / span 2;
+  gap: 14px;
 }
 
 .thread__messages-block,
@@ -26,7 +87,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .thread__details,
+  .thread__side,
   .thread__messages-block,
   .thread__reply {
     grid-column: 1;
@@ -55,16 +116,40 @@
   font-weight: var(--fw-bold);
 }
 
-.thread__facts {
-  grid-template-columns: minmax(0, 1fr);
+/* About this conversation: the board's deep panel, an eyebrow heading and facts in pairs. */
+.thread__details,
+.thread__acts {
+  padding: 18px;
+}
+
+.thread__details {
+  gap: var(--space-3);
+}
+
+.thread__eyebrow {
+  margin: 0;
+  color: var(--on-deep-muted);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.thread__details .thread__note {
+  color: var(--on-deep-muted);
+  font-size: var(--fs-xs);
 }
 
 .thread__acts {
-  display: flex;
-  flex-direction: column;
   gap: 10px;
-  padding-block-start: 14px;
-  border-block-start: 1px solid var(--soft);
+}
+
+.thread__act {
+  min-block-size: var(--h-btn);
+}
+
+.thread__earlier {
+  align-self: center;
 }
 
 .thread__note,
@@ -125,12 +210,17 @@
   font-weight: var(--fw-semibold);
 }
 
-.thread__meta strong {
-  color: var(--text2);
+.thread__images-heading {
+  display: block;
+  margin-block-end: var(--space-1);
+  color: var(--ink);
 }
 
-.thread__body {
-  margin: 0;
+/* The bubble holds the words and, as the board draws it, the attachment box under them. */
+.thread__bubble {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   padding: var(--space-3) 14px;
   border: 1px solid var(--line);
   border-radius: 18px 18px 18px 6px;
@@ -138,10 +228,14 @@
   color: var(--ink);
   font-size: var(--fs-control);
   line-height: var(--lh-body);
+}
+
+.thread__body {
+  margin: 0;
   white-space: pre-line;
 }
 
-.thread__message--office .thread__body {
+.thread__message--office .thread__bubble {
   border-color: transparent;
   border-radius: 18px 18px 6px 18px;
   background: var(--primary);
@@ -179,17 +273,38 @@
   resize: vertical;
 }
 
-.thread__aside-note {
-  padding: 10px 14px;
-  border-radius: var(--r-field);
-  background: var(--soft2);
-  color: var(--text2);
+.thread__reply {
+  gap: var(--space-3);
+}
+
+.thread__reply .thread__note {
+  font-size: var(--fs-xs);
+}
+
+.thread__send-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.thread__count {
+  font-variant-numeric: tabular-nums;
 }
 
 .thread__send {
-  align-self: flex-end;
   min-block-size: var(--h-btn);
-  padding-inline: 22px;
+}
+
+/* Closed, the board draws the sentence alone in a soft box where the reply would be. */
+.thread__closed {
+  margin: 0;
+  padding: var(--space-4) 18px;
+  border-radius: var(--r-xl);
+  background: var(--soft2);
+  color: var(--text2);
+  font-size: var(--fs-control);
 }
 
 .thread__warning {
