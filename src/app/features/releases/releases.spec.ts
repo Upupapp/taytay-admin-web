@@ -8,10 +8,12 @@ import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
 import { MockReleaseRepository } from '@data/mock/mock-release.repository';
 import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
+import { MockProgramRepository } from '@data/mock/mock-program.repository';
 import {
   ACCESS_CONTEXT,
   ASSISTANCE_REQUEST_REPOSITORY,
   PAYOUT_METHOD_LABELS,
+  PROGRAM_REPOSITORY,
   RELEASE_REPOSITORY,
   NOTIFICATION_REPOSITORY,
   asIsoDateTime,
@@ -112,6 +114,7 @@ async function configure(user: StaffUser): Promise<void> {
       { provide: STAFF_REPOSITORY, useValue: staffRepository(user) },
       { provide: RELEASE_REPOSITORY, useClass: MockReleaseRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
+      { provide: PROGRAM_REPOSITORY, useClass: MockProgramRepository },
       {
         provide: ASSISTANCE_REQUEST_REPOSITORY,
         useFactory: () => {
@@ -555,7 +558,10 @@ describe('an unclaimed payout', () => {
 describe('preparing a release for an approved request', () => {
   const APPROVED = 'req-9001';
 
-  async function openPrepare(requestId: string): Promise<ComponentFixture<ReleasePreparePage>> {
+  async function openPrepare(
+    requestId: string,
+    beforeOpening: () => void = () => undefined,
+  ): Promise<ComponentFixture<ReleasePreparePage>> {
     await configure(staffUser('release-officer'));
     const store = TestBed.inject(MockAssistanceRequestStore);
     const template = store.requests[0];
@@ -584,6 +590,7 @@ describe('preparing a release for an approved request', () => {
         },
       ];
     }
+    beforeOpening();
     const fixture = TestBed.createComponent(ReleasePreparePage);
     fixture.componentRef.setInput('request', requestId);
     await fixture.whenStable();
@@ -641,6 +648,113 @@ describe('preparing a release for an approved request', () => {
       TestBed.inject(RELEASE_REPOSITORY).listForRequest(asId<AssistanceRequestId>(APPROVED)),
     );
     expect(prepared).toHaveLength(0);
+  });
+
+  /* DL-235: the form starts from the approval and the programme's record. */
+
+  type PreparePage = {
+    kind: () => string;
+    amountText: { (): string; set: (value: string) => void };
+    goods: () => string;
+    fundingSource: { (): string; set: (value: string) => void };
+    prepare: () => Promise<void>;
+  };
+
+  async function programFundingOf(): Promise<string> {
+    const request = await firstValueFrom(
+      TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY).getById(asId<AssistanceRequestId>(APPROVED)),
+    );
+    const program =
+      request === null
+        ? null
+        : await firstValueFrom(TestBed.inject(PROGRAM_REPOSITORY).getById(request.programId));
+    return program?.fundingSource ?? '';
+  }
+
+  it('starts from the approved amount, in whole centavos, and the programme’s funding source', async () => {
+    const fixture = await openPrepare(APPROVED);
+    const page = fixture.componentInstance as unknown as PreparePage;
+    const funding = await programFundingOf();
+    expect(funding).not.toBe('');
+    expect(page.kind()).toBe('money');
+    expect(page.amountText()).toBe('3000.00');
+    expect(page.fundingSource()).toBe(funding);
+    fixture.detectChanges();
+    const element = html(fixture);
+    expect(element.querySelector<HTMLInputElement>('#release-amount')?.value).toBe('3000.00');
+    expect(element.querySelector<HTMLInputElement>('#release-funding')?.value).toBe(funding);
+    expect(element.textContent).toContain(RELEASES_COPY.prepare.amountPrefilled);
+    expect(element.textContent).toContain(RELEASES_COPY.prepare.fundingSourcePrefilled);
+
+    await page.prepare();
+    const [prepared] = await firstValueFrom(
+      TestBed.inject(RELEASE_REPOSITORY).listForRequest(asId<AssistanceRequestId>(APPROVED)),
+    );
+    expect(prepared?.amount?.centavos).toBe(300_000);
+    expect(prepared?.fundingSourceLabel).toBe(funding);
+  });
+
+  it('records what the officer changed it to, and stops saying it came from the records', async () => {
+    const fixture = await openPrepare(APPROVED);
+    const page = fixture.componentInstance as unknown as PreparePage;
+    page.amountText.set('2,500');
+    page.fundingSource.set('Municipal supplemental fund');
+    fixture.detectChanges();
+    expect(html(fixture).textContent).not.toContain(RELEASES_COPY.prepare.amountPrefilled);
+    expect(html(fixture).textContent).not.toContain(RELEASES_COPY.prepare.fundingSourcePrefilled);
+    await page.prepare();
+    const [prepared] = await firstValueFrom(
+      TestBed.inject(RELEASE_REPOSITORY).listForRequest(asId<AssistanceRequestId>(APPROVED)),
+    );
+    expect(prepared?.amount?.centavos).toBe(250_000);
+    expect(prepared?.fundingSourceLabel).toBe('Municipal supplemental fund');
+  });
+
+  it('starts goods from the approval’s description, with no amount (DL-93)', async () => {
+    await configure(staffUser('release-officer'));
+    const store = TestBed.inject(MockAssistanceRequestStore);
+    const template = store.requests[0];
+    if (template === undefined) {
+      throw new Error('The seed has no request to copy.');
+    }
+    const GOODS = 'req-9002';
+    store.requests = [
+      ...store.requests,
+      {
+        ...template,
+        id: asId<AssistanceRequestId>(GOODS),
+        status: 'approved',
+        approvedAmount: null,
+        approvedInKindDescription: 'Two sacks of rice',
+      },
+    ];
+    const fixture = TestBed.createComponent(ReleasePreparePage);
+    fixture.componentRef.setInput('request', GOODS);
+    await fixture.whenStable();
+    const page = fixture.componentInstance as unknown as PreparePage;
+    expect(page.kind()).toBe('in-kind');
+    expect(page.goods()).toBe('Two sacks of rice');
+    expect(page.amountText()).toBe('');
+    fixture.detectChanges();
+    expect(html(fixture).querySelector('#release-amount')).toBeNull();
+    await page.prepare();
+    const [prepared] = await firstValueFrom(
+      TestBed.inject(RELEASE_REPOSITORY).listForRequest(asId<AssistanceRequestId>(GOODS)),
+    );
+    expect(prepared?.amount).toBeNull();
+    expect(prepared?.inKindDescription).toBe('Two sacks of rice');
+  });
+
+  it('leaves the funding source to be typed when the programme cannot be read', async () => {
+    const fixture = await openPrepare(APPROVED, () => {
+      vi.spyOn(TestBed.inject(PROGRAM_REPOSITORY), 'getById').mockReturnValue(
+        throwError(() => new Error('The connection dropped.')),
+      );
+    });
+    const page = fixture.componentInstance as unknown as PreparePage;
+    expect(page.fundingSource()).toBe('');
+    expect(page.amountText()).toBe('3000.00');
+    expect(html(fixture).textContent).not.toContain('The connection dropped.');
   });
 
   it('offers no second form for a request that already has a release', async () => {

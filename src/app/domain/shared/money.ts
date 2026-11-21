@@ -42,6 +42,16 @@ export function describePesos(value: Money): string {
 }
 
 /**
+ * An amount written into a peso field for somebody to keep or change — `3000.00` — read digit by
+ * digit from the integer centavos, like `describePesos`, so that `parsePesos` reads it back to the
+ * same centavos. No peso sign and no grouping: it is the value of an input, not a sentence.
+ */
+export function pesosForInput(value: Money): string {
+  const digits = String(Math.abs(Math.trunc(value.centavos))).padStart(3, '0');
+  return `${value.centavos < 0 ? '-' : ''}${digits.slice(0, -2)}.${digits.slice(-2)}`;
+}
+
+/**
  * A peso amount as somebody typed it — `3200`, `3,200.50`, `₱ 3,200.5` — read into whole centavos
  * **without floating-point arithmetic**: the pesos and the centavos are read as two integers from
  * the text, never as one decimal multiplied by a hundred. `null` for anything that is not an amount

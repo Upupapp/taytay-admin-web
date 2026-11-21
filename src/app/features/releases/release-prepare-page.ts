@@ -1,19 +1,29 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { catchError, firstValueFrom, of, switchMap } from 'rxjs';
+import { catchError, firstValueFrom, map, of, switchMap } from 'rxjs';
 
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   ASSISTANCE_REQUEST_REPOSITORY,
   ASSISTANCE_STATUS_CATALOG,
   PAYOUT_METHOD_LABELS,
+  PROGRAM_REPOSITORY,
   RELEASE_KIND_LABELS,
   RELEASE_REPOSITORY,
   RELEASE_STATUS_CATALOG,
   WriteIntent,
   asId,
   parsePesos,
+  pesosForInput,
   releaseDraftProblems,
   type AssistanceRequest,
   type AssistanceRequestId,
@@ -36,6 +46,15 @@ import { RELEASES_COPY } from './releases.copy';
 const MONEY_METHODS: readonly PayoutMethod[] = ['cash', 'check', 'e-wallet', 'bank-transfer'];
 
 /**
+ * A field that starts from what the records say and is the officer's once they type into it: a
+ * later read of the same source (the programme arriving after the request) fills it only while it
+ * still holds what was filled in, never over something typed.
+ */
+function startingFrom<T>(previous: { source: T; value: T } | undefined, next: T): T {
+  return previous === undefined || previous.value === previous.source ? next : previous.value;
+}
+
+/**
  * Preparing the release for an approved request (`DL-180`).
  *
  * The office states what is handed over — an amount in pesos, read into whole centavos, or the goods
@@ -43,6 +62,10 @@ const MONEY_METHODS: readonly PayoutMethod[] = ['cash', 'check', 'e-wallet', 'ba
  * release is for and who approved it are the request's, read by the data layer; nothing here posts
  * to an account (`DL-89`). One release per request at a time: a request that already has one shows
  * it rather than a second form.
+ *
+ * The form starts from the records (`DL-235`): the approved amount, or the approved goods, and the
+ * funding source the programme's record names, held as the text it is. The officer changes either
+ * before recording; the approval stays the ceiling, checked by the domain and by the server.
  */
 @Component({
   selector: 'app-release-prepare-page',
@@ -53,6 +76,7 @@ const MONEY_METHODS: readonly PayoutMethod[] = ['cash', 'check', 'e-wallet', 'ba
 export class ReleasePreparePage {
   private readonly releases = inject(RELEASE_REPOSITORY);
   private readonly requests = inject(ASSISTANCE_REQUEST_REPOSITORY);
+  private readonly programs = inject(PROGRAM_REPOSITORY);
   private readonly notifications = inject(NotificationStore);
   private readonly router = inject(Router);
 
@@ -119,11 +143,69 @@ export class ReleasePreparePage {
     return status === 'approved' || status === 'scheduled';
   });
 
-  protected readonly kind = signal<ReleaseKind>('money');
+  /**
+   * The funding source the request's programme names, to start the field from; `null` while it is
+   * read, when it could not be, and when the record names none. The field is typed then, as before.
+   */
+  protected readonly programFunding = toSignal(
+    toObservable(computed(() => this.assistance()?.programId ?? null)).pipe(
+      switchMap((id) =>
+        id === null || id === ''
+          ? of(null)
+          : this.programs.getById(id).pipe(
+              map((program) => program?.fundingSource.trim() || null),
+              catchError(() => of(null)),
+            ),
+      ),
+    ),
+    { initialValue: null as string | null },
+  );
+
+  /** Goods when the approval described goods and recorded no amount; money otherwise. */
+  private readonly approvedKind = computed<ReleaseKind>(() => {
+    const approved = this.assistance();
+    return approved !== null && approved.approvedAmount === null && approved.approvedInKindDescription !== null
+      ? 'in-kind'
+      : 'money';
+  });
+
+  /** The approved amount as a field value, from its integer centavos; empty for goods or none. */
+  private readonly approvedAmountText = computed(() => {
+    const amount = this.assistance()?.approvedAmount ?? null;
+    return amount === null ? '' : pesosForInput(amount);
+  });
+
+  private readonly approvedGoods = computed(() => this.assistance()?.approvedInKindDescription ?? '');
+  private readonly startingFunding = computed(() => this.programFunding() ?? '');
+
+  protected readonly kind = linkedSignal<ReleaseKind, ReleaseKind>({
+    source: this.approvedKind,
+    computation: (next, previous) => startingFrom(previous, next),
+  });
   protected readonly method = signal<PayoutMethod>('cash');
-  protected readonly amountText = signal('');
-  protected readonly goods = signal('');
-  protected readonly fundingSource = signal('');
+  protected readonly amountText = linkedSignal<string, string>({
+    source: this.approvedAmountText,
+    computation: (next, previous) => startingFrom(previous, next),
+  });
+  protected readonly goods = linkedSignal<string, string>({
+    source: this.approvedGoods,
+    computation: (next, previous) => startingFrom(previous, next),
+  });
+  protected readonly fundingSource = linkedSignal<string, string>({
+    source: this.startingFunding,
+    computation: (next, previous) => startingFrom(previous, next),
+  });
+
+  /** Whether a field still holds what the records filled in, so the hint can say where it came from. */
+  protected readonly amountFromApproval = computed(
+    () => this.approvedAmountText() !== '' && this.amountText() === this.approvedAmountText(),
+  );
+  protected readonly goodsFromApproval = computed(
+    () => this.approvedGoods() !== '' && this.goods() === this.approvedGoods(),
+  );
+  protected readonly fundingFromProgram = computed(
+    () => this.startingFunding() !== '' && this.fundingSource() === this.startingFunding(),
+  );
   protected readonly approvingReference = signal('');
   protected readonly remarks = signal('');
   protected readonly saving = signal(false);

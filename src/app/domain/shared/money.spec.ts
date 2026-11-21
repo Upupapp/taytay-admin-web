@@ -1,4 +1,13 @@
-import { addMoney, centavos, parsePesos, pesos, sumMoney, toDecimal, ZERO_PESOS } from './money';
+import {
+  addMoney,
+  centavos,
+  parsePesos,
+  pesos,
+  pesosForInput,
+  sumMoney,
+  toDecimal,
+  ZERO_PESOS,
+} from './money';
 
 describe('money', () => {
   it('stores pesos as whole centavos', () => {
@@ -37,6 +46,17 @@ describe('money', () => {
   it('refuses what is not an amount rather than rounding it', () => {
     for (const typed of ['', 'abc', '-5', '1.234', '1.2.3']) {
       expect(parsePesos(typed)).toBeNull();
+    }
+  });
+});
+
+describe('pesosForInput', () => {
+  it('writes integer centavos as a field value that parsePesos reads back unchanged', () => {
+    expect(pesosForInput(centavos(300_000))).toBe('3000.00');
+    expect(pesosForInput(centavos(150_050))).toBe('1500.50');
+    expect(pesosForInput(centavos(5))).toBe('0.05');
+    for (const amount of [0, 1, 99, 100, 123_456_789]) {
+      expect(parsePesos(pesosForInput(centavos(amount)))).toEqual(centavos(amount));
     }
   });
 });

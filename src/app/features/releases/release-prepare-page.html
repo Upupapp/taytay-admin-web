@@ -103,7 +103,12 @@
                     [value]="amountText()"
                     (input)="onText('amount', $event)"
                   />
-                  <span class="field__hint" id="release-amount-hint">{{ copy.amountHint }}</span>
+                  <span class="field__hint" id="release-amount-hint">
+                    @if (amountFromApproval()) {
+                      {{ copy.amountPrefilled }}
+                    }
+                    {{ copy.amountHint }}
+                  </span>
                 </label>
 
                 <label class="field" for="release-method">
@@ -128,7 +133,12 @@
                     [value]="goods()"
                     (input)="onText('goods', $event)"
                   ></textarea>
-                  <span class="field__hint" id="release-goods-hint">{{ copy.goodsHint }}</span>
+                  <span class="field__hint" id="release-goods-hint">
+                    @if (goodsFromApproval()) {
+                      {{ copy.goodsPrefilled }}
+                    }
+                    {{ copy.goodsHint }}
+                  </span>
                 </label>
               }
 
@@ -142,9 +152,12 @@
                   [value]="fundingSource()"
                   (input)="onText('funding', $event)"
                 />
-                <span class="field__hint" id="release-funding-hint">{{
-                  copy.fundingSourceHint
-                }}</span>
+                <span class="field__hint" id="release-funding-hint">
+                  @if (fundingFromProgram()) {
+                    {{ copy.fundingSourcePrefilled }}
+                  }
+                  {{ copy.fundingSourceHint }}
+                </span>
               </label>
 
               <label class="field" for="release-reference">

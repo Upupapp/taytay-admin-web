@@ -97,11 +97,16 @@ export const RELEASES_COPY = {
     kind: 'Money or goods',
     amount: 'Amount, in pesos',
     amountHint: 'Up to two decimal places. It is kept as whole centavos, never rounded.',
+    // DL-235: the form starts from the records, and the officer may change what it starts from.
+    amountPrefilled: 'Filled in with the approved amount. Change it if less is handed over.',
     method: 'How it is paid',
     goods: 'The goods',
     goodsHint: 'Say what is handed over. Goods are counted, never given a peso value.',
+    goodsPrefilled: 'Filled in with the goods the approval described. Change it to what is handed over.',
     fundingSource: 'Funding source',
     fundingSourceHint: 'The label the office was given. Nothing here posts to an account.',
+    fundingSourcePrefilled:
+      'Filled in from the programme’s record. Change it if this payout comes from another source.',
     approvingReference: 'Approval reference',
     remarks: 'Remarks',
     boundaryNotice:
