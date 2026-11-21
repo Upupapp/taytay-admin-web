@@ -284,7 +284,7 @@
         "totals": {
           "residents": 27
         },
-        "totals_label": "Total, counted before anything was withheld",
+        "totals_label": "Total (includes withheld figures)",
         "suppression_notice": null,
         "key": "by-barangay",
         "letter": "C",
@@ -349,7 +349,7 @@
           "female": 14,
           "male": 13
         },
-        "totals_label": "Total, counted before anything was withheld",
+        "totals_label": "Total (includes withheld figures)",
         "suppression_notice": null,
         "key": "by-age-sex",
         "letter": "D",
@@ -453,7 +453,7 @@
         ],
         "totals": null,
         "totals_label": null,
-        "suppression_notice": "1 figure is withheld because the count is small enough to identify somebody. The total therefore does not add up to the figures shown.",
+        "suppression_notice": "One figure is withheld because it counts fewer than 5 people, few enough to identify someone. Withheld does not mean zero.",
         "key": "by-sector",
         "letter": "E",
         "title": "Residents by sector"

@@ -52,7 +52,7 @@ describe('toSummaryReport (DL-228)', () => {
     expect(vawc?.withheld['persons']).toBe('protected-sector');
     // The total is the server's, taken before anything was withheld, under its own label.
     expect(sex?.totals).toEqual({ persons: 11 });
-    expect(sex?.totalsLabel).toContain('before anything was withheld');
+    expect(sex?.totalsLabel).toContain('includes withheld figures');
   });
 
   it('reads section I as not counted for this reader, with the server’s sentence', () => {

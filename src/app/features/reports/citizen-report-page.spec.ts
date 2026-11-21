@@ -223,7 +223,7 @@ describe('the citizen registry report page (DL-234)', () => {
 
     expect(sectors?.querySelector('.sheet-withheld')?.textContent).toContain('Withheld');
     expect(sectors?.querySelector('.sheet-withheld__reason')?.textContent).toContain(
-      'small enough to identify somebody',
+      'too few people to show without identifying someone',
     );
   });
 

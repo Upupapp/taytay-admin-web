@@ -32,7 +32,7 @@ export interface MockCitizenReportInput {
   readonly cleared: boolean;
 }
 
-const TOTAL_BEFORE = 'Total, counted before anything was withheld';
+const TOTAL_BEFORE = 'Total (includes withheld figures)';
 
 /**
  * The citizen registry report over the mock registry, in the shape the API composes it (backend
@@ -223,7 +223,7 @@ export function composeMockCitizenReport(input: MockCitizenReportInput): Citizen
       paragraphs: [
         `${scope}, the registry holds ${total} active records on ${dayLabel(today)}, against ${summary.residents.previous} on ${dayLabel(summary.period.from)}.`,
         womenSharePercent === null
-          ? 'The share by sex is not given: one of the figures is too small to publish.'
+          ? 'The share by sex is not given, because one of the two figures is withheld.'
           : `Women and girls make up ${womenSharePercent}% of the registry and men and boys ${100 - womenSharePercent}%.`,
       ],
       figures: {

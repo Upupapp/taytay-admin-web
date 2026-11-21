@@ -449,8 +449,8 @@
         "totals": {
           "persons": 11
         },
-        "totals_label": "Total, counted before anything was withheld",
-        "suppression_notice": "1 figure is withheld because the count is small enough to identify somebody. The total therefore does not add up to the figures shown.",
+        "totals_label": "Total (includes withheld figures)",
+        "suppression_notice": "One figure is withheld because it counts fewer than 5 people, few enough to identify someone. Withheld does not mean zero. The total still includes it.",
         "key": "by-sex",
         "letter": "E",
         "title": "Sex"
@@ -504,7 +504,7 @@
         "totals": {
           "persons": 11
         },
-        "totals_label": "Total, counted before anything was withheld",
+        "totals_label": "Total (includes withheld figures)",
         "suppression_notice": null,
         "key": "by-age",
         "letter": "F",
@@ -562,8 +562,8 @@
         "totals": {
           "persons": 11
         },
-        "totals_label": "Persons served, counted before anything was withheld",
-        "suppression_notice": "VAWC survivor is a sector protected by law (RA 9262, RA 9344) and not counted for your account at all; the total leaves them out.",
+        "totals_label": "Persons served (includes withheld figures)",
+        "suppression_notice": "The VAWC survivor sector is protected by law (RA 9262, RA 9344), so your account does not count it, and the total leaves it out.",
         "key": "by-sector",
         "letter": "G",
         "title": "Sector"

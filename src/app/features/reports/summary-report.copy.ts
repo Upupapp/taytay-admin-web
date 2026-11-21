@@ -87,9 +87,9 @@ export const SUMMARY_REPORT_COPY = {
   notCounted: 'Not counted for you',
   withheld: 'Withheld',
   withheldReasons: {
-    'small-cell': 'withheld: the count is small enough to identify somebody',
-    'protected-sector':
-      'withheld: a sector protected by law (RA 9262, RA 9344), not counted for you',
+    // Printed after "Withheld", so neither repeats it (C6, the demo rehearsal).
+    'small-cell': 'too few people to show without identifying someone; not a zero',
+    'protected-sector': 'a sector protected by law (RA 9262, RA 9344); your account does not count it',
   } satisfies Record<SummaryWithheldReason, string>,
   chartWithheld: 'withheld',
   waitingOn: { office: 'The office', resident: 'The resident' } as Readonly<Record<string, string>>,

@@ -51,7 +51,7 @@ export interface MockSummaryInput {
 }
 
 const WAITING_ON_RESIDENT = new Set(['returned', 'scheduled']);
-const TOTAL_BEFORE = 'Total, counted before anything was withheld';
+const TOTAL_BEFORE = 'Total (includes withheld figures)';
 
 export function composeMockSummary(input: MockSummaryInput): SummaryReport {
   const { filter, user } = input;
@@ -135,18 +135,26 @@ export function composeMockSummary(input: MockSummaryInput): SummaryReport {
     out.push(...uncounted.map((row) => withheldRow(row.key, row.label, 'protected-sector')));
     return { rows: out, withheld };
   };
-  const notice = (withheld: number, hidden: readonly string[]): string | null => {
+  // The server's words (backend `notice` in summary.ts, ADR 0007's amendment), so a demo reads alike.
+  const notice = (withheld: number, hidden: readonly string[], totalled = false): string | null => {
     const parts: string[] = [];
     if (withheld > 0) {
+      const one = withheld === 1;
       parts.push(
-        `${withheld} ${withheld === 1 ? 'figure is' : 'figures are'} withheld because the count is ` +
-          'small enough to identify somebody. The total therefore does not add up to the figures shown.',
+        `${one ? 'One figure is' : `${withheld} figures are`} withheld because ` +
+          `${one ? 'it counts' : 'each counts'} fewer than ${SMALL_CELL_THRESHOLD} people, few enough ` +
+          'to identify someone. Withheld does not mean zero.',
       );
+      if (totalled) {
+        parts.push(`The total still includes ${one ? 'it' : 'them'}.`);
+      }
     }
     if (hidden.length > 0) {
+      const it = hidden.length === 1 ? 'it' : 'them';
       parts.push(
-        `${hidden.join(' and ')} ${hidden.length === 1 ? 'is a sector' : 'are sectors'} protected by ` +
-          'law (RA 9262, RA 9344) and not counted for your account at all; the total leaves them out.',
+        `The ${hidden.join(' and ')} ${hidden.length === 1 ? 'sector is' : 'sectors are'} protected ` +
+          `by law (RA 9262, RA 9344), so your account does not count ${it}` +
+          `${totalled ? `, and the total leaves ${it} out.` : '.'}`,
       );
     }
     return parts.length === 0 ? null : parts.join(' ');
@@ -339,7 +347,7 @@ export function composeMockSummary(input: MockSummaryInput): SummaryReport {
       sex.rows,
       personsServed,
       TOTAL_BEFORE,
-      notice(sex.withheld, []),
+      notice(sex.withheld, [], true),
     ),
     peopleSection(
       'by-age',
@@ -349,7 +357,7 @@ export function composeMockSummary(input: MockSummaryInput): SummaryReport {
       age.rows,
       personsServed,
       TOTAL_BEFORE,
-      notice(age.withheld, []),
+      notice(age.withheld, [], true),
     ),
     peopleSection(
       'by-sector',
@@ -358,10 +366,11 @@ export function composeMockSummary(input: MockSummaryInput): SummaryReport {
       'Each person under every sector the registry records for them now, so the rows overlap.',
       sector.rows,
       personsServed,
-      'Persons served, counted before anything was withheld',
+      'Persons served (includes withheld figures)',
       notice(
         sector.withheld,
         hiddenSectors.map((key) => VULNERABILITY_SECTOR_LABELS[key]),
+        true,
       ),
     ),
     section('open-by-stage', 'H', 'Open requests by stage, as of today', {

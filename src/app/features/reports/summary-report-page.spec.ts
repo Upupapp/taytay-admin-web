@@ -203,11 +203,11 @@ describe('the summary report page (DL-228)', () => {
 
     expect(sex?.querySelector('.sheet-withheld')?.textContent).toContain(copy.withheld);
     expect(sex?.querySelector('.sheet-withheld__reason')?.textContent).toContain(
-      'small enough to identify somebody',
+      'too few people to show without identifying someone',
     );
     expect(sex?.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
     expect(sex?.querySelectorAll('rect.bar-chart__bar')).toHaveLength(1);
-    expect(sex?.querySelector('tfoot')?.textContent).toContain('before anything was withheld');
+    expect(sex?.querySelector('tfoot')?.textContent).toContain('includes withheld figures');
   });
 
   it('says section I is not counted for this reader, and overdue is not counted at all', async () => {

@@ -11250,3 +11250,39 @@ overview's figures), `DL-104` to `DL-106` (reports); keeps `DL-105` everywhere.
 
 **Easiest to reverse:** the route, the hub card and the overview link are markup; the backend
 read is one module beside the summary report's.
+
+## DL-235 — a release starts from the approval and the programme's record
+
+**Status:** Settled (22 November 2026), from the demo rehearsal's C3: preparing a release asked the
+officer to retype the approved amount and the funding source. Extends `DL-180` (the prepare form),
+`DL-183` (the approval is the ceiling) and `DL-89` to `DL-93`; supersedes nothing.
+
+1. **The amount starts at the approved amount**, written from its integer centavos by
+   `pesosForInput` (digit by digit, no division; `parsePesos` reads it back to the same centavos).
+2. **Goods start as goods.** An approval that described goods and recorded no amount starts the form
+   on "Goods" with the approval's description, and no amount at all (`DL-93`).
+3. **The funding source starts at the programme's `fundingSource`**, read through
+   `PROGRAM_REPOSITORY` (every role that prepares a release holds `program.view`) and held as the
+   label it is (`DL-89`): it posts to nothing. A programme that cannot be read leaves the field empty
+   to type, as before, and says nothing alarming: the request is still there.
+4. **The officer may change both before recording.** Each field is a `linkedSignal` that takes the
+   records' value only while it still holds what was filled in, so a read arriving late never
+   overwrites what was typed. The hint says "Filled in with the approved amount…" or "Filled in from
+   the programme's record…" while the value is the records', and stops saying so once it is changed.
+   The ceiling is still checked by the domain and refused by the server (`DL-183`).
+
+**Easiest to reverse:** the four `linkedSignal`s and three hints in `release-prepare-page`.
+
+## DL-236 — withheld figures said in plain words on the registry and summary reports
+
+**Status:** Settled (22 November 2026), from the demo rehearsal's C6. The console's side of backend
+ADR 0007's amendment; keeps `DL-105` exactly.
+
+The server's section notes, totals label and executive-summary sentences were rewritten there
+("One figure is withheld because it counts fewer than 5 people, few enough to identify someone.
+Withheld does not mean zero. The total still includes it."; "Total (includes withheld figures)";
+"fewer than 5 are linked to an app account"). The console renders them as sent; its own words beside
+a withheld cell no longer repeat "withheld" after "Withheld": "too few people to show without
+identifying someone; not a zero", and "a sector protected by law (RA 9262, RA 9344); your account
+does not count it". The mocks and fixtures carry the server's new words. No figure, threshold or
+rule changed.
