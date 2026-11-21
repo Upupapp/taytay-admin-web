@@ -44,6 +44,7 @@ import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
 import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
+import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
@@ -115,6 +116,7 @@ function panelRead<TItem>(source: Observable<readonly TItem[]>): Observable<Pane
     DisplayDatePipe,
     HasPermissionDirective,
     Icon,
+    InitialsPipe,
     Modal,
     NotConnected,
     PageHeader,

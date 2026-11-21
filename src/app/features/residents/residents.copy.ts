@@ -218,6 +218,11 @@ export const RESIDENTS_COPY = {
     openCases: 'Open requests',
     lastActivity: 'Last activity',
     caseCount: 'Requests on file',
+    // Under each figure, what it counts (ResidentRecord board).
+    totalReleasedHint: 'Cash handed over to this resident.',
+    openCasesHint: 'Not yet completed or closed.',
+    caseCountHint: 'Every request, any status.',
+    lastActivityHint: 'Newest change to one of the requests.',
 
     protectedHeading: 'Protected record',
     protectedBody:

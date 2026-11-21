@@ -1,9 +1,63 @@
-// ResidentRecord mock-up as a page: badges, notices and totals, then the panels in two columns.
+// ResidentRecord board as a page: the record is one panel — its head (initials, name, where it
+// stands, the acts), then the notices and totals, two columns of bordered panels, and the
+// history below them as wide as the record.
 
-.detail__badges,
-.notice,
-.detail__totals {
-  margin-block-end: var(--space-4);
+.record {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.record__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 20px var(--space-5);
+  border-block-end: 1px solid var(--soft);
+}
+
+.record__title {
+  display: flex;
+  flex: 1 1 260px;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+}
+
+.record__name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.record__name {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-title-lg);
+  font-weight: var(--fw-medium);
+  letter-spacing: -0.01em;
+}
+
+.record__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.btn.record__action {
+  min-block-size: var(--h-btn);
+  padding-inline: 18px;
+  font-size: var(--fs-control);
+}
+
+.record__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 20px var(--space-5) var(--space-5);
 }
 
 .detail__dot {
@@ -29,15 +83,41 @@
   gap: var(--space-4);
 }
 
+.detail__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+
+// A panel that says only "none" shares the row; one holding a table takes all of it.
+.detail__history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.detail__history > .panel {
+  flex: 1 1 300px;
+}
+
+.detail__history > .panel--wide {
+  flex-basis: 100%;
+}
+
+// The board's inner panel: a hairline box on the record, the identity panel deep.
 .panel {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   min-inline-size: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
 }
 
-.panel--wide {
-  grid-column: 1 / -1;
+.panel.card--deep {
+  border-color: transparent;
 }
 
 .panel__subheading {

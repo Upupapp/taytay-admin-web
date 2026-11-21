@@ -3,7 +3,7 @@
     { "board": "SignIn", "route": "/sign-in", "signedOut": true },
     { "board": "Main", "route": "/dashboard" },
     { "board": "Residents", "route": "/residents" },
-    { "board": "ResidentRecord", "route": "/residents", "click": "main table tbody tr button" },
+    { "board": "ResidentRecord", "route": "/residents", "click": "main table tbody tr a.record-link" },
     { "board": "ResidentRegister", "route": "/residents/new" },
     { "board": "VerificationQueue", "route": "/verification" },
     {
