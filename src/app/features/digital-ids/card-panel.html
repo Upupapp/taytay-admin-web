@@ -8,7 +8,7 @@
       <!-- The CitizenIDRecord mock-up: the card as the app draws it, its facts, its history, in one
            row. The photo's button sits beside the heading; the image appears in the card's own
            photo slot, and only after CardPhoto's warning. -->
-      <section class="card-record" aria-labelledby="card-record-heading">
+      <section class="card-record card-record--panel" aria-labelledby="card-record-heading">
         <div class="card-record__head">
           <h3 id="card-record-heading" class="section-title">{{ copy.cardHeading }}</h3>
           <app-card-photo
@@ -29,19 +29,25 @@
             [photoAlt]="photoAlt()"
           />
           <div class="card-record__facts">
-            <dl class="facts facts--pairs digital-ids__facts">
-              <dt>{{ copy.number }}</dt>
-              <dd>
-                {{ current.number }}
-                <span class="digital-ids__aside">{{ copy.numberNote }}</span>
-              </dd>
-              <dt>{{ copy.status }}</dt>
-              <dd><app-status-badge [catalog]="catalog" [status]="current.status" /></dd>
-              <dt>{{ copy.issued }}</dt>
-              <dd>{{ current.issuedAt | displayDate }}</dd>
-              <dt>{{ copy.expires }}</dt>
-              <dd>{{ current.expiresAt | displayDate }}</dd>
+            <dl class="card-facts digital-ids__facts">
+              <div>
+                <dt>{{ copy.number }}</dt>
+                <dd>{{ current.number }}</dd>
+              </div>
+              <div>
+                <dt>{{ copy.status }}</dt>
+                <dd><app-status-badge [catalog]="catalog" [status]="current.status" /></dd>
+              </div>
+              <div>
+                <dt>{{ copy.issued }}</dt>
+                <dd>{{ current.issuedAt | displayDate }}</dd>
+              </div>
+              <div>
+                <dt>{{ copy.expires }}</dt>
+                <dd>{{ current.expiresAt | displayDate }}</dd>
+              </div>
             </dl>
+            <p class="digital-ids__aside">{{ copy.numberNote }}</p>
             @if (pastExpiry(current)) {
               <p class="status-line digital-ids__note">{{ copy.pastExpiry }}</p>
             }
@@ -53,16 +59,47 @@
         </div>
       </section>
 
-      <h3 class="section-title digital-ids__subheading">{{ copy.actsHeading }}</h3>
-      <div class="digital-ids__actions">
-        @for (act of actsOn(current); track act) {
-          <button type="button" class="btn" [disabled]="busy()" (click)="choose(act)">
-            {{ copy.act[act] }}
-          </button>
-        } @empty {
-          <p class="status-line digital-ids__note">{{ copy.noActs }}</p>
+      <!-- The board's act cards: what each act does stands above its button, and again in the
+           confirmation, which is where the act is sent from. -->
+      <section class="card-record card-record--panel" aria-labelledby="card-acts-heading">
+        <h3 id="card-acts-heading" class="section-title digital-ids__subheading">
+          {{ copy.actsHeading }}
+        </h3>
+        <div class="digital-ids__actions card-acts">
+          @for (act of actsOn(current); track act) {
+            <div class="card-acts__item">
+              <p class="card-acts__title">{{ copy.effectsLead(copy.act[act]) }}</p>
+              <ul class="card-acts__effects">
+                @for (line of effects[act]; track $index) {
+                  <li>{{ line }}</li>
+                }
+              </ul>
+              <button
+                type="button"
+                class="btn card-acts__button"
+                [class.btn--primary]="act === 'reissue'"
+                [class.card-acts__button--ends]="act === 'suspend' || act === 'revoke'"
+                [disabled]="busy()"
+                (click)="choose(act)"
+              >
+                {{ copy.act[act] }}
+              </button>
+            </div>
+          } @empty {
+            <p class="status-line digital-ids__note">{{ copy.noActs }}</p>
+          }
+        </div>
+        @if (actsOn(current).length > 0) {
+          <div class="effects card-acts__always">
+            <p class="effects__lead">{{ copy.always }}</p>
+            <ul>
+              @for (line of always; track $index) {
+                <li>{{ line }}</li>
+              }
+            </ul>
+          </div>
         }
-      </div>
+      </section>
     } @else {
       <p class="status-line digital-ids__note">{{ copy.none }}</p>
       <p class="status-line digital-ids__note">{{ copy.noneWhy }}</p>

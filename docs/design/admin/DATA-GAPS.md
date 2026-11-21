@@ -27,6 +27,9 @@ Checked against `openapi.json` at console `1eadbc0`.
 | CitizenIDs | From sign-up to card — signed up on the app, sent an ID for review (oldest waiting), verified residents, ahead of the card stages | `GET admin/digital-ids` `meta.funnel { app_accounts, pending_verification, oldest_pending_at, verified }` |
 | CitizenIDs | "Verified, no card" tab, its count and its rows, each with "Issue a card" | `GET admin/digital-ids?status=no-card` (verified accounts holding no card) or `GET admin/users?verified=true&card=none`, with a count in `meta.counts` |
 | CitizenIDs | Email under the holder's name; "Verified" column | `DigitalIdListItem.holder { email, verified_at }` |
+| CitizenIDRecord | Facts: card photo (approved selfie or card photo), times checked | `GET admin/users/{id}/digital-id`: `photo_source`, `checks_count` |
+| CitizenIDRecord | Card history — checked, issued, suspended, replaced, with when and by whom (the panel keeps its not-connected state) | `GET admin/digital-ids/{id}/events[]` from the app audit trail |
+| CitizenIDRecord | Under the name: purok, verified date and the ID type verified with | `GET admin/users/{id}/digital-id`: `holder { purok_or_sitio, verified_at, id_type }` |
 
 ## Sent by the API but not shown yet (UI work only)
 

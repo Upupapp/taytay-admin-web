@@ -3,7 +3,7 @@
     { "board": "SignIn", "route": "/sign-in", "signedOut": true },
     { "board": "Main", "route": "/dashboard" },
     { "board": "Residents", "route": "/residents" },
-    { "board": "ResidentRecord", "route": "/residents", "click": "main table tbody tr a" },
+    { "board": "ResidentRecord", "route": "/residents", "click": "main table tbody tr button" },
     { "board": "ResidentRegister", "route": "/residents/new" },
     { "board": "VerificationQueue", "route": "/verification" },
     {
@@ -22,6 +22,6 @@
     { "board": "SectorSoloParents", "route": "/residents/sectors/solo-parent" },
     { "board": "CitizenImport", "route": "/residents/import" },
     { "board": "CitizenIDs", "route": "/citizen-ids" },
-    { "board": "CitizenIDRecord", "route": "/citizen-ids", "click": "main table tbody tr a" }
+    { "board": "CitizenIDRecord", "route": "/citizen-ids", "click": "main table tbody tr button" }
   ]
 }
