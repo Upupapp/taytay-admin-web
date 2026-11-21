@@ -36,6 +36,7 @@ import { PesoPipe } from '@shared/pipes/peso.pipe';
 
 import { DashboardAttention, type AttentionCard, type AttentionGroup } from './dashboard-attention';
 import { DASHBOARD_COPY } from './dashboard.copy';
+import { DashboardHandover, DashboardRequestsTrend } from './dashboard-trends';
 import {
   attentionDrillDown,
   barangayDrillDown,
@@ -79,6 +80,8 @@ export const DASHBOARD_TOPICS: readonly LiveTopic[] = [
   selector: 'app-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DashboardHandover,
+    DashboardRequestsTrend,
     AsyncContent,
     ChartTable,
     DashboardAttention,

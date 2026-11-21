@@ -31,6 +31,13 @@
     "pagination": {
       "has_more": true,
       "next_cursor": "eyJjcmVhdGVkQXQiOiIyMDI2LTEwLTI5In0"
+    },
+    "counts": {
+      "residents": 1240,
+      "verified": 640,
+      "staff": 18,
+      "admins": 2,
+      "staff_without_office": 1
     }
   }
 }

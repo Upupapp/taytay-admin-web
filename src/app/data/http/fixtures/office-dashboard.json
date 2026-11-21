@@ -28,6 +28,16 @@
       "by_barangay": [
         { "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04", "count": 2 },
         { "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01", "count": 1 }
+      ],
+      "received_by_week": [
+        { "week_start": "2026-09-14", "count": 0 },
+        { "week_start": "2026-09-21", "count": 1 },
+        { "week_start": "2026-09-28", "count": 0 },
+        { "week_start": "2026-10-05", "count": 2 },
+        { "week_start": "2026-10-12", "count": 1 },
+        { "week_start": "2026-10-19", "count": 0 },
+        { "week_start": "2026-10-26", "count": 1 },
+        { "week_start": "2026-11-02", "count": 2 }
       ]
     },
     "payouts": {
@@ -35,6 +45,15 @@
       "released_amount_centavos": 373457,
       "goods_released": 1,
       "residents_served": 3,
+      "handed_over_by_day": [
+        { "date": "2026-10-31", "count": 0 },
+        { "date": "2026-11-01", "count": 0 },
+        { "date": "2026-11-02", "count": 1 },
+        { "date": "2026-11-03", "count": 0 },
+        { "date": "2026-11-04", "count": 1 },
+        { "date": "2026-11-05", "count": 0 },
+        { "date": "2026-11-06", "count": 1 }
+      ],
       "by_category": [
         {
           "category": "medical-assistance",

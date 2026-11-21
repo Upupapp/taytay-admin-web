@@ -42,8 +42,8 @@
   display: grid;
   grid-column: span 7;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  /* The first row as tall as its figures; Released takes what the attention list leaves. */
-  grid-template-rows: auto 1fr;
+  /* The first row as tall as its figures; the trend and Released take what is left. */
+  grid-template-rows: auto auto 1fr;
   gap: var(--space-4);
 }
 
@@ -61,8 +61,25 @@
   grid-column: span 3;
 }
 
-.metrics > .metric:nth-child(4) {
+/* Released over the handover card, both beside the requests trend (DL-232). */
+.metrics > .metric:nth-child(4),
+.metrics > .handover {
+  grid-column: 5 / span 3;
+  grid-row: 2;
+}
+
+.metrics > .handover {
+  grid-row: 3;
+}
+
+.metrics > .trend {
+  grid-column: 1 / span 4;
+  grid-row: 2 / span 2;
+}
+
+.metrics:has(> .metrics__note) > .trend {
   grid-column: 1 / -1;
+  grid-row: auto;
 }
 
 /* Without the payout figures: the two that remain share the row. */
@@ -359,9 +376,13 @@
   }
 
   .metrics > .metric,
+  .metrics > .metric:nth-child(4),
+  .metrics > .trend,
+  .metrics > .handover,
   .metrics > .metric:first-child,
   .metrics:has(> .metrics__note) > .metric,
   .metrics:has(> .metrics__note) > .metric:first-child {
     grid-column: 1 / -1;
+    grid-row: auto;
   }
 }

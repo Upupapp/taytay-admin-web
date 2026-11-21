@@ -214,6 +214,31 @@ describe('navigation reachability', () => {
     expect(current?.getAttribute('href')).toBe('/residents');
   });
 
+  it('folds each group behind its heading, the current page’s group open (DL-233)', async () => {
+    await configure('system-administrator');
+    await TestBed.inject(Router).navigateByUrl('/residents');
+    const fixture = TestBed.createComponent(AppNav);
+    await fixture.whenStable();
+
+    const element = fixture.nativeElement as HTMLElement;
+    const toggles = Array.from(element.querySelectorAll<HTMLButtonElement>('button.nav__toggle'));
+    expect(toggles.length).toBeGreaterThan(1);
+    const current = element.querySelector('a.nav__link[aria-current="page"]');
+    const holding = current?.closest('ul');
+    const own = toggles.find((toggle) => toggle.getAttribute('aria-controls') === holding?.id);
+    expect(own?.getAttribute('aria-expanded')).toBe('true');
+    expect(holding?.hasAttribute('hidden')).toBe(false);
+
+    const other = toggles.find((toggle) => toggle !== own);
+    const list = element.querySelector(`#${other?.getAttribute('aria-controls') ?? 'none'}`);
+    expect(other?.getAttribute('aria-expanded')).toBe('false');
+    expect(list?.hasAttribute('hidden')).toBe(true);
+    other?.click();
+    await fixture.whenStable();
+    expect(other?.getAttribute('aria-expanded')).toBe('true');
+    expect(list?.hasAttribute('hidden')).toBe(false);
+  });
+
   it('marks exactly one entry current when one entry’s route sits under another’s (DL-227)', async () => {
     await configure('system-administrator');
     await TestBed.inject(Router).navigateByUrl('/residents/overview');

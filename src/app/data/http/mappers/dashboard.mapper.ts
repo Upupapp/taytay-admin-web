@@ -14,15 +14,17 @@ import {
   type CategoryTotal,
   type DashboardFilter,
   type DashboardPayouts,
+  type DayCount,
   type DashboardSummary,
   type ProgramCategory,
   type ResidentAppAccounts,
   type ResidentAppFigures,
   type StatusCount,
+  type WeekCount,
 } from '@domain/index';
 
 import type { BarangayIndex } from './resident.mapper';
-import { dateTime, field, int, oneOf, str } from './wire';
+import { date, dateTime, field, int, oneOf, str } from './wire';
 
 /**
  * The dashboard, from `GET office/dashboard` (`DL-182`).
@@ -33,6 +35,8 @@ import { dateTime, field, int, oneOf, str } from './wire';
  * | `applied_filter{barangay_id,category,…}`  | `appliedFilter`, the barangay joined    | nothing is shown                      |
  * | `attention[]{kind,…,permission,basis}`    | `attention`, re-sorted                  | nothing is shown                      |
  * | `requests{open,awaiting_approval,by_*}`   | `openRequests`, `awaitingApproval`, …   | nothing is shown                      |
+ * | `requests.received_by_week[]{week_start,count}` | `requestsReceivedByWeek`          | nothing is shown                      |
+ * | `payouts.handed_over_by_day[]{date,count}` | `payouts.handedOverByDay`              | nothing is shown                      |
  * | `payouts` — null for a reader the release list refuses | `payouts` (`null` kept)    | nothing is shown                      |
  * | `resident_app` — null without an app key  | `residentApp` (`null` kept)             | nothing is shown                      |
  *
@@ -99,6 +103,7 @@ export function toDashboardSummary(
   const requestsByBarangay = whole(field(requests, 'by_barangay'), (row) =>
     barangayCountOf(row, barangays),
   );
+  const requestsReceivedByWeek = whole(field(requests, 'received_by_week'), weekCountOf);
   const payouts = payoutsWire === null ? null : payoutsOf(payoutsWire);
   const residentApp = residentAppWire === null ? null : residentAppOf(residentAppWire);
 
@@ -110,6 +115,7 @@ export function toDashboardSummary(
     awaitingApproval === null ||
     requestsByStatus === null ||
     requestsByBarangay === null ||
+    requestsReceivedByWeek === null ||
     payouts === undefined ||
     residentApp === undefined
   ) {
@@ -124,6 +130,7 @@ export function toDashboardSummary(
     awaitingApproval,
     requestsByStatus,
     requestsByBarangay,
+    requestsReceivedByWeek,
     payouts,
     residentApp,
   };
@@ -193,13 +200,15 @@ function payoutsOf(value: unknown): DashboardPayouts | undefined {
   const goodsReleasedInPeriod = count(field(value, 'goods_released'));
   const residentsServedInPeriod = count(field(value, 'residents_served'));
   const disbursedByCategory = whole(field(value, 'by_category'), categoryTotalOf);
+  const handedOverByDay = whole(field(value, 'handed_over_by_day'), dayCountOf);
 
   if (
     scheduledPayouts === null ||
     released === null ||
     goodsReleasedInPeriod === null ||
     residentsServedInPeriod === null ||
-    disbursedByCategory === null
+    disbursedByCategory === null ||
+    handedOverByDay === null
   ) {
     return undefined;
   }
@@ -210,7 +219,20 @@ function payoutsOf(value: unknown): DashboardPayouts | undefined {
     disbursedInPeriod: centavos(released),
     goodsReleasedInPeriod,
     disbursedByCategory,
+    handedOverByDay,
   };
+}
+
+function weekCountOf(value: unknown): WeekCount | null {
+  const weekStart = date(field(value, 'week_start'));
+  const n = count(field(value, 'count'));
+  return weekStart === null || n === null ? null : { weekStart, count: n };
+}
+
+function dayCountOf(value: unknown): DayCount | null {
+  const day = date(field(value, 'date'));
+  const n = count(field(value, 'count'));
+  return day === null || n === null ? null : { date: day, count: n };
 }
 
 function categoryTotalOf(value: unknown): CategoryTotal | null {

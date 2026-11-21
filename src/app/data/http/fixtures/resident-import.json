@@ -10,6 +10,8 @@
     "committed_at": null,
     "committed_by": null,
     "result": null,
+    "source": "osca",
+    "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04",
     "columns": [
       { "index": 0, "header": "Surname", "samples": ["Reyes"] },
       { "index": 1, "header": "Birth date", "samples": ["1950-01-02"] }

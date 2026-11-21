@@ -38,6 +38,7 @@ import { MOCK_REFERRALS } from './seed/referrals.seed';
 import { MOCK_VERIFICATION_REQUESTS } from './seed/verification-requests.seed';
 import { MOCK_SEED_DIGITAL_IDS } from './mock-digital-id.repository';
 import { mockVerificationOf } from './mock-account-verification';
+import { countByDay, countByWeek, demoDays, demoWeeks } from './mock-time-series';
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
 
@@ -139,6 +140,10 @@ export class MockDashboardRepository implements DashboardRepository {
       awaitingApproval: countByStatus(requests, 'endorsed'),
       requestsByStatus: byStatus(requests),
       requestsByBarangay: byBarangay(requests),
+      requestsReceivedByWeek: countByWeek(
+        demoWeeks(8),
+        requests.map((request) => request.submittedAt),
+      ),
 
       payouts,
       residentApp: residentAppFor(user, since),
@@ -166,6 +171,11 @@ function payoutsOf(
     disbursedInPeriod: sumMoney(moneyOf(released)),
     goodsReleasedInPeriod: released.filter((d) => d.amount === null).length,
     disbursedByCategory: byCategory(released, requests),
+    // Every handover in the last seven days, whatever the period says, as the API counts it.
+    handedOverByDay: countByDay(
+      demoDays(7),
+      releases.filter((d) => HANDED_OVER.includes(d.status)).map((d) => d.releasedAt),
+    ),
   };
 }
 

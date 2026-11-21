@@ -150,6 +150,13 @@
           {{ copy.payoutsNotShown }}
         </p>
       }
+
+      <!-- The two series by Manila week and day (DL-232): the trend for every reader, the
+           handovers only where the payout figures are. -->
+      <app-dashboard-requests-trend [weeks]="summary.requestsReceivedByWeek" />
+      @if (summary.payouts; as payouts) {
+        <app-dashboard-handover [days]="payouts.handedOverByDay" />
+      }
     </section>
 
     <!-- ── Breakdowns. Every one is a real table with decorative bars. ────── -->

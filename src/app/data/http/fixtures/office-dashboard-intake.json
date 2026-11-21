@@ -19,7 +19,17 @@
       "open": 1,
       "awaiting_approval": 0,
       "by_status": [{ "status": "submitted", "count": 1 }],
-      "by_barangay": [{ "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01", "count": 1 }]
+      "by_barangay": [{ "barangay_id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01", "count": 1 }],
+      "received_by_week": [
+        { "week_start": "2026-09-14", "count": 0 },
+        { "week_start": "2026-09-21", "count": 1 },
+        { "week_start": "2026-09-28", "count": 0 },
+        { "week_start": "2026-10-05", "count": 1 },
+        { "week_start": "2026-10-12", "count": 1 },
+        { "week_start": "2026-10-19", "count": 0 },
+        { "week_start": "2026-10-26", "count": 1 },
+        { "week_start": "2026-11-02", "count": 1 }
+      ]
     },
     "payouts": null,
     "resident_app": null

@@ -1,6 +1,6 @@
 import type { AssistanceRequestStatus } from '../assistance/assistance-request';
 import type { Permission } from '../access/permission';
-import type { BarangayId } from '../shared/ids';
+import type { BarangayId, IsoDate } from '../shared/ids';
 import type { Money } from '../shared/money';
 import type { ProgramCategory } from '../programs/program';
 
@@ -160,6 +160,24 @@ export interface DashboardPayouts {
   /** In-kind releases handed over in the period: counted, never valued (`DL-93`). */
   readonly goodsReleasedInPeriod: number;
   readonly disbursedByCategory: readonly CategoryTotal[];
+  /**
+   * Releases handed over (released, claimed or completed) per Asia/Manila day: today and the six
+   * days before, oldest first, every day present. Money and goods alike, counted and never valued
+   * (`DL-93`). The `period` filter does not narrow it; the barangay and programme filters do.
+   */
+  readonly handedOverByDay: readonly DayCount[];
+}
+
+/** One Asia/Manila calendar day and how many records fell on it. Records, not people. */
+export interface DayCount {
+  readonly date: IsoDate;
+  readonly count: number;
+}
+
+/** One Asia/Manila week, named by the Monday it starts on, and how many records fell in it. */
+export interface WeekCount {
+  readonly weekStart: IsoDate;
+  readonly count: number;
 }
 
 /* ── The residents' app ───────────────────────────────────────────────────── */
@@ -221,6 +239,12 @@ export interface DashboardSummary {
    * every row opens records the reader may already read, so nothing here is withheld.
    */
   readonly requestsByBarangay: readonly BarangayCount[];
+  /**
+   * Filed requests per Asia/Manila week, Monday first: the current week to date and the seven
+   * before it whole, oldest first, every week present (a zero is a zero). Requests are records, so
+   * nothing is withheld. The `period` filter does not narrow it; the barangay and programme do.
+   */
+  readonly requestsReceivedByWeek: readonly WeekCount[];
 
   /** `null` for a reader the release list refuses. */
   readonly payouts: DashboardPayouts | null;

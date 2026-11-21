@@ -9,7 +9,24 @@
       "previous_to": "2026-10-31"
     },
     "applied_filter": { "barangay_id": null, "sector": null, "age_group": null, "sex": null },
-    "residents": { "current": 1204, "previous": 1180 },
+    "residents": {
+      "current": 1204,
+      "previous": 1180,
+      "by_month": [
+        { "month": "2025-12", "value": 1150, "withheld": null },
+        { "month": "2026-01", "value": 1155, "withheld": null },
+        { "month": "2026-02", "value": 1160, "withheld": null },
+        { "month": "2026-03", "value": 1165, "withheld": null },
+        { "month": "2026-04", "value": 1170, "withheld": null },
+        { "month": "2026-05", "value": 1175, "withheld": null },
+        { "month": "2026-06", "value": 1180, "withheld": null },
+        { "month": "2026-07", "value": 1185, "withheld": null },
+        { "month": "2026-08", "value": 1190, "withheld": null },
+        { "month": "2026-09", "value": 1195, "withheld": null },
+        { "month": "2026-10", "value": 1200, "withheld": null },
+        { "month": "2026-11", "value": 1205, "withheld": null }
+      ]
+    },
     "registered": {
       "current": { "value": null, "withheld": "small-cell" },
       "previous": { "value": 24, "withheld": null }
@@ -53,8 +70,25 @@
         { "key": "senior.female", "label": "Senior citizens (60+), female", "value": 120, "display": null, "withheld": null, "resident_id": null }
       ],
       "total": 120,
-      "suppression_notice": null
+      "suppression_notice": null,
+      "total_by_sex": { "female": 120, "male": 0 }
     },
+    "funnel": {
+      "on_registry": 1204,
+      "on_app": { "value": 310, "withheld": null },
+      "verified": { "value": 180, "withheld": null },
+      "active_ids": { "value": null, "withheld": "small-cell" }
+    },
+    "this_month": {
+      "month": "2026-11",
+      "turning_60": { "value": 9, "withheld": null },
+      "turning_18": { "value": null, "withheld": "small-cell" },
+      "solo_parent_ids_due": { "value": 6, "withheld": null },
+      "pwd_ids_expiring": { "value": null, "withheld": "small-cell" }
+    },
+    "coverage": null,
+    "attention": null,
+    "by_disability_type": null,
     "records_to_tidy": [
       { "key": "missing-contact", "count": 31, "basis": "Active records with no mobile number and no email." },
       { "key": "possible-duplicates", "count": null, "basis": "Same name and birth date.", "last_run_at": null }

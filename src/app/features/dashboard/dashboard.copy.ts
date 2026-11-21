@@ -56,6 +56,9 @@ export const DASHBOARD_COPY = {
   } satisfies Record<AttentionKind, (count: number) => string>,
 
   attentionAction: 'Review',
+  /** The round button that unfolds the rule a signal counted by (DL-233). */
+  attentionHow: 'How this is counted',
+  attentionItems: (n: number) => (n === 1 ? '· 1 item' : `· ${n} items`),
   /** Prefixes the server's own statement of the rule it counted by (`DL-98`, `DL-182`). */
   attentionBasis: 'Counted:',
   severityLabel: {
@@ -87,6 +90,28 @@ export const DASHBOARD_COPY = {
   /** Said where payout figures would be, so their absence is not read as "nothing paid out". */
   payoutsNotShown: 'Payout figures are not shown: your role does not open the releases they count.',
   viewRecords: 'View the records behind this figure',
+
+  /* The two series the API counts by Manila week and day (DL-232). */
+  trendHeading: 'Requests received',
+  trendLead: 'Filed requests per week, last 8 weeks.',
+  trendThisWeek: 'this week so far',
+  trendChange: (change: number) =>
+    change === 0
+      ? 'Same as last week'
+      : `${change > 0 ? '+' : '−'}${Math.abs(change)} on last week`,
+  trendAverage: (average: string) => `Avg ${average} a week`,
+  trendCallout: (n: number) => (n === 1 ? '1 request' : `${n} requests`),
+  trendCaption: 'Filed requests per week, last 8 weeks, oldest first',
+  trendWeekHeader: 'Week',
+  trendCountHeader: 'Requests filed',
+  trendWeekOf: (date: string) => `Week of ${date}`,
+  handoverHeading: 'Releases handed over',
+  handoverWindow: 'Last 7 days',
+  handoverTotal: (n: number) =>
+    n === 1
+      ? '1 release handed over in the last 7 days'
+      : `${n} releases handed over in the last 7 days`,
+  handoverCaption: 'Releases handed over per day, last 7 days, money and goods alike',
 
   // Breakdowns
   byStatusCaption: 'Requests by status',

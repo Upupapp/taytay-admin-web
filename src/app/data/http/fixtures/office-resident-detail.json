@@ -27,8 +27,11 @@
     "updated_by": "0f1e2d3c-4b5a-4968-8776-655443322101",
     "app_account": {
       "act": "verification",
-      "linked_since": "2026-11-08T03:00:00.000Z"
+      "linked_since": "2026-11-08T03:00:00.000Z",
+      "verified": true,
+      "digital_id_status": "active"
     },
+    "household_reference": "HH-2026-000014",
     "origin": {
       "kind": "citizen-import",
       "import_id": "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d01",

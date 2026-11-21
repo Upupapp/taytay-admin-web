@@ -17,16 +17,37 @@
 }
 
 .nav__title {
+  margin: 0;
+}
+
+/* The group's heading is its disclosure button, as the Main board draws it (DL-233). */
+.nav__toggle {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  inline-size: 100%;
   min-block-size: 34px;
   padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
   color: var(--muted2);
   font-family: var(--font-body);
   font-size: var(--fs-micro);
   font-weight: var(--fw-semibold);
   letter-spacing: 0.09em;
+  text-align: start;
   text-transform: uppercase;
+  cursor: pointer;
+}
+
+.nav__toggle:hover {
+  background: var(--hover);
+}
+
+.nav__list[hidden] {
+  display: none;
 }
 
 .nav__list {

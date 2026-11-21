@@ -4,14 +4,12 @@ A board panel whose data the API does not send is left out of the page, the grid
 re-balanced, and listed here (`DL-230`). A panel the console already has keeps its empty or
 not-connected state. `/match-board` adds lines; a backend change that closes one deletes it.
 
-Checked against `openapi.json` at console `1eadbc0`.
+Checked against `openapi.json` at console `1eadbc0`; rows the backend built (ADR 0006, spec `2472fdb`) are removed as each board is drawn (`DL-232`).
 
 ## Not sent by the API
 
 | Board | Panel | Needs |
 |---|---|---|
-| Main | Requests received — weekly line, last 8 weeks, "this week / on last week" | `GET office/dashboard`: `requests.received_by_week[]` |
-| Main | Releases handed over — by day, last 7 days | `GET office/dashboard`: `payouts.handed_over_by_day[]` |
 | VerificationQueue | KPI row: awaiting review (the list sends cursors and no total, `DL-161`), oldest waiting with its sent time, decided last 7 days (approved / rejected), sent last 7 days by day | `GET admin/verification-requests` `meta.stats { pending, oldest_pending_at, decided_7d { approved, rejected }, sent_by_day[7] }` |
 | CitizensOverview | Citizens on the registry — 12-month line | `GET office/residents/summary`: `residents.by_month[]` |
 | CitizensOverview | From the registry to a Digital ID — funnel under the page filter | summary: `funnel { on_registry, on_app, verified, active_ids }` |

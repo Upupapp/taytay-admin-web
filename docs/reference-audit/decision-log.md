@@ -11167,3 +11167,49 @@ where the Main board folds it behind "How this is counted"; the attention totals
 list (`DL-227`), where the board puts them at its foot; figures in a row read from the top
 (`DL-227`).
 
+
+## DL-232 — the board panels the API now sends are drawn, from backend ADR 0006
+
+**Status:** Settled (21 November 2026). Spec vendored at backend `2472fdb`; the backend's ADR 0006
+lists each `docs/design/admin/DATA-GAPS.md` row as built or won't build, with the reason.
+
+**What.** Each panel a board draws and the API now sends is drawn as the board draws it, mapped
+explicitly in the http mappers, with matching sample shapes in the mock adapters:
+
+- Main: "Requests received" (`requests.received_by_week`, eight Manila weeks) as a line, and
+  "Releases handed over" (`payouts.handed_over_by_day`, seven days) as day columns on the deep
+  card. Shared `LineChart` and `ColumnChart` draw them; each **is** or carries a real table, so a
+  screen reader reads figures, never a shape. A withheld point breaks the line (`DL-105`).
+- The derived figures beside the line — this week, the change on last week, the average over the
+  eight weeks — are arithmetic on the eight figures sent. Requests are records, not people, so none
+  is withheld (backend ADR 0006).
+- The mock's series end on the seed's anchor, not the real clock (`mock-time-series.ts`): the seed
+  is dated around it, and a series ending today would read all zeros in the demo.
+
+**Won't build, kept out of the page and on DATA-GAPS:** the previous-period chips on the app and
+card tiles (no state is kept at an earlier instant), the pension waitlist (nothing records one),
+the children in a solo parent's care (the registry records parentage, not care; the panel says so
+with `<app-not-connected figure="children-in-care">`).
+
+**Milestone birthdays.** The ages 80, 85, 90, 95 and 100 are RA 11982's (amending RA 10868 §2),
+checked by the lead against the Supreme Court E-Library's text on 21 November 2026; they are not
+marked `convention-pending-confirmation`.
+
+## DL-233 — the owner's Main: the menu folds, attention folds its rules, the sums sit at the foot
+
+**Status:** Settled (21 November 2026), on the owner's instruction with the Main board's screenshot.
+**Supersedes** `DL-201`'s "the menu stays open" and `DL-231`'s "kept over the board" for the
+attention panel. The Dark mode button stays as and where it is (`DL-207`): the owner asked for that
+explicitly.
+
+1. **Each menu group folds.** Its heading is a disclosure button (`aria-expanded`, `aria-controls`,
+   a chevron: right closed, down open). The group holding the current page opens by default; a
+   person's choice holds for the tab, in memory, never stored. Entries, order and permissions are
+   unchanged; a closed group's links stay in the document, `hidden`.
+2. **Attention folds its rules.** Each signal's basis (`DL-98`) is behind a round "How this is
+   counted" button beside Review, unfolded in place. It is never removed: the paragraph is in the
+   document and the button says whether it is shown. Each group heading says how many items it holds.
+3. **The sums sit at the foot** of the attention panel, in the three tiles the board draws
+   (`DL-227`'s "above the list" is superseded): still said once, never under each heading.
+
+**Easiest to reverse:** each is markup in `app-nav.ts` and `dashboard-attention.ts`.

@@ -1,0 +1,98 @@
+/* Columns in a real table (DL-232): the figure over its bar, the name under it. On a deep panel the
+   bars are a light tint and the tallest is gold; compact drops the figures and names from sight. */
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+
+.column-chart {
+  inline-size: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* The head row names the columns for a screen reader; on screen it sits under the bars. */
+.column-chart__names {
+  display: table-footer-group;
+}
+
+.column-chart__cell {
+  padding: 0 2px;
+  vertical-align: bottom;
+}
+
+.column-chart__stack {
+  block-size: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.column-chart__figure {
+  margin-block-end: 3px;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-bold);
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+
+.column-chart__bar {
+  inline-size: 100%;
+  max-inline-size: 18px;
+  min-block-size: 6px;
+  border-radius: var(--r-xs);
+  background: var(--line2);
+}
+
+.column-chart__bar--top {
+  background: var(--bar);
+}
+
+.column-chart__label {
+  padding-block-start: 6px;
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-medium);
+  color: var(--muted);
+}
+
+:host(.column-chart--deep) .column-chart__figure,
+:host(.column-chart--deep) .column-chart__label {
+  color: var(--on-deep-muted);
+}
+
+:host(.column-chart--deep) .column-chart__figure--top {
+  color: var(--gold);
+}
+
+:host(.column-chart--deep) .column-chart__bar {
+  background: var(--on-deep-bar);
+}
+
+:host(.column-chart--deep) .column-chart__bar--top {
+  background: var(--gold);
+}
+
+/* A KPI tile's spark: bars only, the figures and names kept for a screen reader. */
+:host(.column-chart--compact) .column-chart__stack {
+  block-size: 26px;
+}
+
+:host(.column-chart--compact) .column-chart__figure,
+:host(.column-chart--compact) .column-chart__label > span[aria-hidden] {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:host(.column-chart--compact) .column-chart__label {
+  padding: 0;
+}
+
+:host(.column-chart--compact) .column-chart__bar {
+  max-inline-size: none;
+  min-block-size: 3px;
+}

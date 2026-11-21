@@ -1,0 +1,140 @@
+/* A line over time, as the boards draw it (DL-232): dashed guides at the top and the middle, a
+   solid base, an area under the line, open dots, and the latest point marked gold with its figure
+   beside it. The drawing is aria-hidden; the visually hidden table carries the figures. */
+:host {
+  display: block;
+  min-block-size: 0;
+}
+
+.line-chart {
+  margin: 0;
+  block-size: 100%;
+  min-block-size: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.line-chart__plot {
+  position: relative;
+  flex: 1 1 auto;
+  min-block-size: 120px;
+  margin: 26px 10px 0 26px;
+}
+
+.line-chart__grid {
+  position: absolute;
+  inset-inline: 0;
+  border-top: 1px dashed var(--line);
+}
+
+.line-chart__grid--top {
+  top: 0;
+}
+
+.line-chart__grid--middle {
+  top: 50%;
+}
+
+.line-chart__grid--base {
+  top: 100%;
+  border-top: 1px solid var(--axis);
+}
+
+.line-chart__tick {
+  position: absolute;
+  left: -26px;
+  transform: translateY(-50%);
+  font-size: var(--fs-micro);
+  color: var(--muted2);
+}
+
+.line-chart__tick--top {
+  top: 0;
+}
+
+.line-chart__tick--middle {
+  top: 50%;
+}
+
+.line-chart__tick--base {
+  top: 100%;
+}
+
+.line-chart__svg {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  overflow: visible;
+}
+
+.line-chart__area {
+  fill: var(--area);
+}
+
+.line-chart__line {
+  fill: none;
+  stroke: var(--chart-line);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.line-chart__dot,
+.line-chart__now {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: var(--r-pill);
+  transform: translate(-50%, -50%);
+}
+
+.line-chart__dot {
+  inline-size: 10px;
+  block-size: 10px;
+  background: var(--card);
+  border: 2.5px solid var(--accent-line);
+}
+
+.line-chart__drop {
+  position: absolute;
+  bottom: 0;
+  border-left: 1.5px dashed var(--accent-line);
+}
+
+.line-chart__now {
+  inline-size: 18px;
+  block-size: 18px;
+  background: var(--gold);
+  border: 3px solid var(--navy);
+}
+
+.line-chart__callout {
+  position: absolute;
+  transform: translate(-100%, -190%);
+  padding: 4px 12px;
+  border-radius: var(--r-pill);
+  background: var(--deep);
+  color: var(--on-deep);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+
+.line-chart__axis {
+  position: relative;
+  block-size: 18px;
+  margin: 0 10px 0 26px;
+  font-size: var(--fs-micro);
+  color: var(--muted);
+}
+
+.line-chart__label {
+  position: absolute;
+  white-space: nowrap;
+  font-weight: var(--fw-medium);
+}
+
+.line-chart__label--last {
+  font-weight: var(--fw-bold);
+  color: var(--ink);
+}

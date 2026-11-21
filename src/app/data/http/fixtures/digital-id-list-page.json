@@ -10,6 +10,8 @@
       "holder": {
         "id": "0f1e2d3c-4b5a-4968-8776-655443322102",
         "name": "Fixture Resident",
+        "email": "fixture.resident@example.invalid",
+        "verified_at": "2026-10-28T03:00:00.000Z",
         "barangay": { "id": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04", "name": "San Juan" }
       }
     },
@@ -20,11 +22,24 @@
       "expired": false,
       "issued_at": "2026-10-01T02:00:00.000Z",
       "expires_at": "2027-10-01T02:00:00.000Z",
-      "holder": { "id": "0f1e2d3c-4b5a-4968-8776-655443322103", "name": null, "barangay": null }
+      "holder": {
+        "id": "0f1e2d3c-4b5a-4968-8776-655443322103",
+        "name": null,
+        "email": null,
+        "verified_at": null,
+        "barangay": null
+      }
     }
   ],
   "meta": {
     "pagination": { "has_more": true, "next_cursor": "fixture-cursor" },
-    "counts": { "active": 12, "suspended": 1, "revoked": 3, "expired": 2, "expiring_30d": 4 }
+    "counts": { "active": 12, "suspended": 1, "revoked": 3, "expired": 2, "expiring_30d": 4 },
+    "funnel": {
+      "app_accounts": 40,
+      "pending_verification": 3,
+      "oldest_pending_at": "2026-11-02T01:30:00.000Z",
+      "verified": 21,
+      "verified_without_card": 5
+    }
   }
 }

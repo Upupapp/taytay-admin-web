@@ -1,0 +1,117 @@
+/* The Main board's "Requests received" card and its deep "Releases handed over" card (DL-232).
+   Placement in the bento is the page's; the cards' insides are here. */
+:host(.trend),
+:host(.handover) {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-inline-size: 0;
+  border-radius: var(--r-panel);
+}
+
+:host(.trend) {
+  padding: 20px;
+  background: var(--card);
+}
+
+.trend__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.trend__heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-title-sm);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--ls-title);
+  color: var(--ink);
+}
+
+.trend__lead {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.trend__figures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.trend__figure,
+.handover__figure {
+  font-family: var(--font-display);
+  font-size: var(--fs-kpi-md);
+  line-height: 1;
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--ls-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.trend__figure {
+  color: var(--ink);
+}
+
+.trend__when {
+  font-size: var(--fs-label);
+  color: var(--muted);
+}
+
+.trend__chip {
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  background: var(--soft);
+  color: var(--text2);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
+}
+
+.trend__chip--gold {
+  background: var(--gold-tint);
+  color: var(--gold-ink);
+}
+
+.trend__chart {
+  flex: 1 1 auto;
+  margin-block-start: var(--space-2);
+}
+
+:host(.handover) {
+  padding: 18px 20px;
+  background: var(--deep);
+  color: var(--on-deep);
+}
+
+.handover__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.handover__heading {
+  margin: 0;
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
+  color: var(--on-deep-muted);
+}
+
+.handover__window {
+  font-size: var(--fs-2xs);
+  color: var(--on-deep-muted);
+}
+
+.handover__body {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.handover__chart {
+  flex: 1 1 auto;
+}

@@ -90,6 +90,7 @@ const DEFINITIONS = {
   },
   chevronDown: { d: 'm6 9 6 6 6-6' },
   chevronUp: { d: 'm6 15 6-6 6 6' },
+  chevronRight: { d: 'm9 6 6 6-6 6' },
   chevronsUpDown: { d: 'm8 9 4-4 4 4M8 15l4 4 4-4' },
 
   // ── States (console mock-ups' notices) ─────────────────────────────────

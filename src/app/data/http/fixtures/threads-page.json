@@ -29,5 +29,8 @@
       "updated_at": "2026-10-21T00:10:00.000Z"
     }
   ],
-  "meta": { "pagination": { "has_more": true, "next_cursor": "eyJjcmVhdGVkQXQiOiIyMDI2LTEwLTIxIn0" } }
+  "meta": {
+    "pagination": { "has_more": true, "next_cursor": "eyJjcmVhdGVkQXQiOiIyMDI2LTEwLTIxIn0" },
+    "counts": { "open": 7, "closed": 15, "unread": 3 }
+  }
 }

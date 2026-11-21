@@ -6,6 +6,7 @@ import {
   ElementRef,
   inject,
   output,
+  signal,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
@@ -65,9 +66,34 @@ const REVEAL_MARGIN = 24;
   template: `
     <nav class="nav" [attr.aria-label]="copy.navLandmark">
       @for (section of sections(); track section.title) {
+        @let open = isOpen(section);
         <div class="nav__section">
-          <h2 class="nav__title" [id]="'nav-section-' + $index">{{ section.title }}</h2>
-          <ul class="nav__list" [attr.aria-labelledby]="'nav-section-' + $index">
+          <!-- Each group folds behind its heading (DL-233): > closed, v open; the group holding the
+               current page opens by default, and a choice holds for the tab, never stored. -->
+          <h2 class="nav__title">
+            <button
+              type="button"
+              class="nav__toggle"
+              [id]="'nav-section-' + $index"
+              [attr.aria-expanded]="open"
+              [attr.aria-controls]="'nav-list-' + $index"
+              (click)="toggle(section)"
+            >
+              <span>{{ section.title }}</span>
+              <app-icon
+                class="nav__chevron"
+                [name]="open ? 'chevronDown' : 'chevronRight'"
+                [size]="14"
+                [stroke]="2"
+              />
+            </button>
+          </h2>
+          <ul
+            class="nav__list"
+            [id]="'nav-list-' + $index"
+            [attr.aria-labelledby]="'nav-section-' + $index"
+            [hidden]="!open"
+          >
             @for (item of section.items; track item.route) {
               <li>
                 <a
@@ -165,6 +191,21 @@ export class AppNav {
     }
     return activeNavRoute(this.url(), routes);
   });
+
+  /** Groups a person opened or closed this session; the rest follow the current page. */
+  private readonly chosen = signal<Readonly<Record<string, boolean>>>({});
+
+  protected isOpen(section: NavSection): boolean {
+    const choice = this.chosen()[section.title];
+    if (choice !== undefined) return choice;
+    const active = this.activeRoute();
+    return section.items.some((item) => item.route === active);
+  }
+
+  protected toggle(section: NavSection): void {
+    const open = this.isOpen(section);
+    this.chosen.update((current) => ({ ...current, [section.title]: !open }));
+  }
 
   constructor() {
     afterRenderEffect(() => {

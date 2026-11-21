@@ -68,7 +68,7 @@
 /* Figure, words, Review; the rule it counted by on its own line (DL-98). */
 .attention__item {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 2px var(--space-2);
   padding: 7px 6px;
@@ -120,18 +120,51 @@
   }
 }
 
+.attention__group-count {
+  color: var(--muted2);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0;
+}
+
+/* The board's round "how this is counted" button beside Review (DL-233). */
+.attention__how {
+  display: grid;
+  place-items: center;
+  inline-size: 34px;
+  block-size: 34px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+
+  &:hover,
+  &[aria-expanded='true'] {
+    background: var(--soft);
+    color: var(--ink);
+  }
+}
+
 .attention__basis {
   grid-column: 2 / -1;
-  margin-block-end: var(--space-1);
-  color: var(--muted);
+  margin: 0 0 var(--space-1);
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--soft2);
+  color: var(--text2);
   font-size: var(--fs-xs);
   text-wrap: pretty;
+
+  &[hidden] {
+    display: none;
+  }
 }
 
 .attention__totals {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
-  margin-block: var(--space-2);
+  margin-block-start: auto;
+  padding-block-start: var(--space-3);
 
   .tally {
     padding: var(--space-3) 14px;

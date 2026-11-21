@@ -182,7 +182,7 @@ describe('the dashboard answers "what needs attention now?" first', () => {
     );
   });
 
-  it('gives the sums once, above the list, rather than again under each heading', async () => {
+  it('gives the sums once, in tiles under the list as the board draws them (DL-233)', async () => {
     const element = html(await setUp('mswdo-head'));
     const panel = element.querySelector('.attention');
     const totals = panel?.querySelector('.attention__totals');
@@ -190,10 +190,10 @@ describe('the dashboard answers "what needs attention now?" first', () => {
 
     expect(totals).not.toBeNull();
     expect(list).not.toBeNull();
-    // The totals come first in reading order.
+    // The list comes first in reading order; the tiles sum it at the foot.
     expect(
       totals !== null && totals !== undefined && list !== null && list !== undefined
-        ? totals.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING
+        ? list.compareDocumentPosition(totals) & Node.DOCUMENT_POSITION_FOLLOWING
         : 0,
     ).toBeTruthy();
     expect(panel?.querySelector('.attention__group-total')).toBeNull();
@@ -340,7 +340,16 @@ describe('every metric traces back to filtered records', () => {
   });
 
   it('states the rule each signal counted by, as the counter gave it (DL-98)', async () => {
-    const element = html(await setUp('mswdo-head'));
+    const fixture = await setUp('mswdo-head');
+    const element = html(fixture);
+    // Folded behind its button (DL-233): it is there, and the button unfolds it.
+    const how = element.querySelector<HTMLButtonElement>('.attention__how');
+    expect(how?.getAttribute('aria-expanded')).toBe('false');
+    expect(element.querySelector('.attention__basis')?.hasAttribute('hidden')).toBe(true);
+    how?.click();
+    await fixture.whenStable();
+    expect(how?.getAttribute('aria-expanded')).toBe('true');
+    expect(element.querySelector('.attention__basis')?.hasAttribute('hidden')).toBe(false);
     const bases = Array.from(element.querySelectorAll('.attention__basis')).map(
       (node) => node.textContent?.trim() ?? '',
     );
@@ -699,5 +708,27 @@ describe('the dashboard keeps itself current (DL-222)', () => {
       'users',
       'verification',
     ]);
+  });
+});
+
+/* ── the two series by Manila week and day (DL-232) ───────────────────────── */
+
+describe('the requests trend and the handover days', () => {
+  it('draws eight weeks of requests with a table a screen reader can read', async () => {
+    const element = html(await setUp('mswdo-head'));
+    const trend = element.querySelector('app-dashboard-requests-trend');
+
+    expect(trend?.querySelector('h2')?.textContent?.trim()).toBe('Requests received');
+    expect(trend?.querySelectorAll('table tbody tr')).toHaveLength(8);
+  });
+
+  it('shows the handover days only where the payout figures are (DL-182)', async () => {
+    const head = html(await setUp('mswdo-head'));
+    expect(head.querySelectorAll('app-dashboard-handover tbody td')).toHaveLength(7);
+
+    const intake = html(await setUp('intake-officer'));
+    const hasPayouts = intake.querySelector('.metrics__note') === null;
+    expect(intake.querySelector('app-dashboard-handover') !== null).toBe(hasPayouts);
+    expect(intake.querySelector('app-dashboard-requests-trend')).not.toBeNull();
   });
 });

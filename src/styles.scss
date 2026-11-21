@@ -148,6 +148,8 @@
   --on-deep-fill: rgb(255 255 255 / 7%);
   --on-deep-edge: rgb(255 255 255 / 12%);
   --on-deep-chip: rgb(255 255 255 / 10%);
+  /* A bar on a deep panel beside the gold one that stands out (DL-232). */
+  --on-deep-bar: rgb(255 255 255 / 35%);
   /* The sign-in frame's outer corner (a panel inside it keeps --r-panel). */
   --r-frame: 36px;
 
