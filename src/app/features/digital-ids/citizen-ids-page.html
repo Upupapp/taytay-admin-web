@@ -1,12 +1,17 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+<app-page-header class="page-header--wide" [title]="copy.title" [subtitle]="copy.subtitle">
   @if (canCheck()) {
-    <button page-actions type="button" class="btn" (click)="checking.set(true)">
+    <button page-actions type="button" class="btn citizen-ids__action" (click)="checking.set(true)">
+      <app-icon name="qr" [size]="15" [stroke]="2" />
       {{ copy.check }}
     </button>
   }
   @if (canManage()) {
-    <a page-actions class="btn btn--primary" routerLink="/digital-ids">
-      <app-icon name="plus" [stroke]="2.2" />
+    <a
+      page-actions
+      class="btn btn--primary citizen-ids__action citizen-ids__action--primary"
+      routerLink="/digital-ids"
+    >
+      <app-icon name="idCard" class="citizen-ids__cta-icon" [size]="15" [stroke]="2" />
       {{ copy.issue }}
     </a>
   }
@@ -16,7 +21,10 @@
   <p class="status-line citizen-ids__note">{{ copy.noManage }}</p>
 } @else {
   <!-- Where the cards stand: the API's counts under the list's filter less its status (DL-212). -->
-  <section class="card card--padded stack" aria-labelledby="citizen-ids-lifecycle">
+  <section
+    class="card card--padded stack citizen-ids__lifecycle"
+    aria-labelledby="citizen-ids-lifecycle"
+  >
     <h2 id="citizen-ids-lifecycle" class="section-title">{{ copy.lifecycle.heading }}</h2>
     @if (counts(); as counts) {
       <dl class="tally-row">
@@ -71,10 +79,17 @@
     </ul>
   </nav>
 
-  <section class="card card--panel card--padded stack" [attr.aria-label]="copy.caption">
+  <section
+    class="card card--panel card--padded stack citizen-ids__panel"
+    aria-labelledby="citizen-ids-list"
+  >
+    <div class="citizen-ids__panel-head">
+      <h2 id="citizen-ids-list" class="section-title">{{ copy.caption }}</h2>
+      <p class="citizen-ids__order">{{ copy.order }}</p>
+    </div>
     <div class="toolbar">
       <label class="field citizen-ids__search">
-        <span class="field__label">{{ copy.search }}</span>
+        <span class="field__label visually-hidden">{{ copy.search }}</span>
         <span class="search-field">
           <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
           <input
@@ -89,7 +104,7 @@
       </label>
 
       <label class="field">
-        <span class="field__label">{{ copy.barangay }}</span>
+        <span class="field__label visually-hidden">{{ copy.barangay }}</span>
         <select class="field__input field__input--pill" (change)="onBarangay($event)">
           <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
           @for (barangay of barangays; track barangay.id) {
@@ -101,13 +116,14 @@
       </label>
 
       @if (narrowed()) {
-        <button type="button" class="btn" (click)="clearFilters()">{{ copy.clear }}</button>
+        <button type="button" class="btn citizen-ids__clear" (click)="clearFilters()">
+          {{ copy.clear }}
+        </button>
       }
     </div>
 
     <div class="citizen-ids__meta">
       <p class="status-line" id="citizen-ids-search-hint">{{ copy.searchHint }}</p>
-      <p class="status-line">{{ copy.order }}</p>
     </div>
 
     @if (failure(); as message) {
@@ -122,6 +138,7 @@
     }
 
     <app-data-table
+      class="data-table--framed"
       [caption]="copy.caption"
       [columns]="columns()"
       [rows]="rows()"

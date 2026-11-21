@@ -24,6 +24,9 @@ Checked against `openapi.json` at console `1eadbc0`.
 | SectorSeniors / PWD / SoloParents | Benefits and IDs (IDs and services, IDs and support) — sector ID on file, social pension, on the app, Digital ID, each of the sector | summary with `sector=`: `coverage { sector_id_on_file, social_pension, app_accounts, digital_ids }` |
 | SectorPWD | Type of disability — count per type | summary with `sector=pwd`: `by_disability_type[]` |
 | SectorSoloParents | Children in their care — 1, 2, 3, 4 or more | summary with `sector=solo-parent`: `by_children_in_care[]` |
+| CitizenIDs | From sign-up to card — signed up on the app, sent an ID for review (oldest waiting), verified residents, ahead of the card stages | `GET admin/digital-ids` `meta.funnel { app_accounts, pending_verification, oldest_pending_at, verified }` |
+| CitizenIDs | "Verified, no card" tab, its count and its rows, each with "Issue a card" | `GET admin/digital-ids?status=no-card` (verified accounts holding no card) or `GET admin/users?verified=true&card=none`, with a count in `meta.counts` |
+| CitizenIDs | Email under the holder's name; "Verified" column | `DigitalIdListItem.holder { email, verified_at }` |
 
 ## Sent by the API but not shown yet (UI work only)
 

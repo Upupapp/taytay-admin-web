@@ -1,9 +1,122 @@
-// CitizenIDs mock-up: the strip of where the cards stand, the status tabs, then the list panel.
+// CitizenIDs board: the strip of where the cards stand, the status tabs, then the list panel.
 // Layout only; the shapes are `.tally-row`, `.tabs`, `.toolbar`, `.avatar` and `.list-more`.
 
 :host {
   display: grid;
-  gap: var(--space-4);
+  gap: 18px;
+}
+
+// The board's header buttons: a small outlined pill beside a 44px primary one.
+.btn.citizen-ids__action {
+  min-block-size: var(--h-btn-sm);
+  padding-inline: 14px;
+  font-size: var(--fs-sm);
+}
+
+.btn.citizen-ids__action--primary {
+  min-block-size: var(--h-btn);
+  padding-inline: 18px;
+  font-size: var(--fs-control);
+}
+
+.citizen-ids__cta-icon {
+  color: var(--gold);
+}
+
+// The strip drawn as the board's flow: outlined stage cards, the label above a large figure.
+.citizen-ids__lifecycle {
+  gap: 14px;
+
+  .tally-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .tally {
+    flex: 1 1 150px;
+    gap: 6px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-box);
+    background: var(--card-flat);
+    color: var(--text2);
+    font-size: var(--fs-label);
+  }
+
+  // The stage of the open tab is outlined, as the board marks its current stage.
+  .tally--primary {
+    border-color: var(--link);
+    background: var(--card-flat);
+    color: var(--text2);
+  }
+
+  .tally__label,
+  .tally--primary .tally__label {
+    color: var(--ink);
+    font-size: var(--fs-control);
+    font-weight: var(--fw-bold);
+  }
+
+  .tally__value {
+    color: var(--ink);
+    font-size: var(--fs-title-lg);
+    letter-spacing: -0.02em;
+  }
+
+  .tally__hint,
+  .tally--primary .tally__hint {
+    color: var(--text2);
+    font-size: var(--fs-label);
+  }
+
+  .status-line {
+    margin: 0;
+    font-size: var(--fs-xs);
+  }
+}
+
+.citizen-ids__panel {
+  gap: 14px;
+  padding: 20px;
+}
+
+// The panel's heading, the order the API gives beside it.
+.citizen-ids__panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.citizen-ids__order {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+// The filters as one row of small pills, their labels read but not shown.
+.citizen-ids__panel .toolbar {
+  align-items: center;
+  gap: 10px;
+}
+
+.citizen-ids__panel .field__input--pill {
+  min-block-size: var(--h-tab);
+  padding-inline-start: 14px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.citizen-ids__panel input.field__input--pill {
+  padding-inline-start: 42px;
+  font-weight: var(--fw-medium);
+}
+
+.citizen-ids__clear {
+  min-block-size: var(--h-tab);
 }
 
 .citizen-ids__search {
@@ -22,13 +135,22 @@
 
   p {
     margin: 0;
+    font-size: var(--fs-xs);
   }
 }
 
+// The name wraps beside its initials, never under them, as on the board.
 .citizen-ids__who {
   display: inline-flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: 10px;
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+
+  .avatar {
+    background: var(--blue-tint);
+  }
 }
 
 .citizen-ids__none {
