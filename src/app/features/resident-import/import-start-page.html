@@ -8,6 +8,36 @@
   novalidate
   (submit)="$event.preventDefault(); upload()"
 >
+  <!-- Where the list came from, as the board asks it first (DL-232); optional, kept as said. -->
+  <fieldset class="form-section import-start__section" aria-describedby="import-source-hint">
+    <legend class="form-section__legend">{{ copy.source.heading }}</legend>
+    <p class="field__hint" id="import-source-hint">{{ copy.source.hint }}</p>
+    <div class="import-source">
+      <label class="import-source__option">
+        <input
+          type="radio"
+          name="import-source"
+          [checked]="source() === null"
+          [disabled]="sending()"
+          (change)="source.set(null)"
+        />
+        <span>{{ copy.source.notSaid }}</span>
+      </label>
+      @for (option of sources; track option) {
+        <label class="import-source__option">
+          <input
+            type="radio"
+            name="import-source"
+            [checked]="source() === option"
+            [disabled]="sending()"
+            (change)="source.set(option)"
+          />
+          <span>{{ copy.source.options[option] }}</span>
+        </label>
+      }
+    </div>
+  </fieldset>
+
   <fieldset class="form-section import-start__section">
     <legend class="form-section__legend">{{ copy.upload.heading }}</legend>
     <!-- The limits stand before the picker, because the picker is a button that acts. -->
@@ -27,6 +57,23 @@
     @if (file(); as chosen) {
       <p class="status-line" role="status">{{ copy.upload.chosen(chosen.name, size(chosen)) }}</p>
     }
+    <label class="field import-start__barangay">
+      <span class="field__label">{{ copy.barangay.label }}</span>
+      <select
+        class="field__input field__input--pill"
+        aria-describedby="import-barangay-hint"
+        [disabled]="sending()"
+        (change)="onBarangay($event)"
+      >
+        <option value="" [selected]="barangayId() === null">{{ copy.barangay.notSaid }}</option>
+        @for (barangay of barangays(); track barangay.id) {
+          <option [value]="barangay.id" [selected]="barangayId() === barangay.id">
+            {{ barangay.name }}
+          </option>
+        }
+      </select>
+      <span class="field__hint" id="import-barangay-hint">{{ copy.barangay.hint }}</span>
+    </label>
     <app-import-template-download [load]="template" />
   </fieldset>
 

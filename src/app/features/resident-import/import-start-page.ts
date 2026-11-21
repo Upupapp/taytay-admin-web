@@ -15,9 +15,14 @@ import { switchMap, tap } from 'rxjs';
 
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
+import { SessionStore } from '@core/auth/session.store';
 import {
   IMPORT_FILE_LIMITS,
   RESIDENT_IMPORT_REPOSITORY,
+  RESIDENT_IMPORT_SOURCES,
+  TAYTAY_BARANGAYS,
+  type BarangayId,
+  type ResidentImportSource,
   type CursorPage,
   type ResidentImportSummary,
 } from '@domain/index';
@@ -69,6 +74,7 @@ export class ImportStartPage {
   private readonly destroyRef = inject(DestroyRef);
   private readonly locale = inject(LOCALE_ID);
   private readonly live = inject(LiveUpdates);
+  private readonly session = inject(SessionStore);
 
   protected readonly copy = RESIDENT_IMPORT_COPY;
   protected readonly limits = IMPORT_FILE_LIMITS;
@@ -76,6 +82,23 @@ export class ImportStartPage {
   protected readonly template = () => this.repository.template();
 
   protected readonly file = signal<File | null>(null);
+  /** Where the list came from and the barangay it covers, when the officer says (`DL-232`). */
+  protected readonly source = signal<ResidentImportSource | null>(null);
+  protected readonly barangayId = signal<BarangayId | null>(null);
+  protected readonly sources = RESIDENT_IMPORT_SOURCES;
+
+  /** A barangay-confined account may name only its own barangay; the API refuses another. */
+  protected readonly barangays = computed(() => {
+    const user = this.session.user();
+    return user?.scope === 'own-barangay' && user.barangayId !== null
+      ? TAYTAY_BARANGAYS.filter((barangay) => barangay.id === user.barangayId)
+      : TAYTAY_BARANGAYS;
+  });
+
+  protected onBarangay(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.barangayId.set(TAYTAY_BARANGAYS.find((barangay) => barangay.id === value)?.id ?? null);
+  }
   protected readonly problem = signal('');
   protected readonly sending = signal(false);
 
@@ -138,6 +161,12 @@ export class ImportStartPage {
       value: (row) => `${row.fileName} · ${this.when(row.createdAt)}`,
     },
     {
+      key: 'source',
+      header: this.copy.recent.columnSource,
+      value: (row) =>
+        row.source === null ? this.copy.recent.sourceNotSaid : this.copy.source.options[row.source],
+    },
+    {
       key: 'by',
       header: this.copy.recent.columnBy,
       value: (row) => row.createdBy ?? this.copy.recent.unknownPerson,
@@ -197,7 +226,7 @@ export class ImportStartPage {
     this.sending.set(true);
     this.problem.set('');
     this.repository
-      .upload(file)
+      .upload(file, { source: this.source(), barangayId: this.barangayId() })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (created) => {

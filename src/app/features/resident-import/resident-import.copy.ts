@@ -21,6 +21,25 @@ export const RESIDENT_IMPORT_COPY = {
   stepsLabel: 'Steps of the import',
   stepOf: (step: number) => `Step ${step} of 5`,
 
+  /* What the officer says about the list as it is sent (DL-232): both optional, kept as said. */
+  source: {
+    heading: 'Where is the list from?',
+    hint: 'Optional. Kept with the import as you say it, and never changed after.',
+    notSaid: 'Not said',
+    options: {
+      'rbi-census': 'Barangay RBI or census',
+      osca: 'OSCA senior list',
+      pdao: 'PDAO list of persons with disability',
+      'solo-parent-office': 'Solo parent office list',
+      'four-ps': '4Ps list',
+      'other-spreadsheet': 'Another spreadsheet',
+    },
+  },
+  barangay: {
+    label: 'Barangay this list covers',
+    hint: 'Optional. A record of what you say: it moves and filters no row.',
+    notSaid: 'Not said',
+  },
   upload: {
     heading: 'Upload the file',
     limits: `A .csv (comma or semicolon, UTF-8) or the first sheet of an .xlsx; at most ${MB} MB, ${IMPORT_FILE_LIMITS.maxRows.toLocaleString('en-US')} rows and ${IMPORT_FILE_LIMITS.maxColumns} columns. The first row must be the column names. Formulas are not worked out.`,
@@ -45,6 +64,8 @@ export const RESIDENT_IMPORT_COPY = {
     heading: 'Recent imports',
     caption: 'Imports, newest first',
     columnFile: 'File',
+    columnSource: 'Source',
+    sourceNotSaid: 'Not said',
     columnBy: 'Uploaded by',
     columnRows: 'Rows',
     columnStatus: 'Status',

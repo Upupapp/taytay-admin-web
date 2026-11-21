@@ -1,9 +1,10 @@
-import type { Provider } from '@angular/core';
+import { signal, type Provider } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, Subject, type Observable } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { SessionStore } from '@core/auth/session.store';
 import { LiveUpdates } from '@core/live/live-updates';
 import { IMPORT_TEMPLATE_COPY } from '@shared/imports/imports.copy';
 
@@ -37,6 +38,8 @@ const SUMMARY: ResidentImportSummary = {
   committedAt: null,
   committedBy: null,
   result: null,
+  source: null,
+  barangayId: null,
 };
 
 const RECORD: ResidentImport = {
@@ -140,6 +143,8 @@ function configure(extra: readonly Provider[] = []): Imports {
     providers: [
       provideRouter([]),
       { provide: RESIDENT_IMPORT_REPOSITORY, useValue: imports },
+      // Who is signed in only narrows the barangays offered for the list (DL-232).
+      { provide: SessionStore, useValue: { user: signal(null) } },
       ...extra,
     ],
   });

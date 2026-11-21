@@ -21,3 +21,52 @@
   margin-block-end: 14px;
   padding-inline: 0;
 }
+
+/* The board's two panels side by side: where the list is from (5), the file (7); what uploading
+   does and the buttons across (DL-232). */
+form.import-start__panel {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  column-gap: var(--space-6);
+  align-items: start;
+}
+
+form.import-start__panel > :not(.import-start__section) {
+  grid-column: 1 / -1;
+}
+
+@media (width <= 900px) {
+  form.import-start__panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* "Where is the list from?" as the board draws it: one choice per tile. */
+.import-source {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+.import-source__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--h-field);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line2);
+  border-radius: var(--r-field);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+
+.import-source__option:has(input:checked) {
+  border-color: var(--link);
+  background: var(--sel);
+}
+
+.import-start__barangay {
+  max-inline-size: 360px;
+}
