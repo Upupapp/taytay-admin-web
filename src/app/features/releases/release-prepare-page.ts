@@ -11,6 +11,8 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { catchError, firstValueFrom, map, of, switchMap } from 'rxjs';
 
+import { NotConnected } from '@core/access/not-connected';
+import { ServedPorts } from '@core/access/served-ports';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   ASSISTANCE_REQUEST_REPOSITORY,
@@ -70,13 +72,28 @@ function startingFrom<T>(previous: { source: T; value: T } | undefined, next: T)
 @Component({
   selector: 'app-release-prepare-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, EmptyState, Icon, PageHeader, PesoPipe, RouterLink, StatusBadge],
+  imports: [
+    AsyncContent,
+    EmptyState,
+    Icon,
+    NotConnected,
+    PageHeader,
+    PesoPipe,
+    RouterLink,
+    StatusBadge,
+  ],
   templateUrl: './release-prepare-page.html',
 })
 export class ReleasePreparePage {
   private readonly releases = inject(RELEASE_REPOSITORY);
   private readonly requests = inject(ASSISTANCE_REQUEST_REPOSITORY);
   private readonly programs = inject(PROGRAM_REPOSITORY);
+
+  /**
+   * The programme's record only starts a field, so a set of adapters that does not serve it keeps the
+   * page: nothing is asked, the field is typed, and the notice says why it starts empty (`DL-175`).
+   */
+  protected readonly servesPrograms = inject(ServedPorts).serves('program');
   private readonly notifications = inject(NotificationStore);
   private readonly router = inject(Router);
 
@@ -150,7 +167,7 @@ export class ReleasePreparePage {
   protected readonly programFunding = toSignal(
     toObservable(computed(() => this.assistance()?.programId ?? null)).pipe(
       switchMap((id) =>
-        id === null || id === ''
+        id === null || id === '' || !this.servesPrograms
           ? of(null)
           : this.programs.getById(id).pipe(
               map((program) => program?.fundingSource.trim() || null),

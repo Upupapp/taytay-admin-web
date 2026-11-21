@@ -15,6 +15,7 @@ import {
   PAYOUT_METHOD_LABELS,
   PROGRAM_REPOSITORY,
   RELEASE_REPOSITORY,
+  UNSERVED_PORTS,
   NOTIFICATION_REPOSITORY,
   asIsoDateTime,
   type AssistanceRequestId,
@@ -115,6 +116,7 @@ async function configure(user: StaffUser): Promise<void> {
       { provide: RELEASE_REPOSITORY, useClass: MockReleaseRepository },
       { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
       { provide: PROGRAM_REPOSITORY, useClass: MockProgramRepository },
+      { provide: UNSERVED_PORTS, useValue: [] },
       {
         provide: ASSISTANCE_REQUEST_REPOSITORY,
         useFactory: () => {
@@ -652,13 +654,13 @@ describe('preparing a release for an approved request', () => {
 
   /* DL-235: the form starts from the approval and the programme's record. */
 
-  type PreparePage = {
+  interface PreparePage {
     kind: () => string;
     amountText: { (): string; set: (value: string) => void };
     goods: () => string;
     fundingSource: { (): string; set: (value: string) => void };
     prepare: () => Promise<void>;
-  };
+  }
 
   async function programFundingOf(): Promise<string> {
     const request = await firstValueFrom(

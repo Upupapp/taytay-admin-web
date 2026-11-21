@@ -159,6 +159,9 @@
                   {{ copy.fundingSourceHint }}
                 </span>
               </label>
+              @if (!servesPrograms) {
+                <app-not-connected port="program" />
+              }
 
               <label class="field" for="release-reference">
                 <span class="field__label">{{ copy.approvingReference }}</span>
