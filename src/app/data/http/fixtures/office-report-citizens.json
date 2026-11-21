@@ -1,0 +1,643 @@
+{
+  "data": {
+    "letterhead": [
+      "Republic of the Philippines",
+      "Province of Rizal",
+      "Municipality of Taytay",
+      "Municipal Social Welfare and Development Office"
+    ],
+    "title": "Citizen Registry Report",
+    "period": {
+      "from": "2026-01-01",
+      "to": "2026-11-21",
+      "label": "1 January 2026 to 21 November 2026"
+    },
+    "filters": {
+      "barangay_id": null,
+      "sector": null,
+      "age_group": null,
+      "sex": null,
+      "period": "year"
+    },
+    "filters_in_words": [],
+    "executive_summary": {
+      "paragraphs": [
+        "Across the municipality, the registry holds 27 active records on 21 November 2026, up 27 from 0 on 1 January 2026. 27 records were created in the period.",
+        "Women and girls make up 52% of the registry and men and boys 48%. The largest sectors recorded are Solo parents (6), Senior citizens (5). Of these, 0 are linked to an app account, 0 have a verified account and 0 hold a Digital ID in force."
+      ],
+      "figures": {
+        "residents": 27,
+        "residents_previous": 0,
+        "registered": 27,
+        "registered_withheld": false,
+        "women_share_percent": 52,
+        "on_app": 0,
+        "verified": 0,
+        "active_ids": 0
+      }
+    },
+    "sections": [
+      {
+        "note": "The registry as it stands on 21 November 2026; \"this period\" is 1 January 2026 to date.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [
+          {
+            "key": "on-registry",
+            "label": "On the registry",
+            "value": 27,
+            "measure": "records",
+            "withheld": null,
+            "hint": "Active records under this filter; 0 records when the period began."
+          },
+          {
+            "key": "registered",
+            "label": "Registered this period",
+            "value": 27,
+            "measure": "people",
+            "withheld": null,
+            "hint": "Records created from 1 January 2026."
+          },
+          {
+            "key": "women",
+            "label": "Women and girls",
+            "value": 14,
+            "measure": "people",
+            "withheld": null,
+            "hint": "Active records whose sex is recorded as female."
+          },
+          {
+            "key": "men",
+            "label": "Men and boys",
+            "value": 13,
+            "measure": "people",
+            "withheld": null,
+            "hint": "Active records whose sex is recorded as male."
+          },
+          {
+            "key": "on-app",
+            "label": "Linked to an app account",
+            "value": 0,
+            "measure": "people",
+            "withheld": null,
+            "hint": "Records linked to an open account in the residents’ app."
+          },
+          {
+            "key": "active-ids",
+            "label": "Holding a Digital ID",
+            "value": 0,
+            "measure": "people",
+            "withheld": null,
+            "hint": "Records whose account holds a Digital ID in force today."
+          }
+        ],
+        "columns": [],
+        "rows": [],
+        "totals": null,
+        "totals_label": null,
+        "suppression_notice": null,
+        "key": "at-a-glance",
+        "letter": "A",
+        "title": "At a glance"
+      },
+      {
+        "note": "Active records at the end of each month under this filter, the current month as it stands today. A move between barangays has no history of its own, so each record is counted in the barangay it holds now.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "residents",
+            "label": "On the registry at month end",
+            "measure": "people"
+          }
+        ],
+        "rows": [
+          {
+            "key": "2025-12",
+            "label": "December 2025",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-01",
+            "label": "January 2026",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-02",
+            "label": "February 2026",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-03",
+            "label": "March 2026",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-04",
+            "label": "April 2026",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-05",
+            "label": "May 2026",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-06",
+            "label": "June 2026",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-07",
+            "label": "July 2026",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-08",
+            "label": "August 2026",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-09",
+            "label": "September 2026",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-10",
+            "label": "October 2026",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "2026-11",
+            "label": "November 2026 (to date)",
+            "values": {
+              "residents": 27
+            },
+            "withheld": {}
+          }
+        ],
+        "totals": null,
+        "totals_label": null,
+        "suppression_notice": null,
+        "key": "registry-by-month",
+        "letter": "B",
+        "title": "The registry over twelve months"
+      },
+      {
+        "note": null,
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "residents",
+            "label": "Residents",
+            "measure": "people"
+          },
+          {
+            "key": "share",
+            "label": "Share of the registry",
+            "measure": "percent"
+          }
+        ],
+        "rows": [
+          {
+            "key": "b6f3f3bb-aefc-4b32-b254-6dd456b1b17a",
+            "label": "Dolores",
+            "values": {
+              "residents": 15,
+              "share": 56
+            },
+            "withheld": {}
+          },
+          {
+            "key": "e7793f5b-1870-47e4-ae17-fc9e3d827b3f",
+            "label": "Muzon",
+            "values": {
+              "residents": 12,
+              "share": 44
+            },
+            "withheld": {}
+          },
+          {
+            "key": "8a88b0fa-e99b-406f-9185-9fc9fe8b4750",
+            "label": "San Isidro",
+            "values": {
+              "residents": 0,
+              "share": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "5b43dad0-087d-4dfb-b6c8-6e434959cbba",
+            "label": "San Juan",
+            "values": {
+              "residents": 0,
+              "share": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "1c2468d0-b8d6-47d5-bfc7-2daa744546ee",
+            "label": "Santa Ana",
+            "values": {
+              "residents": 0,
+              "share": 0
+            },
+            "withheld": {}
+          }
+        ],
+        "totals": {
+          "residents": 27
+        },
+        "totals_label": "Total, counted before anything was withheld",
+        "suppression_notice": null,
+        "key": "by-barangay",
+        "letter": "C",
+        "title": "Residents by barangay"
+      },
+      {
+        "note": "Age today, by the birth date on the record.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "female",
+            "label": "Female",
+            "measure": "people"
+          },
+          {
+            "key": "male",
+            "label": "Male",
+            "measure": "people"
+          }
+        ],
+        "rows": [
+          {
+            "key": "child",
+            "label": "Children (0–17)",
+            "values": {
+              "female": 0,
+              "male": 7
+            },
+            "withheld": {}
+          },
+          {
+            "key": "youth",
+            "label": "Youth (18–30)",
+            "values": {
+              "female": 0,
+              "male": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "adult",
+            "label": "Adults (31–59)",
+            "values": {
+              "female": 9,
+              "male": 6
+            },
+            "withheld": {}
+          },
+          {
+            "key": "senior",
+            "label": "Seniors (60 and over)",
+            "values": {
+              "female": 5,
+              "male": 0
+            },
+            "withheld": {}
+          }
+        ],
+        "totals": {
+          "female": 14,
+          "male": 13
+        },
+        "totals_label": "Total, counted before anything was withheld",
+        "suppression_notice": null,
+        "key": "by-age-sex",
+        "letter": "D",
+        "title": "Residents by age group and sex"
+      },
+      {
+        "note": "Sectors overlap: one person may be recorded under several, so the rows do not add up to the registry and no total is given.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "residents",
+            "label": "Residents",
+            "measure": "people"
+          }
+        ],
+        "rows": [
+          {
+            "key": "senior-citizen",
+            "label": "Senior citizens",
+            "values": {
+              "residents": 5
+            },
+            "withheld": {}
+          },
+          {
+            "key": "pwd",
+            "label": "Persons with disability",
+            "values": {
+              "residents": null
+            },
+            "withheld": {
+              "residents": "small-cell"
+            }
+          },
+          {
+            "key": "solo-parent",
+            "label": "Solo parents",
+            "values": {
+              "residents": 6
+            },
+            "withheld": {}
+          },
+          {
+            "key": "four-ps",
+            "label": "4Ps members",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "indigenous-people",
+            "label": "Indigenous peoples",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "unemployed",
+            "label": "Unemployed",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "out-of-school-youth",
+            "label": "Out-of-school youth",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "vawc-survivor",
+            "label": "VAWC survivors",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "cicl",
+            "label": "Children in conflict with the law",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "displaced-worker",
+            "label": "Displaced workers",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          }
+        ],
+        "totals": null,
+        "totals_label": null,
+        "suppression_notice": "1 figure is withheld because the count is small enough to identify somebody. The total therefore does not add up to the figures shown.",
+        "key": "by-sector",
+        "letter": "E",
+        "title": "Residents by sector"
+      },
+      {
+        "note": "Each step under the same filter: records linked to an open app account, those whose account is verified, and those whose account holds a card in force today.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "people",
+            "label": "Residents",
+            "measure": "people"
+          },
+          {
+            "key": "share",
+            "label": "Share of the registry",
+            "measure": "percent"
+          }
+        ],
+        "rows": [
+          {
+            "key": "on-registry",
+            "label": "On the registry",
+            "values": {
+              "people": 27,
+              "share": 100
+            },
+            "withheld": {}
+          },
+          {
+            "key": "on-app",
+            "label": "Linked to an app account",
+            "values": {
+              "people": 0,
+              "share": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "verified",
+            "label": "Account verified",
+            "values": {
+              "people": 0,
+              "share": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "active-ids",
+            "label": "Holding a Digital ID in force",
+            "values": {
+              "people": 0,
+              "share": 0
+            },
+            "withheld": {}
+          }
+        ],
+        "totals": null,
+        "totals_label": null,
+        "suppression_notice": null,
+        "key": "registry-to-id",
+        "letter": "F",
+        "title": "From the registry to a Digital ID"
+      },
+      {
+        "note": "Birthdays in November 2026 by the birth date on the record. RA 11982 marks ages 80, 85, 90, 95, 100 with a cash gift; these figures count birthdays and decide nothing — whether a gift is due is the office’s to check. An ID \"ending\" is one whose latest sector record gives a validity that ends this month: a recorded date, not a rule.",
+        "available": true,
+        "unavailable_reason": null,
+        "tiles": [],
+        "columns": [
+          {
+            "key": "residents",
+            "label": "Residents",
+            "measure": "people"
+          }
+        ],
+        "rows": [
+          {
+            "key": "turning-18",
+            "label": "Turning 18",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "turning-60",
+            "label": "Turning 60 (a senior citizen under RA 9994)",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "turning-80",
+            "label": "Turning 80 (an RA 11982 milestone)",
+            "values": {
+              "residents": 5
+            },
+            "withheld": {}
+          },
+          {
+            "key": "turning-85",
+            "label": "Turning 85 (an RA 11982 milestone)",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "turning-90",
+            "label": "Turning 90 (an RA 11982 milestone)",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "turning-95",
+            "label": "Turning 95 (an RA 11982 milestone)",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "turning-100",
+            "label": "Turning 100 (an RA 11982 milestone)",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "solo-parent-ids-due",
+            "label": "Solo parent IDs ending",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          },
+          {
+            "key": "pwd-ids-expiring",
+            "label": "PWD IDs ending",
+            "values": {
+              "residents": 0
+            },
+            "withheld": {}
+          }
+        ],
+        "totals": null,
+        "totals_label": null,
+        "suppression_notice": null,
+        "key": "this-month",
+        "letter": "G",
+        "title": "This month: November 2026"
+      }
+    ],
+    "signatories": {
+      "prepared_by": {
+        "name": "Teodoro Lim",
+        "title": null
+      },
+      "noted_by": {
+        "name": "Rosario Dizon",
+        "title": "Municipal Social Welfare and Development Officer"
+      },
+      "approved_by": {
+        "name": null,
+        "title": "Municipal Mayor"
+      }
+    },
+    "footer": {
+      "generated_at": "2026-11-21T14:18:57.021Z",
+      "generated_by": "Teodoro Lim",
+      "handling_notice": "This export contains information held by the Municipal Social Welfare and Development Office of Taytay, Rizal and is protected under RA 10173. Keep it within the office, do not forward it, and delete it when the work it was produced for is finished."
+    },
+    "disclosure": {
+      "threshold": 5,
+      "provenance": "convention-pending-confirmation",
+      "basis": "A count below 5 can identify a person in a barangay of this size, so it is withheld rather than shown. The threshold follows common statistical disclosure practice; the MSWDO has not yet confirmed a figure of its own."
+    }
+  },
+  "meta": {}
+}

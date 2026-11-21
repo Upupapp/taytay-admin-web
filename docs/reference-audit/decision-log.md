@@ -11213,3 +11213,40 @@ explicitly.
    (`DL-227`'s "above the list" is superseded): still said once, never under each heading.
 
 **Easiest to reverse:** each is markup in `app-nav.ts` and `dashboard-attention.ts`.
+
+## DL-234 — the citizen registry report: the Citizen overview on the summary report's sheet
+
+**Status:** Settled (21 November 2026), on the owner's request for a downloadable citizen registry
+report in the standard template of `DL-228`. The console's side of `taytay-backend` ADR 0007;
+contract re-vendored at `577c6c9`. Extends `DL-228` (the template), `DL-213` and `DL-232` (the
+overview's figures), `DL-104` to `DL-106` (reports); keeps `DL-105` everywhere.
+
+1. **The server's report, not the console's.** The overview's read (`GET office/residents/summary`)
+   records nothing, because the board re-reads live. A sheet that is printed or saved leaves the
+   office, so the report is its own read, `GET office/reports/citizens`, which the API audits as a
+   run (`office_report.citizens_read`) like the summary report's, counts with the overview's own
+   functions under the same key (`resident.view`) and scope, and words itself: executive summary,
+   notes, totals labels, suppression notices, signatories (the head's name from the directory).
+   The CSV is the server's (`/export`, `report.export-person-level`, audited `office_report.exported`).
+   A console-composed report would have been a second count and an unrecorded copy.
+2. **The same template, sections A to G.** At a glance; the registry over twelve months; by
+   barangay; by age group and sex; by sector (overlapping, no total); from the registry to a Digital
+   ID; this month — turning 18 and 60, the RA 11982 milestones 80, 85, 90, 95 and 100, sector IDs
+   ending. `SummarySection` is generic over its keys, and the mapper reads either template by the
+   same rules: whole or nothing, a count of people shown below the threshold refused. The registry's
+   size is a `records` tile, as the overview sends it: a total, taken before suppression.
+3. **Charts that fit the figure, values printed.** The months are a line, age and sex a pyramid
+   (female left, male right), the way to an ID a funnel (`SheetChart`); the rest are the bars of
+   `DL-228`. Each is inline SVG with every value beside its mark, `aria-hidden`, scaled from zero;
+   a withheld figure breaks the line and prints "withheld". The table under it stays the record.
+4. **"Download PDF" on both report pages.** The button re-reads the report (a recorded run), then
+   opens the print window on the A4 sheet with the report's name and date as the document title,
+   which browsers offer as the PDF's file name; the hint says to choose "Save as PDF". A page cannot
+   choose the destination for the person. "Download CSV (for Excel)" stays behind the export key.
+5. **Reached from where the figures are.** "Download report" on the Citizen overview (the board's
+   "Export summary") carries the board's filters and its period; the Reports hub lists it for a
+   reader of the registry. `/reports/citizens` is guarded as the overview is (`resident.view`, no
+   caseload), and is named in `check:live` as a report run. `check:reports` counts seven reads.
+
+**Easiest to reverse:** the route, the hub card and the overview link are markup; the backend
+read is one module beside the summary report's.

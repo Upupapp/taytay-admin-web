@@ -50,6 +50,7 @@ import { EmptyState } from '@shared/ui/empty-state/empty-state';
 import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
+import { printSheet } from './print-sheet';
 import { SUMMARY_REPORT_COPY } from './summary-report.copy';
 import { SummarySectionView } from './summary-section';
 
@@ -302,7 +303,10 @@ export class SummaryReportPage {
     try {
       const fresh = await firstValueFrom(this.repository.summary(this.filter()));
       this.reprinted.set(fresh);
-      afterNextRender(() => this.document.defaultView?.print(), { injector: this.injector });
+      afterNextRender(
+        () => printSheet(this.document, this.copy.pdfName(fresh.period.from, fresh.period.to)),
+        { injector: this.injector },
+      );
     } catch {
       this.notifications.error(this.copy.printFailed);
     } finally {

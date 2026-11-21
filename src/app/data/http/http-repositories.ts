@@ -96,6 +96,7 @@ import {
   type DigitalIdHolder,
   type DigitalIdListFilter,
   type DigitalIdListPage,
+  type BarangayId,
   type ResidentSummary,
   type ResidentSummaryFilter,
   type ImportMapping,
@@ -264,6 +265,8 @@ import {
   type SummaryReport,
   type SummaryReportExport,
   type SummaryReportFilter,
+  type CitizenReport,
+  type CitizenReportFilter,
   AUDIT_SENSITIVE_FILTER_UNAVAILABLE,
   type AuditEntryDetail,
   type AuditEntryId,
@@ -586,7 +589,12 @@ import {
 } from './mappers/issuance.mapper';
 import { toSearchResults } from './mappers/search.mapper';
 import { toReportDefinitions, toReportExport, toReportResult } from './mappers/report.mapper';
-import { toSummaryReport, toSummaryReportExport } from './mappers/summary-report.mapper';
+import {
+  toCitizenReport,
+  toCitizenReportExport,
+  toSummaryReport,
+  toSummaryReportExport,
+} from './mappers/summary-report.mapper';
 import {
   toClassifiedRecordType,
   toCorrectionRequest,
@@ -4753,8 +4761,49 @@ export class HttpReportRepository implements ReportRepository {
     );
   }
 
+  /**
+   * The citizen registry report (`DL-234`): the registry overview in the summary report's template.
+   * The server counts, suppresses and words it under the registry's own scope; this asks with the
+   * overview's five filters and nothing else. Every call is audited by the server as a run.
+   */
+  citizens(filter: CitizenReportFilter): Observable<CitizenReport> {
+    return this.summaryBarangay(filter).pipe(
+      switchMap((barangayId) =>
+        this.api
+          .item(`${API_ENDPOINTS.officeReports}/citizens`, {
+            barangay_id: barangayId,
+            sector: filter.sector,
+            age_group: filter.ageGroup,
+            sex: filter.sex,
+            period: filter.period,
+          })
+          .pipe(map((wire) => readReport(toCitizenReport(wire)))),
+      ),
+    );
+  }
+
+  /** The same tables as the server's CSV; `report.export-person-level` on top of `resident.view`. */
+  exportCitizens(filter: CitizenReportFilter): Observable<SummaryReportExport> {
+    return this.summaryBarangay(filter).pipe(
+      switchMap((barangayId) =>
+        this.api
+          .item(`${API_ENDPOINTS.officeReports}/citizens/export`, {
+            barangay_id: barangayId,
+            sector: filter.sector,
+            age_group: filter.ageGroup,
+            sex: filter.sex,
+            period: filter.period,
+            format: 'csv',
+          })
+          .pipe(map((wire) => readReport(toCitizenReportExport(wire)))),
+      ),
+    );
+  }
+
   /** The filter's barangay by the API's own id, read through the join; none when not narrowed. */
-  private summaryBarangay(filter: SummaryReportFilter): Observable<string | undefined> {
+  private summaryBarangay(filter: {
+    readonly barangayId?: BarangayId;
+  }): Observable<string | undefined> {
     const consoleId = filter.barangayId;
     if (consoleId === undefined) {
       return of(undefined);

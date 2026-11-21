@@ -3970,6 +3970,31 @@
     },
     {
       "method": "GET",
+      "path": "office/reports/citizens",
+      "consumer": "summary-report.mapper.ts#toCitizenReport",
+      "required": [
+        "disclosure",
+        "filters_in_words",
+        "footer",
+        "letterhead",
+        "period",
+        "signatories",
+        "title"
+      ],
+      "optional": [
+        "executive_summary",
+        "sections"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "office/reports/citizens/export",
+      "consumer": "summary-report.mapper.ts#toCitizenReportExport",
+      "required": [],
+      "optional": []
+    },
+    {
+      "method": "GET",
       "path": "office/reports/summary",
       "consumer": "summary-report.mapper.ts#toSummaryReport",
       "required": [
@@ -3978,12 +4003,12 @@
         "footer",
         "letterhead",
         "period",
-        "sections",
         "signatories",
         "title"
       ],
       "optional": [
-        "executive_summary"
+        "executive_summary",
+        "sections"
       ]
     },
     {
@@ -3991,11 +4016,7 @@
       "path": "office/reports/summary/export",
       "consumer": "summary-report.mapper.ts#toSummaryReportExport",
       "required": [],
-      "optional": [
-        "content",
-        "filename",
-        "format"
-      ]
+      "optional": []
     },
     {
       "method": "GET",

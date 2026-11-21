@@ -669,6 +669,19 @@ export const routes: Routes = [
               import('@features/reports/summary-report-page').then((m) => m.SummaryReportPage),
           },
           {
+            // `DL-234`. The Citizen overview's figures in the same template, guarded as the overview
+            // is: the registry's key, and a caseload never reads the registry's figures. Before `:id`.
+            path: 'citizens',
+            title: 'Citizen registry report — Taytay Social Welfare',
+            canActivate: [
+              servedGuard('report'),
+              permissionGuard('resident.view'),
+              scopeGuard('assigned-cases'),
+            ],
+            loadComponent: () =>
+              import('@features/reports/citizen-report-page').then((m) => m.CitizenReportPage),
+          },
+          {
             path: ':id',
             title: 'Report — Taytay Social Welfare',
             canActivate: [servedGuard('report'), permissionGuard('report.view')],

@@ -22,6 +22,8 @@ import OFFICE_REPORT_COMPLETENESS from './fixtures/office-report-data-completene
 import OFFICE_REPORT_EXPORT from './fixtures/office-report-export.json';
 import OFFICE_REPORT_PROGRAMS from './fixtures/office-report-program-utilisation.json';
 import OFFICE_REPORT_VULNERABILITY from './fixtures/office-report-vulnerability-indicators.json';
+import OFFICE_REPORT_CITIZENS from './fixtures/office-report-citizens.json';
+import OFFICE_REPORT_CITIZENS_EXPORT from './fixtures/office-report-citizens-export.json';
 import OFFICE_REPORT_SUMMARY from './fixtures/office-report-summary.json';
 import OFFICE_REPORT_SUMMARY_EXPORT from './fixtures/office-report-summary-export.json';
 import { HttpReportRepository } from './http-repositories';
@@ -411,5 +413,103 @@ describe('the summary report over the API (DL-228)', () => {
     expect(sent.request.params.get('format')).toBe('csv');
     expect(sent.request.params.get('sex')).toBe('male');
     expect((await read).content).toBe(OFFICE_REPORT_SUMMARY_EXPORT.data.content);
+  });
+});
+
+/**
+ * The citizen registry report over the API (`DL-234`): the overview's five filters by their wire
+ * names and nothing else, the barangay by the API's own id, and an answer read whole or refused.
+ */
+describe('the citizen registry report over the API (DL-234)', () => {
+  let http: HttpTestingController;
+  let repository: HttpReportRepository;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers });
+    http = TestBed.inject(HttpTestingController);
+    TestBed.inject(AuthTokenHolder).hold('fixture-token', null);
+    repository = TestBed.inject(HttpReportRepository);
+  });
+
+  afterEach(() => http.verify());
+
+  it('sends the filter as the wire names it, the barangay as the API knows it', async () => {
+    const read = firstValueFrom(
+      repository.citizens({
+        barangayId: MUZON,
+        sector: 'senior-citizen',
+        ageGroup: 'senior',
+        sex: 'female',
+        period: 'quarter',
+      }),
+    );
+    http.expectOne(`${BASE}/barangays`).flush(BARANGAYS);
+    const sent = http.expectOne((request) => request.url === `${BASE}/office/reports/citizens`);
+    sent.flush(OFFICE_REPORT_CITIZENS);
+
+    expect(sent.request.params.keys().sort()).toEqual([
+      'age_group',
+      'barangay_id',
+      'period',
+      'sector',
+      'sex',
+    ]);
+    expect(sent.request.params.get('barangay_id')).toBe(MUZON_API);
+    const report = await read;
+    expect(report.sections.map((section) => `${section.letter}:${section.key}`)).toEqual([
+      'A:at-a-glance',
+      'B:registry-by-month',
+      'C:by-barangay',
+      'D:by-age-sex',
+      'E:by-sector',
+      'F:registry-to-id',
+      'G:this-month',
+    ]);
+    expect(report.executiveSummary.figures.residents).toBe(27);
+    expect(report.signatories.approvedBy.title).toBe('Municipal Mayor');
+  });
+
+  it('sends nothing for an empty filter: the year to date is the API’s default', async () => {
+    const read = firstValueFrom(repository.citizens({}));
+    const sent = http.expectOne(`${BASE}/office/reports/citizens`);
+    sent.flush(OFFICE_REPORT_CITIZENS);
+
+    expect(sent.request.params.keys()).toEqual([]);
+    expect((await read).period.from).toBe(OFFICE_REPORT_CITIZENS.data.period.from);
+  });
+
+  it('refuses a count of people shown below the threshold, rather than drawing part of it', async () => {
+    const body = copy(OFFICE_REPORT_CITIZENS);
+    const sector = body.data.sections.find((section) => section.key === 'by-sector');
+    const pwd = sector?.rows.find((row) => row.key === 'pwd');
+    if (pwd === undefined) throw new Error('fixture: no PWD row');
+    (pwd.values as Record<string, unknown>)['residents'] = 2;
+    (pwd as { withheld: Record<string, unknown> }).withheld = {};
+    const read = firstValueFrom(repository.citizens({})).catch((error: unknown) => error);
+    http.expectOne(`${BASE}/office/reports/citizens`).flush(body);
+
+    expect(await read).toBeInstanceOf(Error);
+  });
+
+  it('refuses a sheet missing a section', async () => {
+    const body = copy(OFFICE_REPORT_CITIZENS);
+    body.data.sections = body.data.sections.filter((section) => section.key !== 'by-sector');
+    const read = firstValueFrom(repository.citizens({})).catch((error: unknown) => error);
+    http.expectOne(`${BASE}/office/reports/citizens`).flush(body);
+
+    expect(await read).toBeInstanceOf(Error);
+  });
+
+  it('asks for the CSV with the same filter and hands over the server’s file as it is', async () => {
+    const read = firstValueFrom(repository.exportCitizens({ sex: 'male', period: 'month' }));
+    const sent = http.expectOne(
+      (request) => request.url === `${BASE}/office/reports/citizens/export`,
+    );
+    sent.flush(OFFICE_REPORT_CITIZENS_EXPORT);
+
+    expect(sent.request.params.get('format')).toBe('csv');
+    expect(sent.request.params.get('sex')).toBe('male');
+    expect(sent.request.params.get('period')).toBe('month');
+    expect((await read).content).toBe(OFFICE_REPORT_CITIZENS_EXPORT.data.content);
   });
 });

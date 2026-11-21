@@ -20,6 +20,7 @@ import type {
   SummaryReportExport,
   SummaryReportFilter,
 } from '../reports/summary-report';
+import type { CitizenReport, CitizenReportFilter } from '../reports/citizen-report';
 import type { AuditEntryDetail, AuditFilter, AuditRow } from '../governance/audit-view';
 import type { CorrectionRequest } from '../governance/correction-request';
 import type { EventCorrection, EventDraft, EventFilter, EventView, LguEvent } from '../events/event';
@@ -1430,6 +1431,17 @@ export interface ReportRepository {
    * Requires `report.export-person-level`, the key every report export takes.
    */
   exportSummary(filter: SummaryReportFilter): Observable<SummaryReportExport>;
+  /**
+   * The citizen registry report in the same template (`DL-234`): the registry overview's figures as
+   * the server counted, withheld and worded them. Every call is a run the server records
+   * (`office_report.citizens_read`). Requires `resident.view`, under the registry's own scope.
+   */
+  citizens(filter: CitizenReportFilter): Observable<CitizenReport>;
+  /**
+   * Its tables as the server's CSV, with the conditions inside the file (`DL-106`). Requires
+   * `resident.view` and `report.export-person-level`, the key every report export takes.
+   */
+  exportCitizens(filter: CitizenReportFilter): Observable<SummaryReportExport>;
 }
 
 export const REPORT_REPOSITORY = new InjectionToken<ReportRepository>('ReportRepository');

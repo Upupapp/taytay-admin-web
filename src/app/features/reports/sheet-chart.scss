@@ -1,0 +1,67 @@
+/* A report sheet's line, pyramid and funnel (DL-234), in the boards' chart tokens (DL-231): the line
+   is the chart line, a bar the console's bar, and the pyramid's left side (female) the second series
+   beside it — told apart by the legend and its side as well as its colour. */
+:host {
+  display: block;
+}
+
+.sheet-chart {
+  display: block;
+  overflow: visible;
+}
+
+.sheet-chart__axis {
+  stroke: var(--axis);
+  stroke-width: 1;
+}
+
+.sheet-chart__line {
+  fill: none;
+  stroke: var(--chart-line);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.sheet-chart__dot {
+  fill: var(--chart-line);
+}
+
+.sheet-chart__bar--0,
+.sheet-chart__bar--right {
+  fill: var(--bar);
+}
+
+.sheet-chart__bar--left {
+  fill: var(--bar-female);
+}
+
+.sheet-chart__label,
+.sheet-chart__legend {
+  fill: var(--text2);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+}
+
+.sheet-chart__figure {
+  fill: var(--ink);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet-chart__figure--withheld {
+  fill: var(--muted);
+  font-style: italic;
+  font-weight: var(--fw-regular);
+}
+
+/* A printed page is always light (DL-207); the inks above are the light ones there. */
+@media print {
+  .sheet-chart__line,
+  .sheet-chart__dot,
+  .sheet-chart__bar--0,
+  .sheet-chart__bar--left,
+  .sheet-chart__bar--right {
+    print-color-adjust: exact;
+  }
+}

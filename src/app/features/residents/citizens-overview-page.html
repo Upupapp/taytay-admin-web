@@ -5,6 +5,15 @@
     <p class="overview-hero__lead">{{ copy.subtitle }}</p>
   </div>
   <div class="overview-hero__actions">
+    <!-- The board's "Export summary": the same figures in the office's report template (DL-234). -->
+    <a
+      class="overview-hero__button overview-hero__button--ghost overview__report"
+      routerLink="/reports/citizens"
+      [queryParams]="reportParams()"
+    >
+      <app-icon name="download" [size]="16" [stroke]="2.2" />
+      {{ copy.downloadReport }}
+    </a>
     <a
       *appHasPermission="'resident.create'"
       class="overview-hero__button overview-hero__button--gold"

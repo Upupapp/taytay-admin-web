@@ -405,6 +405,21 @@ export class CitizensOverviewPage {
     this.patch({ period: value === 'month' ? null : value });
   }
 
+  /**
+   * The citizen registry report with what this board shows: its filters, and its period said
+   * outright, since the board's default (the month) is not the report's (the year).
+   */
+  protected readonly reportParams = computed(() => {
+    const filter = this.filter();
+    return {
+      ...(filter.barangayId === undefined ? {} : { barangay: filter.barangayId }),
+      ...(filter.sector === undefined ? {} : { sector: filter.sector }),
+      ...(filter.ageGroup === undefined ? {} : { ageGroup: filter.ageGroup }),
+      ...(filter.sex === undefined ? {} : { sex: filter.sex }),
+      period: filter.period ?? 'month',
+    };
+  });
+
   protected clearFilters(): void {
     void this.router.navigate([], {
       relativeTo: this.route,

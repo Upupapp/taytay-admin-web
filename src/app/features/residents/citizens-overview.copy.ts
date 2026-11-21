@@ -6,6 +6,7 @@ export const CITIZENS_OVERVIEW_COPY = {
   subtitle:
     'The registry counted by the API: who is on it, where, and in which sectors. Every figure opens the registry filtered the same way.',
   register: 'Register a citizen',
+  downloadReport: 'Download report',
 
   filterHeading: 'Filter the figures',
   barangay: 'Barangay',

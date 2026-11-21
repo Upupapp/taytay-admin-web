@@ -88,6 +88,17 @@
   text-decoration: none;
 }
 
+.overview-hero__button--ghost {
+  border: 1px solid var(--on-deep-edge);
+  background: var(--on-deep-fill);
+  color: var(--on-deep);
+
+  &:hover {
+    background: var(--on-deep-chip);
+    color: var(--on-deep);
+  }
+}
+
 .overview-hero__button--gold {
   background: var(--gold);
   color: var(--navy);

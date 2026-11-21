@@ -16,6 +16,7 @@ import { PageHeader } from '@shared/ui/page-header/page-header';
 import { Icon } from '@shared/ui/icon/icon';
 
 import { REPORTS_COPY } from './reports.copy';
+import { CITIZEN_REPORT_COPY } from './citizen-report.copy';
 import { SUMMARY_REPORT_COPY } from './summary-report.copy';
 
 /**
@@ -43,10 +44,22 @@ export class ReportHubPage {
 
   protected readonly copy = REPORTS_COPY.hub;
   protected readonly summaryCopy = SUMMARY_REPORT_COPY;
+  protected readonly citizensCopy = CITIZEN_REPORT_COPY;
 
   /** The summary report counts the whole office, so a caseload is not offered it (DL-228). */
   protected readonly offersSummary = computed(
     () => this.permissions.has('report.view') && this.permissions.scope() !== 'assigned-cases',
+  );
+
+  /**
+   * The citizen registry report reads the registry, which a caseload does not (DL-234). Listed here
+   * for a reader of reports; a reader of the registry alone reaches it from the Citizen overview.
+   */
+  protected readonly offersCitizens = computed(
+    () =>
+      this.permissions.has('report.view') &&
+      this.permissions.has('resident.view') &&
+      this.permissions.scope() !== 'assigned-cases',
   );
 
   protected readonly state = toSignal(toViewState(this.repository.catalogue()), {

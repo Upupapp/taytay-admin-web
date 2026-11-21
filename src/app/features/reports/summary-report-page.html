@@ -137,6 +137,7 @@
           [disabled]="printing()"
           (click)="print()"
         >
+          <app-icon name="download" [size]="16" [stroke]="2.2" />
           {{ printing() ? copy.printing : copy.print }}
         </button>
       </p>

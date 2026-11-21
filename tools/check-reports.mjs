@@ -628,10 +628,12 @@ if (httpReports === '') {
     (match) => [match[0], /,\s*(\{[^}]*\})\s*,?\s*$/.exec(match[1] ?? '')?.[1] ?? ''],
   );
   // Five since DL-228: the summary report and its file joined the catalogue, a report and a file.
-  if (calls.length !== 5) {
+  // Seven since DL-234: the citizen registry report and its file.
+  if (calls.length !== 7) {
     problems.push(
-      `HttpReportRepository makes ${calls.length} reads; it makes five — the catalogue, a report, ` +
-        'a file, the summary report and its file — and writes nothing.',
+      `HttpReportRepository makes ${calls.length} reads; it makes seven — the catalogue, a report, ` +
+        'a file, the summary report and its file, the citizen registry report and its file — and ' +
+        'writes nothing.',
     );
   }
   const allowed = new Set(['period', 'barangay_id', 'program_id', 'status', 'format']);
@@ -646,8 +648,14 @@ if (httpReports === '') {
     'sector',
     'format',
   ]);
+  // The citizen registry report's five: the Citizen overview's own filters (backend ADR 0007).
+  const citizensAllowed = new Set(['barangay_id', 'sector', 'age_group', 'sex', 'period', 'format']);
   for (const [call, params] of calls) {
-    const keys = /\/summary/.test(call) ? summaryAllowed : allowed;
+    const keys = /\/summary/.test(call)
+      ? summaryAllowed
+      : /\/citizens/.test(call)
+        ? citizensAllowed
+        : allowed;
     for (const key of [...params.matchAll(/(\w+)\s*:/g)].map((match) => match[1])) {
       if (!keys.has(key)) {
         problems.push(

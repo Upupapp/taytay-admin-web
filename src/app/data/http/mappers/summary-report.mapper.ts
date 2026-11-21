@@ -1,8 +1,11 @@
 import {
+  CITIZEN_REPORT_SECTION_KEYS,
   SUMMARY_MEASURES,
   SUMMARY_SECTION_KEYS,
   SUMMARY_SECTION_LETTERS,
   SUMMARY_WITHHELD_REASONS,
+  type CitizenReport,
+  type CitizenReportFigures,
   type SummaryCell,
   type SummaryColumn,
   type SummaryFigures,
@@ -55,7 +58,10 @@ export function toSummaryReport(wire: unknown): SummaryReport | null {
   const threshold = disclosure?.threshold ?? null;
   const executiveSummary =
     threshold === null ? null : toExecutiveSummary(field(wire, 'executive_summary'), threshold);
-  const sections = threshold === null ? null : toSections(field(wire, 'sections'), threshold);
+  const sections =
+    threshold === null
+      ? null
+      : toSections(field(wire, 'sections'), threshold, SUMMARY_SECTION_KEYS);
   const signatories = toSignatories(field(wire, 'signatories'));
   const footer = toFooter(field(wire, 'footer'));
   if (
@@ -92,6 +98,118 @@ export function toSummaryReport(wire: unknown): SummaryReport | null {
  * @consumes GET office/reports/summary/export
  */
 export function toSummaryReportExport(wire: unknown): SummaryReportExport | null {
+  return toSheetFile(wire);
+}
+
+/**
+ * `CitizenReport` (`GET office/reports/citizens`) → `CitizenReport` (`DL-234`): the summary
+ * report's template with the registry's sections A to G. Read by the same rules, whole or nothing:
+ * every section once and in its place, a count of people shown below the threshold refused, a cell
+ * `null` exactly when it names why.
+ *
+ * **Not read**: `filters`, which repeats what the console sent; `filters_in_words` says it.
+ *
+ * @consumes GET office/reports/citizens
+ */
+export function toCitizenReport(wire: unknown): CitizenReport | null {
+  const letterhead = texts(field(wire, 'letterhead'));
+  const title = str(field(wire, 'title'));
+  const period = toPeriod(field(wire, 'period'));
+  const filtersInWords = texts(field(wire, 'filters_in_words'));
+  const disclosure = toDisclosure(field(wire, 'disclosure'));
+  const threshold = disclosure?.threshold ?? null;
+  const summary = field(wire, 'executive_summary');
+  const paragraphs = texts(field(summary, 'paragraphs'));
+  const figures =
+    threshold === null ? null : toCitizenFigures(field(summary, 'figures'), threshold);
+  const sections =
+    threshold === null
+      ? null
+      : toSections(field(wire, 'sections'), threshold, CITIZEN_REPORT_SECTION_KEYS);
+  const signatories = toSignatories(field(wire, 'signatories'));
+  const footer = toFooter(field(wire, 'footer'));
+  if (
+    letterhead === null ||
+    letterhead.length === 0 ||
+    title === null ||
+    period === null ||
+    filtersInWords === null ||
+    disclosure === null ||
+    paragraphs === null ||
+    paragraphs.length < 2 ||
+    figures === null ||
+    sections === null ||
+    signatories === null ||
+    footer === null
+  ) {
+    return null;
+  }
+  return {
+    letterhead,
+    title,
+    period,
+    filtersInWords,
+    executiveSummary: { paragraphs, figures },
+    sections,
+    signatories,
+    footer,
+    disclosure,
+  };
+}
+
+/**
+ * `GET office/reports/citizens/export` → `SummaryReportExport`, or `null` when the file does not
+ * carry its own conditions before the first figure (`DL-106`).
+ *
+ * @consumes GET office/reports/citizens/export
+ */
+export function toCitizenReportExport(wire: unknown): SummaryReportExport | null {
+  return toSheetFile(wire);
+}
+
+function toCitizenFigures(wire: unknown, threshold: number): CitizenReportFigures | null {
+  const residents = count(field(wire, 'residents'));
+  const residentsPrevious = count(field(wire, 'residents_previous'));
+  const registered = shownCount(field(wire, 'registered'), threshold);
+  const registeredWithheld = field(wire, 'registered_withheld');
+  const shareWire = field(wire, 'women_share_percent');
+  const womenSharePercent = shareWire === null ? null : count(shareWire);
+  const onApp = shownCount(field(wire, 'on_app'), threshold);
+  const verified = shownCount(field(wire, 'verified'), threshold);
+  const activeIds = shownCount(field(wire, 'active_ids'), threshold);
+  if (
+    residents === null ||
+    residentsPrevious === null ||
+    registered === undefined ||
+    typeof registeredWithheld !== 'boolean' ||
+    (registered === null) !== registeredWithheld ||
+    (shareWire !== null && (womenSharePercent === null || womenSharePercent > 100)) ||
+    onApp === undefined ||
+    verified === undefined ||
+    activeIds === undefined
+  ) {
+    return null;
+  }
+  return {
+    residents,
+    residentsPrevious,
+    registered,
+    registeredWithheld,
+    womenSharePercent,
+    onApp,
+    verified,
+    activeIds,
+  };
+}
+
+/** A count of people or `null` (withheld); `undefined` when malformed or shown below the threshold. */
+function shownCount(wire: unknown, threshold: number): number | null | undefined {
+  if (wire === null) return null;
+  const value = count(wire);
+  return value !== null && shownPeople(value, threshold) ? value : undefined;
+}
+
+function toSheetFile(wire: unknown): SummaryReportExport | null {
   const format = oneOf(field(wire, 'format'), ['csv'] as const);
   const filename = str(field(wire, 'filename'));
   const content = str(field(wire, 'content'));
@@ -234,20 +352,28 @@ function toNamedFigure(wire: unknown): SummaryNamedFigure | null | undefined {
   return { id, name, served };
 }
 
-function toSections(wire: unknown, threshold: number): readonly SummarySection[] | null {
+function toSections<K extends string>(
+  wire: unknown,
+  threshold: number,
+  template: readonly K[],
+): readonly SummarySection<K>[] | null {
   if (!Array.isArray(wire)) return null;
-  const sections = wire.map((item) => toSection(item, threshold));
+  const sections = wire.map((item) => toSection(item, threshold, template));
   if (sections.some((section) => section === null)) return null;
-  const read = sections.filter((section): section is SummarySection => section !== null);
+  const read = sections.filter((section): section is SummarySection<K> => section !== null);
   const keys = new Set(read.map((section) => section.key));
-  if (read.length !== SUMMARY_SECTION_KEYS.length || keys.size !== SUMMARY_SECTION_KEYS.length) {
+  if (read.length !== template.length || keys.size !== template.length) {
     return null;
   }
   return read;
 }
 
-function toSection(wire: unknown, threshold: number): SummarySection | null {
-  const key = oneOf(field(wire, 'key'), SUMMARY_SECTION_KEYS);
+function toSection<K extends string>(
+  wire: unknown,
+  threshold: number,
+  template: readonly K[],
+): SummarySection<K> | null {
+  const key = oneOf(field(wire, 'key'), template);
   const letter = oneOf(field(wire, 'letter'), SUMMARY_SECTION_LETTERS);
   const title = str(field(wire, 'title'));
   const note = nullableText(field(wire, 'note'));
@@ -263,7 +389,7 @@ function toSection(wire: unknown, threshold: number): SummarySection | null {
     key === null ||
     letter === null ||
     // The letter is the key's place in the template; a section out of place is not the template.
-    SUMMARY_SECTION_KEYS.indexOf(key) !== SUMMARY_SECTION_LETTERS.indexOf(letter) ||
+    template.indexOf(key) !== SUMMARY_SECTION_LETTERS.indexOf(letter) ||
     title === null ||
     note === undefined ||
     typeof available !== 'boolean' ||

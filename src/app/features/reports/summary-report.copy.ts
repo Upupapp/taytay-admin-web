@@ -12,13 +12,13 @@ export const SUMMARY_REPORT_COPY = {
   back: 'All reports',
   title: 'Summary report',
   subtitle:
-    'The office’s standard report: the period’s requests, releases and the people served, on one ' +
-    'A4 sheet to print or save as PDF.',
+    'The office’s standard report: the period’s requests, releases and the people served, on an ' +
+    'A4 sheet to download as PDF or print.',
 
   hubHeading: 'Summary report',
   hubLead:
     'The office’s standard template: letterhead, executive summary, nine sections with charts, ' +
-    'and lines for signatures. Print it or save it as PDF.',
+    'and lines for signatures. Download it as a PDF, or as a CSV with the export key.',
   hubOpen: 'Open the summary report',
 
   filtersHeading: 'Narrow the report',
@@ -49,20 +49,22 @@ export const SUMMARY_REPORT_COPY = {
     '60-plus': 'Seniors (60 and over)',
   } satisfies Record<SummaryAgeGroup, string>,
 
-  actionsHeading: 'Print or download',
+  actionsHeading: 'Download the report',
   printHint:
-    'Print asks the office record for the report again with these filters, then opens your ' +
-    'browser’s print window: choose “Save as PDF” there for a file. The run is recorded in the ' +
+    'Download PDF asks the office record for the report again with these filters, then opens ' +
+    'your browser’s print window on the A4 sheet: choose “Save as PDF” as the destination and ' +
+    'press Save. To print on paper, choose a printer there instead. The run is recorded in the ' +
     'audit trail.',
-  print: 'Print or save as PDF',
-  printing: 'Preparing the sheet…',
+  print: 'Download PDF',
+  printing: 'Preparing the PDF…',
+  pdfName: (from: string, to: string) => `Summary report ${from} to ${to}`,
   printFailed: 'The report could not be read again, so nothing was printed. Try again.',
   excelHint:
-    'Download for Excel saves the same tables as a CSV file, which opens in Excel. The file ' +
+    'Download CSV saves the same tables as a CSV file, which opens in Excel. The file ' +
     'carries its conditions — the period, the filters, who made it and when, why figures are ' +
     'withheld and how to handle it — above the first figure. The download is recorded in the ' +
     'audit trail.',
-  excel: 'Download for Excel (CSV)',
+  excel: 'Download CSV (for Excel)',
   exporting: 'Preparing the file…',
   exported: 'Report file ready',
   exportFailed: 'The file could not be made. Nothing was downloaded.',

@@ -22,6 +22,8 @@ import {
   isReleaseOpen,
   isTaskOpen,
   isWithinBarangayScope,
+  PermissionDeniedError,
+  RESIDENT_AGE_GROUP_LABELS,
   manifestHeaderLines,
   reportById,
   suppressSmallCells,
@@ -41,12 +43,16 @@ import {
   type SummaryReport,
   type SummaryReportExport,
   type SummaryReportFilter,
+  type CitizenReport,
+  type CitizenReportFilter,
   type VulnerabilitySector,
 } from '@domain/index';
 
 import { denyUnless } from './mock-access';
 import { MockCaseStore } from './mock-case.store';
 import { MockLatency } from './mock-latency';
+import { composeMockCitizenReport } from './mock-citizen-report';
+import { mockMilestoneBirthdays, mockResidentSummary } from './mock-resident-summary';
 import { composeMockSummary, summaryCsv } from './mock-summary-report';
 import { MockResidentStore } from './mock-resident.store';
 import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
@@ -199,6 +205,93 @@ export class MockReportRepository implements ReportRepository {
       format: 'csv',
       filename: `summary-report-${report.period.from}-to-${report.period.to}.csv`,
       content: summaryCsv(report),
+    });
+  }
+
+  /* ── The citizen registry report (DL-234) ─────────────────────────────────── */
+
+  citizens(filter: CitizenReportFilter): Observable<CitizenReport> {
+    const refused = this.refuseCitizens<CitizenReport>(filter);
+    return refused ?? this.latency.respond(this.composeCitizens(filter));
+  }
+
+  exportCitizens(filter: CitizenReportFilter): Observable<SummaryReportExport> {
+    const denied = denyUnless<SummaryReportExport>(
+      this.access.currentUser(),
+      'report.export-person-level',
+    );
+    if (denied) {
+      return denied;
+    }
+    const refused = this.refuseCitizens<SummaryReportExport>(filter);
+    if (refused !== null) {
+      return refused;
+    }
+    const report = this.composeCitizens(filter);
+    return this.latency.respond({
+      format: 'csv',
+      filename: `citizen-registry-report-${report.period.to}.csv`,
+      content: summaryCsv(report, 'Nothing: every barangay, sector, age group and sex'),
+    });
+  }
+
+  /** The registry's refusals, as the API's: the key, a caseload, another barangay, a protected sector. */
+  private refuseCitizens<T>(filter: CitizenReportFilter): Observable<T> | null {
+    const user = this.access.currentUser();
+    const denied = denyUnless<T>(user, 'resident.view');
+    if (denied) {
+      return denied;
+    }
+    if (
+      user?.scope === 'assigned-cases' ||
+      (filter.barangayId !== undefined && !isWithinBarangayScope(user, filter.barangayId))
+    ) {
+      return throwError(() => new PermissionDeniedError('resident.view'));
+    }
+    if (
+      filter.sector !== undefined &&
+      SENSITIVE_SECTORS.includes(filter.sector) &&
+      !userHasPermission(user, 'request.view-sensitive')
+    ) {
+      return throwError(() => new PermissionDeniedError('request.view-sensitive'));
+    }
+    return null;
+  }
+
+  private composeCitizens(filter: CitizenReportFilter): CitizenReport {
+    const user = this.access.currentUser();
+    if (user === null) {
+      throw new Error('No session.');
+    }
+    const cleared = userHasPermission(user, 'request.view-sensitive');
+    const inScope = this.residents
+      .all()
+      .filter((resident) => isWithinBarangayScope(user, resident.address.barangayId));
+    const query = {
+      ...(filter.barangayId !== undefined ? { barangayId: filter.barangayId } : {}),
+      ...(filter.sector !== undefined ? { sector: filter.sector } : {}),
+      ...(filter.ageGroup !== undefined ? { ageGroup: filter.ageGroup } : {}),
+      ...(filter.sex !== undefined ? { sex: filter.sex } : {}),
+      period: filter.period ?? 'year',
+    };
+    const words: string[] = [];
+    if (filter.barangayId !== undefined) words.push(`Barangay ${barangayName(filter.barangayId)}`);
+    if (filter.sector !== undefined) {
+      words.push(
+        `persons the registry records under ${VULNERABILITY_SECTOR_LABELS[filter.sector]}`,
+      );
+    }
+    if (filter.ageGroup !== undefined) {
+      words.push(`${RESIDENT_AGE_GROUP_LABELS[filter.ageGroup]}, by age today`);
+    }
+    if (filter.sex !== undefined)
+      words.push(filter.sex === 'female' ? 'women and girls' : 'men and boys');
+    return composeMockCitizenReport({
+      user,
+      summary: mockResidentSummary(inScope, query, cleared),
+      milestones: mockMilestoneBirthdays(inScope, query),
+      words,
+      cleared,
     });
   }
 

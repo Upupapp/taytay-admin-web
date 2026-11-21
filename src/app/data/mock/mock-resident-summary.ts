@@ -43,13 +43,7 @@ export function mockResidentSummary(
   now: Date = new Date(),
 ): ResidentSummary {
   const period = periodOf(filter.period ?? 'month', now);
-  const inFilter = everyone.filter(
-    (resident) =>
-      (filter.barangayId === undefined || resident.address.barangayId === filter.barangayId) &&
-      (filter.sector === undefined || resident.sectors.includes(filter.sector)) &&
-      (filter.ageGroup === undefined || isInAgeGroup(resident.birthDate, filter.ageGroup)) &&
-      (filter.sex === undefined || resident.sex === filter.sex),
-  );
+  const inFilter = everyone.filter((resident) => isInSummaryFilter(resident, filter));
   const active = inFilter.filter((resident) => resident.isActive);
   const createdBetween = (from: Date, to: Date): number =>
     inFilter.filter((resident) => {
@@ -171,6 +165,43 @@ export function mockResidentSummary(
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+function isInSummaryFilter(resident: Resident, filter: ResidentSummaryFilter): boolean {
+  return (
+    (filter.barangayId === undefined || resident.address.barangayId === filter.barangayId) &&
+    (filter.sector === undefined || resident.sectors.includes(filter.sector)) &&
+    (filter.ageGroup === undefined || isInAgeGroup(resident.birthDate, filter.ageGroup)) &&
+    (filter.sex === undefined || resident.sex === filter.sex)
+  );
+}
+
+/** The birthdays RA 11982 marks with a cash gift, as the API's `MILESTONE_AGES` (backend ADR 0006). */
+export const MOCK_MILESTONE_AGES = [80, 85, 90, 95, 100] as const;
+
+/**
+ * This demo month's birthdays at each RA 11982 milestone age among the active records under the
+ * filter, as the API's citizen registry report counts them (backend ADR 0007). Raw counts: the
+ * report withholds the small ones.
+ */
+export function mockMilestoneBirthdays(
+  everyone: readonly Resident[],
+  filter: ResidentSummaryFilter,
+): readonly { readonly age: number; readonly count: number }[] {
+  const today = manilaDay(demoNow());
+  const year = Number(today.slice(0, 4));
+  const month = today.slice(5, 7);
+  const active = everyone.filter(
+    (resident) => resident.isActive && isInSummaryFilter(resident, filter),
+  );
+  return MOCK_MILESTONE_AGES.map((age) => ({
+    age,
+    count: active.filter(
+      (resident) =>
+        resident.birthDate.slice(5, 7) === month &&
+        Number(resident.birthDate.slice(0, 4)) === year - age,
+    ).length,
+  }));
+}
 
 /** The sectors whose cards and benefits the sector pages count (backend ADR 0006). */
 const CARDED = ['senior-citizen', 'pwd', 'solo-parent'] as const;

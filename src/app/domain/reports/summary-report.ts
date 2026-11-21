@@ -88,8 +88,12 @@ export interface SummaryRow {
   readonly withheld: Readonly<Record<string, SummaryWithheldReason>>;
 }
 
-export interface SummarySection {
-  readonly key: SummarySectionKey;
+/**
+ * One lettered section. Generic over its keys because the citizen registry report
+ * (`citizen-report.ts`) is drawn in the same template with its own sections A to G.
+ */
+export interface SummarySection<K extends string = SummarySectionKey> {
+  readonly key: K;
   readonly letter: SummarySectionLetter;
   readonly title: string;
   readonly note: string | null;
@@ -178,7 +182,7 @@ export interface SummaryReportExport {
  * number or withheld, at most two. Money, shares and words stay in the table, because a bar of
  * pesos beside a bar of requests puts two scales on one axis.
  */
-export function summaryChartColumns(section: SummarySection): readonly SummaryColumn[] {
+export function summaryChartColumns(section: SummarySection<string>): readonly SummaryColumn[] {
   return section.columns
     .filter(
       (column) =>

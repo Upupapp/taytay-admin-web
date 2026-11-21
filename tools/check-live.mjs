@@ -440,6 +440,11 @@ const NOT_LIVE = {
     'a report is run deliberately, and its export says when it was',
   ],
   'reports/report-hub-page': ['static', 'the report catalogue is data shipped with the console'],
+  'reports/citizen-report-page': [
+    'report run',
+    'every read is a run the API audits (office_report.citizens_read), so a re-read would write ' +
+      'audit rows nobody asked for; the sheet prints when it was generated, and Download PDF re-reads',
+  ],
   'reports/summary-report-page': [
     'report run',
     'every read is a run the API audits (office_report.summary_read), so a re-read would write ' +

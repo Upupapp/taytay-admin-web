@@ -14,6 +14,7 @@ import {
 import { BarChart, type BarChartRow } from '@shared/ui/bar-chart/bar-chart';
 import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 
+import { SheetChart, type SheetChartKind } from './sheet-chart';
 import { SUMMARY_REPORT_COPY } from './summary-report.copy';
 
 /**
@@ -31,7 +32,7 @@ import { SUMMARY_REPORT_COPY } from './summary-report.copy';
 @Component({
   selector: 'app-summary-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BarChart, ScrollRegion],
+  imports: [BarChart, ScrollRegion, SheetChart],
   template: `
     @let part = section();
     <section class="sheet-section" [attr.aria-labelledby]="headingId()">
@@ -59,7 +60,14 @@ import { SUMMARY_REPORT_COPY } from './summary-report.copy';
           </dl>
         }
 
-        @if (chartRows().length > 0) {
+        @if (chart(); as kind) {
+          <app-sheet-chart
+            class="sheet-section__chart"
+            [section]="part"
+            [kind]="kind"
+            [withheldLabel]="copy.chartWithheld"
+          />
+        } @else if (chartRows().length > 0) {
           <app-bar-chart
             class="sheet-section__chart"
             [series]="chartSeries()"
@@ -130,7 +138,9 @@ import { SUMMARY_REPORT_COPY } from './summary-report.copy';
   styleUrl: './summary-section.scss',
 })
 export class SummarySectionView {
-  readonly section = input.required<SummarySection>();
+  readonly section = input.required<SummarySection<string>>();
+  /** A line, pyramid or funnel in place of the bars; `null` draws the bars (`DL-234`). */
+  readonly chart = input<SheetChartKind | null>(null);
 
   protected readonly copy = SUMMARY_REPORT_COPY;
 
