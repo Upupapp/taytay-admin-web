@@ -115,3 +115,13 @@
     padding-inline: var(--space-4);
   }
 }
+
+/* The wide review (`class="modal--wide"` on the host): the VerificationReview board's 1000px dialog,
+   wide enough that the account's name and birth date sit side by side beside the decision. */
+:host(.modal--wide) .modal__panel--large {
+  max-inline-size: 1000px;
+}
+
+:host(.modal--wide) .modal__body {
+  padding-block-start: 20px;
+}
