@@ -48,15 +48,20 @@
   min-block-size: 120px;
   padding: var(--space-4) 18px;
   border: 1px solid var(--on-deep-edge);
-  border-radius: var(--r-xl);
+  border-radius: var(--r-card-sm);
   background: var(--on-deep-fill);
   font-size: var(--fs-control);
   font-weight: var(--fw-semibold);
 }
 
-/* One tile layout for all five: the icon top-left, the label bottom-left. */
+/* The four small tiles: the icon top-left, the label bottom-left. The wide one is a row, the
+   icon beside its label, as the board draws it (its bar is left out: a bar reads as a figure). */
 .art__tile--wide {
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
   grid-column: 1 / -1;
+  gap: 14px;
   min-block-size: 0;
 }
 
