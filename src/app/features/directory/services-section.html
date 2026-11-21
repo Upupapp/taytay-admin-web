@@ -1,13 +1,15 @@
 <section class="card card--panel card--padded directory-section" aria-labelledby="services-heading">
   <div class="directory-section__head">
-    <h2 id="services-heading" class="directory-section__title">{{ copy.heading }}</h2>
+    <div class="directory-section__intro">
+      <h2 id="services-heading" class="directory-section__title">{{ copy.heading }}</h2>
+      <p class="directory-section__note">{{ copy.lead }} {{ listCopy.byName }}</p>
+    </div>
     @if (!archived()) {
       <button type="button" class="btn btn--primary" (click)="add()">
         <app-icon name="plus" class="directory-section__plus" [stroke]="2.2" />{{ copy.add }}
       </button>
     }
   </div>
-  <p class="directory-section__note">{{ copy.lead }} {{ listCopy.byName }}</p>
   @if (offices.failed()) {
     <p class="directory-section__note" role="status">{{ copy.officesUnnamed }}</p>
   }

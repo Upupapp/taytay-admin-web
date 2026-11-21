@@ -11,10 +11,19 @@
 .directory-section__head {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
   min-block-size: var(--h-btn);
+}
+
+/* The board's head: the heading with its lead under it, the add button at the right. */
+.directory-section__intro {
+  display: flex;
+  flex: 1 1 520px;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-inline-size: 0;
 }
 
 .directory-section__title {
