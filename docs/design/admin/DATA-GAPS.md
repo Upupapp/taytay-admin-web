@@ -43,3 +43,4 @@ Checked against `openapi.json` at console `1eadbc0`.
 | CitizensOverview | Recent imports | `GET office/imports` |
 | CitizenRegistry | A count on each sector tab | `GET office/residents/summary` (`by_sector`) |
 | CitizenRegistry | Purok under the barangay; birth date and sex under the name; "Updated" column | `OfficeResident` (`purok_or_sitio`, `birth_date`, `sex`, `updated_at`) |
+| Residents | Above the list: KPI row (active records, senior citizens, persons with disability, solo parents), active records by barangay, active records by age group. The newer CitizenRegistry board draws the same `/residents` page without them, and Citizens overview shows them | `GET office/residents/summary` (`residents`, `by_sector`, `by_barangay`, `by_age_sex`) |
