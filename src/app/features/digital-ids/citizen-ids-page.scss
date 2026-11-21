@@ -160,3 +160,15 @@
 .citizen-ids__note {
   margin: 0;
 }
+
+/* The holder's email under the name, as the board writes it (DL-232). */
+.citizen-ids__stack {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+}
+
+.citizen-ids__sub {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}

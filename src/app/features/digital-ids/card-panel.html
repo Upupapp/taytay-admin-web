@@ -11,6 +11,10 @@
       <section class="card-record card-record--panel" aria-labelledby="card-record-heading">
         <div class="card-record__head">
           <h3 id="card-record-heading" class="section-title">{{ copy.cardHeading }}</h3>
+          <!-- Purok, verified date and the ID type verified with, as the record read says them. -->
+          @if (holderLine(current); as line) {
+            <p class="digital-ids__aside">{{ line }}</p>
+          }
           <app-card-photo
             [photo]="current.photo"
             [whose]="whose()"
@@ -46,6 +50,22 @@
                 <dt>{{ copy.expires }}</dt>
                 <dd>{{ current.expiresAt | displayDate }}</dd>
               </div>
+              @if (current.record; as record) {
+                <div>
+                  <dt>{{ copy.photoSource }}</dt>
+                  <dd>
+                    {{
+                      record.photoSource === null
+                        ? copy.photoSourceNone
+                        : copy.photoSources[record.photoSource]
+                    }}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{{ copy.checks }}</dt>
+                  <dd>{{ record.checksCount }}</dd>
+                </div>
+              }
             </dl>
             <p class="digital-ids__aside">{{ copy.numberNote }}</p>
             @if (pastExpiry(current)) {
@@ -54,7 +74,7 @@
           </div>
           <div class="card-record__history">
             <h4 class="section-title">{{ copy.historyHeading }}</h4>
-            <app-not-connected figure="card-history" />
+            <app-card-history [account]="account().id" />
           </div>
         </div>
       </section>

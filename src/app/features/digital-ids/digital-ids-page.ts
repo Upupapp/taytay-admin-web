@@ -14,7 +14,12 @@ import { EMPTY, switchMap, tap } from 'rxjs';
 import { PermissionService } from '@core/access/permission.service';
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
-import { APP_ACCOUNT_REPOSITORY, type AppAccount, type CursorPage } from '@domain/index';
+import {
+  APP_ACCOUNT_REPOSITORY,
+  type AppAccount,
+  type AppAccountListPage,
+  type CursorPage,
+} from '@domain/index';
 import { liveViewState, unlessPaged } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
@@ -101,7 +106,7 @@ export class DigitalIdsPage {
           : EMPTY,
       ),
     ),
-    { initialValue: LOADING as ViewState<CursorPage<AppAccount>> },
+    { initialValue: LOADING as ViewState<AppAccountListPage> },
   );
 
   private readonly read = computed<readonly AppAccount[]>(() => [

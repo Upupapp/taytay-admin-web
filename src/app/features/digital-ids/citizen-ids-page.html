@@ -28,6 +28,26 @@
     <h2 id="citizen-ids-lifecycle" class="section-title">{{ copy.lifecycle.heading }}</h2>
     @if (counts(); as counts) {
       <dl class="tally-row">
+        <!-- From sign-up to card ahead of the card stages (DL-232): the whole app's figures. -->
+        @if (funnel(); as funnel) {
+          <div class="tally">
+            <dt class="tally__label">{{ copy.funnel.appAccounts.label }}</dt>
+            <dd class="tally__value">{{ funnel.appAccounts }}</dd>
+            <dd class="tally__hint">{{ copy.funnel.appAccounts.hint }}</dd>
+          </div>
+          <div class="tally">
+            <dt class="tally__label">{{ copy.funnel.pending.label }}</dt>
+            <dd class="tally__value">{{ funnel.pendingVerification }}</dd>
+            <dd class="tally__hint">
+              {{ funnel.oldestPendingAt === null ? copy.funnel.pending.hint : copy.funnel.oldest(date(funnel.oldestPendingAt)) }}
+            </dd>
+          </div>
+          <div class="tally" [class.tally--primary]="noCardView()">
+            <dt class="tally__label">{{ copy.funnel.verified.label }}</dt>
+            <dd class="tally__value">{{ funnel.verified }}</dd>
+            <dd class="tally__hint">{{ copy.funnel.verified.hint }}</dd>
+          </div>
+        }
         @for (status of statuses; track status) {
           <div class="tally" [class.tally--primary]="filter().status === status">
             <dt class="tally__label">{{ stageLabel(status) }}</dt>
@@ -36,7 +56,9 @@
           </div>
         }
       </dl>
-      <p class="status-line">{{ copy.lifecycle.lead }} {{ copy.lifecycle.overlap }}</p>
+      <p class="status-line">
+        {{ copy.funnel.note }} {{ copy.lifecycle.lead }} {{ copy.lifecycle.overlap }}
+      </p>
     } @else if (failure()) {
       <p class="status-line">{{ copy.lifecycle.failed }}</p>
     } @else {
@@ -53,8 +75,8 @@
           [queryParams]="{ status: null }"
           queryParamsHandling="merge"
           [replaceUrl]="true"
-          [class.tab--active]="!filter().status"
-          [attr.aria-current]="!filter().status ? 'true' : null"
+          [class.tab--active]="!filter().status && !noCardView()"
+          [attr.aria-current]="!filter().status && !noCardView() ? 'true' : null"
           >{{ copy.allTab }}</a
         >
       </li>
@@ -66,8 +88,8 @@
             [queryParams]="{ status }"
             queryParamsHandling="merge"
             [replaceUrl]="true"
-            [class.tab--active]="filter().status === status"
-            [attr.aria-current]="filter().status === status ? 'true' : null"
+            [class.tab--active]="filter().status === status && !noCardView()"
+            [attr.aria-current]="filter().status === status && !noCardView() ? 'true' : null"
           >
             {{ stageLabel(status) }}
             @if (counts(); as counts) {
@@ -76,9 +98,36 @@
           </a>
         </li>
       }
+      <!-- Accounts, not cards: the verified residents holding none (DL-232). -->
+      <li>
+        <a
+          class="tab"
+          [routerLink]="[]"
+          [queryParams]="{ view: 'no-card', status: null }"
+          queryParamsHandling="merge"
+          [replaceUrl]="true"
+          [class.tab--active]="noCardView()"
+          [attr.aria-current]="noCardView() ? 'true' : null"
+        >
+          {{ copy.noCardTab }}
+          @if (funnel(); as funnel) {
+            <span class="tab__count">{{ funnel.verifiedWithoutCard }}</span>
+          }
+        </a>
+      </li>
     </ul>
   </nav>
 
+  @if (noCardView()) {
+    @if (servesAccounts) {
+      <app-verified-no-card (issue)="selected.set($event)" />
+    } @else {
+      <section class="card card--padded" aria-labelledby="citizen-ids-no-card-gap">
+        <h2 id="citizen-ids-no-card-gap" class="section-title">{{ copy.noCard.caption }}</h2>
+        <app-not-connected port="app-account" />
+      </section>
+    }
+  } @else {
   <section
     class="card card--panel card--padded stack citizen-ids__panel"
     aria-labelledby="citizen-ids-list"
@@ -167,13 +216,19 @@
       </div>
     }
   </section>
+  }
 }
 
 <ng-template #holderCell let-row>
   @if (row.holder.name; as name) {
     <span class="citizen-ids__who">
       <span class="avatar" aria-hidden="true">{{ name | initials }}</span>
-      {{ name }}
+      <span class="citizen-ids__stack">
+        <span>{{ name }}</span>
+        @if (row.holder.email; as email) {
+          <span class="citizen-ids__sub">{{ email }}</span>
+        }
+      </span>
     </span>
   } @else {
     <span class="citizen-ids__none">{{ copy.noName }}</span>

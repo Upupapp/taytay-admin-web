@@ -23,6 +23,7 @@ import {
   VERIFICATION_STATUSES,
   type CursorPage,
   type VerificationFilter,
+  type VerificationListPage,
   type VerificationRequest,
 } from '@domain/index';
 import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
@@ -39,6 +40,7 @@ import { Modal } from '@shared/ui/modal/modal';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
+import { VerificationQueueFigures } from './verification-queue-figures';
 import { VerificationReview } from './verification-review';
 import { VERIFICATION_COPY } from './verification.copy';
 
@@ -85,6 +87,7 @@ function readFilter(params: ParamMap): VerificationFilter {
     Modal,
     PageHeader,
     StatusBadge,
+    VerificationQueueFigures,
     VerificationReview,
   ],
   templateUrl: './verification-queue-page.html',
@@ -153,8 +156,11 @@ export class VerificationQueuePage {
         ),
       ),
     ),
-    { initialValue: LOADING as ViewState<CursorPage<VerificationRequest>> },
+    { initialValue: LOADING as ViewState<VerificationListPage> },
   );
+
+  /** The latest first page's figures; nothing until it is read. */
+  protected readonly stats = computed(() => valueOf(this.first())?.stats ?? null);
 
   protected readonly rows = computed<readonly VerificationRequest[]>(() => [
     ...(valueOf(this.first())?.items ?? []),

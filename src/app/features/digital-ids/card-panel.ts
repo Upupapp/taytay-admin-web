@@ -12,13 +12,13 @@ import {
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { combineLatest, switchMap, type Observable } from 'rxjs';
 
-import { NotConnected } from '@core/access/not-connected';
 import {
   actsOn,
   DIGITAL_ID_ALWAYS,
   DIGITAL_ID_EFFECTS,
   DIGITAL_ID_REPOSITORY,
   DIGITAL_ID_STATUS_CATALOG,
+  ID_DOCUMENT_TYPE_LABELS,
   isPastExpiry,
   type AppAccount,
   type DigitalIdAct,
@@ -26,12 +26,13 @@ import {
   type MediaId,
   type TakenCardPhoto,
 } from '@domain/index';
-import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
+import { DisplayDatePipe, formatDisplayDate } from '@shared/pipes/display-date.pipe';
 import { failureReason } from '@shared/state/failure-reason';
 import { LOADING, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { Modal } from '@shared/ui/modal/modal';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
+import { CardHistory } from './card-history';
 import { CardPhoto } from './card-photo';
 import { CardPhotoTake } from './card-photo-take';
 import { IdCardFace } from './id-card-face';
@@ -56,8 +57,8 @@ import { DIGITAL_IDS_COPY } from './digital-ids.copy';
     CardPhotoTake,
     DisplayDatePipe,
     IdCardFace,
+    CardHistory,
     Modal,
-    NotConnected,
     StatusBadge,
   ],
   templateUrl: './card-panel.html',
@@ -87,6 +88,23 @@ export class CardPanel {
 
   /** The card when one was read; `null` both while reading and when the account holds none. */
   protected readonly cardValue = computed(() => valueOf(this.card()));
+
+  /** Under the card's heading: purok, verified date and the ID type verified with (`DL-232`). */
+  protected holderLine(card: DigitalIdCard): string | null {
+    const holder = card.record?.holder;
+    if (holder === undefined) return null;
+    const verified =
+      holder.verifiedAt === null
+        ? null
+        : [
+            this.copy.verifiedOn(formatDisplayDate(holder.verifiedAt) ?? ''),
+            ...(holder.idType === null ? [] : [this.copy.verifiedWith(idTypeLabel(holder.idType))]),
+          ].join(' ');
+    const parts = [holder.purokOrSitio, verified].filter(
+      (part): part is string => part !== null && part !== '',
+    );
+    return parts.length === 0 ? null : this.copy.holderLine(parts);
+  }
 
   protected readonly whose = computed(() => this.account().name ?? this.account().email ?? '');
   protected readonly photoAlt = computed(() => DIGITAL_IDS_COPY.photo.alt(this.whose()));
@@ -209,4 +227,10 @@ export class CardPanel {
         return this.repository.reissue(card.id);
     }
   }
+}
+
+/** An ID type in words when the console knows it; the API's own word otherwise. */
+function idTypeLabel(idType: string): string {
+  const labels: Readonly<Record<string, string>> = ID_DOCUMENT_TYPE_LABELS;
+  return labels[idType] ?? idType;
 }

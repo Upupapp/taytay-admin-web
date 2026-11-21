@@ -14,6 +14,8 @@ import { ActivatedRoute, Router, RouterLink, type ParamMap } from '@angular/rout
 import { EMPTY, map, switchMap, tap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
+import { NotConnected } from '@core/access/not-connected';
+import { ServedPorts } from '@core/access/served-ports';
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
 import {
@@ -45,6 +47,7 @@ import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { CardCheck } from './card-check';
 import { CardPanel } from './card-panel';
 import { CITIZEN_IDS_COPY } from './citizen-ids.copy';
+import { VerifiedNoCard } from './verified-no-card';
 
 const PAGE_SIZE = 20;
 
@@ -83,6 +86,8 @@ type CardHolderRef = Pick<AppAccount, 'id' | 'name' | 'email'>;
     PageHeader,
     RouterLink,
     StatusBadge,
+    NotConnected,
+    VerifiedNoCard,
   ],
   templateUrl: './citizen-ids-page.html',
   styleUrl: './citizen-ids-page.scss',
@@ -159,6 +164,15 @@ export class CitizenIdsPage {
   });
   /** The strip counts the first page's answer: every page of one reading counts the same filter. */
   protected readonly counts = computed(() => valueOf(this.state())?.counts ?? null);
+  protected readonly funnel = computed(() => valueOf(this.state())?.funnel ?? null);
+  /** The no-card tab reads the account list, which only some adapter sets serve. */
+  protected readonly servesAccounts = inject(ServedPorts).serves('app-account');
+
+  /** The "Verified, no card" tab: accounts, read by their own list (`DL-232`). */
+  protected readonly noCardView = toSignal(
+    this.route.queryParamMap.pipe(map((params) => params.get('view') === 'no-card')),
+    { initialValue: this.route.snapshot.queryParamMap.get('view') === 'no-card' },
+  );
   protected readonly rows = computed<readonly DigitalIdListing[]>(() => [
     ...(valueOf(this.state())?.items ?? []),
     ...this.further().flatMap((page) => page.items),
@@ -193,6 +207,12 @@ export class CitizenIdsPage {
       key: 'expires',
       header: this.copy.columnExpires,
       value: (row) => this.date(row.expiresAt),
+    },
+    {
+      key: 'verified',
+      header: this.copy.columnVerified,
+      value: (row) =>
+        row.holder.verifiedAt === null ? this.copy.notVerified : this.date(row.holder.verifiedAt),
     },
     { key: 'status', header: this.copy.columnStatus, cell: this.statusCell() },
     {
@@ -290,7 +310,7 @@ export class CitizenIdsPage {
     });
   }
 
-  private date(value: string): string {
+  protected date(value: string): string {
     return formatDisplayDate(value, 'date', this.locale) ?? '';
   }
 }

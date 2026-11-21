@@ -12,7 +12,8 @@ import {
   type ConfirmedIdentity,
   type RegistryMatches,
   type ResidentId,
-  type CursorPage,
+  type VerificationListPage,
+  type VerificationQueueStats,
   type CursorRequest,
   type InPersonVerification,
   type MediaId,
@@ -29,6 +30,14 @@ import { VerificationReview } from './verification-review';
 import { ACCOUNT_LINK_COPY } from '@shared/verification/account-link.copy';
 
 import { VERIFICATION_COPY } from './verification.copy';
+
+/** The queue's figures beside every page (DL-232). */
+const STATS: VerificationQueueStats = {
+  pending: 2,
+  oldestPendingAt: null,
+  decided7d: { approved: 1, rejected: 0 },
+  sentByDay: [],
+};
 
 function request(n: number, status: VerificationStatus = 'pending'): VerificationRequest {
   return {
@@ -79,15 +88,20 @@ class RecordingVerifications implements VerificationRepository {
   list(
     filter: VerificationFilter,
     page: CursorRequest,
-  ): Observable<CursorPage<VerificationRequest>> {
+  ): Observable<VerificationListPage> {
     this.listed.push({ filter, page });
     if (this.page !== null && !page.cursor) {
-      return of({ items: this.page, hasMore: false, nextCursor: null });
+      return of({ items: this.page, hasMore: false, nextCursor: null, stats: STATS });
     }
     return of(
       page.cursor
-        ? { items: [request(3)], hasMore: false, nextCursor: null }
-        : { items: [request(1), request(2)], hasMore: true, nextCursor: 'cursor-2' },
+        ? { items: [request(3)], hasMore: false, nextCursor: null, stats: STATS }
+        : {
+            items: [request(1), request(2)],
+            hasMore: true,
+            nextCursor: 'cursor-2',
+            stats: STATS,
+          },
     );
   }
 
@@ -216,7 +230,7 @@ describe('VerificationQueuePage', () => {
       filter: { status: 'pending' },
       page: { limit: 20, cursor: null },
     });
-    expect(element.querySelectorAll('tbody tr')).toHaveLength(2);
+    expect(element.querySelectorAll('.queue tbody tr')).toHaveLength(2);
     expect(element.textContent).toContain('Showing 2 requests. More are available.');
   });
 
@@ -236,7 +250,7 @@ describe('VerificationQueuePage', () => {
     await settle(fixture);
 
     expect(repository.listed[1]?.page).toEqual({ limit: 20, cursor: 'cursor-2' });
-    expect(element.querySelectorAll('tbody tr')).toHaveLength(3);
+    expect(element.querySelectorAll('.queue tbody tr')).toHaveLength(3);
     expect(element.textContent).toContain('Showing 3 requests. That is all of them.');
     expect(buttonNamed(element, VERIFICATION_COPY.queue.showMore)).toBeNull();
   });
@@ -273,7 +287,7 @@ describe('VerificationQueuePage', () => {
     expect(options.map((option) => option.textContent?.trim())).toContain(
       'Replaced by an in-person check',
     );
-    const rows = [...element.querySelectorAll('tbody tr')].map((row) => row.textContent ?? '');
+    const rows = [...element.querySelectorAll('.queue tbody tr')].map((row) => row.textContent ?? '');
     expect(rows[0]).not.toContain(VERIFICATION_COPY.queue.selfieErased);
     expect(rows[1]).toContain(VERIFICATION_COPY.queue.selfieErased);
     expect(rows[2]).toContain('Replaced by an in-person check');

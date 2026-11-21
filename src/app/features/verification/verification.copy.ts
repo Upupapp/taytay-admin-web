@@ -139,3 +139,19 @@ export const VERIFICATION_COPY = {
     failed: 'The server refused it or could not be reached.',
   },
 } as const;
+
+/** The queue's four figures above the list (DL-232). */
+export const QUEUE_FIGURES_COPY = {
+  label: 'Queue figures',
+  awaiting: 'Awaiting review',
+  awaitingHint: 'Sent and not yet decided.',
+  oldest: 'Oldest waiting',
+  days: (n: number) => (n === 1 ? 'day' : 'days'),
+  sent: (when: string) => `Sent ${when}`,
+  noneWaiting: 'Nobody is waiting.',
+  decided: 'Decided, last 7 days',
+  decidedSplit: (approved: number, rejected: number) =>
+    `${approved} approved · ${rejected} rejected`,
+  sentWeek: 'Sent, last 7 days',
+  sentCaption: 'ID reviews sent per day, last 7 days',
+} as const;

@@ -9,9 +9,12 @@ import {
   asId,
   asIsoDateTime,
   DIGITAL_ID_REPOSITORY,
+  UNSERVED_PORTS,
   type AppAccountId,
+  type CursorPage,
   type CursorRequest,
   type DigitalIdCard,
+  type DigitalIdEvent,
   type DigitalIdHolder,
   type DigitalIdId,
   type DigitalIdListFilter,
@@ -33,11 +36,24 @@ function listing(key: string, name: string | null, expired = false): DigitalIdLi
     expired,
     issuedAt: asIsoDateTime('2026-01-05T00:00:00.000Z'),
     expiresAt: asIsoDateTime('2027-01-05T00:00:00.000Z'),
-    holder: { account: asId<AppAccountId>(`account-${key}`), name, barangayName: 'Muzon' },
+    holder: {
+      account: asId<AppAccountId>(`account-${key}`),
+      name,
+      barangayName: 'Muzon',
+      email: null,
+      verifiedAt: null,
+    },
   };
 }
 
 const COUNTS = { active: 7, expiring: 2, expired: 1, suspended: 3, revoked: 4 };
+const FUNNEL = {
+  appAccounts: 30,
+  pendingVerification: 2,
+  oldestPendingAt: null,
+  verified: 20,
+  verifiedWithoutCard: 3,
+};
 
 /** Answers what it is told to, and records every list it was asked for. */
 class Cards implements DigitalIdRepository {
@@ -47,6 +63,7 @@ class Cards implements DigitalIdRepository {
     hasMore: true,
     nextCursor: 'next',
     counts: COUNTS,
+    funnel: FUNNEL,
   });
 
   list(page: CursorRequest, filter: DigitalIdListFilter): Observable<DigitalIdListPage> {
@@ -56,6 +73,10 @@ class Cards implements DigitalIdRepository {
   check(): Observable<DigitalIdHolder> {
     return throwError(() => new Error('not in this test'));
   }
+  cardHistory(): Observable<CursorPage<DigitalIdEvent>> {
+    return of({ items: [], hasMore: false, nextCursor: null });
+  }
+
   cardOf(): Observable<DigitalIdCard | null> {
     return of(null);
   }
@@ -86,6 +107,7 @@ function configure(granted: readonly Permission[]): Cards {
     providers: [
       provideRouter([]),
       { provide: DIGITAL_ID_REPOSITORY, useValue: cards },
+      { provide: UNSERVED_PORTS, useValue: [] },
       {
         provide: PermissionService,
         useValue: { can: (permission: Permission) => signal(granted.includes(permission)) },
@@ -116,7 +138,8 @@ describe('CitizenIdsPage (DL-212)', () => {
     const figures = [...root.querySelectorAll('.tally__value')].map((node) =>
       node.textContent?.trim(),
     );
-    expect(figures).toEqual(['7', '2', '1', '3', '4']);
+    // Sign-up to card first (DL-232), then the card stages.
+    expect(figures).toEqual(['30', '2', '20', '7', '2', '1', '3', '4']);
     expect(text(root)).toContain(CITIZEN_IDS_COPY.moreAvailable);
   });
 
@@ -135,6 +158,7 @@ describe('CitizenIdsPage (DL-212)', () => {
       hasMore: false,
       nextCursor: null,
       counts: { ...COUNTS, active: 0 },
+      funnel: FUNNEL,
     });
     const { root } = await render();
 

@@ -1,5 +1,10 @@
 <app-page-header class="page-header--wide" [title]="copy.title" [subtitle]="copy.subtitle" />
 
+<!-- The queue's own figures, from beside its first page (DL-232): never the rows on screen. -->
+@if (stats(); as stats) {
+  <app-verification-queue-figures [stats]="stats" />
+}
+
 <section class="card card--panel card--padded queue" aria-labelledby="verification-queue-heading">
   <h2 id="verification-queue-heading" class="visually-hidden">{{ copy.caption }}</h2>
 

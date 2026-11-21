@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, throwError, type Observable } from 'rxjs';
+import { of, throwError, type Observable, map } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionService } from '@core/access/permission.service';
@@ -9,19 +9,20 @@ import {
   APP_ACCOUNT_REPOSITORY,
   CARD_PHOTO_CONSENT_STATEMENT,
   asId,
-  notSentSentence,
   asIsoDateTime,
   DIGITAL_ID_EFFECTS,
   DIGITAL_ID_REPOSITORY,
   type AccountBarangay,
   type AccountRole,
   type AppAccount,
+  type AppAccountListPage,
   type AppAccountId,
   type AppAccountRepository,
   type CursorPage,
   type CardPhotoConsent,
   type CursorRequest,
   type DigitalIdCard,
+  type DigitalIdEvent,
   type DigitalIdHolder,
   type DigitalIdId,
   type DigitalIdListPage,
@@ -59,6 +60,8 @@ function card(status: DigitalIdCard['status']): DigitalIdCard {
 }
 
 /** Records every call, so a test can say what was — and was not — asked of the data layer. */
+const ACCOUNT_COUNTS = { residents: 3, verified: 1, staff: 1, admins: 1, staffWithoutOffice: 0 };
+
 class RecordingCards implements DigitalIdRepository {
   readonly calls: string[] = [];
   current: DigitalIdCard | null = card('active');
@@ -71,6 +74,34 @@ class RecordingCards implements DigitalIdRepository {
       hasMore: false,
       nextCursor: null,
       counts: { active: 0, expiring: 0, expired: 0, suspended: 0, revoked: 0 },
+      funnel: {
+        appAccounts: 0,
+        pendingVerification: 0,
+        oldestPendingAt: null,
+        verified: 0,
+        verifiedWithoutCard: 0,
+      },
+    });
+  }
+
+  cardHistory(): Observable<CursorPage<DigitalIdEvent>> {
+    this.calls.push('history');
+    const issued = this.current;
+    return of({
+      items:
+        issued === null
+          ? []
+          : [
+              {
+                id: 'event-1',
+                action: 'digital_id.issued',
+                card: issued.id,
+                at: issued.issuedAt,
+                actorName: 'Marisol Alcantara',
+              },
+            ],
+      hasMore: false,
+      nextCursor: null,
     });
   }
 
@@ -128,13 +159,13 @@ class RecordingCards implements DigitalIdRepository {
 
 class Accounts implements AppAccountRepository {
   readonly listed: CursorRequest[] = [];
-  list(page: CursorRequest): Observable<CursorPage<AppAccount>> {
+  list(page: CursorRequest): Observable<AppAccountListPage> {
     this.listed.push(page);
     return of({
       items: [account('a', 'verified'), account('b', 'registered'), account('c', 'staff')],
       hasMore: true,
       nextCursor: 'next',
-    });
+    }).pipe(map((answer) => ({ ...answer, counts: ACCOUNT_COUNTS })));
   }
   changeRole(): Observable<AppAccount> {
     throw new Error('not used');
@@ -362,7 +393,7 @@ describe('CardPanel (DL-171)', () => {
     button(element, COPY.panel.act.suspend)?.click();
     await settle(fixture);
 
-    expect(repository.calls).toEqual(['cardOf:a']);
+    expect(repository.calls.filter((call) => call !== 'history')).toEqual(['cardOf:a']);
     const modal = document.body.querySelector('.digital-ids__effects');
     for (const effect of DIGITAL_ID_EFFECTS.suspend) {
       expect(modal?.textContent).toContain(effect);
@@ -370,7 +401,11 @@ describe('CardPanel (DL-171)', () => {
 
     button(document.body, COPY.panel.confirm.suspend)?.click();
     await settle(fixture);
-    expect(repository.calls).toEqual(['cardOf:a', 'suspend:card-1', 'cardOf:a']);
+    expect(repository.calls.filter((call) => call !== 'history')).toEqual([
+      'cardOf:a',
+      'suspend:card-1',
+      'cardOf:a',
+    ]);
     expect(element.textContent).toContain(COPY.panel.outcome.suspend);
     expect(element.textContent).toContain('Suspended');
     // No route lifts a suspension, so nothing offers to.
@@ -453,13 +488,21 @@ describe('CardPanel as the CitizenIDRecord board (DL-211)', () => {
     expect(element.querySelector('.id-card__photo img')).toBeNull();
   });
 
-  it('says in its place that the card’s history is not sent, rather than drawing an empty one', async () => {
-    const { element } = await panel();
+  it('draws the holder’s card history as the trail recorded it (DL-232)', async () => {
+    const { fixture, element } = await panel();
     const history = element.querySelector('.card-record__history');
     expect(history?.querySelector('h4')?.textContent?.trim()).toBe(COPY.panel.historyHeading);
-    expect(history?.querySelector('[role="note"]')?.textContent?.trim()).toBe(
-      notSentSentence('card-history'),
+    await vi.waitFor(
+      async () => {
+        await settle(fixture);
+        expect(history?.querySelectorAll('.card-history__row').length).toBeGreaterThan(0);
+      },
+      { timeout: 5_000, interval: 50 },
     );
+    expect(history?.querySelector('.card-history__act')?.textContent?.trim()).toBe(
+      COPY.panel.historyActions['digital_id.issued'],
+    );
+    expect(history?.querySelector('[role="note"]')).toBeNull();
   });
 });
 
