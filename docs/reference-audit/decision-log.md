@@ -11367,3 +11367,26 @@ holder's own `PATCH /me`, which no console screen sends today, or the server's o
 `users.name` for that row. Nothing more is needed for the address.
 
 **Easiest to reverse:** `accountListJson` returns `userListJson` unchanged.
+
+## DL-240 — the summary report's month table covers the report's period
+
+**Status:** Settled (22 November 2026), from the demo recording. Supersedes backend ADR 0005's
+"Month by month: the twelve months to the period's end".
+
+The month-by-month table (section B) covered the twelve months to the period's end whatever the
+period was, so on the default sheet (1 January to today) it reached back into last December and its
+money total differed from section A's "Amount released" on the same page — two totals for one
+question, one of them wrong for the period printed at the top.
+
+1. **The table covers the period**, chosen over labelling it "last 12 months" with its own total.
+   Every other section answers the period the reader picked; a sheet signed and filed as "1 January
+   to 22 November" should not carry a figure for a month outside it. A reader who wants a year's
+   trend picks a year.
+2. **Its totals are the period's**, and the test holds them equal to section A's received, served and
+   amount released. The totals row reads "Total for the period".
+3. **A month the period only partly covers says so** in the section's note ("November 2026 counts
+   to 22 November 2026"), rather than reading as the whole month.
+4. **The CSV and the PDF follow**: the CSV is written from the same sections with their notes, and
+   the PDF is the browser's print of the sheet. The mock adapter composes the same table and note.
+
+**Easiest to reverse:** `periodMonths(f.from, f.to)` back to twelve months to `f.to`.

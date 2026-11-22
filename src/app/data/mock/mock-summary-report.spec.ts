@@ -52,6 +52,22 @@ function compose(sensitiveCleared: boolean) {
 }
 
 describe('the mock summary report (DL-228)', () => {
+  it('covers the period month by month, so its totals are the period’s (DL-240)', () => {
+    const report = compose(true);
+    const months = report.sections.find((section) => section.key === 'month-by-month');
+    const glance = report.sections.find((section) => section.key === 'at-a-glance');
+    const tile = (key: string) => glance?.tiles.find((entry) => entry.key === key)?.value;
+    expect(months?.rows[0]?.key).toBe('2020-01');
+    expect(months?.rows.at(-1)?.key).toBe('2026-11');
+    expect(months?.totals).toEqual({
+      received: tile('received'),
+      served: tile('served'),
+      amount_centavos: tile('amount_released'),
+    });
+    expect(months?.totalsLabel).toBe('Total for the period');
+    expect(months?.note).toContain('November 2026 counts to 20 November 2026.');
+  });
+
   it('composes all nine sections in the template’s order', () => {
     expect(compose(true).sections.map((section) => section.key)).toEqual([...SUMMARY_SECTION_KEYS]);
   });

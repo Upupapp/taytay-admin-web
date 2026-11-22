@@ -196,7 +196,7 @@ export function composeMockSummary(input: MockSummaryInput): SummaryReport {
     hiddenSectors.map((key) => ({ key, label: VULNERABILITY_SECTOR_LABELS[key] })),
   );
 
-  const months = twelveMonths(to);
+  const months = periodMonths(from, to);
   const monthRows: SummaryRow[] = months.map((month) => {
     const monthReleases = releases.filter((release) => release.releasedAt?.startsWith(month));
     return {
@@ -299,7 +299,7 @@ export function composeMockSummary(input: MockSummaryInput): SummaryReport {
       suppressionNotice: personsWithheld ? notice(1, []) : null,
     }),
     section('month-by-month', 'B', 'Month by month', {
-      note: 'The twelve months to the end of the period, by the month each request was filed and each release handed over.',
+      note: monthNote(from, to),
       columns: [
         { key: 'received', label: 'Received', measure: 'records' },
         { key: 'served', label: 'Served', measure: 'records' },
@@ -307,7 +307,7 @@ export function composeMockSummary(input: MockSummaryInput): SummaryReport {
       ],
       rows: monthRows,
       totals: sumColumns(monthRows, ['received', 'served', 'amount_centavos']),
-      totalsLabel: 'Total',
+      totalsLabel: 'Total for the period',
     }),
     section('by-program', 'C', 'By programme', {
       note: 'Received and rejected in the period, served in the period, and open as of today.',
@@ -525,12 +525,35 @@ function sumColumns(rows: readonly SummaryRow[], keys: readonly string[]): Recor
   return totals;
 }
 
-function twelveMonths(to: string): readonly string[] {
-  const last = Number(to.slice(0, 4)) * 12 + Number(to.slice(5, 7)) - 1;
-  return Array.from({ length: 12 }, (_, index) => {
-    const month = last - 11 + index;
+/** Every month the period touches, as the API counts them (DL-240). */
+function periodMonths(from: string, to: string): readonly string[] {
+  const index = (day: string): number => Number(day.slice(0, 4)) * 12 + Number(day.slice(5, 7)) - 1;
+  const first = index(from);
+  return Array.from({ length: Math.max(index(to) - first + 1, 0) }, (_, offset) => {
+    const month = first + offset;
     return `${Math.floor(month / 12)}-${String((month % 12) + 1).padStart(2, '0')}`;
   });
+}
+
+/** The API's note for the table, word for word: a partly covered month says so (DL-240). */
+function monthNote(from: string, to: string): string {
+  const months = periodMonths(from, to);
+  const first = months[0] ?? from.slice(0, 7);
+  const last = months[months.length - 1] ?? to.slice(0, 7);
+  const lastDay = new Date(
+    Date.UTC(Number(to.slice(0, 4)), Number(to.slice(5, 7)), 0),
+  ).getUTCDate();
+  const partial: string[] = [];
+  if (Number(from.slice(8, 10)) !== 1) {
+    partial.push(`${monthLabel(first)} counts from ${dayLabel(from)}`);
+  }
+  if (Number(to.slice(8, 10)) !== lastDay) {
+    partial.push(`${monthLabel(last)} counts to ${dayLabel(to)}`);
+  }
+  return (
+    'Each month of the period, by the month each request was filed and each release handed over, so the totals are the period’s.' +
+    (partial.length === 0 ? '' : ` ${partial.join('; ')}.`)
+  );
 }
 
 export function monthLabel(month: string): string {
