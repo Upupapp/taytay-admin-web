@@ -11421,3 +11421,22 @@ cover" (`balita-article.ts`, `check:balita`) and "The server will refuse this un
 entry does not do.
 
 **Easiest to reverse:** wording in `*.copy.ts` and the specs that assert it.
+
+## DL-242 — a move's reason is judged when the writer stops; chart lines never overshoot
+
+**Status:** Settled (22 November 2026), from the demo recording.
+
+1. **Validation waits for the writer** ("reward early, punish late"). The shared `StatusTransition`
+   said "Say a little more" from the first keystroke, so it flashed while an officer typed. The
+   problem now appears when the writer leaves a field they wrote in that is still too short, and goes
+   the moment the words are enough; it does not come back mid-sentence. An untouched field is not
+   scolded. The button stays disabled until the reason is long enough, as before. Every screen that
+   moves a record uses this control.
+2. **The reason's example fits the move.** The default example names no lifecycle; the case page
+   keeps its home-visit example; requests and releases give one per destination (a voided payout is
+   not explained the way a scheduled one is). A destination with guidance still shows none.
+3. **Lines are monotone cubic** (Fritsch–Carlson, the rule of d3's `curveMonotoneX`), replacing the
+   board's Catmull–Rom curve, which dipped below the axis after a fall to zero — a negative count
+   nobody recorded. Between two points the line now stays between their values.
+
+**Easiest to reverse:** each is one function or input in `status-transition.ts` and `line-chart.ts`.
