@@ -694,7 +694,7 @@ describe('BannersSection (DL-170)', () => {
 
     buttonNamed('Archive the banner Banner a')?.click();
     await settle(fixture);
-    expect(archiveDialog()?.textContent).toContain('Its image stays stored on the server with it.');
+    expect(archiveDialog()?.textContent).toContain('Its image stays stored in the system with it.');
     expect(archiveDialog()?.textContent).not.toMatch(/delete/i);
   });
 });

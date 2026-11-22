@@ -352,14 +352,14 @@ export const SERVICE_EFFECTS = {
     'The page appears in the app’s Tulong catalogue, unless it is hidden from the catalogue.',
     'Unless it accepts online applications, it is information only: residents read it, and ' +
       'nothing in the app lets them apply through it.',
-    'Its address, category, who it is for, places and office can be set only now. The API’s ' +
-      'published contract declares no way to change them afterwards.',
+    'Its address, category, who it is for, places and office can be set only now. The system ' +
+      'offers no way to change them afterwards.',
     'A picture, and featuring it on the home screen, are added once the page exists.',
-    'The server records that you created it, and when.',
+    'The system records that you created it, and when.',
   ],
   update: [
     'Residents see the change the next time the app loads the page.',
-    'The server records that you changed it, and when. It keeps no reason, so none is asked for.',
+    'The system records that you changed it, and when. It keeps no reason, so none is asked for.',
   ],
   hide: [
     'The page leaves the app’s Tulong catalogue. It still opens from a link to its address, and ' +
@@ -386,13 +386,13 @@ export const SERVICE_EFFECTS = {
   ],
   programChanged: ['Applications sent from this page from now on are filed under this programme.'],
   imageReplaced: [
-    'The image replaces the page’s picture in the app at once. The old one stays stored on the ' +
-      'server; nothing deletes it.',
-    'The server records it as a change to the page.',
+    'The image replaces the page’s picture in the app at once. The old one stays stored in the ' +
+      'system; nothing deletes it.',
+    'The system records it as a change to the page.',
   ],
   imageAdded: [
     'The image becomes the page’s picture in the app at once.',
-    'The server records it as a change to the page.',
+    'The system records it as a change to the page.',
   ],
   archive: [
     'The page leaves the app. Residents can no longer find it in the Tulong catalogue or among the ' +
@@ -400,13 +400,13 @@ export const SERVICE_EFFECTS = {
     'It stays here under Archived, with its picture, your name, the date and your reason, and its ' +
       'address stays reserved for it.',
     'It can be restored, and comes back as it was.',
-    'The server records that you archived it, when, and why.',
+    'The system records that you archived it, when, and why.',
   ],
   restore: [
     'The page returns to the app as it was: in the Tulong catalogue unless it is hidden from it, ' +
       'and among the featured pages on the home screen if it is featured.',
-    'The server refuses while the page’s office is archived: restore the office first.',
-    'The server records that you restored it, when, and why.',
+    'The system refuses while the page’s office is archived: restore the office first.',
+    'The system records that you restored it, when, and why.',
   ],
 } as const;
 

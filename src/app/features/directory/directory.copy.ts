@@ -43,8 +43,8 @@ export const DIRECTORY_COPY = {
     close: 'Close',
     effectsLead: 'What this does:',
     notDone: (reason: string) => `Not done. ${reason}`,
-    failed: 'The server did not answer.',
-    byName: 'By name, as the server sends them.',
+    failed: 'The system did not answer.',
+    byName: 'By name, as the system sends them.',
     archivedNote:
       'Archived here means taken out of the app and kept: nothing in this directory is deleted. ' +
       'Each archived entry says who archived it, when and why, and can be restored.',
@@ -122,7 +122,7 @@ export const DIRECTORY_COPY = {
     bannerNone: 'This office has no banner.',
     fixedHeading: 'Set when the office was created',
     fixedLead: (fields: string) =>
-      `The API’s published contract declares no way to change an office’s ${fields}, so they are shown here and cannot be edited.`,
+      `The system offers no way to change an office’s ${fields}, so they are shown here and cannot be edited.`,
     notGiven: 'Not given',
     unchanged: 'Nothing has changed yet.',
     create: 'Add the office',
@@ -241,7 +241,7 @@ export const DIRECTORY_COPY = {
     optional: 'Optional.',
     fixedHeading: 'Set when the page was created',
     fixedLead: (fields: string) =>
-      `The API’s published contract declares no way to change a page’s ${fields}, so they are shown here and cannot be edited.`,
+      `The system offers no way to change a page’s ${fields}, so they are shown here and cannot be edited.`,
     notGiven: 'Not given',
     imageHeading: 'Picture',
     image: 'Picture for the page',
@@ -282,8 +282,8 @@ export const DIRECTORY_COPY = {
     /** DL-220: a line the server sent with no kind — an API older than kinds — is not set. */
     kindsNotSet: (count: number) =>
       count === 1
-        ? '1 line has no type set: the server did not say what it is for. Edit it and choose its kind.'
-        : `${count} lines have no type set: the server did not say what they are for. Edit each and choose its kind.`,
+        ? '1 line has no type set: the system did not say what it is for. Edit it and choose its kind.'
+        : `${count} lines have no type set: the system did not say what they are for. Edit each and choose its kind.`,
     commandCenterIs: (name: string, number: string) =>
       `The command center is ${name}, ${number}: the line the app shows when it tells residents to ` +
       'call for an emergency.',

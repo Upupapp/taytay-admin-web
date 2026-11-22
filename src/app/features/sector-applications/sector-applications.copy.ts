@@ -5,10 +5,11 @@ export const SECTOR_APPLICATIONS_COPY = {
   title: 'Sector applications',
   subtitle:
     'Residents ask in the app to be recorded as a senior citizen, a person with disability or a solo parent, with proof. You approve, which records the sector, or return with a reason.',
-  noAnswer: 'the server gave no reason.',
+  noAnswer: 'the system gave no reason.',
 
   filterLabel: 'Show',
-  order: 'Waiting: oldest first, so whoever has waited longest is read first. Decided: newest first.',
+  order:
+    'Waiting: oldest first, so whoever has waited longest is read first. Decided: newest first.',
   caption: 'Sector applications from the residents’ app',
   columnApplicant: 'Applicant',
   columnBarangay: 'Barangay',
@@ -63,7 +64,7 @@ export const SECTOR_APPLICATIONS_COPY = {
     recordHeading: 'The registry record',
     linked: 'This account is already linked to:',
     noCandidates:
-      'The API suggests no record for this account. Find the person in the registry below, or register them first: the account must be linked to a record.',
+      'The system suggests no record for this account. Find the person in the registry below, or register them first: the account must be linked to a record.',
     pickerLabel: 'Or find the record in the registry',
     pickerHint: 'Type a name, then use the arrow keys to choose the record this person is.',
     picked: (name: string) => `Chosen from the registry: ${name}`,
@@ -75,9 +76,11 @@ export const SECTOR_APPLICATIONS_COPY = {
     openRecord: 'Open the record',
 
     detailsHeading: 'The card’s details (optional)',
-    detailsLocked: 'Recording the card’s details needs access to sensitive records; the sector can still be approved.',
+    detailsLocked:
+      'Recording the card’s details needs access to sensitive records; the sector can still be approved.',
     idLastFour: 'Card number — last four characters only',
-    idLastFourHint: 'The registry keeps only the last four. Letters, digits, spaces, slashes and hyphens.',
+    idLastFourHint:
+      'The registry keeps only the last four. Letters, digits, spaces, slashes and hyphens.',
     idLastFourInvalid: 'Up to four letters, digits, spaces, slashes or hyphens.',
     issuedOn: 'Issued on',
     validUntil: 'Valid until',

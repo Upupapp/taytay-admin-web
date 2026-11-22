@@ -302,12 +302,12 @@ export const RETIRE_EFFECTS: readonly string[] = [
   'Residents can no longer choose this document in the app.',
   'Requests already filed continue, and keep the name, requirements, fee and working days they were filed with.',
   'The type is kept, never deleted. Your reason is kept with it.',
-  'Retiring is one-way: nothing in this console or the API brings a retired type back. To offer it again, add it as a new type.',
+  'Retiring is one-way: nothing in this console or the office system brings a retired type back. To offer it again, add it as a new type.',
 ];
 
 /** What saving a change does, shown before the button. */
 export const UPDATE_EFFECTS: readonly string[] = [
   'Residents see the change in the app’s catalogue from now on.',
   'Requests already filed keep the name, requirements, fee and working days they were filed with.',
-  'The server records which fields moved and your reason, never the old or new values.',
+  'The system records which fields moved and your reason, never the old or new values.',
 ];

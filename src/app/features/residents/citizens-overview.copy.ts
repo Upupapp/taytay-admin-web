@@ -4,7 +4,7 @@ import type { RecordsToTidyKind, ResidentSummaryPeriod } from '@domain/index';
 export const CITIZENS_OVERVIEW_COPY = {
   title: 'Citizen overview',
   subtitle:
-    'The registry counted by the API: who is on it, where, and in which sectors. Every figure opens the registry filtered the same way.',
+    'The registry counted by the system: who is on it, where, and in which sectors. Every figure opens the registry filtered the same way.',
   register: 'Register a citizen',
   downloadReport: 'Download report',
 
@@ -26,7 +26,7 @@ export const CITIZENS_OVERVIEW_COPY = {
   clear: 'Clear filters',
 
   asOf: (when: string, from: string, to: string) =>
-    `Figures as of ${when}, counted by the API for ${from} to ${to}, under the filter above.`,
+    `Figures as of ${when}, counted by the system for ${from} to ${to}, under the filter above.`,
   errorHeading: 'The figures could not be read',
 
   onRegistry: 'On the registry',

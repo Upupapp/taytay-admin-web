@@ -35,7 +35,7 @@ export const ACCOUNT_LINK_COPY = {
   legend: 'What should verifying do with the registry?',
   linkTo: (label: string): string => `Link to ${label}`,
   heldByOther:
-    'Another app account holds this record, so the server would refuse a link to it. Open the ' +
+    'Another app account holds this record, so the system would refuse a link to it. Open the ' +
     'record to see whose it is.',
   strength: {
     strong: 'Strong resemblance',
@@ -72,7 +72,7 @@ export const ACCOUNT_LINK_COPY = {
     'verification.',
   nameHint: (name: string): string =>
     `Split the verified name, “${name}”, into the registry’s parts: the same words, nothing ` +
-    'added. The server refuses a split that is not that name.',
+    'added. The system refuses a split that is not that name.',
   firstName: 'Given name',
   middleName: 'Middle name (optional)',
   lastName: 'Surname',
@@ -81,7 +81,7 @@ export const ACCOUNT_LINK_COPY = {
   sexFromAccount: 'As the account gives it',
   sexes: { female: 'Female', male: 'Male' },
   birthDate: 'Birth date, as the ID shows it (optional)',
-  birthDateHint: 'Leave empty to use the account’s. The server refuses when neither gives one.',
+  birthDateHint: 'Leave empty to use the account’s. The system refuses when neither gives one.',
   civilStatus: 'Civil status',
   civilStatusChoose: 'Choose the civil status',
   street: 'Street address (optional)',

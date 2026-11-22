@@ -72,7 +72,9 @@ export function authorOf(
   if (message.senderId === thread.residentAccountId) {
     return 'resident';
   }
-  return readerAccountId !== null && String(message.senderId) === readerAccountId ? 'you' : 'office';
+  return readerAccountId !== null && String(message.senderId) === readerAccountId
+    ? 'you'
+    : 'office';
 }
 
 /* ── the lifecycle, defined once (rule 7) ────────────────────────────────── */
@@ -125,11 +127,11 @@ export function isOpen(thread: OfficeThread): boolean {
  * exists.
  */
 export const THREAD_CLOSE_EFFECTS: readonly string[] = [
-  'Nobody can write in this conversation again — not the resident, not the office. The server ' +
+  'Nobody can write in this conversation again — not the resident, not the office. The system ' +
     'refuses a reply to a closed conversation.',
   'If the resident writes to this office again, the app starts a new conversation.',
   'The resident is not sent a message saying it was closed. If they are owed an answer, reply first.',
-  'The server records that you closed it, and when. It keeps no reason, so none is asked for here.',
+  'The system records that you closed it, and when. It keeps no reason, so none is asked for here.',
   'Nothing in this console can reopen it.',
 ];
 

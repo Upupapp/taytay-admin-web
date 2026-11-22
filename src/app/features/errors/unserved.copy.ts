@@ -8,35 +8,36 @@
  */
 export const UNSERVED_COPY = {
   heading: 'Not connected yet',
-  subtitle: 'Parts of this console that the API it is connected to does not serve.',
+  subtitle: 'Parts of this console that are not connected to the office system yet.',
 
-  everythingServed: 'Every part of this console is served by the API it is connected to.',
+  everythingServed: 'Every part of this console is connected to the office system.',
   // With nothing withheld, "Not connected yet" would contradict the page's only finding.
   everythingHeading: 'Every part is connected',
-  everythingSubtitle: 'What this console can open, now that the API serves all of it.',
+  everythingSubtitle: 'What this console can open, now that all of it is connected.',
 
   meaningHeading: 'What this means',
   meaning: [
-    'The modules below are left out of the menu because the API this console is connected to has ' +
-      'no way to answer them yet. Their addresses bring you here instead.',
+    'The modules below are left out of the menu because the office system this console is ' +
+      'connected to has no way to answer them yet. Their addresses bring you here instead.',
     'This is not a list of empty records. Nothing was asked for and nothing was deleted: there is ' +
-      'no server to ask. Whether the office holds such records cannot be told from this console ' +
-      'until one exists.',
-    'Each module returns to the menu, unchanged, once the API serves what it reads.',
+      'nothing yet to ask. Whether the office holds such records cannot be told from this console ' +
+      'until it is connected.',
+    'Each module returns to the menu, unchanged, once the office system can answer it.',
   ],
 
   modulesHeading: 'Left out of the menu',
   needs: (missing: readonly string[]): string => `It needs ${joinWords(missing)}.`,
 
-  portsHeading: 'What the API does not serve',
-  portsLead: 'In full, these are not served, so no screen that depends on one of them can open:',
+  portsHeading: 'What this console is not connected to yet',
+  portsLead:
+    'In full, these are not connected yet, so no screen that depends on one of them can open:',
   portSentence: (holding: string): string =>
     `${holding.charAt(0).toUpperCase()}${holding.slice(1)}.`,
 
   availableHeading: 'What you can open',
   nothingAvailable:
-    'Nothing in the menu that your account may open is served by this API yet. Your inbox, under ' +
-    'the bell at the top of the page, still works.',
+    'Nothing in the menu that your account may open is connected to the office system yet. Your ' +
+    'inbox, under the bell at the top of the page, still works.',
   // `DL-168`: the server's own reason this account cannot open the office inbox, said where it lands.
   awaitingOffice:
     'Your account is staff but is not assigned to an office, so the office inbox — which shows ' +

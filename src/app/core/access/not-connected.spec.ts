@@ -12,7 +12,7 @@ import { NotConnected } from './not-connected';
 describe('notConnectedSentence', () => {
   it('names what the panel holds, in the words the unserved adapters use', () => {
     expect(notConnectedSentence('field-visit')).toContain(
-      `does not serve ${DATA_PORT_HOLDINGS['field-visit']},`,
+      `isn’t connected to ${DATA_PORT_HOLDINGS['field-visit']},`,
     );
   });
 

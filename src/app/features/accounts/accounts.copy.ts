@@ -28,9 +28,9 @@ export const ACCOUNTS_COPY = {
       },
       noOffice: { label: 'Staff with no office', hint: 'They answer no office’s inbox yet.' },
     },
-    order: 'Newest accounts first, as the server sends them.',
+    order: 'Newest accounts first, as the system sends them.',
     minimum:
-      'Shown: name, email, role and office — what deciding who is staff needs. The server also ' +
+      'Shown: name, email, role and office — what deciding who is staff needs. The system also ' +
       'sends a mobile number and a home barangay, which this screen does not show.',
     columnName: 'Name',
     columnEmail: 'Email',
@@ -61,7 +61,7 @@ export const ACCOUNTS_COPY = {
       'the accounts the dashboard counts under it. Staff accounts are not listed while a ' +
       'verification is chosen.',
     emptyHeading: 'No accounts',
-    emptyMessage: 'The server returned no accounts.',
+    emptyMessage: 'The system returned no accounts.',
     shown: (count: number): string =>
       count === 1 ? 'Showing 1 account.' : `Showing ${count} accounts.`,
     moreAvailable: 'More are available.',
@@ -86,19 +86,19 @@ export const ACCOUNTS_COPY = {
     roleHeading: 'Role',
     roleLegend: 'Change the role to',
     current: '(current)',
-    roleLead: 'What the server does if you change it to',
+    roleLead: 'What the system does if you change it to',
     roleAlways: 'Whichever role you choose:',
     roleConfirm: (label: string): string => `Change the role to ${label}`,
     roleChanging: 'Changing…',
     ownAccount:
-      'This is your own account. The server refuses a change to your own role; another ' +
+      'This is your own account. The system refuses a change to your own role; another ' +
       'administrator can make it.',
     noRoleGrant: 'Your account may see roles but not change them.',
 
     officeHeading: 'Office',
     officeLabel: 'Office this staff account answers for',
     officeNone: 'No office',
-    officeLead: 'What the server does:',
+    officeLead: 'What the system does:',
     officeConfirmAssign: (office: string): string => `Assign to ${office}`,
     officeConfirmClear: 'Remove the office link',
     officeSaving: 'Saving…',
@@ -116,7 +116,7 @@ export const ACCOUNTS_COPY = {
     officeAssigned: (office: string): string => `Assigned to ${office}.`,
     officeCleared: 'The office link was removed.',
     notDone: (why: string): string => `That was not done. ${why}`,
-    failed: 'The server refused it or could not be reached.',
+    failed: 'The system refused it or could not be reached.',
   },
 
   /** The office role (`DL-173`): which of the office's jobs a staff account does. */
@@ -131,7 +131,7 @@ export const ACCOUNTS_COPY = {
       'Administrator role. That is the account role, above, not an office role.',
     notStaff: 'Only a staff account holds an office role. Change the role to Staff first.',
     ownAccount:
-      'This is your own account. The server refuses a change to your own office role; another ' +
+      'This is your own account. The system refuses a change to your own office role; another ' +
       'administrator can make it.',
     noGrant: 'Your account may see office roles but not change them.',
     legend: 'Give the account the office role',
@@ -147,19 +147,19 @@ export const ACCOUNTS_COPY = {
     barangayChoose: 'Choose a barangay',
     barangaysLoading: 'Loading the barangays…',
     barangaysFailed: 'The barangays could not be loaded, so a barangay link cannot be given yet.',
-    lead: (role: string): string => `What the server does if you give the account ${role}:`,
-    leadNone: 'What the server does if you take the office role away:',
+    lead: (role: string): string => `What the system does if you give the account ${role}:`,
+    leadNone: 'What the system does if you take the office role away:',
     always: 'Whichever you choose:',
     reasonLabel: 'Why (required)',
     reasonHint: (max: number): string =>
-      `Kept by the server with the change, with your name and the time. Up to ${max} characters.`,
+      `Kept by the system with the change, with your name and the time. Up to ${max} characters.`,
     confirm: (role: string): string => `Give the office role ${role}`,
     confirmNone: 'Take the office role away',
     saving: 'Saving…',
     saved: (role: string): string => `Office role changed to ${role}.`,
     cleared: 'The office role was taken away.',
     notDone: (why: string): string => `That was not done. ${why}`,
-    failed: 'The server refused it or could not be reached.',
+    failed: 'The system refused it or could not be reached.',
   },
 
   /** Verifying a resident's account in person, at the counter (`DL-219`). */
@@ -168,7 +168,7 @@ export const ACCOUNTS_COPY = {
     intro:
       'For a resident at the counter with a government ID — for example one who declined the ' +
       'selfie, which the app takes only with its own consent. No photo or biometric data is taken.',
-    ownAccount: 'This is your own account. The server refuses to verify your own account.',
+    ownAccount: 'This is your own account. The system refuses to verify your own account.',
     noName:
       'The account gives no name, so there is nothing to check an ID against. The resident adds ' +
       'the name printed on their ID in the app first.',
@@ -186,15 +186,15 @@ export const ACCOUNTS_COPY = {
       'This account’s name was checked against the resident’s ID, so the resident cannot change ' +
       'it in the app. Correct it here only with a government ID in front of you that shows the ' +
       'new name — after a marriage or a court order, for example.',
-    ownAccount: 'This is your own account. The server refuses a correction to your own name.',
+    ownAccount: 'This is your own account. The system refuses a correction to your own name.',
     nameLabel: 'The name as the ID shows it',
     nameHint: 'Exactly as printed on the ID, up to 120 characters.',
-    lead: 'What the server does if you correct it:',
+    lead: 'What the system does if you correct it:',
     statement: 'I have seen a government ID that shows this name.',
     confirm: 'Correct the name',
     saving: 'Saving…',
     saved: (name: string): string => `The name is now ${name}.`,
     notDone: (why: string): string => `That was not done. ${why}`,
-    failed: 'The server refused it or could not be reached.',
+    failed: 'The system refused it or could not be reached.',
   },
 } as const;

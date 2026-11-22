@@ -10,7 +10,7 @@ export const DIGITAL_IDS_COPY = {
 
   check: {
     heading: 'Check a resident’s card',
-    lead: 'Paste or type what the resident’s QR code holds, and the API says whose card it is and whether it is in force.',
+    lead: 'Paste or type what the resident’s QR code holds, and the system says whose card it is and whether it is in force.',
     noCamera:
       'This console does not use the camera. A scanner that types into the field, or the code’s text copied from a scanning app, is enough.',
     label: 'The QR code’s contents',
@@ -22,7 +22,7 @@ export const DIGITAL_IDS_COPY = {
     tooLong: (max: number) => `That is longer than any code the app shows (${max} characters).`,
     refused: (reason: string) => `Not checked: ${reason}`,
     failed: 'The card could not be checked. Nothing was shown.',
-    resultHeading: 'What the API says about this card',
+    resultHeading: 'What the system says about this card',
     name: 'Name',
     noName: 'No name — the account has none, or it is closed.',
     status: 'Card',
@@ -32,12 +32,12 @@ export const DIGITAL_IDS_COPY = {
     barangay: 'Barangay',
     noBarangay: 'None recorded',
     inForce:
-      'The API says this card is active and not expired. Whether that settles what you are checking is your decision.',
+      'The system says this card is active and not expired. Whether that settles what you are checking is your decision.',
     notInForce:
-      'The API says this card is not in force. Whether that settles what you are checking is your decision.',
+      'The system says this card is not in force. Whether that settles what you are checking is your decision.',
     clear: 'Clear the answer',
     cleared: 'The answer is cleared.',
-    announced: 'The API answered. The answer is below.',
+    announced: 'The system answered. The answer is below.',
   },
 
   photo: {
@@ -106,25 +106,25 @@ export const DIGITAL_IDS_COPY = {
     noPhoto: 'Choose the photo first.',
     noConsent: 'Tick that the resident agreed first.',
     notTaken: (reason: string) => `Not taken: ${reason}`,
-    noAnswer: 'the API did not answer.',
+    noAnswer: 'the system did not answer.',
   },
 
   panel: {
     photoLegend: 'The photo for the card',
-    photoDefault: 'The API’s choice',
+    photoDefault: 'The system’s choice',
     photoDefaultHint:
-      'The resident’s latest reviewed ID selfie, or, when there is none, the newest card photo taken of them. The API keeps no list of these to choose from here.',
+      'The resident’s latest reviewed ID selfie, or, when there is none, the newest card photo taken of them. The system keeps no list of these to choose from here.',
     photoCard: (taken: string) => `The card photo taken ${taken}`,
     photoCardHint: 'Taken at the counter with the resident’s agreement.',
     photoNeither:
-      'If the resident has neither a reviewed selfie nor a card photo, the API refuses the card: take a card photo first.',
+      'If the resident has neither a reviewed selfie nor a card photo, the system refuses the card: take a card photo first.',
     heading: (name: string) => `Digital ID of ${name}`,
     loading: 'Reading the card…',
     failed: 'The card could not be read. Nothing is shown rather than a guess.',
     retry: 'Try again',
     none: 'This resident holds no current card.',
     noneWhy:
-      'The API returns only an active or suspended card. A revoked card is not shown here; the Citizen ID list keeps it, as revoked.',
+      'The system returns only an active or suspended card. A revoked card is not shown here; the Citizen ID list keeps it, as revoked.',
     number: 'Card number',
     numberNote: 'The municipality’s own number — not a national government identifier.',
     status: 'Status',
@@ -187,7 +187,7 @@ export const DIGITAL_IDS_COPY = {
       reissue: 'The card was replaced. The new card is shown.',
     } satisfies Record<DigitalIdAct, string>,
     notDone: (reason: string) => `Nothing changed: ${reason}`,
-    noAnswer: 'the API did not answer.',
+    noAnswer: 'the system did not answer.',
     noActs: 'No act is open on this card.',
   },
 } as const;

@@ -18,7 +18,7 @@ export const ASSISTANCE_IMPORT_COPY = {
     'Bring in the office’s old Tulong reports, so every figure counts what a family already received. You check every row before anything is filed.',
   cancel: 'Back to assistance requests',
   backToImports: 'Back to the imports',
-  noAnswer: 'the server gave no reason.',
+  noAnswer: 'the system gave no reason.',
   retry: 'Try again',
   unknownPerson: 'somebody not named',
 
@@ -108,7 +108,7 @@ export const ASSISTANCE_IMPORT_COPY = {
 
   map: {
     heading: 'Match the report’s columns',
-    lead: 'The API guessed these from the first row, in English or Filipino. Each field takes one column at most; a field left empty is not read from this file. A name is either one whole-name column, or surname and given name.',
+    lead: 'The system guessed these from the first row, in English or Filipino. Each field takes one column at most; a field left empty is not read from this file. A name is either one whole-name column, or surname and given name.',
     field: 'Field',
     column: 'Column in the file',
     required: 'Required',
@@ -133,7 +133,7 @@ export const ASSISTANCE_IMPORT_COPY = {
 
   review: {
     heading: 'Review the rows before anything is filed',
-    lead: 'The grouping is advice, read by the API. A row is filed on a record by itself only when one record in its barangay has the whole name, and nothing contradicts it. You may change any proposal.',
+    lead: 'The grouping is advice, read by the system. A row is filed on a record by itself only when one record in its barangay has the whole name, and nothing contradicts it. You may change any proposal.',
     tabsLabel: 'Rows by group',
     groups: {
       ready: 'Ready',

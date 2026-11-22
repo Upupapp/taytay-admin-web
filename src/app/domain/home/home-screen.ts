@@ -126,7 +126,7 @@ export function linkProblems(draft: LinkDraft): readonly FieldProblem<keyof Link
 
 /** The sentence the banner screen says about the description the API does not keep (`DL-125`). */
 export const BANNER_NO_DESCRIPTION =
-  'The app has no description of a banner’s image to give a resident who cannot see it: the API ' +
+  'The app has no description of a banner’s image to give a resident who cannot see it: the system ' +
   'keeps none. Only the title is stored with the image.';
 
 /**
@@ -146,60 +146,60 @@ export const BANNER_NO_DESCRIPTION =
 export const HOME_EFFECTS = {
   bannerCreateShown: [
     'The banner appears on the app’s home screen, among the shown banners in order.',
-    'The server records that you added it, and when.',
+    'The system records that you added it, and when.',
   ],
   bannerCreateHidden: [
     'The banner is kept here and not shown in the app until it is shown.',
-    'The server records that you added it, and when.',
+    'The system records that you added it, and when.',
   ],
   bannerUpdate: [
     'Residents see the change the next time the app loads its home screen.',
-    'The server records that you changed it, and when. It keeps no reason, so none is asked for.',
+    'The system records that you changed it, and when. It keeps no reason, so none is asked for.',
   ],
   imageUpload: [
     'The image is uploaded first, then the banner is saved. If the banner is then refused, the image ' +
-      'stays stored on the server, unused; nothing removes it.',
+      'stays stored in the system, unused; nothing removes it.',
   ],
   imageReplaced: [
-    'The new image replaces the old one on the banner. The old image stays stored on the server; ' +
+    'The new image replaces the old one on the banner. The old image stays stored in the system; ' +
       'nothing removes it.',
   ],
   imageRemoved: [
-    'The banner shows no image. Its old image stays stored on the server; nothing removes it.',
+    'The banner shows no image. Its old image stays stored in the system; nothing removes it.',
   ],
   bannerHide: ['The banner leaves the app’s home screen. It is kept here, and can be shown again.'],
   bannerShow: ['The banner appears on the app’s home screen again.'],
   bannerArchive: [
     'The banner leaves the app’s home screen, whether it is shown or hidden.',
     'It stays here under Archived, with your name, the date and your reason, and can be restored. ' +
-      'Its image stays stored on the server with it.',
-    'The server records that you archived it, when, and why.',
+      'Its image stays stored in the system with it.',
+    'The system records that you archived it, when, and why.',
   ],
   bannerRestore: [
     'The banner returns as it was: on the app’s home screen if it is shown, and kept here only if ' +
       'it is hidden.',
-    'The server records that you restored it, when, and why.',
+    'The system records that you restored it, when, and why.',
   ],
   linkCreate: [
     'The link appears on the app’s home screen. Every link is shown, in order; there is no hidden ' +
       'link.',
-    'The server records that you added it, and when.',
+    'The system records that you added it, and when.',
   ],
   linkUpdate: [
     'Residents see the change the next time the app loads its home screen.',
-    'The server records that you changed it, and when. It keeps no reason, so none is asked for.',
+    'The system records that you changed it, and when. It keeps no reason, so none is asked for.',
   ],
   linkArchive: [
     'The link leaves the app’s home screen.',
     'It stays here under Archived, with your name, the date and your reason, and can be restored.',
-    'The server records that you archived it, when, and why.',
+    'The system records that you archived it, when, and why.',
   ],
   linkRestore: [
     'The link returns to the app’s home screen, in its place in the order.',
-    'The server records that you restored it, when, and why.',
+    'The system records that you restored it, when, and why.',
   ],
   href: [
-    'The app opens this when the banner or link is tapped. The API checks only its length, not that ' +
+    'The app opens this when the banner or link is tapped. The system checks only its length, not that ' +
       'it opens anything — try it in the app after saving.',
   ],
 } as const;

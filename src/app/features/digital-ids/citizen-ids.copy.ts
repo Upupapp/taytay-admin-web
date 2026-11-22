@@ -18,7 +18,7 @@ export const CITIZEN_IDS_COPY = {
 
   lifecycle: {
     heading: 'Where the cards stand',
-    lead: 'Counted by the API under the search and barangay chosen below, whichever tab is open.',
+    lead: 'Counted by the system under the search and barangay chosen below, whichever tab is open.',
     overlap: `A card expiring within ${DIGITAL_ID_EXPIRING_DAYS} days is still active, so it is counted in both.`,
     failed: 'The counts could not be read, so none is shown: a wrong count is worse than none.',
   },
@@ -74,7 +74,7 @@ export const CITIZEN_IDS_COPY = {
   barangay: 'Barangay',
   allBarangays: 'All barangays',
   clear: 'Clear filters',
-  order: 'Newest card first, as the API orders them.',
+  order: 'Newest card first, as the system orders them.',
 
   caption: 'Cards the municipality has issued',
   columnResident: 'Resident',

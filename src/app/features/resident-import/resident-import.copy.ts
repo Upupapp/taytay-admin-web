@@ -14,7 +14,7 @@ export const RESIDENT_IMPORT_COPY = {
   subtitle:
     'Bring in a list the office keeps — a barangay census, an OSCA, PDAO or solo parent list. You check every row before the registry changes.',
   cancel: 'Back to the registry',
-  noAnswer: 'the server gave no reason.',
+  noAnswer: 'the system gave no reason.',
   retry: 'Try again',
 
   steps: ['Upload', 'Match columns', 'Check rows', 'Confirm', 'Done'] as const,
@@ -99,7 +99,7 @@ export const RESIDENT_IMPORT_COPY = {
 
   map: {
     heading: 'Match the file’s columns to the registry',
-    lead: 'The API guessed these from the first row. Each registry field takes one column at most; a field left empty is not filled from this file.',
+    lead: 'The system guessed these from the first row. Each registry field takes one column at most; a field left empty is not filled from this file.',
     field: 'Registry field',
     column: 'Column in the file',
     required: 'Required',
@@ -123,7 +123,7 @@ export const RESIDENT_IMPORT_COPY = {
 
   check: {
     heading: 'Check the rows before anything is saved',
-    lead: 'The grouping is advice, read by the API: a match is a name and birth date already on the registry, not a finding that it is the same person. You decide each one.',
+    lead: 'The grouping is advice, read by the system: a match is a name and birth date already on the registry, not a finding that it is the same person. You decide each one.',
     tabsLabel: 'Rows by group',
     groups: {
       new: 'New',
@@ -173,7 +173,8 @@ export const RESIDENT_IMPORT_COPY = {
       skip: 'Nothing is written for this row.',
     } satisfies Record<ImportAction, string>,
     reason: 'Why',
-    reasonHint: 'Kept with your name and the time. A later decision on this row is added, not written over.',
+    reasonHint:
+      'Kept with your name and the time. A later decision on this row is added, not written over.',
     reasonMissing: 'Say why first.',
     chooseRecord: 'Choose which record first.',
     submit: 'Record this decision',

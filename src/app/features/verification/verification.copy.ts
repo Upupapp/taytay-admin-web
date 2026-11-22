@@ -12,7 +12,7 @@ export const VERIFICATION_COPY = {
       'government ID and a selfie.',
     filterLabel: 'Show',
     filterAll: 'Every request',
-    order: 'Newest first, as the server sends them.',
+    order: 'Newest first, as the system sends them.',
     caption: 'ID verification requests',
     columnSubmitted: 'Sent',
     columnId: 'ID sent',
@@ -34,7 +34,7 @@ export const VERIFICATION_COPY = {
     /** Beside the status of a request whose selfie is gone, so the list says it cannot be approved. */
     selfieErased: 'Selfie erased',
     noAccountDetail:
-      'Besides the ID and the selfie, the server sends only the name and birth date the account ' +
+      'Besides the ID and the selfie, the system sends only the name and birth date the account ' +
       'gives, and only while a request is waiting — they appear in the review, not in this list. ' +
       'A review establishes that the selfie shows the person on the ID, that the ID is legible and ' +
       'of the kind stated, and that it shows the name the account gives.',
@@ -119,7 +119,7 @@ export const VERIFICATION_COPY = {
     /** Why approval is not offered when the selfie is gone: the server refuses it with a 409. */
     selfieErasedNoApproval: (date: string): string =>
       `The selfie was erased on ${date}: the resident withdrew their consent to it. Nobody can ` +
-      'now see the face an approval would vouch for, so the server refuses to approve this ' +
+      'now see the face an approval would vouch for, so the system refuses to approve this ' +
       'request and approval is not offered. Reject it with a reason asking for a new selfie — ' +
       'the resident can send one after agreeing to the consent again.',
     awaitingResident:
@@ -133,10 +133,10 @@ export const VERIFICATION_COPY = {
     inPersonLink: 'Users and roles',
     inPersonAfter: '. That closes this request and erases its selfie.',
 
-    outcomeApproved: 'Approved. The server marked the account verified.',
+    outcomeApproved: 'Approved. The system marked the account verified.',
     outcomeRejected: 'Rejected. The resident can now read your reason in the app.',
     notRecorded: (why: string): string => `The decision was not recorded. ${why}`,
-    failed: 'The server refused it or could not be reached.',
+    failed: 'The system refused it or could not be reached.',
   },
 } as const;
 

@@ -267,7 +267,7 @@ export const PLATFORM_AUDIT_ACTIONS: Readonly<Record<string, string>> = {
   'user.reactivated': 'Switched a staff account back on, with a reason',
   // No account acts here, so the row has no actor: the command run on the server did it (DL-188).
   'user.role_granted_by_bootstrap_command':
-    'Made an account an administrator, by the bootstrap command run on the server',
+    'Made an account an administrator, by a setup command run directly on the office system',
   'verification.approved': 'Approved a resident’s ID verification',
   'verification.rejected': 'Rejected a resident’s ID verification',
   // Read from `taytay-backend` `44cae1b` and `5209f75` (DL-218, DL-219): ids and codes only, never
@@ -289,7 +289,7 @@ export function describeAuditAction(code: string): string | null {
 
 /** What a row of this trail does not hold, said on the screen once rather than implied. */
 export const PLATFORM_AUDIT_LIMITS: readonly string[] = [
-  'A row says who acted, what they did, to which record and when. The API keeps no earlier or later value, and no reason.',
-  'People and records are shown by their IDs, as the API records them. Nothing is looked up about them here.',
+  'A row says who acted, what they did, to which record and when. The system keeps no earlier or later value, and no reason.',
+  'People and records are shown by their IDs, as the system records them. Nothing is looked up about them here.',
   'A change to the app’s settings is recorded without saying which setting.',
 ];

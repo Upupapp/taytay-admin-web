@@ -33,7 +33,7 @@ export const APP_SETTINGS_COPY = {
   privacyVersion: 'Privacy notice version',
   privacyVersionHint: 'Empty for none.',
   noticeServed: (version: string, when: string) =>
-    `The API serves privacy notice version ${version}, last changed ${when}. Its text is published ` +
+    `The app is given privacy notice version ${version}, last changed ${when}. Its text is published ` +
     'under “Privacy notice” below, with its own version.',
   minimumAppVersion: 'Oldest app version allowed',
   minimumAppVersionHint: 'Numbers joined by dots, such as 1.4 or 1.4.2. Empty for none.',
@@ -43,8 +43,8 @@ export const APP_SETTINGS_COPY = {
     'How long the app tells a resident an ID review usually takes, after they send their ID. No ' +
     'standard for it is published: it is the office’s own estimate, in working days.',
   reviewNotSent:
-    'The API did not say what the app is told about review time: it is older than this setting. ' +
-    'Nothing about it can be changed here until the API is updated, and the app keeps saying what ' +
+    'The system did not say what the app is told about review time: it is older than this setting. ' +
+    'Nothing about it can be changed here until the system is updated, and the app keeps saying what ' +
     'it says now.',
   reviewChoiceLegend: 'In the app',
   reviewStateLabel: 'State a review time',
@@ -67,8 +67,8 @@ export const APP_SETTINGS_COPY = {
     'verify their ID by selfie. Publish the office’s approved text under “Biometric (selfie) ' +
     'consent” below.',
   textNotSent:
-    'The API did not send this text: it is older than this setting. Nothing about it can be ' +
-    'published here until the API is updated.',
+    'The system did not send this text: it is older than this setting. Nothing about it can be ' +
+    'published here until the system is updated.',
 
   legalGroups: {
     accepted: {
@@ -177,8 +177,8 @@ export const APP_SETTINGS_COPY = {
   newFlagArchivedClash:
     'A new flag has the name of an archived flag; tick Restore beside that one instead.',
 
-  problemsLead: 'Not sent — the API would refuse it:',
-  refusedLead: 'Not saved — the server refused it:',
+  problemsLead: 'Not sent — the system would refuse it:',
+  refusedLead: 'Not saved — the system refused it:',
   unchanged: 'Nothing has changed yet.',
   review: 'Review the change',
   reviewHeading: 'Change the app’s settings?',
@@ -191,5 +191,5 @@ export const APP_SETTINGS_COPY = {
   saving: 'Saving…',
   saved: 'The settings were saved. Residents’ apps read them the next time they load.',
   notDone: (reason: string) => `Not saved. ${reason}`,
-  failed: 'The server did not answer.',
+  failed: 'The system did not answer.',
 } as const;

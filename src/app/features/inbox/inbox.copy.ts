@@ -16,15 +16,18 @@ export const INBOX_COPY = {
     figuresLabel: 'Inbox figures',
     figures: {
       open: { label: 'Open conversations', hint: 'Either side may write.' },
-      unread: { label: 'Unread by the office', hint: 'Conversations with a message nobody here has read.' },
+      unread: {
+        label: 'Unread by the office',
+        hint: 'Conversations with a message nobody here has read.',
+      },
       closed: { label: 'Closed', hint: 'Nobody can write in these again.' },
     },
     tabsLabel: 'Status',
     tabAll: 'All',
     tabs: { open: 'Open', closed: 'Closed' },
-    order: 'Newest activity first, as the server sends them.',
+    order: 'Newest activity first, as the system sends them.',
     noName:
-      'The server names each resident only by an account number, so a conversation shows what ' +
+      'The system names each resident only by an account number, so a conversation shows what ' +
       'was written, not who wrote it. What residents wrote is read by opening a conversation; it ' +
       'is not shown in this list.',
     columnSubject: 'Subject',
@@ -51,7 +54,7 @@ export const INBOX_COPY = {
     heading: 'Your account is not assigned to an office',
     body: [
       'The office inbox shows the conversations of the office your account belongs to, and the ' +
-        'server has no office linked to this account — so there is nothing it will show you, and ' +
+        'system has no office linked to this account — so there is nothing it will show you, and ' +
         'this is not an empty inbox.',
       'An administrator assigns staff accounts to offices, under Users and roles. Once you are ' +
         'assigned, sign in again to see your office’s conversations.',
@@ -67,7 +70,7 @@ export const INBOX_COPY = {
     started: 'Started',
     unread: 'Unread by the office',
     resident:
-      'Started by a resident in the residents’ app. The server does not name them to this console.',
+      'Started by a resident in the residents’ app. The system does not name them to this console.',
 
     markRead: 'Mark as read for the office',
     markingRead: 'Marking…',
@@ -125,18 +128,18 @@ export const INBOX_COPY = {
     replyHint:
       'The resident reads this in the app as a message from the office. Up to 4,000 characters.',
     replyNoImages:
-      'Replies from this console are words only. The server accepts an image with a reply, but ' +
+      'Replies from this console are words only. The system accepts an image with a reply, but ' +
       'this console does not send one yet.',
     replyCount: (used: number, limit: number): string => `${used} of ${limit} characters`,
     send: 'Send the reply',
     sending: 'Sending…',
     replyEmpty: 'Write something before sending.',
-    replyTooLong: 'That is longer than the server accepts. Shorten it to 4,000 characters.',
+    replyTooLong: 'That is longer than the system accepts. Shorten it to 4,000 characters.',
 
     sent: 'Sent. The resident can read it in the app.',
     markedRead: 'Marked as read for the office.',
     closed: 'Closed. Nobody can write in this conversation again.',
     notDone: (why: string): string => `That was not done. ${why}`,
-    failed: 'The server refused it or could not be reached.',
+    failed: 'The system refused it or could not be reached.',
   },
 } as const;

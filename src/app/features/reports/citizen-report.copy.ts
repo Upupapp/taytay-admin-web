@@ -17,7 +17,7 @@ export const CITIZEN_REPORT_COPY = {
   hubHeading: 'Citizen registry report',
   hubLead:
     'The Citizen overview in the same template: letterhead, executive summary, seven sections with ' +
-    'charts, and lines for signatures. Download it as a PDF, or as a CSV with the export key.',
+    'charts, and lines for signatures. Download it as a PDF, or as a CSV with permission to export.',
   hubOpen: 'Open the citizen registry report',
 
   filtersHeading: 'Narrow the report',

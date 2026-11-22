@@ -186,13 +186,13 @@ describe('nothing an administrator does here deletes a record (DL-225)', () => {
   it('never says a record is deleted, or that nothing brings it back', () => {
     expect(said).not.toMatch(/\bis deleted\b|\bdeletes the\b|deleted it/i);
     expect(said).not.toContain('Nothing brings it back');
-    expect(said).not.toContain('The server deletes');
+    expect(said).not.toContain('The system deletes');
   });
 
   it('offers an archive and a restore for every record the directory keeps', () => {
     for (const effects of [OFFICE_EFFECTS, SERVICE_EFFECTS, HOTLINE_EFFECTS]) {
-      expect(effects.archive.join(' ')).toContain('The server records that you archived it');
-      expect(effects.restore.join(' ')).toContain('The server records that you restored it');
+      expect(effects.archive.join(' ')).toContain('The system records that you archived it');
+      expect(effects.restore.join(' ')).toContain('The system records that you restored it');
     }
   });
 });

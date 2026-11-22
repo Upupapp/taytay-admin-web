@@ -405,9 +405,10 @@ describe('DirectoryPage (DL-170)', () => {
     fixture.componentRef.setInput('section', 'hotlines');
     const element = await settle(fixture);
 
-    expect(
-      [...element.querySelectorAll('.directory-tabs__link')].map(tabLabel),
-    ).toEqual(['Tulong pages', 'Hotlines']);
+    expect([...element.querySelectorAll('.directory-tabs__link')].map(tabLabel)).toEqual([
+      'Tulong pages',
+      'Hotlines',
+    ]);
     const current = element.querySelector('[aria-current="page"]');
     expect(current === null ? undefined : tabLabel(current)).toBe('Hotlines');
     expect(element.querySelector('app-hotlines-section')).not.toBeNull();
@@ -1003,7 +1004,7 @@ describe('HotlinesSection (DL-170)', () => {
     expect(element.textContent).toContain('Shown in the app');
     expect(element.textContent).toContain('Hidden from the app');
     expect(element.textContent).toContain('2 lines in use, shown and hidden.');
-    expect(element.textContent).not.toContain('the most the API sends');
+    expect(element.textContent).not.toContain('the most the system sends');
   });
 
   it('shows a list too long to send as an error, in the server’s words, with Try again (DL-225)', async () => {
@@ -1216,7 +1217,7 @@ describe('HotlinesSection — a line’s kind and the command center (DL-217)', 
     const rows = [...element.querySelectorAll('tbody tr')].map((row) => row.textContent ?? '');
     expect(rows[0]).toContain('Type not set');
     expect(rows[0]).not.toContain('Other');
-    expect(element.textContent).toContain('1 line has no type set: the server did not say');
+    expect(element.textContent).toContain('1 line has no type set: the system did not say');
   });
 
   it('edits a line whose kind is not set, and sends no kind until one is chosen', async () => {

@@ -147,7 +147,7 @@ export const QR_PAYLOAD_MAX_LENGTH = 4000;
 export const DIGITAL_ID_EFFECTS: Readonly<Record<DigitalIdAct, readonly string[]>> = {
   issue: [
     `Issues a card valid for ${CARD_VALIDITY_DAYS} days, with a new card number.`,
-    'The photo on the card is the one chosen: a card photo taken at the counter, or, by the API’s choice, the resident’s latest reviewed ID selfie, failing which the newest card photo (`DL-221`).',
+    'The photo on the card is the one chosen: a card photo taken at the counter, or, by the system’s choice, the resident’s latest reviewed ID selfie, failing which the newest card photo (`DL-221`).',
     'Refused if the account is not a verified resident, is closed, or already holds a current card.',
     'The resident sees the card in the app, with a QR code, straight away.',
   ],
@@ -170,7 +170,7 @@ export const DIGITAL_ID_EFFECTS: Readonly<Record<DigitalIdAct, readonly string[]
 
 /** True of every act, said once beneath the act's own effects. */
 export const DIGITAL_ID_ALWAYS: readonly string[] = [
-  'The API records the act in its audit trail under your account. It keeps no reason: none is asked for.',
+  'The system records the act in its audit trail under your account. It keeps no reason: none is asked for.',
   'Nothing is sent to the resident by this console; they see the change the next time the app reads the card.',
 ];
 
@@ -180,6 +180,6 @@ export const DIGITAL_ID_ALWAYS: readonly string[] = [
  */
 export const DIGITAL_ID_CHECK_EFFECTS: readonly string[] = [
   `A code is accepted for ${QR_LIFETIME_MINUTES} minutes after the app shows it; an older one is refused as not valid.`,
-  'The API records that you checked this card, under your account. This console keeps nothing: the answer is gone when you check another code or leave the page.',
-  'The answer is the holder’s name, the card’s status, whether it has expired and the barangay — what the API returns, and nothing looked up beside it.',
+  'The system records that you checked this card, under your account. This console keeps nothing: the answer is gone when you check another code or leave the page.',
+  'The answer is the holder’s name, the card’s status, whether it has expired and the barangay — what the system returns, and nothing looked up beside it.',
 ];

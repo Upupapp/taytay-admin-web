@@ -549,7 +549,7 @@ describe('a resident can be traced without searching four more lists', () => {
     const unsaid = html(
       await openDetail('res-0001', 'intake-officer', null, [], ProvenanceUnsaidRepository),
     );
-    expect(unsaid.textContent).toContain('Not said by the server for this record.');
+    expect(unsaid.textContent).toContain('Not said by the system for this record.');
     expect(unsaid.textContent).not.toContain('cannot apply for Tulong from the app');
   });
 

@@ -33,7 +33,7 @@ export type AuditSource = 'web' | 'api' | 'system';
 
 export const AUDIT_SOURCE_LABELS: Readonly<Record<AuditSource, string>> = {
   web: 'Staff console',
-  api: 'API',
+  api: 'Console or app',
   system: 'Automatic',
 };
 
@@ -149,7 +149,7 @@ export const AUDIT_FIELDS_NOT_RECORDED =
  */
 export const AUDIT_SENSITIVE_FILTER_UNAVAILABLE =
   'This audit trail does not record which fields an action changed, so it cannot be narrowed to ' +
-  'changes that touched sensitive information. Nothing was asked of the server; clear that filter ' +
+  'changes that touched sensitive information. Nothing was asked of the system; clear that filter ' +
   'to read the trail.';
 
 /* ── Filtering ────────────────────────────────────────────────────────────── */

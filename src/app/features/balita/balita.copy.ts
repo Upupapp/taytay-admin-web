@@ -10,7 +10,7 @@ export const BALITA_COPY = {
 
   list: {
     heading: 'Published articles',
-    lead: 'Every published article, pinned ones first and then newest, as residents see them. The API lists no drafts.',
+    lead: 'Every published article, pinned ones first and then newest, as residents see them. The system lists no drafts.',
     caption: 'Published Balita articles',
     columnTitle: 'Title',
     columnCategory: 'Category',
@@ -33,7 +33,7 @@ export const BALITA_COPY = {
 
   drafts: {
     heading: 'Drafts opened on this page',
-    lead: 'The API keeps no list of drafts. These stay here until you leave the page; afterwards a draft can be opened only by its ID.',
+    lead: 'The system keeps no list of drafts. These stay here until you leave the page; afterwards a draft can be opened only by its ID.',
     id: (id: string) => `ID ${id}`,
   },
 
@@ -44,7 +44,8 @@ export const BALITA_COPY = {
     submit: 'Open',
     opening: 'Opening…',
     empty: 'Type the article’s ID first.',
-    notFound: 'No article with that ID that you can open: it does not exist, or it is another office’s draft.',
+    notFound:
+      'No article with that ID that you can open: it does not exist, or it is another office’s draft.',
     failed: 'The article could not be read.',
   },
 
@@ -57,7 +58,8 @@ export const BALITA_COPY = {
     bodyHint: 'What residents read. Up to 20,000 characters.',
     category: 'Category',
     noCategory: 'No category',
-    categoryKept: 'A category, once chosen, can be changed but not removed: the API’s change cannot clear it.',
+    categoryKept:
+      'A category, once chosen, can be changed but not removed: the system cannot clear it.',
     categoriesFailed: 'The categories could not be read, so none can be chosen now.',
     office: 'Office',
     ownOffice: 'My own office (staff)',
@@ -69,7 +71,7 @@ export const BALITA_COPY = {
     coverHide: 'Hide the cover',
     coverLoading: 'Opening the cover…',
     coverFailed: 'The cover could not be opened.',
-    coverAlt: 'The current cover. The API keeps no description of it.',
+    coverAlt: 'The current cover. The system keeps no description of it.',
     noCover: 'No cover.',
     status: 'Status',
     published: 'First published',
@@ -92,6 +94,6 @@ export const BALITA_COPY = {
       unpinned: 'Unpinned.',
     },
     notDone: (reason: string) => `Nothing changed: ${reason}`,
-    noAnswer: 'the API did not answer.',
+    noAnswer: 'the system did not answer.',
   },
 } as const;

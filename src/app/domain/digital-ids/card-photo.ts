@@ -30,7 +30,7 @@ export const CARD_PHOTO_CONSENT_STATEMENT =
 
 /** What taking the photo does, read from the backend at `98a4f19` and said before its button. */
 export const CARD_PHOTO_EFFECTS: readonly string[] = [
-  'The photo is kept for this resident’s card only: the API never compares it with anything, never shows it to the ID review, and does not erase it if the resident withdraws the selfie consent.',
-  'The API records that you took it, under your account. No image is logged.',
+  'The photo is kept for this resident’s card only: the system never compares it with anything, never shows it to the ID review, and does not erase it if the resident withdraws the selfie consent.',
+  'The system records that you took it, under your account. No image is logged.',
   'Nothing is issued yet. Issue the card next, with this photo chosen for it.',
 ];

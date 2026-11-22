@@ -109,15 +109,15 @@ export const BALITA_EFFECTS: Readonly<Record<BalitaAct, readonly string[]>> = {
   publish: [
     'Every resident can read it in the app’s Balita at once, and anyone with its link can open it.',
     'It cannot be recalled from anybody who has read it. Taking it off the app later removes it only from then on.',
-    'The API sends no notification: residents find it when they open Balita.',
+    'The system sends no notification: residents find it when they open Balita.',
   ],
   'save-draft': [
     'Residents cannot see it.',
-    'The API keeps no list of drafts. It can be opened from this page until you leave, and afterwards only by its ID, which this page shows.',
+    'The system keeps no list of drafts. It can be opened from this page until you leave, and afterwards only by its ID, which this page shows.',
   ],
   unpublish: [
     'It leaves the app’s Balita from now on. Anybody who has already read it, or copied its link or words, keeps them.',
-    'The API keeps no list of drafts. It can be opened from this page until you leave, and afterwards only by its ID.',
+    'The system keeps no list of drafts. It can be opened from this page until you leave, and afterwards only by its ID.',
     'Published again later, it keeps its first publication date, so it does not return to the top of the list.',
   ],
   'edit-published': [
@@ -132,12 +132,12 @@ export const BALITA_EFFECTS: Readonly<Record<BalitaAct, readonly string[]>> = {
 /** Said beside the cover, because the API keeps no description of it (`DL-125`, `DL-171`). */
 export const BALITA_COVER_EFFECTS: readonly string[] = [
   'The API keeps no description of the cover, so the app has none to give a resident who cannot see it. Say what matters in the words.',
-  'Choosing a new cover replaces it in the app. The old image stays stored on the server; nothing deletes it. A cover cannot be removed, only replaced.',
+  'Choosing a new cover replaces it in the app. The old image stays stored in the system; nothing deletes it. A cover cannot be removed, only replaced.',
 ];
 
 /** Who may write, as the API decides it (`officeForWrite`, `canEdit`). */
 export const BALITA_OFFICE_RULES: readonly string[] = [
-  'Staff write for their own office only; the API uses it when no office is chosen and refuses another.',
+  'Staff write for their own office only; the system uses it when no office is chosen and refuses another.',
   'An administrator must choose the office.',
   'Staff can change only their own office’s articles. Every published article is listed, whichever office wrote it.',
 ];

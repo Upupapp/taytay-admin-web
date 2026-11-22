@@ -22,13 +22,13 @@ describe('the home screen (DL-170)', () => {
   });
 
   it('says the API keeps no description of a banner’s image, rather than collecting one', () => {
-    expect(BANNER_NO_DESCRIPTION).toContain('the API keeps none');
+    expect(BANNER_NO_DESCRIPTION).toContain('the system keeps none');
   });
 
   it('says an image outlives what replaces or archives its banner', () => {
-    expect(HOME_EFFECTS.imageReplaced.join(' ')).toContain('stays stored on the server');
+    expect(HOME_EFFECTS.imageReplaced.join(' ')).toContain('stays stored in the system');
     expect(HOME_EFFECTS.imageUpload.join(' ')).toContain('If the banner is then refused');
-    expect(HOME_EFFECTS.bannerArchive.join(' ')).toContain('Its image stays stored on the server');
+    expect(HOME_EFFECTS.bannerArchive.join(' ')).toContain('Its image stays stored in the system');
     expect(HOME_EFFECTS.linkCreate.join(' ')).toContain('there is no hidden link');
   });
 
@@ -45,7 +45,7 @@ describe('the home screen (DL-170)', () => {
       HOME_EFFECTS.linkRestore,
     ]) {
       expect(effects.join(' ')).toMatch(
-        /The server records that you (archived|restored) it, when, and why/,
+        /The system records that you (archived|restored) it, when, and why/,
       );
     }
   });

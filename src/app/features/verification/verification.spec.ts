@@ -85,10 +85,7 @@ class RecordingVerifications implements VerificationRepository {
   /** The first page's rows, when a test needs others than the default two. */
   page: readonly VerificationRequest[] | null = null;
 
-  list(
-    filter: VerificationFilter,
-    page: CursorRequest,
-  ): Observable<VerificationListPage> {
+  list(filter: VerificationFilter, page: CursorRequest): Observable<VerificationListPage> {
     this.listed.push({ filter, page });
     if (this.page !== null && !page.cursor) {
       return of({ items: this.page, hasMore: false, nextCursor: null, stats: STATS });
@@ -287,7 +284,9 @@ describe('VerificationQueuePage', () => {
     expect(options.map((option) => option.textContent?.trim())).toContain(
       'Replaced by an in-person check',
     );
-    const rows = [...element.querySelectorAll('.queue tbody tr')].map((row) => row.textContent ?? '');
+    const rows = [...element.querySelectorAll('.queue tbody tr')].map(
+      (row) => row.textContent ?? '',
+    );
     expect(rows[0]).not.toContain(VERIFICATION_COPY.queue.selfieErased);
     expect(rows[1]).toContain(VERIFICATION_COPY.queue.selfieErased);
     expect(rows[2]).toContain('Replaced by an in-person check');
@@ -591,7 +590,7 @@ describe('VerificationReview', () => {
         ...element.querySelectorAll<HTMLOptionElement>('.transition__select option'),
       ].map((option) => option.value);
       expect(options).toEqual(['', 'rejected']);
-      expect(element.textContent).toContain('the server refuses to approve this request');
+      expect(element.textContent).toContain('the system refuses to approve this request');
       expect(element.textContent).toContain('withdrew their consent');
     });
 

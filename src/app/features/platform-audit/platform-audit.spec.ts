@@ -36,10 +36,7 @@ class RecordingTrail implements PlatformAuditRepository {
     return of(
       page.cursor === null
         ? {
-            items: [
-              entry('a', 'user.role_changed', 'actor-1'),
-              entry('b', 'something.new', null),
-            ],
+            items: [entry('a', 'user.role_changed', 'actor-1'), entry('b', 'something.new', null)],
             hasMore: true,
             nextCursor: 'next',
           }
@@ -146,16 +143,18 @@ describe('the words for reading and exporting reports (DL-190)', () => {
     // taytay-backend src/modules/office-reports/routes.ts: the audit.record calls.
     expect(PLATFORM_AUDIT_ACTIONS['office_report.exported']).toContain('file');
     expect(PLATFORM_AUDIT_ACTIONS['office_report.person_level_read']).toContain('names residents');
-    expect(PLATFORM_AUDIT_ACTIONS['office_report.person_level_exported']).toContain('names residents');
+    expect(PLATFORM_AUDIT_ACTIONS['office_report.person_level_exported']).toContain(
+      'names residents',
+    );
   });
 });
 
 describe('the words for the first-administrator command (DL-188)', () => {
-  it('says the server’s bootstrap command did it, since the row names no account', () => {
+  it('says a setup command on the office system did it, since the row names no account', () => {
     // taytay-backend src/ops/grant-administrator.ts BOOTSTRAP_GRANT_ACTION.
     const words = PLATFORM_AUDIT_ACTIONS['user.role_granted_by_bootstrap_command'];
     expect(words).toContain('administrator');
-    expect(words).toContain('bootstrap command');
+    expect(words).toContain('setup command');
   });
 });
 
@@ -171,7 +170,9 @@ describe('the words for switching accounts and opening an entry (DL-191)', () =>
 describe('the words for a self-approval and an app account following the record kept (DL-226)', () => {
   it('says a self-approval was recorded and not refused', () => {
     // taytay-backend f7192d7: approving writes office_request.self_approved beside the move.
-    expect(PLATFORM_AUDIT_ACTIONS['office_request.self_approved']).toContain('same person endorsed');
+    expect(PLATFORM_AUDIT_ACTIONS['office_request.self_approved']).toContain(
+      'same person endorsed',
+    );
     expect(PLATFORM_AUDIT_ACTIONS['office_request.self_approved']).toContain('not refused');
   });
 
@@ -209,7 +210,9 @@ describe('the words for the card photo, the import and the sector application ac
     expect(PLATFORM_AUDIT_ACTIONS['digital_id.card_photo_taken']).toContain(
       'for their digital ID only',
     );
-    expect(PLATFORM_AUDIT_ACTIONS['resident_import.uploaded']).toContain('the registry did not change');
+    expect(PLATFORM_AUDIT_ACTIONS['resident_import.uploaded']).toContain(
+      'the registry did not change',
+    );
     expect(PLATFORM_AUDIT_ACTIONS['sector_application.submitted']).toContain('A resident applied');
     expect(PLATFORM_AUDIT_ACTIONS['sector_application.proof_viewed']).toContain('Opened the proof');
     expect(PLATFORM_AUDIT_ACTIONS['sector_application.returned']).toContain('reads in the app');

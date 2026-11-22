@@ -21,14 +21,14 @@ export const HOME_SCREEN_COPY = {
       'Archived here means taken off the home screen and kept: nothing here is deleted. Each ' +
       'archived entry says who archived it, when and why, and can be restored.',
     notDone: (reason: string) => `Not done. ${reason}`,
-    failed: 'The server did not answer.',
+    failed: 'The system did not answer.',
     problemsLead: 'Not sent — the app would refuse it:',
     saving: 'Saving…',
     unchanged: 'Nothing has changed yet.',
     order: 'Order',
     orderHint: 'A whole number from 0 to 1000; lower comes first in the app.',
     hrefHint:
-      'What the app opens when this is tapped, as the app expects it. The API checks only its length.',
+      'What the app opens when this is tapped, as the app expects it. The system checks only its length.',
   },
 
   banners: {

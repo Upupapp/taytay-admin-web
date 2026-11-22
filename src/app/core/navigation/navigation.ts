@@ -376,7 +376,7 @@ export const NAVIGATION: readonly NavSection[] = [
         reads: ['platform-audit'],
         glyph: 'AT',
         permissions: ['audit.view'],
-        description: 'Who did what through the Taytay app’s API, and when. Read-only.',
+        description: 'Who did what in the Taytay app and this console, and when. Read-only.',
       },
     ],
   },

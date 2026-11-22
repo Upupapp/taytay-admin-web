@@ -143,7 +143,7 @@ export function takesAnOffice(account: AppAccount): boolean {
  */
 export const ROLE_CHANGE_EFFECTS: Readonly<Record<AccountRole, readonly string[]>> = {
   registered: [
-    'The account becomes an unverified resident account. The server marks it unverified, so the ' +
+    'The account becomes an unverified resident account. The system marks it unverified, so the ' +
       'person must be verified again before anything that needs a verified identity.',
     'Any digital ID the account holds is revoked.',
     'It can no longer use this console, if it could.',
@@ -172,14 +172,14 @@ export const ROLE_CHANGE_EFFECTS: Readonly<Record<AccountRole, readonly string[]
 
 /** Said with every role change, whichever role it is to. */
 export const ROLE_CHANGE_ALWAYS: readonly string[] = [
-  'The server applies it at that person’s next request. A console or app they already have open ' +
-    'keeps showing what it showed until it is reloaded, but the server refuses whatever the new ' +
+  'The system applies it at that person’s next request. A console or app they already have open ' +
+    'keeps showing what it showed until it is reloaded, but the system refuses whatever the new ' +
     'role does not allow.',
   'An office link is kept, unused, when an account stops being staff, and applies again if it ' +
     'becomes staff again.',
-  'An office role is not kept: the server clears it when the account stops being staff, records ' +
+  'An office role is not kept: the system clears it when the account stops being staff, records ' +
     'that it did, and does not bring it back if the account becomes staff again.',
-  'The server records that you made the change, and when. It keeps no reason, so none is asked for.',
+  'The system records that you made the change, and when. It keeps no reason, so none is asked for.',
 ];
 
 /**
@@ -193,7 +193,7 @@ export const OFFICE_ASSIGNMENT_EFFECTS: Readonly<Record<'assign' | 'clear', read
       'from its next request. A console it already has open shows the inbox once reloaded.',
     'It sees only this office’s conversations. Moving it from another office takes that office’s ' +
       'conversations away from it.',
-    'The server records that you made the change, and when. It keeps no reason, so none is asked ' +
+    'The system records that you made the change, and when. It keeps no reason, so none is asked ' +
       'for.',
   ],
   clear: [
@@ -201,7 +201,7 @@ export const OFFICE_ASSIGNMENT_EFFECTS: Readonly<Record<'assign' | 'clear', read
       'from its next request.',
     'When that person next signs in, the console tells them they are not assigned to an office, ' +
       'and that an administrator assigns one.',
-    'The server records that you made the change, and when. It keeps no reason, so none is asked ' +
+    'The system records that you made the change, and when. It keeps no reason, so none is asked ' +
       'for.',
   ],
 };
@@ -258,12 +258,14 @@ export function officeRoleChangeProblems(change: OfficeRoleChange): readonly str
   const problems: string[] = [];
   const reason = change.reason.trim();
   if (reason === '') {
-    problems.push('Say why. The server keeps the reason with the change.');
+    problems.push('Say why. The system keeps the reason with the change.');
   } else if (reason.length > OFFICE_ROLE_REASON_MAX) {
     problems.push(`Keep the reason to ${OFFICE_ROLE_REASON_MAX} characters.`);
   }
   if (change.role !== null && !ASSIGNABLE_OFFICE_ROLES.includes(change.role)) {
-    problems.push('The system administrator is the administrator account role, not an office role.');
+    problems.push(
+      'The system administrator is the administrator account role, not an office role.',
+    );
   }
   if (change.role === BARANGAY_SCOPED_ROLE && change.barangayId === null) {
     problems.push('Choose the barangay a barangay link works in.');
@@ -282,7 +284,7 @@ export function officeRoleChangeProblems(change: OfficeRoleChange): readonly str
  */
 export const OFFICE_ROLE_EFFECTS: Readonly<Record<'assign' | 'clear', readonly string[]>> = {
   assign: [
-    'From the account’s next request the server grants it this role’s casework permissions, as ' +
+    'From the account’s next request the system grants it this role’s casework permissions, as ' +
       'listed for the role under Roles and permissions, and confines what it may see to the role’s ' +
       'scope. A console it already has open shows the change once reloaded.',
     'It replaces any office role the account had. Nobody holds two.',
@@ -290,7 +292,7 @@ export const OFFICE_ROLE_EFFECTS: Readonly<Record<'assign' | 'clear', readonly s
       'follow the account role and its office, not the office role.',
   ],
   clear: [
-    'From the account’s next request the server withdraws every casework permission it held. It ' +
+    'From the account’s next request the system withdraws every casework permission it held. It ' +
       'stays staff, with the platform permissions of a staff account.',
     'Its data scope becomes the narrowest, its assigned cases only.',
   ],
@@ -298,9 +300,9 @@ export const OFFICE_ROLE_EFFECTS: Readonly<Record<'assign' | 'clear', readonly s
 
 /** Said with every office role change. */
 export const OFFICE_ROLE_ALWAYS: readonly string[] = [
-  'The server keeps your reason with the change, together with who made it and when, in a ' +
+  'The system keeps your reason with the change, together with who made it and when, in a ' +
     'history that is never edited or deleted. It is not shown to the account holder.',
-  'The server refuses a role that would let one person both approve a request and release its ' +
+  'The system refuses a role that would let one person both approve a request and release its ' +
     'money.',
 ];
 
@@ -351,6 +353,6 @@ export const NAME_CORRECTION_EFFECTS: readonly string[] = [
     'office’s event lists.',
   'The earlier name is kept in the account’s name history, with who corrected it and when.',
   'The ID is not reviewed again: the account stays verified and keeps its digital ID.',
-  'The audit trail records that the name was corrected, not the names. The server keeps no reason.',
+  'The audit trail records that the name was corrected, not the names. The system keeps no reason.',
   'The resident is not told in the app. Tell them at the counter.',
 ];

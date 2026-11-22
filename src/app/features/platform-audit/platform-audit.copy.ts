@@ -2,9 +2,9 @@
 export const PLATFORM_AUDIT_COPY = {
   title: 'App audit trail',
   subtitle:
-    'What staff, administrators and residents did through the Taytay app’s API, newest first. Read-only.',
+    'What staff, administrators and residents did in the Taytay app and this console, newest first. Read-only.',
   newest: 'Read from the newest',
-  caption: 'Audit trail of the app’s API',
+  caption: 'Audit trail of the Taytay app',
   columnWhen: 'When',
   columnAction: 'What was done',
   columnActor: 'By account',
@@ -19,5 +19,5 @@ export const PLATFORM_AUDIT_COPY = {
   loadingMore: 'Loading older entries…',
   moreFailed: 'Older entries could not be read. Try again.',
   emptyHeading: 'Nothing recorded yet',
-  emptyMessage: 'The API has recorded no act.',
+  emptyMessage: 'The system has recorded no act.',
 } as const;

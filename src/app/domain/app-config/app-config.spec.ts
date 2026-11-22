@@ -190,7 +190,7 @@ describe('the app’s settings (DL-170)', () => {
     const effects = appConfigEffects(CONFIG, { privacyVersion: '2026-11' });
 
     expect(effects.join(' ')).toContain(
-      'The API serves privacy notice version 2026-01, not 2026-11',
+      'The app is given privacy notice version 2026-01, not 2026-11',
     );
     expect(effects.join(' ')).toContain('text does not change here');
   });

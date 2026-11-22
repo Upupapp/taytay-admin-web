@@ -31,7 +31,7 @@ export const ISSUANCE_COPY = {
     orderOpen:
       'Oldest waiting first: the request that has been in its status longest leads, whatever its ' +
       'status.',
-    orderEnded: 'Newest filed first, as the server sends them.',
+    orderEnded: 'Newest filed first, as the system sends them.',
     standardNote:
       'The office standard is the catalogue’s figure today, in working days from your Citizen’s ' +
       'Charter. A request keeps the one it was filed with, shown on the request. This console does ' +
@@ -127,7 +127,7 @@ export const ISSUANCE_COPY = {
         : `${(bytes / (1024 * 1024)).toFixed(1)} MB`,
     show: 'Show',
     showLabel: (label: string, version: number): string => `Show ${label}, version ${version}`,
-    asking: 'Asking the server for permission…',
+    asking: 'Asking the system for permission…',
     otherFiles: 'Files for requirements no longer on the document',
 
     historyHeading: 'History',
@@ -159,14 +159,14 @@ export const ISSUANCE_COPY = {
     ended: 'This request has ended. Nothing moves it on.',
     moved: (label: string): string => `Recorded: the request is now ${label.toLowerCase()}.`,
     notMoved: (why: string): string => `Not recorded. ${why}`,
-    failed: 'The server did not record the move.',
+    failed: 'The system did not record the move.',
 
     warningHeading: 'Open a file a resident sent',
-    warningLead: 'The server’s warning for this file:',
+    warningLead: 'The system’s warning for this file:',
     warningCancel: 'Do not open it',
     warningProceed: 'Open it',
     fetching: 'Opening…',
-    grantFailed: 'The server did not give permission to open that file. Nothing was opened.',
+    grantFailed: 'The system did not give permission to open that file. Nothing was opened.',
     fileFailed: 'The file could not be opened. Nothing was kept.',
     fileKept:
       'Shown in this tab only while this window is open. It is discarded when you close it or ' +
@@ -270,7 +270,7 @@ export const ISSUANCE_COPY = {
     unchanged: 'Nothing has changed, so there is nothing to save.',
     saved: 'Saved.',
     notSaved: (why: string): string => `Not saved. ${why}`,
-    failed: 'The server did not save it.',
+    failed: 'The system did not save it.',
     cancel: 'Cancel',
 
     retireHeading: (name: string): string => `Retire ${name}`,

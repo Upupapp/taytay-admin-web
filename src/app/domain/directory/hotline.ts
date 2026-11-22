@@ -128,15 +128,15 @@ export function hotlineProblems(
 export const HOTLINE_EFFECTS = {
   createShown: [
     'The number appears in the app’s hotline list and on its home screen, for any resident to call.',
-    'The server records that you added it, and when.',
+    'The system records that you added it, and when.',
   ],
   createHidden: [
     'The number is kept here and shown nowhere in the app until it is made active.',
-    'The server records that you added it, and when.',
+    'The system records that you added it, and when.',
   ],
   update: [
     'Residents see the change the next time the app loads its hotlines.',
-    'The server records that you changed it, and when. It keeps no reason, so none is asked for.',
+    'The system records that you changed it, and when. It keeps no reason, so none is asked for.',
   ],
   number: ['A resident who taps this line in the app calls the new number from then on.'],
   hide: [
@@ -147,14 +147,14 @@ export const HOTLINE_EFFECTS = {
   archive: [
     'The number leaves the app’s hotline list and home screen, whether it is active or not.',
     'It stays here under Archived, with your name, the date and your reason, and can be restored.',
-    'The server records that you archived it, when, and why.',
+    'The system records that you archived it, when, and why.',
   ],
   restore: [
     'The line returns as it was: in the app’s hotline list and on its home screen if it is active, ' +
       'and kept here only if it is not.',
-    'If it is an active command center and another active line holds that role now, the server ' +
+    'If it is an active command center and another active line holds that role now, the system ' +
       'refuses: change that line first.',
-    'The server records that you restored it, when, and why.',
+    'The system records that you restored it, when, and why.',
   ],
 } as const;
 

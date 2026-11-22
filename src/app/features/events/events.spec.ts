@@ -205,7 +205,7 @@ describe('what the office is told about capacity', () => {
     expect(page.overCapacity()).toBe(true);
     // Warned, never blocked (`DL-129`).
     expect(page.canPromote(waitlisted as { status: string })).toBe(true);
-    expect(text(fixture)).toContain('The backend decides');
+    expect(text(fixture)).toContain('The system decides');
   });
 });
 

@@ -293,7 +293,7 @@ export const ISSUANCE_MOVE_EFFECTS: Readonly<Partial<Record<IssuanceStatus, read
   ],
   rejected: [
     'The resident reads your words in the app as the reason the office could not issue it.',
-    'The request ends. Nothing in this console or the API reopens it; the resident may file a new one.',
+    'The request ends. Nothing in this console or the office system reopens it; the resident may file a new one.',
     'The resident is told in the app; the notice names the reference number only.',
   ],
   'ready-for-pickup': [

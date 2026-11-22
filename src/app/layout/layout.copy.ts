@@ -15,8 +15,8 @@ export const LAYOUT_COPY = {
   navEmpty: 'No sections are available for this role.',
   // `DL-167`: a module the API cannot serve is withheld, and this link says which and why.
   navUnserved: 'Not connected yet',
-  navUnservedDescription: 'Parts of the console the API it is connected to does not serve.',
-  navEmptyUnserved: 'Nothing this account may open is served by the API yet.',
+  navUnservedDescription: 'Parts of the console not connected to the office system yet.',
+  navEmptyUnserved: 'Nothing this account may open is connected to the office system yet.',
   // `DL-168`: the same link, for an account no office is linked to, when nothing is withheld.
   navAwaitingOfficeDescription: 'Why this account cannot open the office inbox yet.',
 

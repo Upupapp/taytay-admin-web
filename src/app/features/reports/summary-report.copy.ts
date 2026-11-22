@@ -18,7 +18,7 @@ export const SUMMARY_REPORT_COPY = {
   hubHeading: 'Summary report',
   hubLead:
     'The office’s standard template: letterhead, executive summary, nine sections with charts, ' +
-    'and lines for signatures. Download it as a PDF, or as a CSV with the export key.',
+    'and lines for signatures. Download it as a PDF, or as a CSV with permission to export.',
   hubOpen: 'Open the summary report',
 
   filtersHeading: 'Narrow the report',
@@ -89,7 +89,8 @@ export const SUMMARY_REPORT_COPY = {
   withheldReasons: {
     // Printed after "Withheld", so neither repeats it (C6, the demo rehearsal).
     'small-cell': 'too few people to show without identifying someone; not a zero',
-    'protected-sector': 'a sector protected by law (RA 9262, RA 9344); your account does not count it',
+    'protected-sector':
+      'a sector protected by law (RA 9262, RA 9344); your account does not count it',
   } satisfies Record<SummaryWithheldReason, string>,
   chartWithheld: 'withheld',
   waitingOn: { office: 'The office', resident: 'The resident' } as Readonly<Record<string, string>>,

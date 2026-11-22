@@ -11390,3 +11390,34 @@ question, one of them wrong for the period printed at the top.
    the PDF is the browser's print of the sheet. The mock adapter composes the same table and note.
 
 **Easiest to reverse:** `periodMonths(f.from, f.to)` back to twelve months to `f.to`.
+
+## DL-241 — office-facing text says "the system", not "the API" or "the server"
+
+**Status:** Settled (22 November 2026), from the demo recording. Wording only: no behaviour, no
+aria role or live region changed.
+
+Office staff read this console, and it spoke to them in its builders' words — "the API refuses",
+"stored on the server", "with the export key", "the office's API does not serve". About 190 lines of
+on-screen text in 40 files now say it plainly:
+
+| Was | Now |
+| --- | --- |
+| the API, the server, the backend | the system (the office system where "system" alone is unclear) |
+| on the server, stored on the server | in the system |
+| the API does not serve X; "What the API does not serve" | this console isn't connected to X; "What this console is not connected to yet" |
+| with the export key | with permission to export |
+| the bootstrap command run on the server | a setup command run directly on the office system |
+| audit source "API" | "Console or app" |
+
+Meaning is kept sentence by sentence: what the system refuses, keeps or does not keep is still said
+before the button, as `DL-124`, `DL-167` and `DL-168` require. Comments, identifiers, wire code and
+developer-only log lines keep their technical words.
+
+**Kept, because a repository check asserts the sentence:** "the server refuses every selfie"
+(`app-settings.copy.ts`, `check:app-settings`), "The server erases the resident's selfies"
+(`biometric-consent-requirements.ts`, `check:app-settings`), "The API keeps no description of the
+cover" (`balita-article.ts`, `check:balita`) and "The server will refuse this until" (`hotline.ts`,
+`check:directory`). Changing them means changing those checks together with the words, which this
+entry does not do.
+
+**Easiest to reverse:** wording in `*.copy.ts` and the specs that assert it.

@@ -150,7 +150,7 @@ describe('AppSettingsPage (DL-170)', () => {
     );
     expect(element.textContent).toContain('Nothing has changed yet.');
     expect(element.textContent).toContain('Not secret');
-    expect(element.textContent).toContain('The API serves privacy notice version 2026-01');
+    expect(element.textContent).toContain('The app is given privacy notice version 2026-01');
   });
 
   it('sends nothing until the change is reviewed and confirmed, and then only what changed', async () => {
@@ -213,7 +213,7 @@ describe('AppSettingsPage (DL-170)', () => {
       'can make every resident accept the privacy notice again',
     );
     expect(dialog?.textContent).toContain(
-      'The API serves privacy notice version 2026-01, not 2026-11',
+      'The app is given privacy notice version 2026-01, not 2026-11',
     );
     expect(dialog?.querySelector('input[type="checkbox"]')).not.toBeNull();
   });
@@ -243,7 +243,7 @@ describe('AppSettingsPage (DL-170)', () => {
     );
     expect(dialog?.textContent).toContain(
       'It stays here under Archived flags with its value, your name and the date, and can be ' +
-        'restored. The server keeps no reason for a flag, so none is asked for.',
+        'restored. The system keeps no reason for a flag, so none is asked for.',
     );
     // The new flag is a change of its own, and says so.
     expect(dialog?.textContent).toContain(APP_CONFIG_EFFECTS.flags[0]);
@@ -677,7 +677,7 @@ describe('AppSettingsPage — how long an ID review usually takes (DL-205)', () 
       'At most 30 working days.',
     );
     expect(document.querySelector('.settings__problems')?.textContent).toContain(
-      'Not saved — the server refused it:',
+      'Not saved — the system refused it:',
     );
 
     type('#settings-review-max', '6');
@@ -707,7 +707,9 @@ describe('AppSettingsPage — how long an ID review usually takes (DL-205)', () 
     configure({ ...CONFIG, verificationReviewWorkingDays: undefined });
     const element = await settle(TestBed.createComponent(AppSettingsPage));
 
-    expect(element.textContent).toContain('The API did not say what the app is told about review');
+    expect(element.textContent).toContain(
+      'The system did not say what the app is told about review',
+    );
     expect(element.querySelector('input[name="settings-review-time"]')).toBeNull();
     expect(element.querySelector('#settings-review-min')).toBeNull();
     expect(element.textContent).toContain('Nothing has changed yet.');
@@ -853,7 +855,7 @@ describe('AppSettingsPage — the biometric (selfie) consent (DL-216)', () => {
     const element = await settle(TestBed.createComponent(AppSettingsPage));
     const section = element.querySelector('#settings-biometricConsent-heading')?.closest('section');
 
-    expect(section?.textContent).toContain('The API did not send this text');
+    expect(section?.textContent).toContain('The system did not send this text');
     expect(buttonNamed('Write the biometric consent')).toBeNull();
     // Unknown is not "refused": nothing is claimed about selfies either way.
     expect(element.textContent).not.toContain('The app cannot take selfies.');

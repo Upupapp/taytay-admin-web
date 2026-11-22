@@ -61,7 +61,7 @@ export const EVENTS_COPY = {
 
     imageHeading: 'Cover image',
     imageNote:
-      'Upload the picture here. The residents’ app shows only a cover stored through the Taytay API, ' +
+      'Upload the picture here. The residents’ app shows only a cover stored through the Taytay system, ' +
       'never a link to another site.',
     image: 'Image',
     imageHint: 'Optional. The picture residents see with the event once it is published.',
@@ -126,7 +126,7 @@ export const EVENTS_COPY = {
     // What saving does to a chosen cover, said before the button (`DL-193`, as `DL-170` for a banner).
     coverEffectsLead: 'Saving this draft with a cover image:',
     coverEffects: [
-      'Stores the image on the server first, then saves the event naming it. If the event is then ' +
+      'Stores the image in the system first, then saves the event naming it. If the event is then ' +
         'refused, the image stays stored, unused.',
       'Shows the cover to residents only once the event is published, and after it is completed — ' +
         'never while it is a draft, and not once it is cancelled.',
@@ -298,10 +298,10 @@ export const EVENTS_COPY = {
     markUnmarked: 'Clear',
     promote: 'Move to registered',
     promoteOverCapacity:
-      'Your figures say this event is full. The backend decides — if a place has opened since ' +
+      'Your figures say this event is full. The system decides — if a place has opened since ' +
       'this screen loaded, this will go through.',
     promoteAtSafeLimit:
-      'Your figures say the safe limit is reached. The backend refuses anybody past it; this goes ' +
+      'Your figures say the safe limit is reached. The system refuses anybody past it; this goes ' +
       'through only if a place has opened since this screen loaded.',
 
     // Check-in mode (`DL-195`): one person at a time, never the list.

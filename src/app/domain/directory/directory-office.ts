@@ -216,12 +216,12 @@ export const OFFICE_EFFECTS = {
     'The office appears in the app’s office directory, where any resident can find it and open ' +
       'its page.',
     'Its description, head, hours, phone, email, address and map position can be set only now. ' +
-      'The API’s published contract declares no way to change them afterwards.',
-    'The server records that you created it, and when.',
+      'The system offers no way to change them afterwards.',
+    'The system records that you created it, and when.',
   ],
   update: [
     'Residents see the change in the app’s directory the next time the app loads it.',
-    'The server records that you changed it, and when. It keeps no reason, so none is asked for.',
+    'The system records that you changed it, and when. It keeps no reason, so none is asked for.',
   ],
   slug: [
     'The app opens the office’s page by this address. Anything that kept the old one — a link, a ' +
@@ -229,30 +229,30 @@ export const OFFICE_EFFECTS = {
   ],
   bannerReplaced: [
     'The new image replaces the banner on the office’s page in the app. The old one stays stored ' +
-      'on the server; nothing deletes it.',
+      'in the system; nothing deletes it.',
   ],
   bannerAdded: ['The image becomes the banner on the office’s page in the app.'],
   archive: [
     'The office leaves the app’s directory. Residents can no longer find it, open its page or start ' +
       'a conversation with it, and nothing new is published in its name.',
-    'The server refuses while anything still uses it: a staff account linked to it, or a Tulong page ' +
+    'The system refuses while anything still uses it: a staff account linked to it, or a Tulong page ' +
       'or a document type in use under it. It says how many of each; move or archive those first.',
     'It stays here under Archived, with your name, the date and your reason, and its address stays ' +
       'reserved for it, so an old link never leads to a different office.',
     'It can be restored, and comes back as it was.',
-    'The server records that you archived it, when, and why.',
+    'The system records that you archived it, when, and why.',
   ],
   restore: [
     'The office returns to the app’s directory at its old address, as it was when it was archived.',
     'Staff can be linked to it, and Tulong pages and document types put under it, again.',
     'Its archive history keeps both acts, each with who did it, when and why.',
-    'The server records that you restored it, when, and why.',
+    'The system records that you restored it, when, and why.',
   ],
 } as const;
 
 /** Said beside the banner field: what the API cannot do with one. */
 export const OFFICE_BANNER_LIMIT =
-  'A banner can be replaced but not removed: the API has no way to take one away.';
+  'A banner can be replaced but not removed: the system has no way to take one away.';
 
 /**
  * What still uses an office, in plain words, from the counts the server sent with its refusal — one

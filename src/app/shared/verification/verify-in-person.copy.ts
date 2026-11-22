@@ -23,7 +23,7 @@ export const VERIFY_IN_PERSON_COPY = {
     'another — after a marriage or a court order, for example — exactly as printed, up to 120 ' +
     'characters.',
 
-  lead: 'What the server does when you verify:',
+  lead: 'What the system does when you verify:',
   /** The statement the button waits for, worded as an approval words it (`DL-197`). */
   statement: (name: string): string => `The ID shows the name “${name}”.`,
   statementHint:
@@ -40,5 +40,5 @@ export const VERIFY_IN_PERSON_COPY = {
   nothingChanged:
     'Nothing was changed. Close this and read the account again: it may have changed since it ' +
     'was shown.',
-  failed: 'The server refused it or could not be reached.',
+  failed: 'The system refused it or could not be reached.',
 } as const;

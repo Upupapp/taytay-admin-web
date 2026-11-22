@@ -5,5 +5,5 @@ export const IMPORT_TEMPLATE_COPY = {
   hint: 'A CSV with only the column names this import recognises — no sample row, nobody’s data.',
   saved: (fileName: string) => `${fileName} was handed to your browser to save.`,
   failed: (reason: string) => `The template could not be downloaded: ${reason}`,
-  noAnswer: 'the server gave no reason.',
+  noAnswer: 'the system gave no reason.',
 } as const;

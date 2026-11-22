@@ -148,7 +148,7 @@ export const RESIDENTS_COPY = {
     visitsNotOpen: 'Your role does not open home visits, so none were read for this record.',
     familiesNotOpen: 'Your role does not open families, so none were read for this record.',
     panelRefused: (reason: string) => `This part of the record was not read. ${reason}`,
-    panelUnread: 'The server did not answer for it. The rest of the record is shown.',
+    panelUnread: 'The system did not answer for it. The rest of the record is shown.',
     subtitleFallback: 'Resident record',
     edit: 'Edit record',
     retire: 'Retire record',
@@ -221,7 +221,7 @@ export const RESIDENTS_COPY = {
     appAccountSince: 'since',
     noAppAccount:
       'None linked. The resident cannot apply for Tulong from the app until the office links an account to this record, usually when it verifies the account.',
-    provenanceUnknown: 'Not said by the server for this record.',
+    provenanceUnknown: 'Not said by the system for this record.',
 
     noHousehold: 'This resident is not linked to a household.',
     noFamily: 'No other members are recorded in this household.',

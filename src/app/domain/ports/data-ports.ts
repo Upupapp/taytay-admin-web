@@ -107,7 +107,7 @@ export const DATA_PORT_HOLDINGS: Readonly<Record<DataPort, string>> = {
  */
 export function notConnectedSentence(port: DataPort): string {
   return (
-    `Not connected yet: the office’s API does not serve ${DATA_PORT_HOLDINGS[port]}, so nothing ` +
+    `Not connected yet: this console isn’t connected to ${DATA_PORT_HOLDINGS[port]}, so nothing ` +
     `is read or saved here. This is not a statement that there are none.`
   );
 }
@@ -131,7 +131,7 @@ export type UnservedFigure = keyof typeof UNSERVED_FIGURES;
 /** What a panel says in place of a figure the API does not send yet; the port gap's sentence. */
 export function notSentSentence(figure: UnservedFigure): string {
   return (
-    `Not connected yet: the office’s API does not send ${UNSERVED_FIGURES[figure]}, so nothing ` +
+    `Not connected yet: the office system does not send ${UNSERVED_FIGURES[figure]}, so nothing ` +
     `is read or shown here. This is not a statement that there are none.`
   );
 }

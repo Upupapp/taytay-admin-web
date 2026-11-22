@@ -379,7 +379,7 @@ export function appConfigProblems(
   if (flags.length > APP_CONFIG_LIMITS.flagsPerChange) {
     problems.push({
       field: 'featureFlags',
-      message: `The API takes at most ${APP_CONFIG_LIMITS.flagsPerChange} flag changes at once.`,
+      message: `The system takes at most ${APP_CONFIG_LIMITS.flagsPerChange} flag changes at once.`,
     });
   }
   if (flags.some((flag) => !FLAG_KEY_PATTERN.test(flag.key))) {
@@ -473,7 +473,7 @@ const APP_TOO_OLD_FOR_REVIEW_TIME =
 export const APP_CONFIG_EFFECTS = {
   minimumRaised: (version: string) => [
     `This can force every resident whose app is older than ${version} to update before using it: ` +
-      'the app is given this version to compare with its own. The API refuses nothing itself.',
+      'the app is given this version to compare with its own. The system refuses nothing itself.',
     'A resident who cannot update — an old phone, no data — may be unable to use the app at all.',
   ],
   minimumLowered: [
@@ -483,24 +483,24 @@ export const APP_CONFIG_EFFECTS = {
     version === null
       ? 'The app is given no terms version, so it has none to ask residents to accept.'
       : `This can make every resident accept the terms again before using the app: the app is ` +
-        `given ${version} to compare with the version each resident accepted. The API does not ` +
+        `given ${version} to compare with the version each resident accepted. The system does not ` +
         'compare them itself.',
   ],
   privacyChanged: (version: string | null) => [
     version === null
       ? 'The app is given no privacy notice version, so it has none to ask residents to accept.'
       : `This can make every resident accept the privacy notice again: the app is given ${version} ` +
-        'to compare with the version each resident accepted. The API does not compare them itself.',
+        'to compare with the version each resident accepted. The system does not compare them itself.',
     'The notice’s text does not change here, only the version number residents are asked to ' +
       'accept — a new number on an unchanged notice asks residents to accept what they already ' +
       'did. To change the text, publish it under “Privacy notice” below.',
   ],
   privacyMismatch: (served: string, version: string) => [
-    `The API serves privacy notice version ${served}, not ${version}. Residents may be asked to ` +
+    `The app is given privacy notice version ${served}, not ${version}. Residents may be asked to ` +
       'accept a version whose text the app cannot show them.',
   ],
   termsMismatch: (served: string, version: string) => [
-    `The API serves the Terms of Use as version ${served}, not ${version}. Residents may be asked ` +
+    `The app is given the Terms of Use as version ${served}, not ${version}. Residents may be asked ` +
       'to accept a version whose text the app cannot show them.',
   ],
   termsPublished: (version: string, isNew: boolean) =>
@@ -536,11 +536,11 @@ export const APP_CONFIG_EFFECTS = {
    * acknowledged (`asksEveryResident`).
    */
   biometricFirstPublished: (version: string) => [
-    'Residents can send a selfie from now on. Until now the server refused every selfie, so no ' +
+    'Residents can send a selfie from now on. Until now the system refused every selfie, so no ' +
       `resident could verify their ID by selfie. Each resident must agree to version ${version} ` +
       'in the app, as an act of its own, before a selfie is sent.',
     'This cannot be undone here: a later change can publish a new version or correct the text, ' +
-      'but the server never goes back to having no biometric consent text.',
+      'but the system never goes back to having no biometric consent text.',
   ],
   biometricPublished: (version: string, isNew: boolean) =>
     isNew
@@ -581,7 +581,7 @@ export const APP_CONFIG_EFFECTS = {
       `${listWords(keys)} will be archived. The app is no longer given ${one ? 'it' : 'them'}.`,
       `${one ? 'It stays' : 'They stay'} here under Archived flags with ` +
         `${one ? 'its value' : 'their values'}, your name and the date, and can be restored. The ` +
-        'server keeps no reason for a flag, so none is asked for.',
+        'system keeps no reason for a flag, so none is asked for.',
     ];
   },
   flagsRestored: (keys: readonly string[]) => [
@@ -590,7 +590,7 @@ export const APP_CONFIG_EFFECTS = {
   ],
   always: [
     'Applies to every resident the next time the app reads its settings.',
-    'The server records that you changed the settings, and when — not which setting, and no ' +
+    'The system records that you changed the settings, and when — not which setting, and no ' +
       'reason, so none is asked for.',
   ],
 } as const;

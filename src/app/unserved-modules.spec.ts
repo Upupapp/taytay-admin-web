@@ -176,7 +176,7 @@ describe('the http adapter set', () => {
     await fixture.whenStable();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-    expect(text).toContain('Every part of this console is served');
+    expect(text).toContain('Every part of this console is connected');
     // The heading agrees with the page's one finding, rather than saying "Not connected yet".
     expect((fixture.nativeElement as HTMLElement).querySelector('h1')?.textContent?.trim()).toBe(
       'Every part is connected',
@@ -293,7 +293,7 @@ describe('the mock adapter set', () => {
     const fixture = TestBed.createComponent(UnservedPage);
     await fixture.whenStable();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
-      'Every part of this console is served',
+      'Every part of this console is connected',
     );
   });
 });
