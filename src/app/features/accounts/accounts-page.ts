@@ -239,7 +239,7 @@ export class AccountsPage {
   }
 
   protected manageLabel(account: AppAccount): string {
-    return this.copy.manageLabel(account.name ?? account.email ?? this.copy.noName);
+    return this.copy.manageLabel(account.name ?? account.email ?? this.copy.unnamedAccount);
   }
 
   protected reload(): void {

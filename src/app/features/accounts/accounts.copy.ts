@@ -45,6 +45,8 @@ export const ACCOUNTS_COPY = {
     you: 'You',
     manage: 'Manage',
     manageLabel: (who: string): string => `Manage ${who}`,
+    // The button's name when an account has neither: never "Manage No name recorded".
+    unnamedAccount: 'the account with no name or email',
     officesUnnamed:
       'The office directory could not be loaded, so offices are shown by their identifier and none ' +
       'can be assigned until it loads.',

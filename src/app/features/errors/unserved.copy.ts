@@ -20,8 +20,8 @@ export const UNSERVED_COPY = {
     'The modules below are left out of the menu because the office system this console is ' +
       'connected to has no way to answer them yet. Their addresses bring you here instead.',
     'This is not a list of empty records. Nothing was asked for and nothing was deleted: there is ' +
-      'nothing yet to ask. Whether the office holds such records cannot be told from this console ' +
-      'until it is connected.',
+      'nothing yet to ask. Until the module is connected, this console cannot tell whether the ' +
+      'office holds such records.',
     'Each module returns to the menu, unchanged, once the office system can answer it.',
   ],
 
