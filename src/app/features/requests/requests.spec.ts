@@ -48,6 +48,7 @@ import { REQUIREMENTS_COPY } from '@shared/requirements/requirements.copy';
 import { AssessmentPage } from './assessment-page';
 import { IntakePage } from './intake-page';
 import { RequestListPage, readRequestQuery } from './request-list-page';
+import { REQUESTS_COPY } from './requests.copy';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
@@ -667,6 +668,25 @@ describe('approving says what was approved (DL-183)', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     expect(html(fixture).textContent).toContain('3,000.50');
+  });
+
+  it('says what was asked for and recommended in words, never as a dash', async () => {
+    const element = html(await openAssessment(ENDORSED, 'mswdo-head'));
+    const context = approveSection(element)?.querySelectorAll('.assessment__note')[1];
+    expect(context?.textContent).not.toContain('—');
+    expect(context?.textContent).not.toContain(':');
+  });
+
+  it('leaves out an amount nobody gave, rather than printing a placeholder', () => {
+    expect(REQUESTS_COPY.assessment.approveContext('₱3,000.00', '₱2,500.00')).toBe(
+      'Asked for ₱3,000.00. The assessment recommended ₱2,500.00.',
+    );
+    expect(REQUESTS_COPY.assessment.approveContext(null, null)).toBe(
+      'No amount was asked for. The assessment did not recommend an amount.',
+    );
+    expect(REQUESTS_COPY.assessment.approveContext('₱3,000.00', null)).toBe(
+      'Asked for ₱3,000.00. The assessment did not recommend an amount.',
+    );
   });
 });
 

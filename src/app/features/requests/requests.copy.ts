@@ -1,4 +1,8 @@
-import type { CaseNoteSensitivity, RequirementStatus } from '@domain/index';
+import type {
+  AssistanceRequestStatus,
+  CaseNoteSensitivity,
+  RequirementStatus,
+} from '@domain/index';
 
 /** Every user-facing string for the assistance-request screens (`DL-23`). */
 export const REQUESTS_COPY = {
@@ -323,6 +327,18 @@ export const REQUESTS_COPY = {
     readinessClear: 'Nothing outstanding.',
 
     moveHeading: 'Move this request on',
+    // One example per move: a returned request is not explained the way an endorsed one is.
+    moveExamples: {
+      'intake-review': 'e.g. All the papers came in on 14 November; ready for intake to check',
+      assessment: 'e.g. Intake checked the papers; ready for a social worker to assess',
+      endorsed:
+        'e.g. Assessed on 14 November; the medical abstract and quotation support the amount',
+      returned: 'e.g. The barangay certificate is out of date; asked the applicant for a new one',
+      rejected: 'e.g. The same hospital bill was already paid in full by another office',
+      cancelled: 'e.g. The applicant asked on 14 November to withdraw the request',
+      expired: 'e.g. Nothing heard from the applicant since the papers were asked for in August',
+      completed: 'e.g. Handed over and signed for; nothing more is owed on this request',
+    } satisfies Partial<Record<AssistanceRequestStatus, string>>,
     payoutMoves:
       'Scheduled and released are recorded with the payout: the request moves when its release is scheduled into a payout session, and again when it is handed over.',
     prepareRelease: 'Prepare the release',
@@ -337,8 +353,14 @@ export const REQUESTS_COPY = {
     approveKindGoods: 'Goods',
     approveAmount: 'Approved amount (₱)',
     approveAmountHint: 'In pesos, as on the voucher — 3,000 or 3,000.50.',
-    approveContext: (requested: string, recommended: string): string =>
-      `Asked for: ${requested}. Recommended by the assessment: ${recommended}.`,
+    // Each half said in words when it has no amount, never as a dash in a sentence.
+    approveContext: (requested: string | null, recommended: string | null): string =>
+      [
+        requested === null ? 'No amount was asked for.' : `Asked for ${requested}.`,
+        recommended === null
+          ? 'The assessment did not recommend an amount.'
+          : `The assessment recommended ${recommended}.`,
+      ].join(' '),
     approveGoods: 'What goods are approved',
     approveGoodsHint: 'Goods are described, never priced.',
     approveReason: 'Why it is approved',

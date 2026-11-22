@@ -1032,6 +1032,7 @@
             [transitions]="transitions"
             [current]="request.status"
             [permitted]="permittedMoves(request.status)"
+            [reasonExamples]="copy.moveExamples"
             [busy]="submitting()"
             (confirmed)="onTransition($event)"
           />
@@ -1055,8 +1056,8 @@
               <p class="status-line assessment__note">
                 {{
                   copy.approveContext(
-                    request.requestedAmount | peso: copy.notSet,
-                    request.assessment?.recommendedAmount | peso: copy.notSet
+                    (request.requestedAmount | peso: '') || null,
+                    (request.assessment?.recommendedAmount | peso: '') || null
                   )
                 }}
               </p>
