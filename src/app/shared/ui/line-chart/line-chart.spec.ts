@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import { LineChart, type LinePoint } from './line-chart';
+import { curve, LineChart, type Drawn, type LinePoint } from './line-chart';
 
 async function render(points: readonly LinePoint[]): Promise<HTMLElement> {
   const fixture = TestBed.createComponent(LineChart);
@@ -46,5 +46,38 @@ describe('LineChart (DL-232)', () => {
 
     expect(element.querySelector('.line-chart__tick--top')?.textContent?.trim()).toBe('8');
     expect(element.querySelector('.line-chart__tick--middle')?.textContent?.trim()).toBe('4');
+  });
+});
+
+describe('the line never overshoots its points', () => {
+  /** Each segment's control points, which bound the curve: within them, within the segment. */
+  function segments(path: string): number[][] {
+    return [...path.matchAll(/C([\d.\- ]+)/g)].map((match) =>
+      (match[1] ?? '').trim().split(/\s+/).map(Number),
+    );
+  }
+
+  const drawn = (ys: readonly number[]): Drawn[] =>
+    ys.map((y, index) => ({ key: String(index), x: (index / (ys.length - 1)) * 100, y }));
+
+  it('stays between each pair of points, so a count never dips below zero', () => {
+    // SVG y: 100 is a count of zero. A fall to none and a rise from it are where Catmull–Rom dipped.
+    const ys = [10, 100, 100, 20, 100, 60, 0, 100];
+    const run = drawn(ys);
+    const parts = segments(curve(run));
+    expect(parts).toHaveLength(ys.length - 1);
+    parts.forEach(([, c1y, , c2y], index) => {
+      const low = Math.min(ys[index] ?? 0, ys[index + 1] ?? 0);
+      const high = Math.max(ys[index] ?? 0, ys[index + 1] ?? 0);
+      for (const y of [c1y ?? Number.NaN, c2y ?? Number.NaN]) {
+        expect(y).toBeGreaterThanOrEqual(low - 0.01);
+        expect(y).toBeLessThanOrEqual(high + 0.01);
+      }
+    });
+  });
+
+  it('draws two points as a straight line, and one as a single move', () => {
+    expect(curve(drawn([100, 0]))).toBe('M0.00 100.00 C33.33 66.67 66.67 33.33 100.00 0.00');
+    expect(curve([{ key: 'a', x: 0, y: 40 }])).toBe('M0.00 40.00');
   });
 });

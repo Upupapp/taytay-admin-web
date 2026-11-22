@@ -10,7 +10,7 @@ export interface LinePoint {
   readonly value: number | null;
 }
 
-interface Drawn {
+export interface Drawn {
   readonly key: string;
   readonly x: number;
   readonly y: number;
@@ -23,9 +23,6 @@ interface AxisLabel {
   readonly shift: number;
   readonly last: boolean;
 }
-
-/** How much the curve bends between two points; the board's own value. */
-const TENSION = 0.18;
 
 /**
  * A series over time drawn as a line with its area, as the boards draw one (`DL-232`).
@@ -206,27 +203,70 @@ function fix(value: number): string {
   return value.toFixed(2);
 }
 
-/** A smooth path through the points (Catmull–Rom, as the board draws it). */
-function curve(run: readonly Drawn[]): string {
-  const at = (index: number): Drawn | undefined =>
-    run[Math.min(Math.max(index, 0), run.length - 1)];
+/**
+ * A smooth path through the points that never overshoots them: monotone cubic interpolation
+ * (Fritsch–Carlson, the rule d3's `curveMonotoneX` follows). Between two points the line stays
+ * between their two values, so a count never dips below zero after a fall to none, and never peaks
+ * above a figure nobody recorded. The Catmull–Rom curve the board drew did both.
+ */
+export function curve(run: readonly Drawn[]): string {
   const start = run[0];
   if (start === undefined) {
     return '';
   }
   let path = `M${fix(start.x)} ${fix(start.y)}`;
+  const tangents = monotoneTangents(run);
   for (let i = 0; i < run.length - 1; i++) {
-    const p0 = at(i - 1);
-    const p1 = at(i);
-    const p2 = at(i + 1);
-    const p3 = at(i + 2);
-    if (p0 === undefined || p1 === undefined || p2 === undefined || p3 === undefined) {
+    const p1 = run[i];
+    const p2 = run[i + 1];
+    if (p1 === undefined || p2 === undefined) {
       continue;
     }
+    const third = (p2.x - p1.x) / 3;
     path +=
-      ` C${fix(p1.x + (p2.x - p0.x) * TENSION)} ${fix(p1.y + (p2.y - p0.y) * TENSION)}` +
-      ` ${fix(p2.x - (p3.x - p1.x) * TENSION)} ${fix(p2.y - (p3.y - p1.y) * TENSION)}` +
+      ` C${fix(p1.x + third)} ${fix(p1.y + (tangents[i] ?? 0) * third)}` +
+      ` ${fix(p2.x - third)} ${fix(p2.y - (tangents[i + 1] ?? 0) * third)}` +
       ` ${fix(p2.x)} ${fix(p2.y)}`;
   }
   return path;
+}
+
+/** The slope at each point: zero at a peak, a trough or a flat, and never steep enough to overshoot. */
+function monotoneTangents(run: readonly Drawn[]): readonly number[] {
+  const widths: number[] = [];
+  const secants: number[] = [];
+  for (let i = 0; i < run.length - 1; i++) {
+    const p1 = run[i];
+    const p2 = run[i + 1];
+    const width = p1 === undefined || p2 === undefined ? 0 : p2.x - p1.x;
+    widths.push(width);
+    secants.push(p1 === undefined || p2 === undefined || width === 0 ? 0 : (p2.y - p1.y) / width);
+  }
+  if (secants.length === 0) {
+    return [0];
+  }
+  const tangents: number[] = [];
+  for (let i = 1; i < run.length - 1; i++) {
+    const before = secants[i - 1] ?? 0;
+    const after = secants[i] ?? 0;
+    const h0 = widths[i - 1] ?? 0;
+    const h1 = widths[i] ?? 0;
+    if (before * after <= 0 || h0 + h1 === 0) {
+      tangents[i] = 0;
+      continue;
+    }
+    const weighted = (before * h1 + after * h0) / (h0 + h1);
+    tangents[i] =
+      (Math.sign(before) + Math.sign(after)) *
+      Math.min(Math.abs(before), Math.abs(after), 0.5 * Math.abs(weighted));
+  }
+  const firstSecant = secants[0] ?? 0;
+  const lastSecant = secants[secants.length - 1] ?? 0;
+  if (run.length === 2) {
+    return [firstSecant, firstSecant];
+  }
+  // At either end, the one-sided estimate d3 uses: between the secant and one and a half times it.
+  tangents[0] = (3 * firstSecant - (tangents[1] ?? 0)) / 2;
+  tangents[run.length - 1] = (3 * lastSecant - (tangents[run.length - 2] ?? 0)) / 2;
+  return tangents;
 }
