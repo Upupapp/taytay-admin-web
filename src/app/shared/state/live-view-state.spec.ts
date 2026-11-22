@@ -1,7 +1,13 @@
 import { of, Subject, throwError, type Observable } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
 
-import { liveRead, liveViewState, unlessPaged, type RefreshReport } from './live-view-state';
+import {
+  keepWhileReloading,
+  liveRead,
+  liveViewState,
+  unlessPaged,
+  type RefreshReport,
+} from './live-view-state';
 import type { ViewState } from './view-state';
 
 /** A read the test answers by hand, one request at a time. */
@@ -222,5 +228,21 @@ describe('liveRead (DL-222)', () => {
     expect(failure).toBeInstanceOf(Error);
     refreshes.next();
     expect(read.requests).toHaveLength(1);
+  });
+});
+
+describe('keepWhileReloading', () => {
+  const shown: ViewState<string> = { kind: 'ready', value: 'TAY-2026-001136' };
+  it('keeps the record on screen while the same record is read again after a write', () => {
+    expect(keepWhileReloading({ kind: 'loading' }, shown, true)).toBe(shown);
+  });
+  it('shows loading for a first read or a different record', () => {
+    expect(keepWhileReloading({ kind: 'loading' }, undefined, true).kind).toBe('loading');
+    expect(keepWhileReloading({ kind: 'loading' }, shown, false).kind).toBe('loading');
+  });
+  it('passes a fresh answer or a failure straight through', () => {
+    const fresh: ViewState<string> = { kind: 'ready', value: 'moved' };
+    expect(keepWhileReloading(fresh, shown, true)).toBe(fresh);
+    expect(keepWhileReloading({ kind: 'error', message: 'x' }, shown, true).kind).toBe('error');
   });
 });

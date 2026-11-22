@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   signal,
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
@@ -106,7 +107,7 @@ import { INTAKE_COPY } from '@shared/intake/intake.copy';
 import { ResidentSummaryCard } from '@shared/residents/resident-summary-card';
 import { StatusTransition, type StatusTransitionRequest } from '@shared/cases/status-transition';
 import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
-import { liveViewState } from '@shared/state/live-view-state';
+import { keepWhileReloading, liveViewState } from '@shared/state/live-view-state';
 import { LOADING, ready, toViewState, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
@@ -216,7 +217,7 @@ export class AssessmentPage {
    * the answers, the approval, every reason — is held in its own signals, seeded once at most
    * (`hydrated`), so a re-read changes what the record says and never what is being written.
    */
-  protected readonly state = toSignal(
+  private readonly readState = toSignal(
     toObservable(computed(() => ({ id: this.id(), nonce: this.reloads() }))).pipe(
       switchMap((query) =>
         liveViewState(
@@ -228,6 +229,19 @@ export class AssessmentPage {
     ),
     { initialValue: LOADING as ViewState<AssistanceRequest | null> },
   );
+
+  /**
+   * A reload after the worker's own write keeps the record on screen: the page used to fall back to
+   * its skeleton after every recorded move, blanking the applicant and the check beside it.
+   */
+  protected readonly state = linkedSignal<
+    { readonly read: ViewState<AssistanceRequest | null>; readonly id: string },
+    ViewState<AssistanceRequest | null>
+  >({
+    source: () => ({ read: this.readState(), id: this.id() }),
+    computation: (source, previous) =>
+      keepWhileReloading(source.read, previous?.value, previous?.source.id === source.id),
+  });
 
   protected readonly request = computed(() => valueOf(this.state()) ?? null);
 

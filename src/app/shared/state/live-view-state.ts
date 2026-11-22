@@ -169,3 +169,16 @@ export function unlessPaged(
     }),
   );
 }
+
+/**
+ * What a page shows while it reads its record again after its own write (a recorded move, an
+ * approval, a document): the record it already shows, never the skeleton. A reload after a write is
+ * a re-read of the same record (`DL-222`); only a different record, or a first read, shows loading.
+ */
+export function keepWhileReloading<TValue>(
+  next: ViewState<TValue>,
+  previous: ViewState<TValue> | undefined,
+  sameRecord: boolean,
+): ViewState<TValue> {
+  return next.kind === 'loading' && sameRecord && previous?.kind === 'ready' ? previous : next;
+}
