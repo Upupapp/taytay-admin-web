@@ -145,10 +145,11 @@ export interface TransitionGuidance {
             [id]="reasonId()"
             [attr.aria-describedby]="reasonHintId()"
             [attr.aria-invalid]="showReasonProblem() ? 'true' : null"
-            [placeholder]="chosenGuidance() ? '' : copy.reasonPlaceholder"
+            [placeholder]="placeholder()"
             [attr.maxlength]="maximumReasonLength()"
             [value]="reason()"
             (input)="onReason($event)"
+            (blur)="onReasonBlur()"
           ></textarea>
           <p class="transition__hint" [id]="reasonHintId()">
             {{ chosenGuidance()?.reasonHint ?? reasonHint() }}
@@ -170,6 +171,7 @@ export interface TransitionGuidance {
               [attr.maxlength]="field.maximum"
               [value]="detail()"
               (input)="onDetail($event)"
+              (blur)="onDetailBlur()"
             ></textarea>
             <p class="transition__hint" [id]="detailHintId()">{{ field.hint }}</p>
             @if (showDetailProblem()) {
@@ -239,6 +241,13 @@ export class StatusTransition<TStatus extends string> {
    */
   readonly reasonLabel = input<string>(CASE_COPY.transition.reason);
   readonly reasonHint = input<string>(CASE_COPY.transition.reasonHint);
+  /**
+   * The example in an empty reason field. The default names no lifecycle; a host gives its own, and
+   * one per destination where a single example would not fit every move — a voided payout is not
+   * explained the way a released one is.
+   */
+  readonly reasonPlaceholder = input<string>(CASE_COPY.transition.reasonPlaceholder);
+  readonly reasonExamples = input<Partial<Record<TStatus, string>>>({});
   readonly busy = input(false);
   /** Unique per instance so two controls on one page keep distinct labels. */
   readonly idPrefix = input('status-transition');
@@ -249,9 +258,16 @@ export class StatusTransition<TStatus extends string> {
 
   protected readonly destination = signal<TStatus | null>(null);
   protected readonly reason = signal('');
+  /**
+   * Whether a too-short reason is said to be too short. Set when somebody leaves a field they wrote
+   * in, cleared the moment the words are enough — so the problem never flashes up mid-sentence, and
+   * goes as soon as it is fixed ("reward early, punish late").
+   */
   protected readonly reasonTouched = signal(false);
+  private readonly reasonWritten = signal(false);
   protected readonly detail = signal('');
   protected readonly detailTouched = signal(false);
+  private readonly detailWritten = signal(false);
 
   protected readonly headingId = computed(() => `${this.idPrefix()}-heading`);
   protected readonly destinationId = computed(() => `${this.idPrefix()}-destination`);
@@ -291,6 +307,15 @@ export class StatusTransition<TStatus extends string> {
   protected readonly chosenGuidance = computed<TransitionGuidance | null>(() => {
     const to = this.destination();
     return to === null ? null : (this.guidance()[to] ?? null);
+  });
+
+  /** Guidance speaks for itself; otherwise this move's example, or the host's. */
+  protected readonly placeholder = computed(() => {
+    const to = this.destination();
+    if (this.chosenGuidance() !== null) {
+      return '';
+    }
+    return (to === null ? undefined : this.reasonExamples()[to]) ?? this.reasonPlaceholder();
   });
 
   protected readonly reasonOk = computed(() => {
@@ -348,7 +373,14 @@ export class StatusTransition<TStatus extends string> {
 
   protected onReason(event: Event): void {
     this.reason.set((event.target as HTMLTextAreaElement).value);
-    this.reasonTouched.set(true);
+    this.reasonWritten.set(true);
+    if (this.reasonOk()) {
+      this.reasonTouched.set(false);
+    }
+  }
+
+  protected onReasonBlur(): void {
+    this.reasonTouched.set(this.reasonWritten() && !this.reasonOk());
   }
 
   protected onTicked(event: Event): void {
@@ -357,7 +389,14 @@ export class StatusTransition<TStatus extends string> {
 
   protected onDetail(event: Event): void {
     this.detail.set((event.target as HTMLTextAreaElement).value);
-    this.detailTouched.set(true);
+    this.detailWritten.set(true);
+    if (this.detailOk()) {
+      this.detailTouched.set(false);
+    }
+  }
+
+  protected onDetailBlur(): void {
+    this.detailTouched.set(this.detailWritten() && !this.detailOk());
   }
 
   protected submit(): void {
@@ -378,8 +417,10 @@ export class StatusTransition<TStatus extends string> {
     this.destination.set(null);
     this.reason.set('');
     this.reasonTouched.set(false);
+    this.reasonWritten.set(false);
     this.detail.set('');
     this.detailTouched.set(false);
+    this.detailWritten.set(false);
     this.ticked.set(false);
   }
 }

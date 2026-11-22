@@ -228,6 +228,7 @@
               [transitions]="transitions"
               [current]="release.status"
               [permitted]="permittedMoves()"
+              [reasonExamples]="copy.moveExamples"
               [busy]="saving()"
               (confirmed)="onTransition($event)"
             />

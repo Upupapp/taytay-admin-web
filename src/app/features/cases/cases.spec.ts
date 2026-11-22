@@ -372,6 +372,7 @@ describe('moving a case requires a reason', () => {
     if (reason) {
       reason.value = 'ok';
       reason.dispatchEvent(new Event('input'));
+      reason.dispatchEvent(new Event('blur'));
     }
     await fixture.whenStable();
 

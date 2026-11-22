@@ -105,7 +105,8 @@ export const CASE_COPY = {
     noMoves: 'There is nowhere to move this case from here.',
     noPermission: 'Your role cannot make any of the moves available from this status.',
     reason: 'Why is it moving?',
-    reasonPlaceholder: 'e.g. Home visit on 12 August confirmed the household has re-employed',
+    // Names no lifecycle: every record's move uses this control, and a host gives its own example.
+    reasonPlaceholder: 'e.g. what you checked or were told, and when',
     reasonHint: 'Required, and recorded permanently against your name.',
     reasonTooShort:
       'Say a little more — a colleague reading this in two years has only these words.',

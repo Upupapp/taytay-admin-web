@@ -6,6 +6,8 @@
  * never appears as "refused" — nobody knows why they did not come, and the
  * screen should not guess.
  */
+import type { ReleaseStatus } from '@domain/index';
+
 export const RELEASES_COPY = {
   list: {
     title: 'Releases',
@@ -102,7 +104,8 @@ export const RELEASES_COPY = {
     method: 'How it is paid',
     goods: 'The goods',
     goodsHint: 'Say what is handed over. Goods are counted, never given a peso value.',
-    goodsPrefilled: 'Filled in with the goods the approval described. Change it to what is handed over.',
+    goodsPrefilled:
+      'Filled in with the goods the approval described. Change it to what is handed over.',
     fundingSource: 'Funding source',
     fundingSourceHint: 'The label the office was given. Nothing here posts to an account.',
     fundingSourcePrefilled:
@@ -142,6 +145,17 @@ export const RELEASES_COPY = {
     selfReleaseHeading: 'Check before you release',
 
     moveHeading: 'Move this release on',
+    // One example per move: a voided payout is not explained the way a scheduled one is.
+    moveExamples: {
+      scheduled: 'e.g. Put on the 14 November payout at the municipal hall',
+      released: 'e.g. Handed over at the 14 November payout',
+      claimed: 'e.g. The claimant signed the payout list',
+      completed: 'e.g. Signed list filed with the voucher',
+      unclaimed: 'e.g. Nobody came to collect it at the 14 November payout',
+      deferred: 'e.g. The funds from the treasurer had not arrived on the day',
+      'needs-correction': 'e.g. The name on the voucher does not match the ID',
+      voided: 'e.g. Prepared twice by mistake; the payout stands on the other voucher',
+    } satisfies Partial<Record<ReleaseStatus, string>>,
     moved: 'Release moved.',
 
     releaseHeading: 'Record the release',

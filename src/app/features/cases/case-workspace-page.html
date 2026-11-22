@@ -143,6 +143,7 @@
               [transitions]="transitions"
               [current]="workspace.record.status"
               [permitted]="permittedMoves(workspace)"
+              [reasonPlaceholder]="copy.moveExample"
               [busy]="submitting()"
               (confirmed)="onTransition($event)"
             />
