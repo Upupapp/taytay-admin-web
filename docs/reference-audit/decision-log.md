@@ -11335,3 +11335,35 @@ on Main counts app accounts and says so in its hint; an imported record has no a
 office links one.
 
 **Easiest to reverse:** a tile on Main reading `/office/residents/summary`, if the owner asks.
+
+## DL-239 — a staff account is listed with the address it signs in with
+
+**Status:** Settled (22 November 2026), from the demo recording: Users and roles listed two staff
+accounts as "No name given / No email given" and Ana Reyes as "No email given". Backend change in
+`src/modules/users/account-email.ts`.
+
+1. **The cause was the data, not the screen or the mapper.** `GET admin/users` sends each row's
+   `email`, and the console reads it. But the API makes an account's row at its first sign-in from
+   the token alone (`users.getOrCreate`: a Firebase uid and a role), and only `PATCH /me` ever
+   writes a name or an address. A resident fills that in through the app; a staff member signs in to
+   the console and never does. So every staff account's row held neither.
+2. **The address is the one the account signs in with.** For an open staff or admin account whose
+   row holds none, the API now reads the sign-in address from the identity provider
+   (`IdentityAdmin.signInEmail`, already used by the email code check) and sends it as `email` — on
+   the list, and on the answers to a role, office or office-role change, so a row keeps its address
+   after one. It is **read, never stored**: copying it into the row on a GET would raise a change
+   hint from a read (`DL-222`), and an address nobody gave as a profile detail is not filed as one. A
+   resident's row is left alone — her profile address is the one she gave. A provider that cannot be
+   read leaves the address out; the list never fails for it.
+3. **A missing name is said, not guessed.** "No name given" and "No email given" read as somebody's
+   omission; they are now "No name recorded" and "No email recorded", in line with `DL-115`'s "Not
+   recorded". A staff or admin account with no name says in its panel that a staff account's name
+   comes from its holder's own profile and that this console does not set it. Name corrections stay
+   as `DL-198` settled them — a verified resident's, against an ID seen; this entry does not widen
+   them to staff.
+
+**What the office sets:** a name for each staff account that shows none. The API takes it from the
+holder's own `PATCH /me`, which no console screen sends today, or the server's operator sets
+`users.name` for that row. Nothing more is needed for the address.
+
+**Easiest to reverse:** `accountListJson` returns `userListJson` unchanged.

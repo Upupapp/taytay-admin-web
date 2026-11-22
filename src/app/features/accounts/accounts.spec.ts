@@ -379,6 +379,20 @@ describe('AccountPanel (DL-168)', () => {
     expect(after.querySelector('textarea')).toBeNull();
   });
 
+  it('says where a staff account’s missing name comes from, and nothing of it for a resident', async () => {
+    const nameless = { ...account('a', 'staff', MSWDO), name: null, email: null };
+    const staff = await settle(panel(nameless).fixture);
+    expect(staff.querySelector('.panel__name')?.textContent).toContain(ACCOUNTS_COPY.list.noName);
+    expect(staff.querySelector('.panel__hint')?.textContent).toContain(
+      ACCOUNTS_COPY.panel.staffNameMissing,
+    );
+    expect(staff.querySelector('.panel__email')?.textContent).toContain(ACCOUNTS_COPY.list.noEmail);
+    TestBed.resetTestingModule();
+
+    const resident = await settle(panel({ ...account('b', 'registered'), name: null }).fixture);
+    expect(resident.querySelector('.panel__hint')).toBeNull();
+  });
+
   it('does not offer the current role as a change', async () => {
     const { fixture } = panel(account('a', 'staff', MSWDO));
     const element = await settle(fixture);

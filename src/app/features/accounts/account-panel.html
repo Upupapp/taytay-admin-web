@@ -5,7 +5,14 @@
       <dl class="facts panel__facts">
         <div>
           <dt>{{ copy.name }}</dt>
-          <dd class="panel__name">{{ account().name ?? listCopy.noName }}</dd>
+          <dd class="panel__name">
+            {{ account().name ?? listCopy.noName }}
+            @if (
+              account().name === null && (account().role === 'staff' || account().role === 'admin')
+            ) {
+              <span class="panel__hint">{{ copy.staffNameMissing }}</span>
+            }
+          </dd>
         </div>
         <div>
           <dt>{{ copy.email }}</dt>

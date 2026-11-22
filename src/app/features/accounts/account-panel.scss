@@ -37,6 +37,16 @@
   word-break: break-all;
 }
 
+/* Under a missing name: body type, not the name's display size. */
+.panel__hint {
+  display: block;
+  margin-block-start: var(--space-1);
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-regular);
+}
+
 .panel__block > .btn {
   align-self: stretch;
   min-block-size: var(--h-btn-lg);
