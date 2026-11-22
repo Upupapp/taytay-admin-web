@@ -384,3 +384,10 @@ describe('VerifyInPersonDialog (DL-219)', () => {
     });
   });
 });
+
+describe('the link effect sentence', () => {
+  it('ends once after a label that already ends in an initial', () => {
+    expect(ACCOUNT_LINK_COPY.effect.link('Dela Cruz, M.')).toContain('Dela Cruz, M. The resident');
+    expect(ACCOUNT_LINK_COPY.effect.link('Santos')).toContain('Santos. The resident');
+  });
+});

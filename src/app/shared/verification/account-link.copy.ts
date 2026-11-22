@@ -89,8 +89,9 @@ export const ACCOUNT_LINK_COPY = {
 
   /** Said before the button, for the choice made (`DL-228`). */
   effect: {
+    // A registry label ends in an initial ("Dela Cruz, M."): its own full stop ends the sentence.
     link: (label: string): string =>
-      `Verifying links this account to ${label}. The resident’s My requests and applications in ` +
+      `Verifying links this account to ${label}${label.endsWith('.') ? '' : '.'} The resident’s My requests and applications in ` +
       'the app then show what the office holds on that record. The link and your reason are kept.',
     create:
       'Verifying makes a registry record from this account — the verified name, the account’s ' +
