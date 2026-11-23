@@ -11486,3 +11486,21 @@ sign-in panel.
 **Easiest to reverse:** `sign-in-art.ts` and `.scss`, five tokens in `styles.scss`
 (`--photo-veil`, `--photo-scrim`, `--photo-scrim-feather`, `--photo-focus`, `--photo-focus-band`), the block in
 `check-contrast.mjs`, and `public/photos/`.
+
+## DL-244 — the sidebar holds to the window; only its menu scrolls
+
+**Status:** Settled (23 November 2026), on the owner's report that the account card and Sign out
+sat below the fold until the page was scrolled. Supersedes the page-tall sidebar the `/match-board`
+work drew under `DL-230`.
+
+1. **The sidebar is the window's height and stays put** (`position: sticky`, `100dvh` less the page
+   margin), as a web application's sidebar conventionally is. The brand sits at its head and the
+   account — who is signed in, and Sign out — at its foot, both always in sight at any page length
+   and any scroll position.
+2. **The menu alone scrolls** when it is longer than the room between them, with a thin scrollbar
+   in the line token, a stable gutter so the links do not shift when it appears, and
+   `overscroll-behavior: contain` so reaching its end never scrolls the page. After each
+   navigation `AppNav` scrolls only the menu, just far enough to show the current entry
+   (`DL-227`), which it already did in the phone drawer and now does on every width.
+3. **The phone drawer is unchanged**: below 900px the sidebar is still a fixed overlay set by its
+   insets, and resets the desktop height so its bottom inset holds.

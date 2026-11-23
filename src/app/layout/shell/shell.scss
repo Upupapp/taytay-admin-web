@@ -52,17 +52,24 @@
 }
 
 /* Glass, with the blur the mock-ups give it: the sidebar never contains a
-   fixed overlay, so the filter cannot trap one (DL-200). It is as tall as the
-   page, never less than the window, with the account at its foot as the boards
-   draw it; the whole menu shows without a scroll of its own (DL-230). */
+   fixed overlay, so the filter cannot trap one (DL-200). It holds to the
+   window as the page scrolls, exactly the window's height less the page margin,
+   so the account is always at its foot and in sight; when the menu is longer
+   than the room, the menu alone scrolls (DL-244, superseding DL-230's
+   page-tall sidebar). */
 .shell__sidebar {
+  position: sticky;
+  inset-block-start: var(--space-4);
+  align-self: start;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   inline-size: var(--shell-sidebar-width);
   /* Cannot exceed the viewport on a small screen. */
   max-inline-size: 100%;
-  min-block-size: calc(100vh - 2 * var(--space-4));
+  /* dvh where it exists, so a mobile browser's toolbar never hides the account. */
+  block-size: calc(100vh - 2 * var(--space-4));
+  block-size: calc(100dvh - 2 * var(--space-4));
   padding: 20px 14px var(--space-4);
   border: 1px solid var(--card-edge);
   border-radius: var(--r-card);
@@ -80,10 +87,18 @@
   padding: 2px 6px;
 }
 
-/* Takes the room between the brand and the account, so the account sits at the sidebar's foot.
-   The sidebar grows with the menu, so no link runs under the footer. */
+/* Takes the room between the brand and the account and scrolls within it, so no link runs
+   under the account and the page never scrolls to reach one. The current entry is scrolled
+   into the menu's view after each navigation (AppNav). The gutter is kept so the links do not
+   shift sideways when the scrollbar appears. */
 .shell__nav {
   flex: 1 1 auto;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line2) transparent;
 }
 
 .shell__account {
@@ -174,6 +189,8 @@
     inset-inline-start: var(--space-2);
     z-index: 40;
     inline-size: min(var(--shell-sidebar-width), calc(100% - 2 * var(--space-2)));
+    /* The insets set its height here; the desktop height would override the bottom one. */
+    block-size: auto;
     min-block-size: 0;
     background: var(--card-solid);
     visibility: hidden;
@@ -181,14 +198,6 @@
     transition:
       transform var(--motion-panel) var(--motion-ease-decelerate),
       visibility 0s linear var(--motion-panel);
-  }
-
-  /* The drawer is the window's height, so here the menu scrolls between the brand and the
-     account, and the current entry is scrolled into its view (AppNav). */
-  .shell__nav {
-    min-block-size: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
   }
 
   .shell__sidebar--open {
