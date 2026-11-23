@@ -11440,3 +11440,49 @@ entry does not do.
    nobody recorded. Between two points the line now stays between their values.
 
 **Easiest to reverse:** each is one function or input in `status-transition.ts` and `line-chart.ts`.
+
+## DL-243 — the sign-in panel is a photograph of the Municipal Hall, with nothing that looks clickable
+
+**Status:** Settled (23 November 2026), on the owner's request for a real photograph behind the
+sign-in panel.
+
+1. **The tiles are gone.** Five module tiles ("Assistance requests", "ID verification", …) looked
+   like buttons on a page where nothing can be opened yet, which is a false affordance. The panel now
+   holds only plain text: the "Taytay, Rizal" eyebrow with its gold line, the headline "One record,
+   from intake to release.", a one-line lede, the office name and the photo credit. There is no
+   control, icon or tile in it, and `auth.spec.ts` checks that.
+2. **The photograph is the Taytay Municipal Hall**: Commons file
+   _993Taytay, Rizal Roads Landmarks Buildings 04.jpg_, by Judgefloro, CC0, taken 25 July 2018 and
+   retrieved 23 November 2026. It is a public building of the municipality, not a picture of
+   service, so it shows nobody being helped and implies no beneficiary. The eight or so people at
+   the door are blurred under a feathered mask, because four of them face the camera and a visitor at the hall of a welfare
+   office could be read as somebody asking for help. CC0 asks for no credit; the panel gives one
+   anyway. `public/photos/README.md` records the source, the checksum, every change made and the
+   steps for the next photograph. The photograph is decoration, not data. Design rule 4's "every
+   photo comes from the API" is about records, and nothing here is a record.
+3. **The words stay legible whatever the photograph does.** There are two navy layers. The veil
+   (`--photo-veil`) covers the whole photograph and is heavier at the top, where an overcast sky
+   glared. The scrim (`--photo-scrim`) lies under the words only and grows with them: 82% navy or
+   more under every word. Over a pure white pixel that gives 10.4:1 for white and 6.5:1 for
+   `--on-deep-muted`. `check:contrast` computes this from the token and fails if the scrim thins or
+   the panel stops padding its words below the scrim's feather. Both failures were planted and
+   caught. The scrim is the same in both themes. The dark theme only thickens the veil (32% across
+   the middle, not 12%), because on a dark page the pale facade was the brightest thing on screen.
+   Neither touches the file: a photograph is not recoloured (`DL-199`).
+4. **The panel is a landmark, not hidden.** The old artwork was `aria-hidden`. Now the credit must
+   reach a screen reader, so the host is `role="complementary"`, labelled "About the staff console".
+   The photograph is a CSS background, so it is decorative by construction.
+5. **A phone never downloads it.** The background is declared only inside `(width > 760px)`, where
+   the panel shows; at or below 760px the panel is `display: none`, as before. There are two WebP
+   files of the same crop (the top 6% of blown sky trimmed): 900 px wide (63 kB) for 1x screens and 1200 px wide (100 kB) for
+   2x screens, chosen with `image-set()`. They are portrait because the panel is portrait (about
+   580 × 800 at 1440 wide); a 1600-px-wide landscape file would mostly be cropped away. There is no
+   JPEG: every browser that reads `image-set()` decodes WebP. The files are self-hosted under the
+   CSP's `img-src 'self'`.
+6. **What stayed:** the panel's size and breakpoints (it still stacks above the form between about
+   760 and 950 px, where `--photo-focus-band` keeps the roof line in the short band), the gold accent, and the display type tokens. The municipal seal stays at the
+   top of the form, and the photograph shows the seal on the hall itself.
+
+**Easiest to reverse:** `sign-in-art.ts` and `.scss`, five tokens in `styles.scss`
+(`--photo-veil`, `--photo-scrim`, `--photo-scrim-feather`, `--photo-focus`, `--photo-focus-band`), the block in
+`check-contrast.mjs`, and `public/photos/`.

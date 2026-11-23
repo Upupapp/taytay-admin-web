@@ -1,21 +1,40 @@
-// The sign-in artwork (SignIn mock-up's left panel): decoration on the deep panel.
+// The photograph panel beside the sign-in form (DL-243): the photograph under --photo-veil fills
+// the panel, and the words stand at its foot on --photo-scrim, which grows with them.
 :host {
   display: flex;
   flex: 1 1 440px;
   flex-direction: column;
-  gap: 28px;
+  justify-content: flex-end;
   min-block-size: 360px;
-  padding: var(--space-6);
+  overflow: hidden;
   border-radius: var(--r-panel);
-  background: var(--deep-panel);
+  background: var(--deep);
   color: var(--on-deep);
+}
+
+// The top padding is the scrim's feather, so the first word starts where the scrim is dense
+// (check:contrast holds this).
+.art__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  padding-block-start: var(--photo-scrim-feather);
+  background: var(--photo-scrim);
+}
+
+.art__words {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-inline-size: 30rem;
 }
 
 .art__place {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--on-deep-muted);
+  margin-block-end: var(--space-1);
   font-size: var(--fs-2xs);
   font-weight: var(--fw-semibold);
   letter-spacing: 0.14em;
@@ -29,87 +48,70 @@
   }
 }
 
-.art__tiles {
-  display: grid;
-  flex: 1 1 auto;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: center;
-  gap: var(--space-3);
-  inline-size: 100%;
-  max-inline-size: 420px;
-  margin-inline: auto;
-}
-
-.art__tile {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 22px;
-  min-block-size: 120px;
-  padding: var(--space-4) 18px;
-  border: 1px solid var(--on-deep-edge);
-  border-radius: var(--r-card-sm);
-  background: var(--on-deep-fill);
-  font-size: var(--fs-control);
-  font-weight: var(--fw-semibold);
-}
-
-/* The four small tiles: the icon top-left, the label bottom-left. The wide one is a row, the
-   icon beside its label, as the board draws it (its bar is left out: a bar reads as a figure). */
-.art__tile--wide {
-  flex-direction: row;
-  justify-content: flex-start;
-  align-items: center;
-  grid-column: 1 / -1;
-  gap: 14px;
-  min-block-size: 0;
-}
-
-.art__tile--gold {
-  border-color: transparent;
-  background: var(--gold);
-  color: var(--navy);
-}
-
-.art__tile--sky {
-  border-color: transparent;
-  background: var(--sky);
-}
-
-.art__chip {
-  display: grid;
-  place-items: center;
-  inline-size: 42px;
-  block-size: 42px;
-  border-radius: var(--r-tile);
-  background: var(--on-deep-chip);
-}
-
-.art__tile--gold .art__chip {
-  background: var(--soft);
-}
-
-.art__chip--red {
-  background: var(--red);
-}
-
-.art__title {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.art__name {
+.art__headline {
+  margin: 0;
   font-family: var(--font-display);
   font-size: var(--fs-display);
   font-weight: var(--fw-medium);
   line-height: var(--lh-display);
   letter-spacing: var(--ls-display);
+  text-wrap: balance;
+}
+
+.art__lede,
+.art__unit,
+.art__credit {
+  margin: 0;
+  color: var(--on-deep-muted);
+}
+
+.art__lede {
+  font-size: var(--fs-section);
+  line-height: 1.5;
+}
+
+.art__foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block-start: var(--space-4);
+  border-block-start: 1px solid var(--on-deep-edge);
 }
 
 .art__unit {
-  color: var(--on-deep-muted);
-  font-size: var(--fs-control);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.art__credit {
+  font-size: var(--fs-micro);
+  line-height: 1.45;
+}
+
+// The photograph is declared only where the panel is shown, so a phone never fetches it. 1x and 2x
+// are the same crop (900 and 1200 px wide); both WebP, which every browser that reads image-set()
+// also decodes.
+@media (width > 760px) {
+  :host {
+    background:
+      var(--photo-veil),
+      image-set(
+          url('/photos/taytay-municipal-hall-900.webp') 1x,
+          url('/photos/taytay-municipal-hall-1200.webp') 2x
+        )
+        var(--photo-focus) / cover no-repeat,
+      var(--deep);
+  }
+}
+
+// Between the phone breakpoint and about 950px the panel wraps above the form as a short band.
+@media (760px < width < 960px) {
+  :host {
+    background-position:
+      0 0,
+      var(--photo-focus-band),
+      0 0;
+  }
 }
 
 // On a narrow screen the form comes first and alone.

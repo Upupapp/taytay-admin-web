@@ -7,8 +7,18 @@ import { safeReturnUrl, RETURN_URL_PARAM } from '@core/access/access.guards';
 import { SessionState } from '@core/auth/session-state';
 import { SessionStore } from '@core/auth/session.store';
 import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
-import { ACCESS_CONTEXT, NOTIFICATION_REPOSITORY, SIGN_IN_METHOD, STAFF_REPOSITORY } from '@domain/index';
-import type { AppNotification, NotificationRepository, SignInCredentials, SignInMethod } from '@domain/index';
+import {
+  ACCESS_CONTEXT,
+  NOTIFICATION_REPOSITORY,
+  SIGN_IN_METHOD,
+  STAFF_REPOSITORY,
+} from '@domain/index';
+import type {
+  AppNotification,
+  NotificationRepository,
+  SignInCredentials,
+  SignInMethod,
+} from '@domain/index';
 import { MockStaffRepository, MOCK_MFA_CODE } from '@data/mock/mock-staff.repository';
 import type { AppEnvironment } from '@env/environment.model';
 import { of, type Observable } from 'rxjs';
@@ -201,6 +211,37 @@ describe('the theme on the sign-in page (DL-207)', () => {
   });
 });
 
+describe('the photograph panel beside the form (DL-243)', () => {
+  it('offers nothing that looks like it can be opened before sign-in', async () => {
+    const element = (await setUp()).nativeElement as HTMLElement;
+    const panel = element.querySelector('app-sign-in-art');
+
+    expect(panel).not.toBeNull();
+    expect(panel?.querySelectorAll('a, button, input, [tabindex], [role="button"]')).toHaveLength(
+      0,
+    );
+    expect(panel?.querySelector('[class*="tile"], app-icon')).toBeNull();
+  });
+
+  it('is a labelled landmark whose photo credit a screen reader reaches', async () => {
+    const element = (await setUp()).nativeElement as HTMLElement;
+    const panel = element.querySelector('app-sign-in-art');
+
+    expect(panel?.getAttribute('role')).toBe('complementary');
+    expect(panel?.getAttribute('aria-label')).toBe(AUTH_COPY.artLabel);
+    expect(panel?.closest('[aria-hidden="true"]')).toBeNull();
+    expect(panel?.querySelector('.art__credit')?.textContent?.trim()).toBe(
+      AUTH_COPY.artPhotoCredit,
+    );
+  });
+
+  it('draws the photograph as a background, with no image element to describe', async () => {
+    const element = (await setUp()).nativeElement as HTMLElement;
+
+    expect(element.querySelector('app-sign-in-art img')).toBeNull();
+  });
+});
+
 describe('credential handling', () => {
   it('signs a known staff member in and lands them on the dashboard', async () => {
     const fixture = await setUp();
@@ -383,8 +424,9 @@ describe('how this build signs in (DL-166)', () => {
   }
 
   it('offers no form when no identity provider is configured, and says so', async () => {
-    const element = (await setUp([method({ kind: 'not-configured', explanation: 'Nobody can sign in here yet.' })]))
-      .nativeElement as HTMLElement;
+    const element = (
+      await setUp([method({ kind: 'not-configured', explanation: 'Nobody can sign in here yet.' })])
+    ).nativeElement as HTMLElement;
 
     expect(element.querySelector('form')).toBeNull();
     expect(element.textContent).toContain(AUTH_COPY.notConfiguredHeading);

@@ -150,6 +150,31 @@
   --on-deep-chip: rgb(255 255 255 / 10%);
   /* A bar on a deep panel beside the gold one that stands out (DL-232). */
   --on-deep-bar: rgb(255 255 255 / 35%);
+  /* The sign-in photograph (DL-243). Two layers of navy. The veil lies over the whole photograph:
+     heavier at the top, where an overcast sky would otherwise glare, lightest across the hall. The
+     scrim lies under the words only, so it grows with them: clear at its top edge, 82% navy once
+     the feather is past and the words begin, 94% at the foot. Over the brightest pixel a
+     photograph could put behind a word, white, 82% holds --on-deep at 10.4:1 and --on-deep-muted
+     at 6.5:1 (check:contrast measures it). The scrim is the same in both themes; the dark theme
+     only thickens the veil. Neither touches the file: a photograph is not recoloured (DL-199). */
+  --photo-veil: linear-gradient(
+    to bottom,
+    rgb(8 18 74 / 45%) 0,
+    rgb(8 18 74 / 12%) 45%,
+    rgb(8 18 74 / 35%) 100%
+  );
+  --photo-scrim-feather: 6rem;
+  --photo-scrim: linear-gradient(
+    to bottom,
+    rgb(8 18 74 / 0%) 0,
+    rgb(8 18 74 / 82%) var(--photo-scrim-feather),
+    rgb(8 18 74 / 94%) 100%
+  );
+  /* Where a cover crop anchors the photograph. Beside the form the panel shows the photograph's
+     whole height; stacked above it, the panel is a short band, and the top anchor keeps the roof
+     line in it instead of halving the seal on the pediment. */
+  --photo-focus: 50% 28%;
+  --photo-focus-band: 50% 6%;
   /* The sign-in frame's outer corner (a panel inside it keeps --r-panel). */
   --r-frame: 36px;
 
@@ -330,6 +355,14 @@
   /* On the primary fill (a tally, the app-figures notice) the light value
      measured 4.0:1. */
   --on-deep-muted: #d6def2;
+  /* On a dark page the hall's pale facade, under the light veil's 12%, was the brightest thing
+     on the screen (DL-243). The same photograph, a heavier veil across its middle. */
+  --photo-veil: linear-gradient(
+    to bottom,
+    rgb(8 18 74 / 50%) 0,
+    rgb(8 18 74 / 32%) 45%,
+    rgb(8 18 74 / 45%) 100%
+  );
 
   --blue-tint: rgb(91 130 255 / 18%);
   --gold-tint: rgb(245 218 24 / 14%);

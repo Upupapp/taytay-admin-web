@@ -257,6 +257,58 @@ const THEMES = [
 for (const [theme, tokens] of THEMES) audit(theme, tokens);
 
 /*
+ * ── words on the sign-in photograph (DL-243) ───────────────────────────────
+ *
+ * The panel's words sit on `--photo-scrim`, below its feather: the first stop is the clear top
+ * edge, and the panel's top padding is the feather's own length, so every later stop lies under a
+ * word. The photograph is not a token, so the brightest pixel it could put behind a word, white,
+ * stands in for it: each ink must hold 4.5:1 over the thinnest of those stops laid on white.
+ * Thinning the scrim to show more of the photograph behind the words fails here rather than on
+ * somebody's monitor, and so does a panel that stops padding its words below the feather.
+ */
+const scrim = light.get('--photo-scrim') ?? '';
+const wordStops = [...scrim.matchAll(/rgb\((\d+) (\d+) (\d+) \/ (\d+(?:\.\d+)?)%\)/g)].slice(1);
+const art = readFileSync(join(ROOT, 'src/app/features/auth/sign-in-art.scss'), 'utf8');
+
+if (!/padding-block-start:\s*var\(--photo-scrim-feather\)/.test(art)) {
+  failures.push(
+    "sign-in-art.scss no longer pads the words below the scrim's feather " +
+      '(padding-block-start: var(--photo-scrim-feather)), so a word could stand on the clear ' +
+      'edge of the scrim, over the photograph (DL-243).',
+  );
+}
+
+if (wordStops.length === 0) {
+  failures.push(
+    '--photo-scrim has no stop below its feather, so the words on the sign-in photograph cannot ' +
+      'be measured (DL-243).',
+  );
+} else {
+  const thinnest = wordStops.reduce((a, b) => (Number(b[4]) < Number(a[4]) ? b : a));
+  const alpha = Number(thinnest[4]) / 100;
+  const overWhite =
+    '#' +
+    [1, 2, 3]
+      .map((i) => Math.round(alpha * Number(thinnest[i]) + (1 - alpha) * 255))
+      .map((value) => value.toString(16).padStart(2, '0'))
+      .join('');
+
+  for (const [theme, tokens] of THEMES) {
+    for (const ink of ['--on-deep', '--on-deep-muted']) {
+      checked++;
+      const value = tokens[ink] === undefined ? 0 : ratio(tokens[ink], overWhite);
+      if (value < TEXT_MINIMUM) {
+        failures.push(
+          `${theme}: words on the sign-in photograph: ${ink} over the scrim's thinnest word stop ` +
+            `(${thinnest[4]}% navy on white, ${overWhite}) is ${value.toFixed(2)}:1, below ` +
+            `${TEXT_MINIMUM}:1 (DL-243).`,
+        );
+      }
+    }
+  }
+}
+
+/*
  * ── the roles the pairs assume ─────────────────────────────────────────────
  *
  * The pairs measure `--link` as the brand's text and `--danger-fill` as the destructive fill. A

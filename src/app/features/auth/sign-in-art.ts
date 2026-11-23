@@ -1,49 +1,32 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 import { BRAND_COPY } from '@shared/brand/brand.copy';
-import { Icon } from '@shared/ui/icon/icon';
 
 import { AUTH_COPY } from './auth.copy';
 
 /**
- * The deep panel beside the sign-in form. Decoration only, so the host is hidden from assistive
- * technology: the console's name and a few of its module names, and nothing about any record —
- * there is no session yet, so there is nothing a figure here could truthfully count.
+ * The photograph panel beside the sign-in form (DL-243). The photograph is a CSS background, so it
+ * is decorative by construction; the words and the photo credit are text a screen reader reaches,
+ * which is why the host is a labelled landmark rather than `aria-hidden` as the tile artwork was.
+ * It holds no control and nothing shaped like one: the tiles it replaces looked like buttons on a
+ * page where nothing can be opened yet.
  */
 @Component({
   selector: 'app-sign-in-art',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon],
-  host: { 'aria-hidden': 'true' },
+  host: { role: 'complementary', '[attr.aria-label]': 'copy.artLabel' },
   template: `
-    <span class="art__place">{{ brand.municipality }}</span>
+    <div class="art__panel">
+      <div class="art__words">
+        <span class="art__place">{{ brand.municipality }}</span>
+        <p class="art__headline">{{ copy.artHeadline }}</p>
+        <p class="art__lede">{{ copy.artLede }}</p>
+      </div>
 
-    <div class="art__tiles">
-      <div class="art__tile art__tile--wide">
-        <span class="art__chip"><app-icon name="file" [size]="20" /></span>
-        {{ copy.artModules.requests }}
+      <div class="art__foot">
+        <p class="art__unit">{{ brand.organisationUnit }}</p>
+        <p class="art__credit">{{ copy.artPhotoCredit }}</p>
       </div>
-      <div class="art__tile art__tile--gold">
-        <span class="art__chip"><app-icon name="shield" [size]="20" /></span>
-        {{ copy.artModules.verification }}
-      </div>
-      <div class="art__tile art__tile--sky">
-        <span class="art__chip"><app-icon name="cash" [size]="20" /></span>
-        {{ copy.artModules.releases }}
-      </div>
-      <div class="art__tile">
-        <span class="art__chip"><app-icon name="pin" [size]="20" /></span>
-        {{ copy.artModules.visits }}
-      </div>
-      <div class="art__tile">
-        <span class="art__chip art__chip--red"><app-icon name="news" [size]="20" /></span>
-        {{ copy.artModules.balita }}
-      </div>
-    </div>
-
-    <div class="art__title">
-      <span class="art__name">{{ copy.artTitle }}</span>
-      <span class="art__unit">{{ brand.organisationUnit }}</span>
     </div>
   `,
   styleUrl: './sign-in-art.scss',

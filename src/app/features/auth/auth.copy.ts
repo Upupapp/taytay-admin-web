@@ -10,17 +10,15 @@ export const AUTH_COPY = {
   subtitle: 'Municipal Social Welfare and Development Office — staff console.',
 
   /*
-   * The artwork beside the form. Decorative and hidden from assistive technology: the console's
-   * own name and the names of a few of its modules, nothing about any record.
+   * The photograph panel beside the form (DL-243). Plain words about what the console is for, and
+   * nothing about any record: there is no session yet, so no figure here could be true. Nothing is
+   * worded or styled as a control, because nothing on it can be acted on before sign-in.
    */
-  artTitle: 'Staff console',
-  artModules: {
-    requests: 'Assistance requests',
-    verification: 'ID verification',
-    releases: 'Releases',
-    visits: 'Field visits',
-    balita: 'Balita',
-  },
+  artLabel: 'About the staff console',
+  artHeadline: 'One record, from intake to release.',
+  artLede: 'Assistance requests, case files, field visits and releases.',
+  // CC0 asks for no credit; the panel gives one anyway, as the photographer's due (public/photos).
+  artPhotoCredit: 'Photo: Taytay Municipal Hall by Judgefloro, CC0, via Wikimedia Commons.',
 
   emailLabel: 'Work email address',
   emailHint: 'The address issued to you by the municipality.',
