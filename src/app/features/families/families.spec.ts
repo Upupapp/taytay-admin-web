@@ -283,9 +283,9 @@ describe('changing who heads a family', () => {
     expect(change).not.toHaveBeenCalled();
 
     const confirm = () =>
-      Array.from(html(fixture).querySelectorAll('button')).filter((button) =>
-        button.textContent?.trim().startsWith('Make head'),
-      ).at(-1);
+      Array.from(html(fixture).querySelectorAll('button'))
+        .filter((button) => button.textContent?.trim().startsWith('Make head'))
+        .at(-1);
     expect(confirm()?.disabled).toBe(true);
 
     const reason = html(fixture).querySelector<HTMLInputElement>(
@@ -476,13 +476,20 @@ describe('recording a family', () => {
     await add(fixture, UNATTACHED);
     type(fixture, 'textarea', 'Home visit: she now lives with the Bautistas.');
     type(fixture, 'input[type="search"]', 'bautista');
-    await new Promise((resolve) => setTimeout(resolve, SEARCH_DEBOUNCE_MS + 50));
-    await fixture.whenStable();
-
-    const choose = Array.from(
-      html(fixture).querySelectorAll<HTMLButtonElement>('.family-form__household button'),
+    await new Promise((resolve) => setTimeout(resolve, SEARCH_DEBOUNCE_MS));
+    // Waits for the answer rather than a fixed margin past the debounce: under a loaded
+    // machine the search lands later than 50 ms and a wall-clock wait failed.
+    const choose = await vi.waitFor(
+      async () => {
+        await fixture.whenStable();
+        const found = Array.from(
+          html(fixture).querySelectorAll<HTMLButtonElement>('.family-form__household button'),
+        );
+        expect(found.length).toBeGreaterThan(0);
+        return found;
+      },
+      { timeout: 5000, interval: 50 },
     );
-    expect(choose.length).toBeGreaterThan(0);
     choose[0]?.click();
     await fixture.whenStable();
     expect(html(fixture).querySelector('.family-form__chosen')?.textContent).toContain('Lives in:');
