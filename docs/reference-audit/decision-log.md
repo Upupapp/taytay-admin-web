@@ -11530,3 +11530,9 @@ I see the receipt?" The API has always sent the acknowledgement, and the console
 
 Storing a scan of the paper acknowledgement would be a new upload, retention and RA 10173 question
 for the backend and the owner, not a console change, and is not done here.
+
+**Named by the owner, 23 November 2026:** the section is "Claim details", not "Receipt": the
+system holds how, when and by whom it was claimed, not a receipt document. The status reads
+"Claimed by the beneficiary or a representative they authorised.", and the form says "Record the
+claim". The cheque, e-wallet or receipt number keeps its name, because that is a real document
+number.

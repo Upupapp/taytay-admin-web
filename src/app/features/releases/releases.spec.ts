@@ -355,7 +355,7 @@ describe('the receipt on a claimed release (DL-245)', () => {
     const time = block?.querySelector('time');
     const at = time?.getAttribute('datetime') ?? '';
 
-    expect(block?.querySelector('h3')?.textContent?.trim()).toBe('Receipt');
+    expect(block?.querySelector('h3')?.textContent?.trim()).toBe('Claim details');
     expect(block?.textContent).toContain(ACKNOWLEDGEMENT_KIND_LABELS.representative);
     expect(at).not.toBe('');
     expect(time?.textContent?.trim()).toBe(formatDisplayDate(at, 'date-time'));
