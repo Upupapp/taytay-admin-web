@@ -11504,3 +11504,29 @@ work drew under `DL-230`.
    (`DL-227`), which it already did in the phone drawer and now does on every width.
 3. **The phone drawer is unchanged**: below 900px the sidebar is still a fixed overlay set by its
    insets, and resets the desktop height so its bottom inset holds.
+
+## DL-245 — a claimed release shows its receipt, and says where the signed copy is
+
+**Status:** Settled (23 November 2026), on the owner's question about a Claimed release: "where can
+I see the receipt?" The API has always sent the acknowledgement, and the console mapped it into
+`Release.acknowledgement`, but the release page only ever showed the form for recording one.
+
+1. **The receipt is shown in "The release" panel** whenever one is recorded, claimed or completed,
+   under its own "Receipt" subheading: how it was acknowledged (`ACKNOWLEDGEMENT_KIND_LABELS`),
+   when (date and time), who collected it and the authority they showed when a representative did,
+   and the cheque, e-wallet or receipt number. The number moves into the receipt once there is
+   one, so it reads as one receipt rather than being said twice.
+2. **The page says what the system holds and what it does not.** It records how, when and by whom
+   receipt was acknowledged and the number; it holds no scan or photograph of a receipt, and the
+   API has no field for one. The signed or thumbmarked copy is paper kept with the office's payout
+   records, and the page says so. A release paid at a payout session adds that the signature is on
+   that session's payout list — the sheet composed with its acknowledgement column left blank
+   (`DL-92`) — with a link to Payout sessions. A digital acknowledgement says there is no signed
+   paper copy, rather than pointing to one that does not exist.
+3. **"Claimed" no longer says the beneficiary signed.** The status description reads "Receipt
+   acknowledged by the beneficiary or a representative they authorised", and the receipt names the
+   representative, so a release collected by a daughter on her father's behalf is never read as
+   one he signed for himself.
+
+Storing a scan of the paper acknowledgement would be a new upload, retention and RA 10173 question
+for the backend and the owner, not a console change, and is not done here.

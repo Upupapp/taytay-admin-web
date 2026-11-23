@@ -11,6 +11,7 @@ import { MockNotificationRepository } from '@data/mock/mock-notification.reposit
 import { MockProgramRepository } from '@data/mock/mock-program.repository';
 import {
   ACCESS_CONTEXT,
+  ACKNOWLEDGEMENT_KIND_LABELS,
   ASSISTANCE_REQUEST_REPOSITORY,
   PAYOUT_METHOD_LABELS,
   PROGRAM_REPOSITORY,
@@ -33,6 +34,7 @@ import {
   type SignInOutcome,
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
+import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
 
 import { PayoutSessionPage } from './payout-session-page';
 import { ReleaseDetailPage } from './release-detail-page';
@@ -331,13 +333,79 @@ describe('releasing what you approved', () => {
 describe('a release that has been handed over', () => {
   it('says the cheque, e-wallet or receipt number it was released under', async () => {
     const fixture = await openDetail('dsb-0002');
-    expect(html(fixture).querySelector('.facts')?.textContent).toContain('CHK-0098412');
+    expect(html(fixture).querySelector('.release__receipt')?.textContent).toContain('CHK-0098412');
   });
 
   it('offers no "Record the release" panel once nothing is left to record', async () => {
     const fixture = await openDetail('dsb-0002', staffUser('system-administrator', 'staff-head'));
     expect(html(fixture).querySelector('#record-heading')).toBeNull();
     expect(html(fixture).querySelector('.release__warning')).toBeNull();
+  });
+});
+
+/* ── Criterion: a recorded receipt is shown, and says where the paper is (DL-245) ── */
+
+describe('the receipt on a claimed release (DL-245)', () => {
+  const receipt = (fixture: ComponentFixture<unknown>) =>
+    html(fixture).querySelector<HTMLElement>('.release__receipt');
+
+  it('shows how and when receipt was acknowledged, with the receipt number beside it', async () => {
+    const fixture = await openDetail(IN_KIND);
+    const block = receipt(fixture);
+    const time = block?.querySelector('time');
+    const at = time?.getAttribute('datetime') ?? '';
+
+    expect(block?.querySelector('h3')?.textContent?.trim()).toBe('Receipt');
+    expect(block?.textContent).toContain(ACKNOWLEDGEMENT_KIND_LABELS.representative);
+    expect(at).not.toBe('');
+    expect(time?.textContent?.trim()).toBe(formatDisplayDate(at, 'date-time'));
+    expect(block?.textContent).toContain('AR-2026-00380');
+    // One receipt, not the number said twice.
+    expect(html(fixture).textContent?.split('AR-2026-00380').length).toBe(2);
+  });
+
+  it('names who collected it and the authority they showed, when a representative did', async () => {
+    const fixture = await openDetail(IN_KIND);
+    const text = receipt(fixture)?.textContent ?? '';
+
+    expect(text).toContain('Collected by');
+    expect(text).toContain('His eldest daughter');
+    expect(text).toContain('Handwritten authorisation with a photocopy of his ID.');
+  });
+
+  it('says no scan is held, and points a session payout to its payout list', async () => {
+    const fixture = await openDetail(IN_KIND);
+    const block = receipt(fixture);
+
+    expect(block?.textContent).toContain(RELEASES_COPY.detail.receiptPaperNote);
+    expect(block?.querySelector('a')?.getAttribute('href')).toBe('/releases/sessions');
+  });
+
+  it('names no collector and no session for a release signed for at the office', async () => {
+    const fixture = await openDetail('dsb-0002');
+    const block = receipt(fixture);
+
+    expect(block?.textContent).toContain(ACKNOWLEDGEMENT_KIND_LABELS.signature);
+    expect(block?.textContent).not.toContain('Collected by');
+    expect(block?.querySelector('a')).toBeNull();
+  });
+
+  it('shows no receipt before one is acknowledged, and keeps the number among the facts', async () => {
+    const fixture = await openDetail(RELEASED);
+
+    expect(receipt(fixture)).toBeNull();
+    expect(html(fixture).querySelector('.facts')?.textContent).toContain('AR-2026-00402');
+  });
+
+  it('shows the receipt the moment one is recorded', async () => {
+    const fixture = await openDetail(RELEASED);
+    const page = fixture.componentInstance as unknown as { acknowledge: () => Promise<void> };
+
+    await page.acknowledge();
+    await fixture.whenStable();
+
+    expect(receipt(fixture)?.textContent).toContain(ACKNOWLEDGEMENT_KIND_LABELS.signature);
+    expect(receipt(fixture)?.textContent).toContain('AR-2026-00402');
   });
 });
 

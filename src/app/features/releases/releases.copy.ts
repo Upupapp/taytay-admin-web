@@ -172,6 +172,20 @@ export const RELEASES_COPY = {
     acknowledge: 'Record receipt',
     acknowledged: 'Receipt recorded.',
 
+    // The receipt as recorded (DL-245). What the system holds is how, when and the number; the
+    // signed or thumbmarked sheet itself stays on paper, and the page says where.
+    receiptHeading: 'Receipt',
+    receiptAt: 'Acknowledged',
+    receiptCollectedBy: 'Collected by',
+    receiptAuthority: 'Authority they showed',
+    receiptPaperNote:
+      'The system records how and when receipt was acknowledged, not a scan of it. The signed or thumbmarked copy is kept with the office’s payout records.',
+    receiptDigitalNote:
+      'The system records how and when receipt was acknowledged. It was acknowledged digitally, so there is no signed paper copy.',
+    receiptSessionNote:
+      'This was paid at a payout session: the signature is on that session’s payout list.',
+    receiptSessionLink: 'Payout sessions',
+
     deferHeading: 'They came and we could not pay',
     deferHint:
       'Every reason here is the office’s. If they did not come, mark it unclaimed instead.',

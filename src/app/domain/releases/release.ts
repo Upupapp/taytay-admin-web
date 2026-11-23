@@ -68,7 +68,9 @@ export const RELEASE_STATUS_CATALOG: StatusCatalog<ReleaseStatus> = {
     value: 'claimed',
     label: 'Claimed',
     tone: 'success',
-    description: 'Receipt acknowledged by the beneficiary.',
+    // Not "by the beneficiary": a representative may have collected it, and the record then
+    // names them (DL-245).
+    description: 'Receipt acknowledged by the beneficiary or a representative they authorised.',
   },
   unclaimed: {
     value: 'unclaimed',

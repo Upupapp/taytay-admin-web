@@ -62,13 +62,68 @@
                 <dd>{{ release.releasedAt | displayDate }}</dd>
               </div>
             }
-            @if (release.instrumentReference) {
+            <!-- Once receipt is acknowledged the number moves into the receipt below, so the two
+                 read as one receipt rather than as separate facts. -->
+            @if (release.instrumentReference && !release.acknowledgement) {
               <div class="facts__item">
                 <dt>{{ copy.instrument }}</dt>
                 <dd>{{ release.instrumentReference }}</dd>
               </div>
             }
           </dl>
+
+          <!-- The receipt as recorded (DL-245): how, when, who collected and the number. No
+               scan is held, and the note says where the signed copy is instead. -->
+          @if (release.acknowledgement; as receipt) {
+            <div class="release__receipt">
+              <h3 class="release__subheading">{{ copy.receiptHeading }}</h3>
+              <dl class="facts">
+                <div class="facts__item">
+                  <dt>{{ copy.acknowledgeKind }}</dt>
+                  <dd>{{ acknowledgementLabel(receipt.kind) }}</dd>
+                </div>
+                <div class="facts__item">
+                  <dt>{{ copy.receiptAt }}</dt>
+                  <dd>
+                    <time [attr.datetime]="receipt.acknowledgedAt">{{
+                      receipt.acknowledgedAt | displayDate: 'date-time'
+                    }}</time>
+                  </dd>
+                </div>
+                @if (receipt.collectedBy) {
+                  <div class="facts__item">
+                    <dt>{{ copy.receiptCollectedBy }}</dt>
+                    <dd>{{ receipt.collectedBy }}</dd>
+                  </div>
+                }
+                @if (release.instrumentReference) {
+                  <div class="facts__item">
+                    <dt>{{ copy.instrument }}</dt>
+                    <dd>{{ release.instrumentReference }}</dd>
+                  </div>
+                }
+                @if (receipt.authority) {
+                  <div class="facts__item facts__row--wide">
+                    <dt>{{ copy.receiptAuthority }}</dt>
+                    <dd>{{ receipt.authority }}</dd>
+                  </div>
+                }
+              </dl>
+              @if (receipt.kind === 'digital') {
+                <p class="release__receipt-note">{{ copy.receiptDigitalNote }}</p>
+              } @else {
+                <p class="release__receipt-note">{{ copy.receiptPaperNote }}</p>
+                @if (release.batchId) {
+                  <p class="release__receipt-note">
+                    {{ copy.receiptSessionNote }}
+                    <a class="record-link" routerLink="/releases/sessions">{{
+                      copy.receiptSessionLink
+                    }}</a>
+                  </p>
+                }
+              }
+            </div>
+          }
 
           @if (release.remarks) {
             <p class="release__remarks">{{ release.remarks }}</p>
