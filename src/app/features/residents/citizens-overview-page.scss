@@ -1,112 +1,9 @@
-// CitizensOverview board: the hero band, the filter card, a row of figures, then the panels on a
+// CitizensOverview board: the filter card (with the page's actions, DL-246), a row of figures, then the panels on a
 // twelve-column grid (DL-230). Panels the API cannot fill yet are listed in DATA-GAPS.md.
 
 :host {
   display: grid;
   gap: 18px;
-}
-
-/* ── Hero ─────────────────────────────────────────────────────────────────── */
-.overview-hero {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 20px;
-  padding: 26px 30px;
-  overflow: hidden;
-  isolation: isolate;
-  border-radius: var(--header-radius);
-  background: var(--grad-header);
-  color: var(--on-deep);
-
-  /* The board's two soft discs, decoration behind the words. */
-  &::before,
-  &::after {
-    position: absolute;
-    z-index: -1;
-    border-radius: var(--r-pill);
-    content: '';
-  }
-
-  &::before {
-    inset-block-start: var(--header-shape-a-top);
-    inset-inline-end: var(--header-shape-a-right);
-    inline-size: var(--header-shape-a-size);
-    block-size: var(--header-shape-a-size);
-    background: var(--header-shape-a-color);
-  }
-
-  &::after {
-    inset-block-end: var(--header-shape-b-bottom);
-    inset-inline-start: var(--header-shape-b-left);
-    inline-size: var(--header-shape-b-size);
-    block-size: var(--header-shape-b-size);
-    background: var(--header-shape-b-color);
-  }
-}
-
-.overview-hero__text {
-  display: flex;
-  flex: 1 1 520px;
-  flex-direction: column;
-  gap: 10px;
-  max-inline-size: 760px;
-}
-
-.overview-hero__title {
-  color: var(--on-deep);
-  font-family: var(--font-display);
-  font-size: var(--fs-hero);
-  font-weight: var(--fw-medium);
-  line-height: 1.08;
-  letter-spacing: -0.02em;
-}
-
-.overview-hero__lead {
-  color: var(--on-deep-muted);
-  font-size: var(--fs-section);
-  line-height: 1.55;
-}
-
-.overview-hero__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-inline-start: auto;
-}
-
-.overview-hero__button {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-block-size: 42px;
-  padding: 0 18px;
-  border-radius: var(--r-pill);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  text-decoration: none;
-}
-
-.overview-hero__button--ghost {
-  border: 1px solid var(--on-deep-edge);
-  background: var(--on-deep-fill);
-  color: var(--on-deep);
-
-  &:hover {
-    background: var(--on-deep-chip);
-    color: var(--on-deep);
-  }
-}
-
-.overview-hero__button--gold {
-  background: var(--gold);
-  color: var(--navy);
-
-  &:hover {
-    background: var(--gold-hover);
-    color: var(--navy);
-  }
 }
 
 /* ── Filters: small pill selects in a card, labels for screen readers ────── */
@@ -128,7 +25,8 @@
   font-weight: var(--fw-semibold);
 }
 
-.overview__clear {
+.overview__clear,
+.overview__action {
   min-block-size: var(--h-btn-sm);
 }
 
@@ -287,7 +185,6 @@ a.overview-kpi:focus-visible .overview-kpi__label {
 .overview-panel--tidy + .overview-panel--disclosure {
   grid-column: span 7;
 }
-
 
 .overview-panel__head {
   display: flex;

@@ -95,7 +95,8 @@ if (
     'The Balita page no longer says residents read it in the app, and that it is the one news channel this console publishes to.',
   );
 }
-if (!/\[subtitle\]="copy\.page\.subtitle"/.test(source(join(FEATURE, 'balita-page.html')))) {
+// The page's description is not drawn (DL-246); this sentence is, as the header's lead.
+if (!/\[lead\]="copy\.page\.subtitle"/.test(source(join(FEATURE, 'balita-page.html')))) {
   failures.push('The Balita page header no longer shows the sentence saying residents read it.');
 }
 

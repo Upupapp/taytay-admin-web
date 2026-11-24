@@ -1,7 +1,7 @@
 <app-async-content [state]="state()" [content]="body" [skeletonLines]="8">
   <ng-template #body let-profile>
     @if (profile === null) {
-      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <app-page-header showTitle [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
       <p class="detail__back">
         <a class="btn" routerLink="/residents">{{ copy.backToList }}</a>
       </p>

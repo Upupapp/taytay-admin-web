@@ -10,13 +10,27 @@
 
 @use 'focus';
 
-/* ── Page header actions ──────────────────────────────────────────────────
-   The page's own call to action is the mock-ups' large pill (48px). The
-   header projects it, so it is sized here rather than in the component. */
-.page-header__actions .btn {
-  min-block-size: var(--h-btn-lg);
-  padding-inline: 22px;
-  font-size: var(--fs-body);
+/* ── Page actions in a panel (DL-246) ────────────────────────────────────
+   A list page's actions sit in its filter card rather than under a page
+   title: `.panel-head` is the card's first row (the saved views on the left,
+   the actions on the right), and `.toolbar__actions` is the group at the end
+   of a row, pushed right and wrapping onto its own line when the row is
+   full. The buttons keep their own sizes; nothing here enlarges them. */
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-inline-start: auto;
 }
 
 /* ── Cards ────────────────────────────────────────────────────────────────
@@ -586,6 +600,13 @@ select.field__input.field__input--pill {
 .filter-bar__field .field__input {
   flex: 1 1 auto;
   min-inline-size: 0;
+}
+
+/* A field's label stays on one line; the select beside it gives way. With the page's actions in the
+   bar (DL-246), "Programme type" otherwise broke over two lines. */
+.filter-bar__field > span {
+  flex: none;
+  white-space: nowrap;
 }
 
 .filter-bar__note {

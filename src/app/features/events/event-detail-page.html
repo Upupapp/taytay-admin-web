@@ -5,9 +5,9 @@
 <app-async-content [state]="state()" [content]="eventContent" [skeletonLines]="8">
   <ng-template #eventContent let-event>
     @if (event === null) {
-      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <app-page-header showTitle [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
     } @else {
-      <app-page-header [title]="event.title" />
+      <app-page-header showTitle [title]="event.title" />
 
       <div class="event">
         <div class="split event__top">

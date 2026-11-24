@@ -10,9 +10,13 @@
 >
   <ng-template #body let-referral>
     @if (referral === null) {
-      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <app-page-header showTitle [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
     } @else {
-      <app-page-header [title]="referral.referenceNumber" [subtitle]="referral.destinationName" />
+      <app-page-header
+        showTitle
+        [title]="referral.referenceNumber"
+        [subtitle]="referral.destinationName"
+      />
 
       @if (wordsWithheld(referral)) {
         <p class="callout callout--warning referral__withheld" role="note">

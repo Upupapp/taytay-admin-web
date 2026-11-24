@@ -7,12 +7,13 @@
 
 <ng-template #body let-workspace>
   @if (!workspace) {
-    <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+    <app-page-header showTitle [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
     <p class="workspace__back">
       <a class="btn" routerLink="/cases">{{ copy.back }}</a>
     </p>
   } @else {
     <app-page-header
+      showTitle
       [title]="workspace.record.referenceNumber"
       [subtitle]="copy.subtitle + ' · ' + categoryLabel(workspace)"
     >

@@ -105,7 +105,8 @@ const copy = read(FEATURE, 'home-screen.copy.ts');
 if (!/subtitle:\s*\n?\s*'Residents see this in the Taytay app/.test(copy.slice(0, copy.indexOf('common:')))) {
   failures.push('The home screen page no longer opens by saying residents see it in the Taytay app.');
 }
-if (!/\[subtitle\]="copy\.subtitle"/.test(code(read(FEATURE, 'home-screen-page.html')))) {
+// The page's description is not drawn (DL-246); this sentence is, as the header's lead.
+if (!/\[lead\]="copy\.subtitle"/.test(code(read(FEATURE, 'home-screen-page.html')))) {
   failures.push('The home screen page header no longer shows the sentence saying residents see it.');
 }
 

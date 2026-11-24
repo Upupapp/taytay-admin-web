@@ -15,6 +15,7 @@
   <ng-template #requestContent>
     @if (current(); as request) {
       <app-page-header
+        showTitle
         [title]="request.referenceNumber + ' — ' + request.type.name"
         [subtitle]="copy.titleFallback"
       />

@@ -1,12 +1,16 @@
 <app-async-content [state]="state()" [content]="body" [skeletonLines]="8">
   <ng-template #body let-record>
     @if (record === null) {
-      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <app-page-header showTitle [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
       <p class="beneficiary__back">
         <a class="btn" routerLink="/beneficiaries">{{ copy.back }}</a>
       </p>
     } @else {
-      <app-page-header [title]="record.resident.fullName" [subtitle]="barangayLabel(record)">
+      <app-page-header
+        showTitle
+        [title]="record.resident.fullName"
+        [subtitle]="barangayLabel(record)"
+      >
         <a page-actions class="btn" [routerLink]="'/residents/' + record.residentId">
           Open registry record
         </a>

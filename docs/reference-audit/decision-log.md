@@ -11536,3 +11536,39 @@ system holds how, when and by whom it was claimed, not a receipt document. The s
 "Claimed by the beneficiary or a representative they authorised.", and the form says "Record the
 claim". The cheque, e-wallet or receipt number keeps its name, because that is a real document
 number.
+
+## DL-246 — a page name is read, not drawn; the registry's sectors are a select
+
+**Status:** Settled (24 November 2026), on the owner's decision. Supersedes `DL-201`'s "the page
+title stays on the page" and `DL-209` item 1 (the sector filter as a row of tabs). The boards in
+`docs/design/admin/screens/` still draw a title, a lead and a tab strip; this entry overrides them.
+
+1. **The page title block is gone.** The owner found the 42px title and its description redundant:
+   the breadcrumb at the top left already says where the reader is. `PageHeader` keeps the page's
+   one `h1`, `.visually-hidden`, because a page without a heading fails WCAG 2.4.6 and 1.3.1 for a
+   screen-reader user who navigates by headings; it no longer draws the description. What it draws
+   is a slim, right-aligned row of the page's actions, wrapping at phone width, and nothing at all
+   when the page has no actions. The actions keep their button styles; the 48px header size went.
+2. **Actions move into the filter card where a list has one**: the registry and the beneficiary
+   registry at the card's top right beside the saved views (`.panel-head`), the releases list, the
+   dashboard and the citizens overview at the end of their filter row (`.toolbar__actions`). Both
+   classes are in `_patterns.scss`. Other pages keep them in the header's slim row.
+3. **A heading that is data or a message is still drawn** (`showTitle`): a record's reference or
+   name — a release's "RL-2026-000001", a case, household, referral, visit, issuance request or
+   assessment reference, a programme, family, event or beneficiary name — and every not-found
+   heading and the not-connected page, where the heading *is* the page's message. The resident
+   record and the inbox thread draw their own (the person's name, the subject), and the resident
+   form's in-card head stays, as the form's panel rather than a page title.
+4. **A sentence a check requires stays drawn.** The five app-facing pages (home screen, directory,
+   Balita, app settings, digital IDs) open by saying residents see what is edited here; that
+   sentence moves from the description to the header's `lead`, drawn in the action row, and
+   `check:home`, `check:directory`, `check:balita` and `check:app-settings` now look for it there.
+5. **The registry's sector filter is a select** beside barangay, age and sex: "All sectors", then
+   each sector with its count from the registry summary under the same filters ("Senior citizens
+   (0)", `DL-232`). It sets `sector` in the URL as the tabs did, so saved views and live updates are
+   unchanged (`DL-36`, `DL-222`). VAWC survivors and CICL are offered only with
+   `request.view-sensitive` (`DL-174`); the data layer still redacts (`DL-38`).
+
+The citizens overview's hero band, the only user of `--grad-header` and `--fs-hero`, went with it.
+The `subtitle` copy stays in the copy files, so drawing the titles and descriptions again would be
+a change to `PageHeader` alone; the moved actions could stay where they are.

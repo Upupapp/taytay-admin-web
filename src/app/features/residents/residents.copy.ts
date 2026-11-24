@@ -29,9 +29,9 @@ export const RESIDENTS_COPY = {
     allBarangays: 'All barangays',
     sector: 'Sector',
     allSectors: 'All sectors',
-    allSectorsTab: 'All citizens',
-    // The tabs' short labels (CitizenRegistry mock-up): one row that never wraps, so "PWD".
-    sectorTabs: {
+    // The sector options' short labels, as the board's tabs had them (DL-246): "PWD", not the
+    // statute's name, so the select stays as narrow as its neighbours.
+    sectorOptions: {
       'senior-citizen': 'Senior citizens',
       pwd: 'PWD',
       'solo-parent': 'Solo parents',
@@ -43,6 +43,9 @@ export const RESIDENTS_COPY = {
       cicl: 'CICL',
       'displaced-worker': 'Displaced workers',
     } satisfies Readonly<Record<VulnerabilitySector, string>>,
+    /** "Senior citizens (12)"; the label alone until the count is read. */
+    sectorOption: (label: string, count: string | null): string =>
+      count === null ? label : `${label} (${count})`,
     ageGroup: 'Age group',
     allAges: 'All ages',
     sex: 'Sex',

@@ -1,11 +1,21 @@
-/* The console mock-ups' title block: a large display title straight on the page
-   wash, a muted lead, and the page's actions bottom-aligned beside it. The
-   design's gradient header is drawn for the residents' app, not the console
-   (DL-201); `--grad-header` and its shapes stay defined, so adopting it would
-   change this stylesheet and nothing else. */
+/* The page's heading and actions (DL-246). A page name is read but not drawn: what shows is a slim
+   row of the page's actions, right-aligned at the top of the content, wrapping at phone width. It
+   takes no room when the page has neither actions nor a lead, so the content starts at the top.
+   A shown heading (a record's reference, a not-found message) keeps the mock-ups' display title on
+   the page wash with a muted lead, its actions bottom-aligned beside it (DL-201). */
 .page-header {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.page-header:has(.page-header__lead, .page-header__actions:not(:empty)) {
+  margin-block-end: var(--space-4);
+}
+
+.page-header--shown {
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--space-4);
@@ -38,17 +48,22 @@
   text-wrap: pretty;
 }
 
-/* The wide lead (`class="page-header--wide"` on the host): a board whose subtitle runs the whole
-   820px of the title block rather than a reading measure (VerificationQueue). */
-:host(.page-header--wide) .page-header__subtitle {
-  max-inline-size: none;
+/* A sentence the page owes its reader, at the start of the action row. */
+.page-header__lead {
+  flex: 1 1 320px;
+  min-inline-size: 0;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  text-wrap: pretty;
 }
 
 .page-header__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-3);
+  margin-inline-start: auto;
 }
 
 .page-header__actions:empty {
@@ -64,5 +79,12 @@
 @media (width <= 640px) {
   .page-header__title {
     font-size: calc(var(--fs-display) * 0.66);
+  }
+
+  /* At phone width the actions take the row's whole width, left to right, rather than squeezing
+     beside each other. */
+  .page-header__actions {
+    justify-content: flex-start;
+    margin-inline-start: 0;
   }
 }

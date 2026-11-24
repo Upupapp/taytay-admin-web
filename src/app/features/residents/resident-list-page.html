@@ -1,75 +1,38 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a
-    page-actions
-    *appHasPermission="'resident.import'"
-    class="btn residents__action"
-    routerLink="/residents/import"
-  >
-    <app-icon name="upload" [size]="15" [stroke]="2" />
-    {{ copy.importCitizens }}
-  </a>
-  <a
-    page-actions
-    *appHasPermission="'resident.create'"
-    class="btn btn--primary residents__action residents__action--primary"
-    routerLink="/residents/new"
-  >
-    <app-icon name="plus" class="residents__cta-icon" [stroke]="2.2" />
-    {{ copy.create }}
-  </a>
-</app-page-header>
-
-<!-- The sector filter as one row of tabs (CitizenRegistry mock-up). Each is a link to the same
-     list with `sector` set, so the URL stays the filter. Wider than a phone the tabs wrap rather
-     than run off the card unmarked; on a phone the row scrolls inside itself (`DL-227`). A
-     protected sector is offered only to a reader cleared for it (`DL-174`). -->
-<nav class="residents__sectors" [attr.aria-label]="copy.sector">
-  <ul class="tabs tabs--scroll residents__sector-tabs">
-    <li>
-      <a
-        class="tab"
-        [routerLink]="[]"
-        [queryParams]="{ sector: null }"
-        queryParamsHandling="merge"
-        [replaceUrl]="true"
-        [class.tab--active]="!filter().sector"
-        [attr.aria-current]="!filter().sector ? 'true' : null"
-        >{{ copy.allSectorsTab }}
-        @if (tabCount(null); as count) {
-          <span class="tab__count">{{ count }}</span>
-        }
-      </a>
-    </li>
-    @for (sector of sectors(); track sector) {
-      <li>
-        <a
-          class="tab"
-          [routerLink]="[]"
-          [queryParams]="{ sector }"
-          queryParamsHandling="merge"
-          [replaceUrl]="true"
-          [class.tab--active]="filter().sector === sector"
-          [attr.aria-current]="filter().sector === sector ? 'true' : null"
-          >{{ sectorTab(sector) }}
-          @if (tabCount(sector); as count) {
-            <span class="tab__count">{{ count }}</span>
-          }
-        </a>
-      </li>
-    }
-  </ul>
-</nav>
+<!-- The page's name is read, not drawn: the breadcrumb says it. Its actions sit at the top right of
+     the filter card, beside the saved views (DL-246). -->
+<app-page-header [title]="copy.title" />
 
 <section class="card card--panel card--padded stack residents" [attr.aria-label]="copy.caption">
-  @if (servesSavedViews) {
-    <app-saved-views-bar
-      resource="residents"
-      [currentParams]="filterParams()"
-      [currentUserId]="currentUserId()"
-    />
-  } @else {
-    <app-not-connected port="saved-view" />
-  }
+  <div class="panel-head">
+    @if (servesSavedViews) {
+      <app-saved-views-bar
+        resource="residents"
+        [currentParams]="filterParams()"
+        [currentUserId]="currentUserId()"
+      />
+    } @else {
+      <app-not-connected port="saved-view" />
+    }
+
+    <div class="toolbar__actions">
+      <a
+        *appHasPermission="'resident.import'"
+        class="btn residents__action"
+        routerLink="/residents/import"
+      >
+        <app-icon name="upload" [size]="15" [stroke]="2" />
+        {{ copy.importCitizens }}
+      </a>
+      <a
+        *appHasPermission="'resident.create'"
+        class="btn btn--primary residents__action residents__action--primary"
+        routerLink="/residents/new"
+      >
+        <app-icon name="plus" class="residents__cta-icon" [stroke]="2.2" />
+        {{ copy.create }}
+      </a>
+    </div>
+  </div>
 
   <div class="toolbar">
     <label class="field residents__search">
@@ -117,6 +80,21 @@
         <option value="" [selected]="!filter().sex">{{ copy.allSexes }}</option>
         @for (sex of sexes; track sex) {
           <option [value]="sex" [selected]="filter().sex === sex">{{ sexLabel(sex) }}</option>
+        }
+      </select>
+    </label>
+
+    <!-- The sector filter, a select like its neighbours (DL-246, superseding DL-209's tabs): the URL
+         is still the filter. A protected sector is offered only to a reader cleared for it
+         (DL-174), and each option carries its count from the registry summary (DL-232). -->
+    <label class="field">
+      <span class="field__label visually-hidden">{{ copy.sector }}</span>
+      <select class="field__input field__input--pill" (change)="onSector($event)">
+        <option value="" [selected]="!filter().sector">{{ copy.allSectors }}</option>
+        @for (sector of sectors(); track sector) {
+          <option [value]="sector" [selected]="filter().sector === sector">
+            {{ sectorOption(sector) }}
+          </option>
         }
       </select>
     </label>

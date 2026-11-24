@@ -1,4 +1,4 @@
-<app-page-header class="page-header--wide" [title]="copy.title" [subtitle]="copy.subtitle">
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
   @if (canCheck()) {
     <button page-actions type="button" class="btn citizen-ids__action" (click)="checking.set(true)">
       <app-icon name="qr" [size]="15" [stroke]="2" />

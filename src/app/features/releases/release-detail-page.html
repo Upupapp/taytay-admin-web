@@ -10,9 +10,13 @@
 >
   <ng-template #releaseContent let-release>
     @if (release === null) {
-      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <app-page-header showTitle [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
     } @else {
-      <app-page-header [title]="release.referenceNumber" [subtitle]="kindLabel(release)" />
+      <app-page-header
+        showTitle
+        [title]="release.referenceNumber"
+        [subtitle]="kindLabel(release)"
+      />
 
       <div class="record-grid release">
         <section class="card card--padded release__panel" aria-labelledby="about-heading">

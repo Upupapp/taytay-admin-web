@@ -122,7 +122,7 @@ export class ResidentListPage {
   protected readonly sexes = SEXES;
 
   /**
-   * The sector tabs, in the domain's order. A protected sector is offered only to a reader cleared
+   * The sector filter's options, in the domain's order. A protected sector is offered only to a reader cleared
    * for it: the list of who is a VAWC survivor is the disclosure, and the server refuses the
    * question without the grant (`DL-174`).
    */
@@ -139,7 +139,8 @@ export class ResidentListPage {
     viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('nameCell');
   private readonly statusCell =
     viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('statusCell');
-  private readonly appCell = viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('appCell');
+  private readonly appCell =
+    viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('appCell');
 
   protected readonly appCatalog = REGISTRY_APP_STANDING_CATALOG;
 
@@ -236,10 +237,10 @@ export class ResidentListPage {
     viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('barangayCell');
 
   /**
-   * A count on each sector tab, from the registry summary under the same barangay, age group and
+   * A count on each sector option, from the registry summary under the same barangay, age group and
    * sex as the list (`DL-232`); a withheld count says so, and nothing is shown until it is read.
    */
-  private readonly tabSummary = toSignal(
+  private readonly sectorSummary = toSignal(
     toObservable(
       computed(() => {
         const filter = this.filter();
@@ -251,18 +252,20 @@ export class ResidentListPage {
       }),
     ).pipe(
       switchMap((filter) =>
-        // Counts beside the tabs: a failed re-read keeps them, and the list reports for the page.
-        liveViewState(() => this.repository.summary(filter), this.live.changes(RESIDENT_LIST_TOPICS)),
+        // Counts in the options: a failed re-read keeps them, and the list reports for the page.
+        liveViewState(
+          () => this.repository.summary(filter),
+          this.live.changes(RESIDENT_LIST_TOPICS),
+        ),
       ),
     ),
     { initialValue: LOADING as ViewState<ResidentSummary> },
   );
 
-  /** The tab's count, `null` before the summary is read (or when it could not be). */
-  protected tabCount(sector: VulnerabilitySector | null): string | null {
-    const summary = valueOf(this.tabSummary());
+  /** The sector's count, `null` before the summary is read (or when it could not be). */
+  private sectorCount(sector: VulnerabilitySector): string | null {
+    const summary = valueOf(this.sectorSummary());
     if (summary === null) return null;
-    if (sector === null) return summary.residents.current.toLocaleString('en-PH');
     const row = summary.bySector.rows.find((candidate) => candidate.key === sector);
     if (row === undefined) return null;
     return row.isWithheld ? this.copy.withheld : row.value.toLocaleString('en-PH');
@@ -294,9 +297,9 @@ export class ResidentListPage {
     return VULNERABILITY_SECTOR_LABELS[sector];
   }
 
-  /** The tab's short label ("PWD"); the chips in the table keep the full one. */
-  protected sectorTab(sector: VulnerabilitySector): string {
-    return this.copy.sectorTabs[sector];
+  /** The option's short label with its count, "Senior citizens (12)"; the table keeps the full one. */
+  protected sectorOption(sector: VulnerabilitySector): string {
+    return this.copy.sectorOption(this.copy.sectorOptions[sector], this.sectorCount(sector));
   }
 
   protected ageGroupLabel(group: ResidentAgeGroup): string {
@@ -343,6 +346,10 @@ export class ResidentListPage {
 
   protected onSex(event: Event): void {
     this.patch({ sex: selectValue(event) });
+  }
+
+  protected onSector(event: Event): void {
+    this.patch({ sector: selectValue(event) });
   }
 
   protected onIncludeInactive(event: Event): void {

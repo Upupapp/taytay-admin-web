@@ -107,9 +107,8 @@ unlike a government seal, so a placeholder is never mistaken for the real one).
 `--page` (above), `--card` (above), `--deep-panel` (radial glows over `--deep`: the sign-in artwork,
 deep cards), `--tile-{blue,green,gold,red,navy,sky}` (icon tiles, 135°; glyph `--tile-ink` white,
 `--tile-gold-ink` navy on gold). `--grad-header` and the `--header-shape-*` tokens hold the README's
-blue header with its two circles; **no screen uses them** — the admin mock-ups draw the page title on
-the wash, not on a gradient (`DL-201`). Switching the page header to the gradient is a change to
-`shared/ui/page-header/page-header.scss` only.
+blue header with its two circles; **no screen uses them** — a page name is not drawn at all
+(`DL-246`), and a shown heading sits on the wash, not on a gradient (`DL-201`).
 
 ### Type
 
@@ -118,13 +117,13 @@ Families: `--font-body` (Inter), `--font-display` (Inter Tight: page and section
 
 | Token             | Size   | Use                                         |
 | ----------------- | ------ | ------------------------------------------- |
-| `--fs-display`    | 42px   | Page title (`app-page-header`)              |
+| `--fs-display`    | 42px   | A shown page heading (`DL-246`)             |
 | `--fs-kpi-lg`     | 44px   | The dashboard's headline counts (DL-231)    |
 | `--fs-kpi`        | 38px   | Headline figure (`.kpi__value`)             |
 | `--fs-kpi-md`     | 36px   | A figure in a row of four (DL-231)          |
 | `--fs-kpi-money`  | 34px   | A peso total beside counts (DL-231)         |
 | `--fs-kpi-sm`     | 28px   | A figure in a row of five or six (DL-231)   |
-| `--fs-hero`       | 34px   | A hero band's title (DL-231)                |
+| `--fs-hero`       | 34px   | Unused since DL-246 (was the hero band)     |
 | `--fs-title-xl`   | 32px   | Sign-in title                               |
 | `--fs-title-lg`   | 26px   | Record title                                |
 | `--fs-title`      | 24px   | Card or dialog title                        |
@@ -285,7 +284,7 @@ Defined once and never redefined in a feature stylesheet (`DL-120`, `check:harde
 | Class                                                                        | What it is                                                                                                                                                               |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `.btn`                                                                       | The secondary button: 38px pill, `--line2` border, glass fill.                                                                                                           |
-| `.btn--primary`                                                              | 44px, `--primary` fill, hover `--primary-hover`. Inside `app-page-header` or `.form-footer`: 48px.                                                                       |
+| `.btn--primary`                                                              | 44px, `--primary` fill, hover `--primary-hover`. Inside `.form-footer`: 48px.                                                                       |
 | `.btn--danger`                                                               | Filled red: the _confirming_ button of a destructive act, inside its dialog. Never an archive or a restore, which a restore undoes (`DL-225`, §7).                      |
 | `.btn--danger-outline`, `.btn--danger-soft`                                  | A destructive act that opens a confirmation (`_patterns.scss`). Not Archive: that row button is a plain `.btn`.                                                         |
 | `.btn--secondary`, `.btn--subtle`                                            | Explicit secondary; borderless text button.                                                                                                                              |
@@ -330,12 +329,29 @@ Import from `@shared/index`. Every one is standalone, OnPush, with signal inputs
 
 ### PageHeader — `app-page-header`
 
-Every routed page's title block: 42px Inter Tight title on the wash, a muted lead, the page's call
-to action bottom-right as a 48px pill.
-Inputs: `title` (required), `subtitle`. Slot: `[page-actions]`.
+Every routed page's one `h1`, and its actions. **A page name is read, not drawn** (`DL-246`): the
+breadcrumb already says where the reader is, so the `h1` is `.visually-hidden` and what shows is a
+slim row of the page's actions, right-aligned at the top of the content and wrapping at phone width.
+With no actions and no lead it takes no room at all. `subtitle` is not drawn on a page name.
+
+`showTitle` draws the heading as before — 42px Inter Tight on the wash, the subtitle as a muted
+lead, the actions bottom-right — for a heading that is **data or a message, not a page name**: a
+record's reference or name ("RL-2026-000001", a family's name), or a not-found or not-connected
+message. `lead` is a sentence the page owes its reader whatever the title does — the five app-facing
+pages' "Residents see this in the Taytay app" (`check:home`, `check:directory`, `check:balita`,
+`check:app-settings`) — drawn at the start of the action row.
+
+Inputs: `title` (required), `subtitle`, `showTitle`, `lead`. Slot: `[page-actions]`. Actions keep
+their own button sizes (`.btn`, `.btn--primary`).
+
+Where a list has a filter card, its actions sit **in the card** instead of the header row: at the
+top right beside the saved views (`.panel-head` holding the bar and a `.toolbar__actions`), or at
+the end of the filter row (`.toolbar__actions` as the toolbar's last child). Both are in
+`_patterns.scss`; the registry is the reference.
 
 ```angular-html
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+<!-- A page name: read, not drawn; the actions in a slim row -->
+<app-page-header [title]="copy.title">
   <a
     page-actions
     *appHasPermission="'resident.create'"
@@ -345,6 +361,9 @@ Inputs: `title` (required), `subtitle`. Slot: `[page-actions]`.
     <app-icon name="plus" [stroke]="2.2" /> {{ copy.create }}
   </a>
 </app-page-header>
+
+<!-- A record's reference: data, drawn -->
+<app-page-header showTitle [title]="release.referenceNumber" [subtitle]="kindLabel(release)" />
 ```
 
 ### DataTable — `app-data-table`
@@ -580,12 +599,16 @@ Mock-up: [`Residents.dc.html`](./admin/screens/Residents.dc.html) (also `Verific
 `AppDirectory`). Reference: `src/app/features/residents/resident-list-page.*`.
 
 ```angular-html
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions class="btn btn--primary" routerLink="new">{{ copy.create }}</a>
-</app-page-header>
+<app-page-header [title]="copy.title" />
 
 <section class="card card--panel card--padded stack" [attr.aria-label]="copy.caption">
-  <!-- saved views, if the list's filters live in the URL -->
+  <!-- saved views, if the list's filters live in the URL, with the page's actions top right -->
+  <div class="panel-head">
+    <app-saved-views-bar … />
+    <div class="toolbar__actions">
+      <a class="btn btn--primary" routerLink="new">{{ copy.create }}</a>
+    </div>
+  </div>
   <div class="toolbar">
     <label class="field">
       <span class="field__label">{{ copy.search }}</span>
@@ -622,7 +645,7 @@ plain `.record-grid` form.
 ```angular-html
 <app-async-content [state]="state()" [content]="body" [skeletonLines]="8">
   <ng-template #body let-record>
-    <app-page-header [title]="record.name">
+    <app-page-header showTitle [title]="record.name">
       <a page-actions class="btn" [routerLink]="editLink()">{{ copy.edit }}</a>
     </app-page-header>
     <!-- a protected or withheld record says so first -->
@@ -665,7 +688,7 @@ Mock-ups: [`ResidentRegister.dc.html`](./admin/screens/ResidentRegister.dc.html)
 classes from before `.form-section` existed.
 
 ```angular-html
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+<app-page-header [title]="copy.title" />
 
 <form class="card card--panel card--padded form-panel" novalidate (submit)="submit($event)">
   @if (refusal(); as message) {
@@ -735,7 +758,7 @@ Mock-up: [`Main.dc.html`](./admin/screens/Main.dc.html). Reference:
 `.panels` grids; `.bento` is the shared 12-column grid for a new one).
 
 ```angular-html
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+<app-page-header [title]="copy.title" />
 <section class="filter-bar" [attr.aria-label]="copy.filterHeading">…</section>
 
 <app-async-content [state]="state()" [content]="body">
@@ -862,7 +885,7 @@ Mock-ups: [`OfficeInbox.dc.html`](./admin/screens/OfficeInbox.dc.html),
 
 ```angular-html
 <!-- list: a list page whose rows are conversations -->
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
+<app-page-header [title]="copy.title" />
 <section class="card card--panel card--padded" aria-labelledby="inbox-heading">
   <app-async-content [state]="state()" [content]="list">
     <ng-template #list let-page><app-data-table … /></ng-template>
@@ -873,7 +896,7 @@ Mock-ups: [`OfficeInbox.dc.html`](./admin/screens/OfficeInbox.dc.html),
 <a class="back-link" routerLink="/inbox"><app-icon name="arrowRight" class="back-link__arrow" /> {{ copy.back }}</a>
 <app-async-content [state]="state()" [content]="thread">
   <ng-template #thread let-conversation>
-    <app-page-header [title]="conversation.subject" />
+    <app-page-header showTitle [title]="conversation.subject" />
     <div class="thread__layout">
       <section class="card card--padded"><dl class="facts">…</dl></section>
       <section class="card card--panel card--padded">
@@ -1001,6 +1024,13 @@ preview, and the paper is the deliverable.
     within a minute matters (an audit trail, a count's "as of"), `weekday-date-time` when the day of
     the week is the answer (an event). Never Angular's `date` pipe with a pattern of its own, never an
     ISO string as it came from the API. A `<time>` keeps its machine-readable `datetime` (`DL-227`).
+13. **One `h1` per page; a page name is not drawn** (`DL-246`). Every routed page has exactly one
+    `h1` (WCAG 2.4.6, 1.3.1), through `app-page-header`. A page name is `.visually-hidden`: the
+    breadcrumb says it, and the mock-ups' drawn titles and leads are overridden by the owner. Only a
+    heading that is data or a message is drawn (`showTitle`): a record's reference or name, a
+    not-found or not-connected notice. A sentence a check requires the page to show goes in `lead`,
+    never into a hidden heading. Actions go in the list's filter card where it has one, otherwise in
+    the header's slim row; never a page-wide title band.
 
 ---
 
@@ -1065,7 +1095,8 @@ computed styles instead.
 
 - The theme choice is not remembered across a reload, which opens light again: the console stores
   nothing in the browser (`check:auth`, `DL-204`, `DL-207`). Remembering it would need a server-side preference on the staff account.
-- The gradient page header is defined (`--grad-header`) but unused (`DL-201`).
+- The gradient header is defined (`--grad-header`) but unused (`DL-201`); the citizens overview's
+  hero band, its one user, went with the drawn page names (`DL-246`).
 - KPI rows, trend charts and per-section counts drawn in the mock-ups wait for API fields (counts,
   totals, per-week series, office category); they are listed in the redesign's notes and are not
   drawn until the API sends them.

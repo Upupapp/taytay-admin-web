@@ -47,14 +47,11 @@ import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { ChartTable } from '@shared/ui/chart-table/chart-table';
 import { Icon } from '@shared/ui/icon/icon';
 import type { IconName } from '@shared/ui/icon/icons';
+import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { CITIZENS_OVERVIEW_COPY } from './citizens-overview.copy';
 import { RecentImports } from './recent-imports';
-import {
-  RegistryFunnelPanel,
-  RegistryGrowth,
-  RegistryThisMonthPanel,
-} from './registry-panels';
+import { RegistryFunnelPanel, RegistryGrowth, RegistryThisMonthPanel } from './registry-panels';
 import { REGISTRY_PANELS_COPY } from './registry-panels.copy';
 
 /** An ISO 8601 date-time inside a sentence the API wrote. */
@@ -139,6 +136,7 @@ interface Headline {
     HasPermissionDirective,
     Icon,
     NotConnected,
+    PageHeader,
     RecentImports,
     RegistryFunnelPanel,
     RegistryGrowth,

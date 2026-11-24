@@ -36,9 +36,13 @@ interface WithheldModule {
   imports: [Icon, PageHeader, RouterLink],
   template: `
     @if (unserved().length === 0) {
-      <app-page-header [title]="copy.everythingHeading" [subtitle]="copy.everythingSubtitle" />
+      <app-page-header
+        showTitle
+        [title]="copy.everythingHeading"
+        [subtitle]="copy.everythingSubtitle"
+      />
     } @else {
-      <app-page-header [title]="copy.heading" [subtitle]="copy.subtitle" />
+      <app-page-header showTitle [title]="copy.heading" [subtitle]="copy.subtitle" />
     }
 
     <div class="unserved-grid">

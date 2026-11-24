@@ -1,13 +1,13 @@
-// CitizenRegistry mock-up: the sector tabs, then the registry panel (saved views, filters, table,
-// "more"). Layout only; the shapes are `.tabs`, `.toolbar`, `.check-pill`, `.record-link` and
-// `.list-more` from the patterns.
+// CitizenRegistry mock-up: the registry panel (saved views with the page's actions, filters, table,
+// "more"); the board's sector tabs are a select among the filters (DL-246). Layout only; the shapes
+// are `.panel-head`, `.toolbar`, `.check-pill`, `.record-link` and `.list-more` from the patterns.
 
 .residents__cta-icon {
   color: var(--gold);
 }
 
-// The board's header buttons: a small outlined pill beside a 44px primary one, smaller than the
-// pattern's 48px page action.
+// The page's actions, at the top right of the panel: a small outlined pill beside a 44px primary
+// one.
 .btn.residents__action {
   min-block-size: var(--h-btn-sm);
   padding-inline: 14px;
@@ -20,22 +20,8 @@
   font-size: var(--fs-control);
 }
 
-.residents__sectors {
-  margin-block-end: var(--space-4);
-}
-
 .residents__search {
   flex: 1 1 260px;
-}
-
-.residents__sector-tabs {
-  gap: 2px;
-}
-
-.residents__sector-tabs .tab {
-  flex: none;
-  padding-inline: 14px;
-  white-space: nowrap;
 }
 
 // The board's filter bar: one row of small pills, their labels read but not shown.
@@ -120,16 +106,6 @@
 
 .residents__status--retired {
   color: var(--muted);
-}
-
-/* Wider than a phone, a strip that does not fit wraps inside a rounded box: clipped mid-word with
-   no cue, "VAWC surviv…" read as cut off rather than scrollable (DL-227, pass 2). */
-@media (width > 640px) {
-  .residents__sector-tabs {
-    flex-wrap: wrap;
-    overflow-x: visible;
-    border-radius: var(--r-card);
-  }
 }
 
 /* A second line under a name or a barangay, as the registry board writes it (DL-232). */

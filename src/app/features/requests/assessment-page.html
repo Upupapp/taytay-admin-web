@@ -7,12 +7,13 @@
 
 <ng-template #body let-request>
   @if (!request) {
-    <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+    <app-page-header showTitle [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
     <p class="assessment__back">
       <a class="btn" routerLink="/assistance-requests">{{ copy.back }}</a>
     </p>
   } @else {
     <app-page-header
+      showTitle
       [title]="request.referenceNumber || copy.subtitle"
       [subtitle]="headerSubtitle(request)"
     />

@@ -1,12 +1,13 @@
 <app-async-content [state]="state()" [content]="body" [skeletonLines]="8">
   <ng-template #body let-detail>
     @if (detail === null) {
-      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <app-page-header showTitle [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
       <p class="household__back">
         <a class="btn" routerLink="/households">{{ copy.back }}</a>
       </p>
     } @else {
       <app-page-header
+        showTitle
         [title]="detail.household.referenceNumber"
         [subtitle]="barangay(detail) + ' · ' + copy.subtitle"
       >

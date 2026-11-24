@@ -10,9 +10,9 @@
 >
   <ng-template #visitContent let-visit>
     @if (visit === null) {
-      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <app-page-header showTitle [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
     } @else {
-      <app-page-header [title]="visit.referenceNumber" [subtitle]="addressShown(visit)" />
+      <app-page-header showTitle [title]="visit.referenceNumber" [subtitle]="addressShown(visit)" />
 
       @if (!isOpen()) {
         <!-- Said first, not in an orphan card at the foot of the page (F179). -->

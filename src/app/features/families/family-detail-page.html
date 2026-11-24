@@ -6,12 +6,13 @@
 >
   <ng-template #body let-detail>
     @if (detail === null) {
-      <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+      <app-page-header showTitle [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
       <p class="family__back">
         <a class="btn" routerLink="/families">{{ copy.back }}</a>
       </p>
     } @else {
       <app-page-header
+        showTitle
         [title]="detail.family.name"
         [subtitle]="detail.family.referenceNumber + ' · ' + copy.subtitle"
       >

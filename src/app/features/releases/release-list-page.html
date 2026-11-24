@@ -1,6 +1,5 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a page-actions class="btn" routerLink="/releases/sessions">{{ copy.batches }}</a>
-</app-page-header>
+<!-- The page's name is read, not drawn; its action ends the filter row (DL-246). -->
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
 <section class="card card--panel card--padded stack releases" [attr.aria-label]="copy.caption">
   <div class="toolbar filters">
@@ -121,6 +120,10 @@
           {{ copy.clear }}
         </button>
       }
+    </div>
+
+    <div class="toolbar__actions">
+      <a class="btn" routerLink="/releases/sessions">{{ copy.batches }}</a>
     </div>
   </div>
 

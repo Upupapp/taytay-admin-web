@@ -1,29 +1,6 @@
-<!-- The board's hero band: the page's title and lead on the header gradient, its action beside. -->
-<section class="overview-hero" aria-labelledby="overview-title">
-  <div class="overview-hero__text">
-    <h1 id="overview-title" class="overview-hero__title">{{ copy.title }}</h1>
-    <p class="overview-hero__lead">{{ copy.subtitle }}</p>
-  </div>
-  <div class="overview-hero__actions">
-    <!-- The board's "Export summary": the same figures in the office's report template (DL-234). -->
-    <a
-      class="overview-hero__button overview-hero__button--ghost overview__report"
-      routerLink="/reports/citizens"
-      [queryParams]="reportParams()"
-    >
-      <app-icon name="download" [size]="16" [stroke]="2.2" />
-      {{ copy.downloadReport }}
-    </a>
-    <a
-      *appHasPermission="'resident.create'"
-      class="overview-hero__button overview-hero__button--gold"
-      routerLink="/residents/new"
-    >
-      <app-icon name="plus" [size]="16" [stroke]="2.4" />
-      {{ copy.register }}
-    </a>
-  </div>
-</section>
+<!-- The page's name is read, not drawn: the breadcrumb says it (DL-246). Its actions sit at the end
+     of the filter card. -->
+<app-page-header [title]="copy.title" />
 
 <!-- Filter first: it governs every figure below. Only filters this reader can use are offered. -->
 <section class="filter-bar overview__filters" [attr.aria-label]="copy.filterHeading">
@@ -102,6 +79,26 @@
       {{ copy.clear }}
     </button>
   }
+
+  <div class="toolbar__actions">
+    <!-- The board's "Export summary": the same figures in the office's report template (DL-234). -->
+    <a
+      class="btn overview__action overview__report"
+      routerLink="/reports/citizens"
+      [queryParams]="reportParams()"
+    >
+      <app-icon name="download" [size]="15" [stroke]="2" />
+      {{ copy.downloadReport }}
+    </a>
+    <a
+      *appHasPermission="'resident.create'"
+      class="btn btn--primary overview__action"
+      routerLink="/residents/new"
+    >
+      <app-icon name="plus" [size]="15" [stroke]="2.2" />
+      {{ copy.register }}
+    </a>
+  </div>
 </section>
 
 <app-async-content
@@ -313,10 +310,12 @@
         <!-- Taken before suppression, like the series total, and said so (DL-105). -->
         <div class="overview-sexes">
           <span class="overview-sexes__total">
-            <b>{{ summary.totalBySex.female }}</b>{{ panels.femaleTotal }}
+            <b>{{ summary.totalBySex.female }}</b
+            >{{ panels.femaleTotal }}
           </span>
           <span class="overview-sexes__total">
-            <b>{{ summary.totalBySex.male }}</b>{{ panels.maleTotal }}
+            <b>{{ summary.totalBySex.male }}</b
+            >{{ panels.maleTotal }}
           </span>
         </div>
         <p class="overview-panel__note">
@@ -378,7 +377,9 @@
           aria-labelledby="registry-imports-gap"
           *appHasPermission="'resident.import'"
         >
-          <h2 id="registry-imports-gap" class="overview-panel__title">{{ panels.importsHeading }}</h2>
+          <h2 id="registry-imports-gap" class="overview-panel__title">
+            {{ panels.importsHeading }}
+          </h2>
           <app-not-connected port="resident-import" />
         </section>
       }

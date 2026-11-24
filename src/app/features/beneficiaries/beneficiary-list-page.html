@@ -1,20 +1,24 @@
-<app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  <a
-    page-actions
-    *appHasPermission="'beneficiary.review-duplicates'"
-    class="btn"
-    routerLink="/beneficiaries/duplicates"
-  >
-    {{ copy.reviewDuplicates }}
-  </a>
-</app-page-header>
+<!-- The page's name is read, not drawn; its action sits at the top right of the filter card,
+     beside the saved views (DL-246). -->
+<app-page-header [title]="copy.title" [subtitle]="copy.subtitle" />
 
 <section class="card card--panel card--padded stack beneficiaries" [attr.aria-label]="copy.caption">
-  <app-saved-views-bar
-    resource="beneficiaries"
-    [currentParams]="filterParams()"
-    [currentUserId]="currentUserId()"
-  />
+  <div class="panel-head">
+    <app-saved-views-bar
+      resource="beneficiaries"
+      [currentParams]="filterParams()"
+      [currentUserId]="currentUserId()"
+    />
+    <div class="toolbar__actions">
+      <a
+        *appHasPermission="'beneficiary.review-duplicates'"
+        class="btn"
+        routerLink="/beneficiaries/duplicates"
+      >
+        {{ copy.reviewDuplicates }}
+      </a>
+    </div>
+  </div>
 
   <div class="toolbar">
     <label class="field beneficiaries__search">

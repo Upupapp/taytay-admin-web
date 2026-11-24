@@ -309,12 +309,15 @@ const barangaySelect = (element: HTMLElement) =>
 
 /* ── The URL is the query ─────────────────────────────────────────────────── */
 
-/** A tab's words, without the count the API sends beside it (DL-232). */
-function tabLabel(tab: Element): string | undefined {
-  const copy = tab.cloneNode(true) as Element;
-  copy.querySelectorAll('.tab__count').forEach((count) => count.remove());
-  return copy.textContent?.trim();
-}
+/** The registry's sector select, found by its label (DL-246). */
+const sectorSelect = (element: HTMLElement) =>
+  [...element.querySelectorAll('.residents .toolbar label.field')]
+    .find((label) => label.textContent?.includes(RESIDENTS_COPY.list.sector))
+    ?.querySelector('select');
+
+/** An option's words, without the count the summary puts beside it (DL-232). */
+const optionLabel = (option: HTMLOptionElement) =>
+  option.textContent?.trim().replace(/ \(.*\)$/, '');
 
 describe('the resident filter lives in the URL', () => {
   const params = (values: Record<string, string>) => ({
@@ -388,25 +391,45 @@ describe('the resident list', () => {
   });
 
   it('offers a protected sector as a filter only to a role cleared for it', async () => {
-    // The sector filter is a row of tabs since the CitizenRegistry restyle (DL-209).
-    const tabs = (element: HTMLElement) =>
-      Array.from(element.querySelectorAll('.residents__sectors .tab')).map(tabLabel);
-    const intake = tabs(html(await openList('intake-officer')));
+    // The sector filter is a select among the filters since DL-246 (a row of tabs under DL-209).
+    const options = (element: HTMLElement) =>
+      Array.from(sectorSelect(element)?.options ?? []).map(optionLabel);
+    const intake = options(html(await openList('intake-officer')));
+    expect(intake[0]).toBe(RESIDENTS_COPY.list.allSectors);
     expect(intake).toContain('PWD');
     expect(intake).not.toContain('VAWC survivors');
     expect(intake).not.toContain('CICL');
-    expect(tabs(html(await openList('social-worker')))).toContain('VAWC survivors');
+    expect(options(html(await openList('social-worker')))).toContain('VAWC survivors');
   });
 
-  it('marks the chosen sector tab in words as well as fill, and All when none is chosen', async () => {
-    const current = (element: HTMLElement) =>
-      Array.from(element.querySelectorAll('.residents__sectors .tab[aria-current="true"]')).map(
-        tabLabel,
-      );
-    expect(current(html(await openList()))).toEqual([RESIDENTS_COPY.list.allSectorsTab]);
-    expect(current(html(await openList('intake-officer', '/residents?sector=pwd')))).toEqual([
-      'PWD',
-    ]);
+  it('shows the sector from the URL as chosen, and All sectors when none is', async () => {
+    const chosen = (element: HTMLElement) => {
+      const select = sectorSelect(element);
+      const option = select?.options[select.selectedIndex];
+      return option === undefined ? undefined : optionLabel(option);
+    };
+    expect(chosen(html(await openList()))).toBe(RESIDENTS_COPY.list.allSectors);
+    expect(chosen(html(await openList('intake-officer', '/residents?sector=pwd')))).toBe('PWD');
+  });
+
+  it('counts each sector in its option once the summary is read (DL-232)', async () => {
+    const element = html(await openList('mswdo-head'));
+    const labels = Array.from(sectorSelect(element)?.options ?? []).map((option) =>
+      option.textContent?.trim(),
+    );
+    expect(labels.slice(1).every((label) => /\(.+\)$/.test(label ?? ''))).toBe(true);
+  });
+
+  it('puts the sector chosen in the select into the URL', async () => {
+    const fixture = await openList('intake-officer');
+    const select = sectorSelect(html(fixture));
+    expect(select).toBeTruthy();
+    if (select) {
+      select.value = 'pwd';
+      select.dispatchEvent(new Event('change'));
+    }
+    await fixture.whenStable();
+    expect(TestBed.inject(Router).url).toContain('sector=pwd');
   });
 
   it('applies the filter that arrived in the URL', async () => {

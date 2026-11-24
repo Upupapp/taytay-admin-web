@@ -119,7 +119,8 @@ const moduleFiles = [...walk(FEATURE), DOMAIN, MAPPER, MOCK, REQUIREMENTS];
 if (!/subtitle:\s*\n?\s*'Residents see this in the Taytay app/.test(readFileSync(COPY, 'utf8'))) {
   failures.push('The app settings page no longer opens by saying residents see it in the Taytay app.');
 }
-if (!/\[subtitle\]="copy\.subtitle"/.test(template)) {
+// The page's description is not drawn (DL-246); this sentence is, as the header's lead.
+if (!/\[lead\]="copy\.subtitle"/.test(template)) {
   failures.push('The app settings page header no longer shows the sentence saying residents see it.');
 }
 

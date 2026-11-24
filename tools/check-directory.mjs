@@ -152,7 +152,8 @@ const pageCopy = copy.slice(copy.indexOf('page: {'), copy.indexOf('list: {'));
 if (!/subtitle:\s*\n?\s*'Residents see this in the Taytay app/.test(pageCopy)) {
   failures.push('The directory page no longer opens by saying residents see it in the Taytay app.');
 }
-if (!/\[subtitle\]="copy\.subtitle"/.test(code(read(FEATURE, 'directory-page.html')))) {
+// The page's description is not drawn (DL-246); this sentence is, as the header's lead.
+if (!/\[lead\]="copy\.subtitle"/.test(code(read(FEATURE, 'directory-page.html')))) {
   failures.push('The directory page header no longer shows the sentence saying residents see it.');
 }
 

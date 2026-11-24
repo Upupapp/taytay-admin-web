@@ -6,9 +6,9 @@
 
 <ng-template #body let-view>
   @if (!view) {
-    <app-page-header [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
+    <app-page-header showTitle [title]="copy.notFoundHeading" [subtitle]="copy.notFoundMessage" />
   } @else {
-    <app-page-header [title]="view.program.name" [subtitle]="copy.subtitle">
+    <app-page-header showTitle [title]="view.program.name" [subtitle]="copy.subtitle">
       <!-- The whole record is edited on its own page, with a reason (DL-178). -->
       @if (canManage()) {
         <a page-actions class="btn" [routerLink]="['/programs', view.program.id, 'edit']">{{
