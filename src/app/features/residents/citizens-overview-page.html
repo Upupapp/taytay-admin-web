@@ -312,7 +312,10 @@
                         </span>
                       </span>
                     </td>
-                    <th scope="row" class="pyramid__band">{{ band.label }}</th>
+                    <th scope="row" class="pyramid__band">
+                      <span class="pyramid__band-name">{{ band.name }}</span
+                      >&ngsp;<span class="pyramid__band-range">{{ band.range }}</span>
+                    </th>
                     <td class="pyramid__side pyramid__side--male">
                       <span class="pyramid__cell">
                         <span class="pyramid__track" aria-hidden="true">

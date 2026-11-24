@@ -22,7 +22,24 @@ interface AxisLabel {
   readonly x: number;
   readonly shift: number;
   readonly last: boolean;
+  /** Kept on a narrow chart, where every other label would crowd: counted back from the latest. */
+  readonly keepNarrow: boolean;
+  /** Kept on the narrowest chart: every fourth, counted back from the latest. */
+  readonly keepNarrowest: boolean;
 }
+
+/**
+ * Where the latest figure's callout sits. Above the point by default; a point near the top would
+ * push it out of the plot and over the panel's title (the registry's "241 now" covered "Last 12
+ * months"), so there it sits level with the point on its left when the line rose into it, or below
+ * it when the line ran flat along the top and a callout beside the point would cover the line.
+ */
+export type CalloutPlace = 'above' | 'left' | 'below';
+
+/** The highest point, in percent of the plot from its top, whose callout still fits above it. */
+const CALLOUT_ROOM = 35;
+/** How far below the latest point the one before must be for the line to have risen into it. */
+const ROSE_BY = 8;
 
 /**
  * A series over time drawn as a line with its area, as the boards draw one (`DL-232`).
@@ -97,7 +114,13 @@ interface AxisLabel {
           <span class="line-chart__drop" [style.left.%]="point.x" [style.top.%]="point.y"></span>
           <span class="line-chart__now" [style.left.%]="point.x" [style.top.%]="point.y"></span>
           @if (callout()) {
-            <span class="line-chart__callout" [style.left.%]="point.x" [style.top.%]="point.y">
+            <span
+              class="line-chart__callout"
+              [class.line-chart__callout--left]="calloutPlace() === 'left'"
+              [class.line-chart__callout--below]="calloutPlace() === 'below'"
+              [style.left.%]="point.x"
+              [style.top.%]="point.y"
+            >
               {{ callout() }}
             </span>
           }
@@ -108,6 +131,8 @@ interface AxisLabel {
           <span
             class="line-chart__label"
             [class.line-chart__label--last]="label.last"
+            [class.line-chart__label--narrow-hidden]="!label.keepNarrow"
+            [class.line-chart__label--narrowest-hidden]="!label.keepNarrowest"
             [style.left.%]="label.x"
             [style.transform]="'translateX(' + label.shift + '%)'"
             >{{ label.text }}</span
@@ -206,6 +231,16 @@ export class LineChart {
     return placed[placed.length - 1] ?? null;
   });
 
+  protected readonly calloutPlace = computed<CalloutPlace>(() => {
+    const placed = this.placed();
+    const point = placed[placed.length - 1] ?? null;
+    if (point === null || point.y >= CALLOUT_ROOM) {
+      return 'above';
+    }
+    const before = placed[placed.length - 2] ?? null;
+    return before === null || before.y - point.y >= ROSE_BY ? 'left' : 'below';
+  });
+
   protected readonly dots = computed(() => {
     const placed = this.placed();
     return placed.slice(0, -1).filter((point): point is Drawn => point !== null);
@@ -217,13 +252,16 @@ export class LineChart {
     const sparse = this.sparseLabels();
     return points.map((point, index) => {
       const last = index === points.length - 1;
+      const back = points.length - 1 - index;
       return {
         key: point.key,
         // Every other label counted back from the latest, so the last two never crowd.
-        text: sparse && (points.length - 1 - index) % 2 === 1 ? '' : point.label,
+        text: sparse && back % 2 === 1 ? '' : point.label,
         x: (index / span) * 100,
         shift: index === 0 ? 0 : last ? -100 : -50,
         last,
+        keepNarrow: back % 2 === 0,
+        keepNarrowest: back % 4 === 0,
       };
     });
   });

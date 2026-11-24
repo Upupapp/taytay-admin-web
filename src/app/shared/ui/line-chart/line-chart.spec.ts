@@ -104,3 +104,47 @@ describe('LineChart with a second series (DL-248)', () => {
     expect(element.querySelector('.line-chart__tick--top')?.textContent?.trim()).toBe('10');
   });
 });
+
+describe('LineChart, the latest figure and the axis on a narrow chart', () => {
+  async function withCallout(values: readonly (number | null)[]): Promise<HTMLElement> {
+    const fixture = TestBed.createComponent(LineChart);
+    fixture.componentRef.setInput(
+      'points',
+      values.map((value, index) => point(String.fromCharCode(97 + index), value)),
+    );
+    fixture.componentRef.setInput('caption', 'Citizens on the registry');
+    fixture.componentRef.setInput('labelHeader', 'Month');
+    fixture.componentRef.setInput('valueHeader', 'Citizens');
+    fixture.componentRef.setInput('callout', '241 now');
+    await fixture.whenStable();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  const place = (element: HTMLElement): string => {
+    const callout = element.querySelector('.line-chart__callout');
+    if (callout?.classList.contains('line-chart__callout--left')) return 'left';
+    if (callout?.classList.contains('line-chart__callout--below')) return 'below';
+    return callout === null ? 'none' : 'above';
+  };
+
+  it('keeps the callout inside the plot when the latest point is near the top', async () => {
+    // Room above a low point; beside a point the line rose into; under one on a flat top.
+    expect(place(await withCallout([200, 120, 60]))).toBe('above');
+    expect(place(await withCallout([40, 120, 241]))).toBe('left');
+    expect(place(await withCallout([238, 240, 241]))).toBe('below');
+    expect(place(await withCallout([40, null, 241]))).toBe('left');
+  });
+
+  it('marks which labels a narrow chart keeps, counted back from the latest', async () => {
+    const element = await withCallout([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    const labels = [...element.querySelectorAll('.line-chart__label')];
+    const kept = (hidden: string) =>
+      labels.filter((label) => !label.classList.contains(hidden)).map((l) => l.textContent?.trim());
+
+    expect(labels).toHaveLength(12);
+    expect(kept('line-chart__label--narrow-hidden')).toEqual(['b', 'd', 'f', 'h', 'j', 'l']);
+    expect(kept('line-chart__label--narrowest-hidden')).toEqual(['d', 'h', 'l']);
+    // The table still states every month (DL-108).
+    expect(element.querySelectorAll('tbody tr')).toHaveLength(12);
+  });
+});

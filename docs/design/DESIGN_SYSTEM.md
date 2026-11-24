@@ -523,7 +523,10 @@ hidden table states every point; a withheld point breaks the line and the table 
 `points`, `caption`, `labelHeader`, `valueHeader`, `callout`, `withheldLabel`, `sparseLabels`, and for
 a second series over the same keys `compare` + `compareHeader` (DL-248): dashed, in
 `--chart-line-compare`, with square dots and a legend, and its own table column. Leave `callout` empty
-with two series, or it covers the legend.
+with two series, or it covers the legend. A callout whose point is near the top moves beside the point
+(the line rose into it) or under it (the line ran flat), so it never covers the panel's title; under
+480 px of chart width the axis keeps every second label, under 260 px every fourth, counted back
+from the latest — the hidden table still states every point.
 
 ### DonutChart — `app-donut-chart`
 

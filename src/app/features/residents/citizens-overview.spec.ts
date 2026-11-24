@@ -400,4 +400,25 @@ describe('CitizensOverviewPage — the sector list and the cards beside it (DL-2
     );
     expect(caption?.querySelector('.visually-hidden')?.textContent).toBe('Series by-age-sex');
   });
+
+  it('keeps an age band’s range on its own line, read with its name', async () => {
+    configure(
+      of({
+        ...SUMMARY,
+        byAgeSex: series(
+          'by-age-sex',
+          [
+            { key: 'adult.female', label: 'Adults, female', value: 18 },
+            { key: 'adult.male', label: 'Adults, male', value: 7 },
+          ],
+          25,
+        ),
+      }),
+    );
+    const band = (await render()).querySelector('.pyramid__band');
+
+    expect(band?.querySelector('.pyramid__band-name')?.textContent).toBe('Adults');
+    expect(band?.querySelector('.pyramid__band-range')?.textContent).toBe('(31–59)');
+    expect(band?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Adults (31–59)');
+  });
 });

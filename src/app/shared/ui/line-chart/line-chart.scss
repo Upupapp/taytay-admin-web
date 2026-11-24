@@ -4,6 +4,9 @@
 :host {
   display: block;
   min-block-size: 0;
+  /* The axis thins its labels by the chart's own width, not the window's: the same chart sits in
+     a wide panel on one page and a narrow one on another. */
+  container-type: inline-size;
 }
 
 .line-chart {
@@ -120,6 +123,16 @@
   white-space: nowrap;
 }
 
+/* Near the top there is no room above the point: level with it on its left, clear of the gold dot,
+   or under it, clear of the drop line, when the line ran flat along the top (CalloutPlace). */
+.line-chart__callout--left {
+  transform: translate(calc(-100% - 14px), -50%);
+}
+
+.line-chart__callout--below {
+  transform: translate(calc(-100% - 6px), 70%);
+}
+
 .line-chart__axis {
   position: relative;
   block-size: 18px;
@@ -137,6 +150,20 @@
 .line-chart__label--last {
   font-weight: var(--fw-bold);
   color: var(--ink);
+}
+
+/* Fewer labels on a narrow chart, counted back from the latest so the latest always stays; the
+   hidden table still states every point (DL-108). */
+@container (max-width: 479px) {
+  .line-chart__label--narrow-hidden {
+    display: none;
+  }
+}
+
+@container (max-width: 259px) {
+  .line-chart__label--narrowest-hidden {
+    display: none;
+  }
 }
 
 /* The second series: dashed, its own colour, square dots — shape as well as colour (WCAG 1.4.1). */

@@ -58,6 +58,14 @@
   text-align: center;
 }
 
+/* A band's range is its own line and never breaks: "Adults (31–" / "59)" read as two bands. */
+.pyramid__band-range {
+  display: block;
+  color: var(--muted);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+}
+
 .pyramid__side {
   inline-size: 36%;
   padding: 0;

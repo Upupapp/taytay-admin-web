@@ -81,6 +81,9 @@ interface PyramidSide {
 export interface PyramidBand {
   readonly key: ResidentAgeGroup;
   readonly label: string;
+  /** The label in two pieces, "Adults" and "(31–59)", so a narrow column never breaks a range. */
+  readonly name: string;
+  readonly range: string;
   readonly female: PyramidSide;
   readonly male: PyramidSide;
 }
@@ -323,9 +326,13 @@ export class CitizensOverviewPage {
       const male = find(group, 'male');
       if (female === undefined && male === undefined) continue;
       if (female === undefined || male === undefined) return null;
+      const label = RESIDENT_AGE_GROUP_LABELS[group];
+      const parts = /^(.*\S)\s+(\([^()]*\))$/.exec(label);
       bands.push({
         key: group,
-        label: RESIDENT_AGE_GROUP_LABELS[group],
+        label,
+        name: parts?.[1] ?? label,
+        range: parts?.[2] ?? '',
         female: side(female),
         male: side(male),
       });
