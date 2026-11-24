@@ -355,7 +355,21 @@
 }
 
 /* The grid gives way as the mock-up's bento does. */
+/* What waits beside the outcomes, 8 and 4 (DL-248). */
+.dash > .health--waiting {
+  grid-column: span 8;
+}
+
+.dash > .health--outcomes {
+  grid-column: span 4;
+}
+
 @media (width <= 1100px) {
+  .dash > .health--waiting,
+  .dash > .health--outcomes {
+    grid-column: span 12;
+  }
+
   .dash > .dash__attention,
   .dash > .metrics,
   .dash > .app-figures > .app-figures__breakdown,

@@ -11615,3 +11615,67 @@ backend.
 
 **Easiest to reverse:** each item is independent; the wire's `overlapping` is the only contract
 change, and a console without it reads every series as not overlapping.
+
+## DL-248 — the dashboard says what waits and on whom, what was decided, and what happened
+
+**Status:** Settled (24 November 2026), from the owner's request for a richer Dashboard and Citizen
+overview, with an operations overview as a pattern library, not a spec. Backend ADR 0011 records the
+server's half.
+
+What was added to the Dashboard, each from the API (`GET office/dashboard`), under the reader's scope
+and the filter like every other figure:
+
+1. **Received and handed over, one chart.** The weekly requests line gains a second, dashed line in
+   its own colour with square dots — releases handed over in the same eight Manila weeks — and a
+   legend; the table gives both figures per week. Shape as well as colour tells the lines apart
+   (WCAG 1.4.1). Only for a reader who may open the releases; otherwise one line, as before. The
+   shared `LineChart` takes the second series (`compare`, `compareHeader`); its hidden table now sits
+   in a hidden block, because a table is as wide as its cells and a long caption widened the page.
+2. **Waiting longest**, in two tabs (a WAI-ARIA tablist, arrow keys) by whose move it is: on the office,
+   or on the resident (returned, or scheduled for a payout she must attend — the summary report's
+   split). Five rows a side: the reference opening the request, its status badge, its barangay, the
+   reason in words, and "Waiting N days" since its latest status change. No standard has been set, so
+   nothing is "overdue" (DL-101). No name and no programme on a row. "View all" opens the open
+   requests list and says how many it holds: the list cannot be narrowed by side, so the link does not
+   claim to be.
+3. **Outcomes**: approvals as "x of y decided", returns, and the average days from filing to hand-over
+   (the summary report's rule, so the two agree, DL-247). Counts, never a rate, a score or anybody's
+   figure (DL-107). The hand-over figure is left out, not zeroed, for a reader the releases refuse.
+4. **Recent activity**: the newest six rows of the office's audit trail, for a reader the trail's
+   route lets in (`audit.view`), linking to it; its own live read on the `audit` topic (DL-222), and
+   `<app-not-connected>` where the trail is not served (DL-175).
+5. **How these figures are counted**: a closed `<details>` at the foot defining every figure; the
+   payout definitions only beside the payout figures. An ⓘ inside each KPI tile was rejected: the
+   tiles are links, and a button inside a link is invalid and unreachable.
+
+**Rejected:** a donut of the pipeline (the status ChartTable already is the pipeline, and a donut adds
+a second chart of the same figures, DL-108); a staff column or approvals by worker (DL-107); upcoming
+payout sessions as a list (the `scheduled` figure and the payout-due signal open them already);
+"compared with last period" chips (ADR 0006); requests by channel (not among the head's questions).
+
+**Easiest to reverse:** every panel is its own component; the wire additions are new keys in the
+existing envelope.
+
+## DL-249 — the Citizen overview says how the registry grew and whether the ID review queue keeps up
+
+**Status:** Settled (24 November 2026), with DL-248. Backend ADR 0011.
+
+1. **Added to the registry**: the people on the registry now, by the month their record was added,
+   typed in at the office (solid) or created by an imported list (dashed), twelve months
+   (`residents.added_by_month`). Each cell a figure of people, withheld on its own below the
+   threshold (DL-105); the line breaks there and a sentence under the chart names the withheld months.
+   Differences of the registry line were not used: two shown totals can state a withheld figure.
+2. **ID review queue**, for a reader who reviews IDs: how many wait, how long the oldest has waited
+   in days, what was decided in seven days, and the requests sent per day — the queue's own
+   `meta.stats` (ADR 0006), read from its first page with one row asked for and never shown, live on
+   the `verification` topic, and `<app-not-connected>` where the queue is not served.
+
+**Rejected:** registry by barangay, sector composition, the age-and-sex pyramid, the funnel and "this
+month" were already drawn; imports by source is the recent-imports panel's.
+
+**The filter bar** (owner, same day): "Download report" sits on the filters' row at 1440. The sector
+and age selects are as wide as "All sectors" and "All ages" rather than their longest option (a long
+choice is clipped in the closed select, and read whole in its list); the actions take what the row
+leaves, so "Register a citizen" joins the row where both fit and stands beneath "Download report",
+right-aligned, where they do not — at 1440 it does not. The dashboard's bar already holds its
+actions on one row at 1280 and 1440 and is unchanged.

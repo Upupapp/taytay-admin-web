@@ -1,6 +1,6 @@
 import type { AssistanceRequestStatus } from '../assistance/assistance-request';
 import type { Permission } from '../access/permission';
-import type { BarangayId, IsoDate } from '../shared/ids';
+import type { AssistanceRequestId, BarangayId, IsoDate, IsoDateTime } from '../shared/ids';
 import type { Money } from '../shared/money';
 import type { ProgramCategory } from '../programs/program';
 
@@ -166,6 +166,64 @@ export interface DashboardPayouts {
    * (`DL-93`). The `period` filter does not narrow it; the barangay and programme filters do.
    */
   readonly handedOverByDay: readonly DayCount[];
+  /**
+   * The same handovers by Asia/Manila week, over the eight weeks of `requestsReceivedByWeek`, so the
+   * two lines share an axis. The `period` filter does not narrow it.
+   */
+  readonly handedOverByWeek: readonly WeekCount[];
+  /**
+   * Calendar days from filing to handing over, averaged over the releases handed over in the
+   * period, one decimal — the summary report's rule, so the two never disagree. Imported past
+   * assistance is left out. `null` when nothing was handed over: absent, never a zero.
+   */
+  readonly averageDaysToHandOver: number | null;
+}
+
+/* ── What waits, and on whom ──────────────────────────────────────────────── */
+
+/**
+ * Who an open request's next step belongs to: the resident when the office returned it or
+ * scheduled her payout, the office for every other open status. The API decides the split; the
+ * console words it.
+ */
+export type WaitsOn = 'office' | 'resident';
+
+export const WAITS_ON: readonly WaitsOn[] = ['office', 'resident'];
+
+/**
+ * One open request, by how long it has stood at its current stage. A record, not a person: no
+ * name and no programme — the reference opens it for whoever may read it.
+ */
+export interface WaitingRequest {
+  readonly id: AssistanceRequestId;
+  readonly referenceNumber: string;
+  readonly status: AssistanceRequestStatus;
+  readonly barangayId: BarangayId;
+  /** Its latest status change, or its filing when it has none. */
+  readonly since: IsoDateTime;
+  /**
+   * Whole Asia/Manila days since then. A wait, never lateness: no service standard has been set,
+   * so nothing here is "overdue" (`DL-101`).
+   */
+  readonly days: number;
+  readonly documentsOwed: boolean;
+}
+
+export interface WaitingSide {
+  /** Every open request on this side, not only the ones listed. */
+  readonly count: number;
+  /** The five that have waited longest, longest first. */
+  readonly longest: readonly WaitingRequest[];
+}
+
+/**
+ * Requests that reached each decision in the period, one request once per decision. Counts, said
+ * as "38 of 50"; never a rate, a score or anybody's figure (`DL-107`).
+ */
+export interface DecisionCounts {
+  readonly approved: number;
+  readonly rejected: number;
+  readonly returned: number;
 }
 
 /** One Asia/Manila calendar day and how many records fell on it. Records, not people. */
@@ -245,6 +303,10 @@ export interface DashboardSummary {
    * nothing is withheld. The `period` filter does not narrow it; the barangay and programme do.
    */
   readonly requestsReceivedByWeek: readonly WeekCount[];
+  /** Open requests by who they wait on. The `period` filter does not narrow it. */
+  readonly waiting: Readonly<Record<WaitsOn, WaitingSide>>;
+  /** Decisions in the period. */
+  readonly decidedInPeriod: DecisionCounts;
 
   /** `null` for a reader the release list refuses. */
   readonly payouts: DashboardPayouts | null;

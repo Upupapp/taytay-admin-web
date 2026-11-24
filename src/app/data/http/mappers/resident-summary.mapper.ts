@@ -2,6 +2,7 @@ import {
   RECORDS_TO_TIDY_KINDS,
   RESIDENT_SUMMARY_PERIODS,
   SECTOR_ATTENTION_KINDS,
+  type AddedMonth,
   type MonthFigure,
   type RecordsToTidy,
   type RegistryFunnel,
@@ -28,6 +29,7 @@ import { date, dateTime, field, int, list, oneOf, str } from './wire';
  * | `period.*`           | `period`        | the summary is not readable     |
  * | `residents.*`        | `residents`     | the summary is not readable     |
  * | `residents.by_month[]` | `residents.byMonth` | the summary is not readable |
+ * | `residents.added_by_month[]{month,office,imported}` | `residents.addedByMonth` | the summary is not readable |
  * | `registered.*`       | `registered`    | the summary is not readable     |
  * | `by_barangay`        | `byBarangay`    | the summary is not readable     |
  * | `by_sector`          | `bySector`      | the summary is not readable     |
@@ -64,6 +66,7 @@ export function toResidentSummary(wire: unknown, barangays: BarangayIndex): Resi
   const bySector = toAggregateSeries(field(wire, 'by_sector'));
   const byAgeSex = toAggregateSeries(field(wire, 'by_age_sex'));
   const byMonth = whole(field(residents, 'by_month'), toMonthFigure);
+  const addedByMonth = whole(field(residents, 'added_by_month'), toAddedMonth);
   const sexWire = field(field(wire, 'by_age_sex'), 'total_by_sex');
   const female = count(field(sexWire, 'female'));
   const male = count(field(sexWire, 'male'));
@@ -90,6 +93,7 @@ export function toResidentSummary(wire: unknown, barangays: BarangayIndex): Resi
     bySector === null ||
     byAgeSex === null ||
     byMonth === null ||
+    addedByMonth === null ||
     female === null ||
     male === null ||
     funnel === null ||
@@ -108,7 +112,7 @@ export function toResidentSummary(wire: unknown, barangays: BarangayIndex): Resi
   return {
     asOf,
     period,
-    residents: { current: residentsNow, previous: residentsBefore, byMonth },
+    residents: { current: residentsNow, previous: residentsBefore, byMonth, addedByMonth },
     registered: { current: registeredNow, previous: registeredBefore },
     byBarangay: rekeyBarangays(byBarangay, barangays),
     bySector,
@@ -176,6 +180,15 @@ function toMonthFigure(wire: unknown): MonthFigure | null {
   const at = month(field(wire, 'month'));
   const figure = toFigure(wire);
   return at === null || figure === null ? null : { month: at, figure };
+}
+
+function toAddedMonth(wire: unknown): AddedMonth | null {
+  const at = month(field(wire, 'month'));
+  const office = toFigure(field(wire, 'office'));
+  const imported = toFigure(field(wire, 'imported'));
+  return at === null || office === null || imported === null
+    ? null
+    : { month: at, office, imported };
 }
 
 function toFunnel(wire: unknown): RegistryFunnel | null {

@@ -123,6 +123,22 @@ describe('the dashboard over the API (DL-182)', () => {
       verificationsWaiting: 1,
       digitalIdsActive: 1,
     });
+
+    // What waits and on whom, what was decided, and the second line (DL-248).
+    expect(summary.waiting.office.count).toBe(2);
+    expect(summary.waiting.office.longest[0]).toEqual({
+      id: '0b1c2d3e-4f50-4a61-8b72-9c8d7e6f5a01',
+      referenceNumber: 'AR-2026-000014',
+      status: 'submitted',
+      barangayId: SAN_JUAN,
+      since: '2026-10-20T01:00:00.000Z',
+      days: 17,
+      documentsOwed: true,
+    });
+    expect(summary.waiting.resident).toEqual({ count: 1, longest: [] });
+    expect(summary.decidedInPeriod).toEqual({ approved: 4, rejected: 1, returned: 2 });
+    expect(summary.payouts?.handedOverByWeek).toHaveLength(8);
+    expect(summary.payouts?.averageDaysToHandOver).toBe(6.5);
   });
 
   it('keeps an absent group absent, never zero', async () => {
@@ -164,7 +180,14 @@ describe('the dashboard over the API (DL-182)', () => {
       category.amount_centavos = 1234.5;
     }
 
-    for (const answer of [unplaced, bare, valued]) {
+    // A waiting row with a status the console does not know refuses the summary (DL-248).
+    const unknown = structuredClone(OFFICE_DASHBOARD);
+    const [waiting] = unknown.data.requests.waiting.office.longest;
+    if (waiting !== undefined) {
+      waiting.status = 'lost';
+    }
+
+    for (const answer of [unplaced, bare, valued, unknown]) {
       const read = firstValueFrom(dashboard.summary({}));
       // The barangay join is read once per adapter.
       if (answer === unplaced) {

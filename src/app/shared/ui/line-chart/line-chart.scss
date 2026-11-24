@@ -138,3 +138,37 @@
   font-weight: var(--fw-bold);
   color: var(--ink);
 }
+
+/* The second series: dashed, its own colour, square dots — shape as well as colour (WCAG 1.4.1). */
+.line-chart__line--compare {
+  stroke: var(--chart-line-compare);
+  stroke-dasharray: 6 5;
+}
+
+.line-chart__dot--compare {
+  border-color: var(--chart-line-compare);
+  border-radius: 0;
+}
+
+.line-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--fs-2xs);
+  color: var(--muted);
+}
+
+.line-chart__key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.line-chart__swatch {
+  inline-size: 18px;
+  border-top: 3px solid var(--chart-line);
+}
+
+.line-chart__swatch--compare {
+  border-top: 3px dashed var(--chart-line-compare);
+}

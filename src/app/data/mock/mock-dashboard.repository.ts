@@ -18,6 +18,7 @@ import {
   type BarangayCount,
   type CategoryTotal,
   type DashboardFilter,
+  type DecisionCounts,
   type DashboardPayouts,
   DASHBOARD_PERIOD_DAYS,
   type DashboardPeriod,
@@ -28,6 +29,9 @@ import {
   type ProgramCategory,
   type ResidentAppFigures,
   type StatusCount,
+  type WaitingRequest,
+  type WaitingSide,
+  type WaitsOn,
 } from '@domain/index';
 
 import { MOCK_ASSISTANCE_REQUESTS } from './seed/assistance-requests.seed';
@@ -38,11 +42,14 @@ import { MOCK_REFERRALS } from './seed/referrals.seed';
 import { MOCK_VERIFICATION_REQUESTS } from './seed/verification-requests.seed';
 import { MOCK_SEED_DIGITAL_IDS } from './mock-digital-id.repository';
 import { mockVerificationOf } from './mock-account-verification';
-import { countByDay, countByWeek, demoDays, demoWeeks } from './mock-time-series';
+import { countByDay, countByWeek, demoDays, demoWeeks, manilaDay } from './mock-time-series';
+import { SEED_ANCHOR } from './seed/seed-utils';
 import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
 
 const PERIOD_DAYS = DASHBOARD_PERIOD_DAYS;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** A release handed over: the statuses that carry a release date, and that nothing goes back from. */
 const HANDED_OVER: readonly Release['status'][] = ['released', 'claimed', 'completed'];
@@ -144,6 +151,8 @@ export class MockDashboardRepository implements DashboardRepository {
         demoWeeks(8),
         requests.map((request) => request.submittedAt),
       ),
+      waiting: waitingOf(requests),
+      decidedInPeriod: decisionsOf(requests, since),
 
       payouts,
       residentApp: residentAppFor(user, since),
@@ -176,6 +185,89 @@ function payoutsOf(
       demoDays(7),
       releases.filter((d) => HANDED_OVER.includes(d.status)).map((d) => d.releasedAt),
     ),
+    handedOverByWeek: countByWeek(
+      demoWeeks(8),
+      releases.filter((d) => HANDED_OVER.includes(d.status)).map((d) => d.releasedAt),
+    ),
+    averageDaysToHandOver: averageDaysToHandOver(released, requests),
+  };
+}
+
+/** The summary report's rule: filing to handing over, averaged, one decimal; imports left out. */
+function averageDaysToHandOver(
+  released: readonly Release[],
+  requests: readonly AssistanceRequest[],
+): number | null {
+  const spans = released.flatMap((release) => {
+    const request = requests.find((r) => r.id === release.requestId);
+    return request?.submittedAt && request.imported === null && release.releasedAt !== null
+      ? [(Date.parse(release.releasedAt) - Date.parse(request.submittedAt)) / DAY_MS]
+      : [];
+  });
+  if (spans.length === 0) {
+    return null;
+  }
+  return Math.round((spans.reduce((sum, span) => sum + span, 0) / spans.length) * 10) / 10;
+}
+
+/* ── what waits, and on whom ──────────────────────────────────────────────── */
+
+/** The API's split: her move when the office returned it or scheduled her payout. */
+const WAITING_ON_RESIDENT: readonly AssistanceRequestStatus[] = ['returned', 'scheduled'];
+
+/**
+ * Open requests by who they wait on, and the five on each side that have stood longest at their
+ * current stage, counted to the demo's today (the seed's anchor) as the API counts to the real one.
+ */
+function waitingOf(requests: readonly AssistanceRequest[]): Readonly<Record<WaitsOn, WaitingSide>> {
+  const today = Date.parse(`${manilaDay(SEED_ANCHOR)}T00:00:00Z`);
+  const rows = requests
+    .filter((request) => !isTerminalAssistanceStatus(request.status))
+    .map((request): { side: WaitsOn; row: WaitingRequest } => {
+      const since =
+        request.statusHistory.at(-1)?.occurredAt ?? request.submittedAt ?? request.audit.createdAt;
+      const side: WaitsOn = WAITING_ON_RESIDENT.includes(request.status) ? 'resident' : 'office';
+      const row: WaitingRequest = {
+        id: request.id,
+        referenceNumber: request.referenceNumber,
+        status: request.status,
+        barangayId: request.barangayId,
+        since,
+        days: Math.max(
+          0,
+          Math.round((today - Date.parse(`${manilaDay(since)}T00:00:00Z`)) / DAY_MS),
+        ),
+        documentsOwed: outstandingRequirements(request).length > 0,
+      };
+      return { side, row };
+    })
+    .sort(
+      (a, b) =>
+        a.row.since.localeCompare(b.row.since) ||
+        a.row.referenceNumber.localeCompare(b.row.referenceNumber),
+    );
+  const side = (which: WaitsOn): WaitingSide => {
+    const mine = rows.filter((row) => row.side === which);
+    return {
+      count: mine.length,
+      longest: mine.slice(0, 5).map((entry) => entry.row),
+    };
+  };
+  return { office: side('office'), resident: side('resident') };
+}
+
+/** Requests whose history reached each decision within the period, each request once. */
+function decisionsOf(requests: readonly AssistanceRequest[], since: Date | null): DecisionCounts {
+  const reached = (status: AssistanceRequestStatus): number =>
+    requests.filter((request) =>
+      request.statusHistory.some(
+        (change) => change.to === status && withinPeriod(change.occurredAt, since),
+      ),
+    ).length;
+  return {
+    approved: reached('approved'),
+    rejected: reached('rejected'),
+    returned: reached('returned'),
   };
 }
 

@@ -5,6 +5,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
+import { NotConnected } from '@core/access/not-connected';
+import { ServedPorts } from '@core/access/served-ports';
 import { PermissionService } from '@core/access/permission.service';
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
@@ -35,6 +37,8 @@ import { PageHeader } from '@shared/ui/page-header/page-header';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
 
 import { DashboardAttention, type AttentionCard, type AttentionGroup } from './dashboard-attention';
+import { DashboardActivity, DashboardOutcomes, DashboardWaiting } from './dashboard-health';
+import { DASHBOARD_HEALTH_COPY } from './dashboard-health.copy';
 import { DASHBOARD_COPY } from './dashboard.copy';
 import { DashboardHandover, DashboardRequestsTrend } from './dashboard-trends';
 import {
@@ -84,10 +88,14 @@ export const DASHBOARD_TOPICS: readonly LiveTopic[] = [
     DashboardRequestsTrend,
     AsyncContent,
     ChartTable,
+    DashboardActivity,
     DashboardAttention,
+    DashboardOutcomes,
+    DashboardWaiting,
     DisplayDatePipe,
     HasPermissionDirective,
     Icon,
+    NotConnected,
     PageHeader,
     PesoPipe,
     RouterLink,
@@ -108,6 +116,9 @@ export class DashboardPage {
   );
 
   protected readonly copy = DASHBOARD_COPY;
+  protected readonly health = DASHBOARD_HEALTH_COPY;
+  /** The recent-activity panel reads the office's audit trail, which only some adapter sets serve. */
+  protected readonly servesAudit = inject(ServedPorts).serves('governance');
   protected readonly barangays = TAYTAY_BARANGAYS;
   protected readonly recordRequest = RECORD_REQUEST;
   protected readonly schedulePayouts = SCHEDULE_PAYOUTS;

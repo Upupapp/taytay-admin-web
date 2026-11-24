@@ -23,6 +23,40 @@ describe('resident summary mapper (DL-213)', () => {
     expect(summary?.registered.previous).toEqual({ value: 24, withheld: false });
     expect(summary?.byBarangay.total).toBe(1204);
     expect(summary?.recordsToTidy.map((item) => item.count)).toEqual([31, null]);
+    expect(summary?.residents.addedByMonth).toHaveLength(12);
+    expect(summary?.residents.addedByMonth[11]).toEqual({
+      month: '2026-11',
+      office: { value: 5, withheld: false },
+      imported: { value: 0, withheld: false },
+    });
+  });
+
+  it('reads a withheld addition as withheld, and refuses one shown below the threshold (DL-249)', () => {
+    const months = SUMMARY.data.residents.added_by_month;
+    const withheld = {
+      ...SUMMARY.data,
+      residents: {
+        ...SUMMARY.data.residents,
+        added_by_month: months.map((month, index) =>
+          index === 0 ? { ...month, imported: { value: null, withheld: 'small-cell' } } : month,
+        ),
+      },
+    };
+    expect(toResidentSummary(withheld, BARANGAYS)?.residents.addedByMonth[0]?.imported).toEqual({
+      value: null,
+      withheld: true,
+    });
+
+    const leaking = {
+      ...SUMMARY.data,
+      residents: {
+        ...SUMMARY.data.residents,
+        added_by_month: months.map((month, index) =>
+          index === 0 ? { ...month, imported: { value: null, withheld: null } } : month,
+        ),
+      },
+    };
+    expect(toResidentSummary(leaking, BARANGAYS)).toBeNull();
   });
 
   it('re-keys a barangay row to the console’s barangay, and keeps a withheld row unlinked', () => {

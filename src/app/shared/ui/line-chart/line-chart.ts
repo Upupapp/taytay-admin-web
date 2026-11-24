@@ -35,12 +35,27 @@ interface AxisLabel {
  * axis, no dot is drawn, and the table says the figure was withheld. The scale is the largest
  * figure shown, rounded up to an even number so the middle line is a whole one. It computes
  * nothing about the data: it draws what it is given.
+ *
+ * **A second series** (`compare`, same keys in the same order) is drawn dashed in its own colour
+ * with square dots, so the two lines are told apart by shape as well as colour (WCAG 1.4.1), named
+ * in a legend, and given its own column in the table.
  */
 @Component({
   selector: 'app-line-chart',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <figure class="line-chart">
+      @if (compare(); as second) {
+        <div class="line-chart__legend" aria-hidden="true">
+          <span class="line-chart__key"
+            ><span class="line-chart__swatch"></span>{{ valueHeader() }}</span
+          >
+          <span class="line-chart__key"
+            ><span class="line-chart__swatch line-chart__swatch--compare"></span
+            >{{ compareHeader() }}</span
+          >
+        </div>
+      }
       <div class="line-chart__plot" aria-hidden="true">
         <span class="line-chart__grid line-chart__grid--top"></span>
         <span class="line-chart__grid line-chart__grid--middle"></span>
@@ -60,7 +75,21 @@ interface AxisLabel {
           @for (path of lines(); track $index) {
             <path class="line-chart__line" [attr.d]="path" vector-effect="non-scaling-stroke" />
           }
+          @for (path of compareLines(); track $index) {
+            <path
+              class="line-chart__line line-chart__line--compare"
+              [attr.d]="path"
+              vector-effect="non-scaling-stroke"
+            />
+          }
         </svg>
+        @for (dot of compareDots(); track dot.key) {
+          <span
+            class="line-chart__dot line-chart__dot--compare"
+            [style.left.%]="dot.x"
+            [style.top.%]="dot.y"
+          ></span>
+        }
         @for (dot of dots(); track dot.key) {
           <span class="line-chart__dot" [style.left.%]="dot.x" [style.top.%]="dot.y"></span>
         }
@@ -85,27 +114,37 @@ interface AxisLabel {
           >
         }
       </div>
-      <table class="visually-hidden">
-        <caption>
-          {{
-            caption()
-          }}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">{{ labelHeader() }}</th>
-            <th scope="col">{{ valueHeader() }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (point of points(); track point.key) {
+      <!-- Hidden in a block: a table is as wide as its cells whatever its own width says, and a
+           visually hidden table with a long caption widened the page (DL-248). -->
+      <div class="visually-hidden">
+        <table>
+          <caption>
+            {{
+              caption()
+            }}
+          </caption>
+          <thead>
             <tr>
-              <th scope="row">{{ point.longLabel }}</th>
-              <td>{{ point.value === null ? withheldLabel() : point.value }}</td>
+              <th scope="col">{{ labelHeader() }}</th>
+              <th scope="col">{{ valueHeader() }}</th>
+              @if (compare()) {
+                <th scope="col">{{ compareHeader() }}</th>
+              }
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (point of points(); track point.key; let i = $index) {
+              <tr>
+                <th scope="row">{{ point.longLabel }}</th>
+                <td>{{ point.value === null ? withheldLabel() : point.value }}</td>
+                @if (compare(); as second) {
+                  <td>{{ shown(second[i]?.value ?? null) }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
     </figure>
   `,
   styleUrl: './line-chart.scss',
@@ -120,44 +159,35 @@ export class LineChart {
   readonly withheldLabel = input('Withheld');
   /** Every other axis label, as the board does when the labels would crowd. */
   readonly sparseLabels = input(false);
+  /** A second series over the same keys, in the same order; `null` draws one line. */
+  readonly compare = input<readonly LinePoint[] | null>(null);
+  /** The second series' name: its legend entry and its column in the table. */
+  readonly compareHeader = input('');
 
   protected readonly scale = computed(() => {
-    const largest = this.points().reduce((max, point) => Math.max(max, point.value ?? 0), 0);
+    const all = [...this.points(), ...(this.compare() ?? [])];
+    const largest = all.reduce((max, point) => Math.max(max, point.value ?? 0), 0);
     return Math.max(2, Math.ceil(largest / 2) * 2);
   });
 
-  private readonly placed = computed<readonly (Drawn | null)[]>(() => {
-    const points = this.points();
-    const span = Math.max(points.length - 1, 1);
-    const scale = this.scale();
-    return points.map((point, index) =>
-      point.value === null
-        ? null
-        : { key: point.key, x: (index / span) * 100, y: 100 - (point.value / scale) * 100 },
-    );
-  });
+  private readonly placed = computed(() => place(this.points(), this.scale()));
 
   /** Unbroken runs of shown points: a withheld point splits the line. */
-  private readonly runs = computed(() => {
-    const runs: Drawn[][] = [];
-    let current: Drawn[] = [];
-    for (const point of this.placed()) {
-      if (point === null) {
-        if (current.length > 0) {
-          runs.push(current);
-        }
-        current = [];
-      } else {
-        current.push(point);
-      }
-    }
-    if (current.length > 0) {
-      runs.push(current);
-    }
-    return runs;
-  });
+  private readonly runs = computed(() => runsOf(this.placed()));
+
+  private readonly comparePlaced = computed(() => place(this.compare() ?? [], this.scale()));
 
   protected readonly lines = computed(() => this.runs().map(curve));
+
+  protected readonly compareLines = computed(() => runsOf(this.comparePlaced()).map(curve));
+
+  protected readonly compareDots = computed(() =>
+    this.comparePlaced().filter((point): point is Drawn => point !== null),
+  );
+
+  protected shown(value: number | null): string {
+    return value === null ? this.withheldLabel() : String(value);
+  }
 
   protected readonly areas = computed(() =>
     this.runs()
@@ -197,6 +227,34 @@ export class LineChart {
       };
     });
   });
+}
+
+function place(points: readonly LinePoint[], scale: number): readonly (Drawn | null)[] {
+  const span = Math.max(points.length - 1, 1);
+  return points.map((point, index) =>
+    point.value === null
+      ? null
+      : { key: point.key, x: (index / span) * 100, y: 100 - (point.value / scale) * 100 },
+  );
+}
+
+function runsOf(placed: readonly (Drawn | null)[]): readonly Drawn[][] {
+  const runs: Drawn[][] = [];
+  let current: Drawn[] = [];
+  for (const point of placed) {
+    if (point === null) {
+      if (current.length > 0) {
+        runs.push(current);
+      }
+      current = [];
+    } else {
+      current.push(point);
+    }
+  }
+  if (current.length > 0) {
+    runs.push(current);
+  }
+  return runs;
 }
 
 function fix(value: number): string {

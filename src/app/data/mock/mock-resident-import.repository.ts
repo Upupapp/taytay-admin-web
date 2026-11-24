@@ -36,6 +36,12 @@ import { denyUnless } from './mock-access';
 import { MockLatency } from './mock-latency';
 import { MockResidentStore } from './mock-resident.store';
 
+/**
+ * The records an import created in this session, so the registry summary can say how a person came
+ * onto it as the API does (backend ADR 0011). The seed's records were all typed in at the office.
+ */
+export const MOCK_IMPORTED_RESIDENT_IDS = new Set<string>();
+
 /** The server's fields and words for them (`office-imports`), sample adapter only. */
 const FIELDS: readonly ImportFieldSpec[] = [
   { field: 'lastName', label: 'Surname', required: true },
@@ -259,6 +265,7 @@ export class MockResidentImportRepository implements ResidentImportRepository {
       const draft = toDraft(row);
       if (draft === null) return { ...base, outcome: 'error', residentId: null };
       const created = this.store.add(draft, user?.id ?? null);
+      MOCK_IMPORTED_RESIDENT_IDS.add(created.id);
       return { ...base, outcome: 'created', residentId: created.id };
     });
     const count = (kind: ImportOutcome['outcome']): number =>
@@ -309,9 +316,9 @@ export class MockResidentImportRepository implements ResidentImportRepository {
         if (value !== undefined && value !== '') values[field] = value;
       }
       const row = index + 1;
-      const problems = FIELDS.filter((spec) => spec.required && values[spec.field] === undefined).map(
-        (spec) => ({ field: spec.field, message: `${spec.label} is empty.` }),
-      );
+      const problems = FIELDS.filter(
+        (spec) => spec.required && values[spec.field] === undefined,
+      ).map((spec) => ({ field: spec.field, message: `${spec.label} is empty.` }));
       const key = `${(values.lastName ?? '').toLowerCase()}|${(values.firstName ?? '').toLowerCase()}|${values.birthDate ?? ''}`;
       const earlier = problems.length === 0 ? seen.get(key) : undefined;
       if (problems.length === 0 && earlier === undefined) seen.set(key, row);

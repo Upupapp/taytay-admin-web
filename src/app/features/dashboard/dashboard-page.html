@@ -157,11 +157,26 @@
 
       <!-- The two series by Manila week and day (DL-232): the trend for every reader, the
            handovers only where the payout figures are. -->
-      <app-dashboard-requests-trend [weeks]="summary.requestsReceivedByWeek" />
+      <app-dashboard-requests-trend
+        [weeks]="summary.requestsReceivedByWeek"
+        [handedOver]="summary.payouts?.handedOverByWeek ?? null"
+      />
       @if (summary.payouts; as payouts) {
         <app-dashboard-handover [days]="payouts.handedOverByDay" />
       }
     </section>
+
+    <!-- ── What waits, on whom, and what was decided (DL-248) ─────────────── -->
+    <app-dashboard-waiting
+      [waiting]="summary.waiting"
+      [open]="summary.openRequests"
+      [all]="openRequestsLink(summary)"
+    />
+    <app-dashboard-outcomes
+      [decided]="summary.decidedInPeriod"
+      [period]="summary.appliedFilter.period ?? 'all-time'"
+      [payouts]="summary.payouts"
+    />
 
     <!-- ── Breakdowns. Every one is a real table with decorative bars. ────── -->
     <div class="panels">
@@ -374,6 +389,32 @@
         </a>
       </div>
     </section>
+
+    <!-- The trail's newest rows, for a reader its route lets in (rule 8, DL-248). -->
+    @if (servesAudit) {
+      <app-dashboard-activity *appHasPermission="'audit.view'" />
+    } @else {
+      <section
+        class="card card--panel card--padded"
+        aria-labelledby="activity-gap"
+        *appHasPermission="'audit.view'"
+      >
+        <h2 id="activity-gap" class="section-title">{{ health.activityHeading }}</h2>
+        <app-not-connected port="governance" />
+      </section>
+    }
+
+    <details class="card card--panel card--padded definitions">
+      <summary class="section-title">{{ health.definitionsHeading }}</summary>
+      <dl class="facts facts--pairs">
+        @for (entry of health.definitions; track entry.term) {
+          @if (!entry.payouts || summary.payouts) {
+            <dt>{{ entry.term }}</dt>
+            <dd>{{ entry.text }}</dd>
+          }
+        }
+      </dl>
+    </details>
   </div>
 
   <p class="generated">

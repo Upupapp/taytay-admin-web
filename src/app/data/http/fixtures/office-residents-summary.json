@@ -25,6 +25,20 @@
         { "month": "2026-09", "value": 1195, "withheld": null },
         { "month": "2026-10", "value": 1200, "withheld": null },
         { "month": "2026-11", "value": 1205, "withheld": null }
+      ],
+      "added_by_month": [
+        { "month": "2025-12", "office": { "value": 5, "withheld": null }, "imported": { "value": 0, "withheld": null } },
+        { "month": "2026-01", "office": { "value": 5, "withheld": null }, "imported": { "value": 0, "withheld": null } },
+        { "month": "2026-02", "office": { "value": 5, "withheld": null }, "imported": { "value": 0, "withheld": null } },
+        { "month": "2026-03", "office": { "value": 5, "withheld": null }, "imported": { "value": 0, "withheld": null } },
+        { "month": "2026-04", "office": { "value": 5, "withheld": null }, "imported": { "value": 0, "withheld": null } },
+        { "month": "2026-05", "office": { "value": 5, "withheld": null }, "imported": { "value": 0, "withheld": null } },
+        { "month": "2026-06", "office": { "value": 5, "withheld": null }, "imported": { "value": 0, "withheld": null } },
+        { "month": "2026-07", "office": { "value": 5, "withheld": null }, "imported": { "value": 0, "withheld": null } },
+        { "month": "2026-08", "office": { "value": 5, "withheld": null }, "imported": { "value": 0, "withheld": null } },
+        { "month": "2026-09", "office": { "value": 5, "withheld": null }, "imported": { "value": 0, "withheld": null } },
+        { "month": "2026-10", "office": { "value": 5, "withheld": null }, "imported": { "value": 0, "withheld": null } },
+        { "month": "2026-11", "office": { "value": 5, "withheld": null }, "imported": { "value": 0, "withheld": null } }
       ]
     },
     "registered": {

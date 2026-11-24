@@ -22,7 +22,7 @@
   <label class="filter-bar__field">
     <span class="visually-hidden">{{ copy.sector }}</span>
     <select
-      class="field__input field__input--pill overview__select"
+      class="field__input field__input--pill overview__select overview__select--narrow"
       (change)="onFilter('sector', $event)"
     >
       <option value="" [selected]="!filter().sector">{{ copy.allSectors }}</option>
@@ -37,7 +37,7 @@
   <label class="filter-bar__field">
     <span class="visually-hidden">{{ copy.ageGroup }}</span>
     <select
-      class="field__input field__input--pill overview__select"
+      class="field__input field__input--pill overview__select overview__select--narrow"
       (change)="onFilter('ageGroup', $event)"
     >
       <option value="" [selected]="!filter().ageGroup">{{ copy.allAges }}</option>
@@ -330,6 +330,31 @@
       <section class="overview-panel overview-panel--month" aria-labelledby="registry-this-month">
         <app-registry-this-month [thisMonth]="summary.thisMonth" />
       </section>
+
+      <!-- How the registry grew, and whether the ID review queue keeps up (DL-249). -->
+      <section class="overview-panel overview-panel--added" aria-labelledby="registry-additions">
+        <app-registry-additions [months]="summary.residents.addedByMonth" />
+      </section>
+      @if (servesReviews) {
+        <section
+          class="overview-panel overview-panel--queue"
+          aria-labelledby="registry-review-queue"
+          *appHasPermission="'verification.review'"
+        >
+          <app-registry-review-queue />
+        </section>
+      } @else {
+        <section
+          class="overview-panel overview-panel--queue"
+          aria-labelledby="registry-review-queue-gap"
+          *appHasPermission="'verification.review'"
+        >
+          <h2 id="registry-review-queue-gap" class="overview-panel__title">
+            {{ health.queueHeading }}
+          </h2>
+          <app-not-connected port="verification" />
+        </section>
+      }
 
       <!-- Conditions of the records, counted: never a list of who (DL-98, DL-103). -->
       <section class="overview-panel overview-panel--tidy" aria-labelledby="overview-tidy">

@@ -81,3 +81,26 @@ describe('the line never overshoots its points', () => {
     expect(curve([{ key: 'a', x: 0, y: 40 }])).toBe('M0.00 40.00');
   });
 });
+
+describe('LineChart with a second series (DL-248)', () => {
+  it('draws it dashed, names it in a legend and gives it its own column', async () => {
+    const fixture = TestBed.createComponent(LineChart);
+    fixture.componentRef.setInput('points', [point('a', 2), point('b', 4)]);
+    fixture.componentRef.setInput('compare', [point('a', 9), point('b', null)]);
+    fixture.componentRef.setInput('compareHeader', 'Handed over');
+    fixture.componentRef.setInput('caption', 'Requests and releases');
+    fixture.componentRef.setInput('labelHeader', 'Week');
+    fixture.componentRef.setInput('valueHeader', 'Requests');
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+
+    const rows = [...element.querySelectorAll('tbody tr')].map((row) =>
+      [...row.children].map((cell) => cell.textContent?.trim()).join(' | '),
+    );
+    expect(rows).toEqual(['Week of a | 2 | 9', 'Week of b | 4 | Withheld']);
+    expect(element.querySelector('.line-chart__legend')?.textContent).toContain('Handed over');
+    expect(element.querySelectorAll('.line-chart__line--compare')).toHaveLength(1);
+    // One scale for both lines: the larger series sets it.
+    expect(element.querySelector('.line-chart__tick--top')?.textContent?.trim()).toBe('10');
+  });
+});

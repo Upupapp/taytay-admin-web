@@ -51,6 +51,8 @@ import { PageHeader } from '@shared/ui/page-header/page-header';
 
 import { CITIZENS_OVERVIEW_COPY } from './citizens-overview.copy';
 import { RecentImports } from './recent-imports';
+import { RegistryAdditions, RegistryReviewQueue } from './registry-health';
+import { REGISTRY_HEALTH_COPY } from './registry-health.copy';
 import { RegistryFunnelPanel, RegistryGrowth, RegistryThisMonthPanel } from './registry-panels';
 import { REGISTRY_PANELS_COPY } from './registry-panels.copy';
 
@@ -138,6 +140,8 @@ interface Headline {
     NotConnected,
     PageHeader,
     RecentImports,
+    RegistryAdditions,
+    RegistryReviewQueue,
     RegistryFunnelPanel,
     RegistryGrowth,
     RegistryThisMonthPanel,
@@ -156,6 +160,7 @@ export class CitizensOverviewPage {
 
   protected readonly copy = CITIZENS_OVERVIEW_COPY;
   protected readonly panels = REGISTRY_PANELS_COPY;
+  protected readonly health = REGISTRY_HEALTH_COPY;
   protected readonly barangays = TAYTAY_BARANGAYS;
   protected readonly ageGroups = RESIDENT_AGE_GROUPS;
   protected readonly sexes = SEXES;
@@ -194,6 +199,9 @@ export class CitizensOverviewPage {
 
   /** The recent imports panel reads the import list, which only some adapter sets serve. */
   protected readonly servesImports = inject(ServedPorts).serves('resident-import');
+
+  /** The review-queue panel reads the ID review queue, which only some adapter sets serve. */
+  protected readonly servesReviews = inject(ServedPorts).serves('verification');
 
   /** The funnel links to the card list only for a reader its route lets in (rule 8). */
   protected readonly opensCards = computed(

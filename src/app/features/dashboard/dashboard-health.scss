@@ -1,0 +1,139 @@
+/* The dashboard's waiting, outcomes and activity panels (DL-248). Each is a card in the page's
+   twelve-column bento; the page sets its share of the row, as it does for every panel. */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-inline-size: 0;
+  padding: 20px;
+  border-radius: var(--r-panel);
+  background: var(--card);
+}
+
+.health__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.health__head--row {
+  flex-flow: row wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.health__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-title-sm);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--ls-title);
+  color: var(--ink);
+}
+
+.health__lead,
+.health__note,
+.health__foot {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.health__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-block-start: auto;
+}
+
+.waiting__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr) auto;
+  align-items: center;
+}
+
+.waiting__what {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+}
+
+/* The barangay on its own line, so every row reads the same however long its name. */
+.waiting__what > .soft-row__meta {
+  flex-basis: 100%;
+}
+
+.waiting__why {
+  color: var(--text2);
+  font-size: var(--fs-xs);
+}
+
+.waiting__days {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: end;
+}
+
+@media (width <= 700px) {
+  .waiting__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .waiting__days {
+    align-items: flex-start;
+    text-align: start;
+  }
+}
+
+.outcomes {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.outcomes__item {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-3);
+  border-radius: var(--r-field);
+  background: var(--soft2);
+}
+
+.outcomes__item dt {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text2);
+}
+
+.outcomes__item dd {
+  margin: 0;
+}
+
+.outcomes__value {
+  font-family: var(--font-display);
+  font-size: var(--fs-title-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--ink);
+}
+
+.outcomes__hint {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.activity__row {
+  flex-wrap: wrap;
+}
+
+.activity__what {
+  min-inline-size: 0;
+  overflow-wrap: break-word;
+}
+
+.activity__actor {
+  font-weight: var(--fw-semibold);
+}

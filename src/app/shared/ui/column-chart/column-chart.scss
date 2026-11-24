@@ -51,6 +51,8 @@
 
 .column-chart__label {
   padding-block-start: 6px;
+  /* Under its own bar: a table header starts at the cell's edge otherwise (DL-248). */
+  text-align: center;
   font-size: var(--fs-micro);
   font-weight: var(--fw-medium);
   color: var(--muted);

@@ -71,7 +71,8 @@ exempt from 1.4.11), `--blue-50` #ecf1fc, `--blue-100` #dce5fa.
 **Status tones** (consumed by `StatusBadge` and the chip modifiers; each pair is audited):
 `--tone-{neutral,info,progress,success,warning,danger}-{fg,bg}`.
 
-**Charts:** `--axis`, `--dash`, `--area`, `--bar`, `--chart-line`, `--accent-line`.
+**Charts:** `--axis`, `--dash`, `--area`, `--bar`, `--chart-line`, `--chart-line-compare` (a
+second line, drawn dashed, DL-248), `--accent-line`.
 
 **Overlays and options:** `--scrim`, `--scrim2` (behind dialogs), `--ring` (the gap around a badge
 on another element), `--option-bg`, `--option-ink` (native `<option>`).
@@ -513,6 +514,15 @@ The printed report sheet's chart only (`DL-228`, §7 "Report sheet"): inline SVG
 or two series, the figure printed at each bar's end, "withheld" (input `withheldLabel`) and no bar
 for a withheld figure. Inputs: `series`, `rows` (`{ key, label, values: (number | null)[] }`),
 `withheldLabel`, `format`. Always beside a table of the same rows; on a screen, use `ChartTable`.
+
+### LineChart — `app-line-chart`
+
+A series over time (DL-232, monotone curve DL-242): the drawing is `aria-hidden` and a visually
+hidden table states every point; a withheld point breaks the line and the table says so. Inputs:
+`points`, `caption`, `labelHeader`, `valueHeader`, `callout`, `withheldLabel`, `sparseLabels`, and for
+a second series over the same keys `compare` + `compareHeader` (DL-248): dashed, in
+`--chart-line-compare`, with square dots and a legend, and its own table column. Leave `callout` empty
+with two series, or it covers the legend.
 
 ### SavedViewsBar — `app-saved-views-bar`
 

@@ -105,6 +105,12 @@ export const DASHBOARD_COPY = {
   trendWeekHeader: 'Week',
   trendCountHeader: 'Requests filed',
   trendWeekOf: (date: string) => `Week of ${date}`,
+  /* With the releases beside them (DL-248). */
+  flowHeading: 'Received and handed over',
+  flowLead: 'Filed requests and releases handed over per week, last 8 weeks.',
+  flowCaption:
+    'Filed requests and releases handed over per week, last 8 weeks, oldest first. Money and goods alike.',
+  flowCompareHeader: 'Releases handed over',
   handoverHeading: 'Releases handed over',
   handoverWindow: 'Last 7 days',
   handoverTotal: (n: number) =>

@@ -1,7 +1,7 @@
 import { Component, Injectable, type Provider } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { firstValueFrom, map, of, Subject, type Observable } from 'rxjs';
+import { firstValueFrom, map, NEVER, of, Subject, type Observable } from 'rxjs';
 import { vi } from 'vitest';
 
 import { SessionState } from '@core/auth/session-state';
@@ -14,11 +14,13 @@ import {
   asId,
   DASHBOARD_REPOSITORY,
   emptyPage,
+  GOVERNANCE_REPOSITORY,
   PermissionDeniedError,
   ROLE_DEFINITIONS,
   sortAttention,
   STAFF_REPOSITORY,
   toAuthenticatedUser,
+  UNSERVED_PORTS,
   type AttentionSignal,
   type AuthenticatedUser,
   type BarangayId,
@@ -43,6 +45,7 @@ import {
 // The figures and the lists they open are checked against each other: a spec is where the two meet.
 import { readRequestQuery } from '@features/requests/request-list-page';
 import { readReleaseQuery } from '@features/releases/release-list-page';
+import { ACTIVITY_TOPICS } from './dashboard-health';
 import { DASHBOARD_TOPICS, DashboardPage, readFilter } from './dashboard-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
@@ -149,6 +152,8 @@ async function setUp(
         useValue: repository(role ? staffUser(role, barangayId) : null),
       },
       { provide: DASHBOARD_REPOSITORY, useClass: dashboard },
+      { provide: UNSERVED_PORTS, useValue: [] },
+      { provide: GOVERNANCE_REPOSITORY, useValue: { auditRows: () => of(ACTIVITY) } },
       ...extra,
     ],
   });
@@ -160,6 +165,20 @@ async function setUp(
 }
 
 const html = (fixture: ComponentFixture<DashboardPage>) => fixture.nativeElement as HTMLElement;
+
+/** One row of the office's audit trail, as the recent-activity panel reads it. */
+const ACTIVITY = {
+  items: [
+    {
+      id: 'audit-1',
+      summary: 'Approved request AR-2026-000014.',
+      actorName: 'Ana Cruz',
+      occurredAt: '2026-07-31T02:00:00.000Z',
+    },
+  ],
+  hasMore: false,
+  nextCursor: null,
+};
 
 /* ── "what needs attention now?" ──────────────────────────────────────────── */
 
@@ -674,7 +693,8 @@ describe('the dashboard keeps itself current (DL-222)', () => {
     const live = {
       changes: (topics: readonly string[]) => {
         asked.push(topics);
-        return changes.asObservable();
+        // The recent-activity panel listens on the trail's topic; only the summary's fire here.
+        return topics === DASHBOARD_TOPICS ? changes.asObservable() : NEVER;
       },
       noteRefreshed: vi.fn(),
       noteRefreshFailed: vi.fn(),
@@ -684,8 +704,9 @@ describe('the dashboard keeps itself current (DL-222)', () => {
       { provide: LiveUpdates, useValue: live },
     ]);
     expect(summaryReads).toBe(1);
-    expect(asked).toEqual([DASHBOARD_TOPICS]);
-    expect(live.noteRefreshed).toHaveBeenCalledTimes(1);
+    expect(asked).toContainEqual(DASHBOARD_TOPICS);
+    expect(asked).toContainEqual(ACTIVITY_TOPICS);
+    const refreshed = live.noteRefreshed.mock.calls.length;
 
     changes.next();
     // The figures stay on screen while the new ones are read: no skeleton.
@@ -695,7 +716,7 @@ describe('the dashboard keeps itself current (DL-222)', () => {
 
     await fixture.whenStable();
     expect(summaryReads).toBe(2);
-    expect(live.noteRefreshed).toHaveBeenCalledTimes(2);
+    expect(live.noteRefreshed).toHaveBeenCalledTimes(refreshed + 1);
   });
 
   it('counts what its figures count: requests, payouts, referrals, the app', () => {
@@ -718,7 +739,8 @@ describe('the requests trend and the handover days', () => {
     const element = html(await setUp('mswdo-head'));
     const trend = element.querySelector('app-dashboard-requests-trend');
 
-    expect(trend?.querySelector('h2')?.textContent?.trim()).toBe('Requests received');
+    // With the payout figures, the releases handed over are the second line (DL-248).
+    expect(trend?.querySelector('h2')?.textContent?.trim()).toBe('Received and handed over');
     expect(trend?.querySelectorAll('table tbody tr')).toHaveLength(8);
   });
 
@@ -730,5 +752,79 @@ describe('the requests trend and the handover days', () => {
     const hasPayouts = intake.querySelector('.metrics__note') === null;
     expect(intake.querySelector('app-dashboard-handover') !== null).toBe(hasPayouts);
     expect(intake.querySelector('app-dashboard-requests-trend')).not.toBeNull();
+  });
+});
+
+/* ── what waits, what was decided, what happened (DL-248) ─────────────────── */
+
+describe('the dashboard says what waits, on whom, and what was decided (DL-248)', () => {
+  it('lists what waits longest in two tabs by whose move it is, in days and words', async () => {
+    const fixture = await setUp();
+    const page = html(fixture);
+    const region = page.querySelector('app-dashboard-waiting');
+    const tabs = [...(region?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [])];
+
+    expect(tabs).toHaveLength(2);
+    expect(tabs.map((tab) => tab.getAttribute('aria-selected'))).toEqual(['true', 'false']);
+    expect(region?.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe(
+      'waiting-tab-office',
+    );
+    // Each row says its wait in days and why, and opens the request it names.
+    const rows = [...(region?.querySelectorAll('.waiting__row') ?? [])];
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.length).toBeLessThanOrEqual(5);
+    for (const row of rows) {
+      expect(row.textContent).toMatch(/Waiting \d+ days?|Since today/);
+      expect(row.querySelector('a')?.getAttribute('href')).toMatch(/^\/assistance-requests\/.+/);
+    }
+    // No service standard has been set, so nothing anywhere is called overdue (DL-101).
+    expect(page.textContent?.toLowerCase()).not.toContain('overdue');
+
+    tabs[0]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    await fixture.whenStable();
+    expect(tabs.map((tab) => tab.getAttribute('aria-selected'))).toEqual(['false', 'true']);
+  });
+
+  it('says outcomes as counts, never a rate or a score (DL-107)', async () => {
+    const page = html(await setUp());
+    const outcomes = page.querySelector('app-dashboard-outcomes')?.textContent ?? '';
+
+    expect(outcomes).toContain('Approvals');
+    expect(outcomes).toMatch(/\d+ of \d+|None decided/);
+    expect(outcomes).not.toContain('%');
+    expect(outcomes).toContain('Filing to hand-over');
+  });
+
+  it('leaves the hand-over time out for a reader the releases refuse, rather than a zero', async () => {
+    const outcomes = html(await setUp('intake-officer')).querySelector('app-dashboard-outcomes');
+
+    expect(outcomes?.textContent).not.toContain('Filing to hand-over');
+  });
+
+  it('draws received and handed over as two lines, each week in a table', async () => {
+    const trend = html(await setUp()).querySelector('app-dashboard-requests-trend');
+    const headers = [...(trend?.querySelectorAll('thead th') ?? [])].map((th) =>
+      th.textContent?.trim(),
+    );
+
+    expect(headers).toEqual(['Week', 'Requests filed', 'Releases handed over']);
+    expect(trend?.querySelectorAll('tbody tr')).toHaveLength(8);
+    expect(trend?.querySelector('.line-chart__line--compare')).not.toBeNull();
+  });
+
+  it('shows recent activity to a reader of the audit trail, linking to it, and to nobody else', async () => {
+    const head = html(await setUp('mswdo-head'));
+    const activity = head.querySelector('app-dashboard-activity');
+
+    expect(activity?.textContent).toContain('Ana Cruz');
+    expect(activity?.querySelector('a')?.getAttribute('href')).toBe('/administration/audit');
+    expect(html(await setUp('intake-officer')).querySelector('app-dashboard-activity')).toBeNull();
+  });
+
+  it('names how every figure is counted', async () => {
+    const definitions = html(await setUp()).querySelector('details.definitions');
+
+    expect(definitions?.querySelectorAll('dt').length).toBeGreaterThanOrEqual(6);
+    expect(definitions?.textContent).toContain('Waiting longest');
   });
 });

@@ -14,6 +14,10 @@ const LOCALE = 'en-US';
  * (`DL-232`). This week's figure, how it moved on last week and the average over the eight weeks
  * shown are worked out from the eight figures the API sent — nothing else is assumed. Requests are
  * records, not people, so no figure here is withheld.
+ *
+ * For a reader who may open the releases, the releases handed over in the same weeks are the
+ * second, dashed line (`DL-248`): what came in beside what went out, on one axis, each week in the
+ * table with both figures.
  */
 @Component({
   selector: 'app-dashboard-requests-trend',
@@ -22,8 +26,10 @@ const LOCALE = 'en-US';
   host: { class: 'trend', role: 'region', 'aria-labelledby': 'trend-heading' },
   template: `
     <div class="trend__head">
-      <h2 id="trend-heading" class="trend__heading">{{ copy.trendHeading }}</h2>
-      <p class="trend__lead">{{ copy.trendLead }}</p>
+      <h2 id="trend-heading" class="trend__heading">
+        {{ handedOver() ? copy.flowHeading : copy.trendHeading }}
+      </h2>
+      <p class="trend__lead">{{ handedOver() ? copy.flowLead : copy.trendLead }}</p>
     </div>
     <div class="trend__figures">
       <span class="trend__figure">{{ thisWeek() }}</span>
@@ -38,10 +44,12 @@ const LOCALE = 'en-US';
     <app-line-chart
       class="trend__chart"
       [points]="points()"
-      [caption]="copy.trendCaption"
+      [caption]="handedOver() ? copy.flowCaption : copy.trendCaption"
       [labelHeader]="copy.trendWeekHeader"
       [valueHeader]="copy.trendCountHeader"
-      [callout]="copy.trendCallout(thisWeek())"
+      [compare]="comparePoints()"
+      [compareHeader]="copy.flowCompareHeader"
+      [callout]="handedOver() ? '' : copy.trendCallout(thisWeek())"
       [sparseLabels]="true"
     />
   `,
@@ -49,8 +57,20 @@ const LOCALE = 'en-US';
 })
 export class DashboardRequestsTrend {
   readonly weeks = input.required<readonly WeekCount[]>();
+  /** Releases handed over in the same weeks; `null` for a reader the release list refuses. */
+  readonly handedOver = input<readonly WeekCount[] | null>(null);
 
   protected readonly copy = DASHBOARD_COPY;
+
+  /** Matched to the request weeks by their Monday, so a missing week is withheld, never shifted. */
+  protected readonly comparePoints = computed<readonly LinePoint[] | null>(() => {
+    const handed = this.handedOver();
+    if (handed === null) {
+      return null;
+    }
+    const byWeek = new Map<string, number>(handed.map((week) => [week.weekStart, week.count]));
+    return this.points().map((point) => ({ ...point, value: byWeek.get(point.key) ?? null }));
+  });
 
   protected readonly thisWeek = computed(() => this.weeks().at(-1)?.count ?? 0);
 

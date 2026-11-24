@@ -17807,7 +17807,7 @@
           "residents": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["current", "previous", "by_month"],
+            "required": ["current", "previous", "by_month", "added_by_month"],
             "description": "Totals, taken before anything is withheld (DL-105): now, and as the period began.",
             "properties": {
               "current": { "type": "integer", "minimum": 0 },
@@ -17825,6 +17825,22 @@
                     "month": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" },
                     "value": { "type": ["integer", "null"], "minimum": 0, "description": "Null exactly when withheld." },
                     "withheld": { "type": ["string", "null"], "enum": ["small-cell", null] }
+                  }
+                }
+              },
+              "added_by_month": {
+                "type": "array",
+                "minItems": 12,
+                "maxItems": 12,
+                "description": "The people on the registry now under the filter, by the Asia/Manila month their record was added, over the same twelve months as by_month, oldest first (ADR 0011): office, typed in at the office (the resident or household form); imported, created by an imported list (an import that attached a row to an existing person added nobody). Each cell counts people and is withheld below the small-cell threshold on its own. A record retired since is not counted. Ignores period.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["month", "office", "imported"],
+                  "properties": {
+                    "month": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" },
+                    "office": { "type": "object", "additionalProperties": false, "required": ["value", "withheld"], "properties": { "value": { "type": ["integer", "null"], "minimum": 0, "description": "Null exactly when withheld; never 0 for a withheld figure." }, "withheld": { "type": ["string", "null"], "enum": ["small-cell", null] } } },
+                    "imported": { "type": "object", "additionalProperties": false, "required": ["value", "withheld"], "properties": { "value": { "type": ["integer", "null"], "minimum": 0, "description": "Null exactly when withheld; never 0 for a withheld figure." }, "withheld": { "type": ["string", "null"], "enum": ["small-cell", null] } } }
                   }
                 }
               }
@@ -24951,9 +24967,32 @@
           "awaiting_approval",
           "by_status",
           "by_barangay",
-          "received_by_week"
+          "received_by_week",
+          "waiting",
+          "decided_in_period"
         ],
         "properties": {
+          "waiting": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["office", "resident"],
+            "description": "Open filed requests by who they wait on (ADR 0011): resident, those returned for more or scheduled for a payout she must attend; office, every other open status. Each side's count, and the five that have stood longest at their current stage, longest first. Ignores period; honours barangay_id, category and the reader's scope. No standard says how long is too long, so a wait is a number of days, never overdue (DL-101). Requests, not people: not suppressed.",
+            "properties": {
+              "office": { "$ref": "#/components/schemas/OfficeDashboardWaitingSide" },
+              "resident": { "$ref": "#/components/schemas/OfficeDashboardWaitingSide" }
+            }
+          },
+          "decided_in_period": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["approved", "rejected", "returned"],
+            "description": "Filed requests that reached each status within the period, by their status changes: a request returned twice is one request returned (ADR 0011). Honours period, barangay_id, category and the reader's scope. Counts, never a rate or a score.",
+            "properties": {
+              "approved": { "type": "integer", "minimum": 0 },
+              "rejected": { "type": "integer", "minimum": 0 },
+              "returned": { "type": "integer", "minimum": 0 }
+            }
+          },
           "received_by_week": {
             "type": "array",
             "minItems": 8,
@@ -25016,6 +25055,33 @@
           }
         }
       },
+      "OfficeDashboardWaitingSide": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["count", "longest"],
+        "properties": {
+          "count": { "type": "integer", "minimum": 0, "description": "Every open request on this side, not only those listed." },
+          "longest": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "reference_number", "status", "barangay_id", "since", "days", "documents_owed"],
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "reference_number": { "type": "string" },
+                "status": { "$ref": "#/components/schemas/OfficeRequestStatus" },
+                "barangay_id": { "type": "string", "format": "uuid" },
+                "since": { "type": "string", "format": "date-time", "description": "Its latest status change, or its filing when it has none." },
+                "days": { "type": "integer", "minimum": 0, "description": "Whole Asia/Manila days since then." },
+                "documents_owed": { "type": "boolean", "description": "A required document, or a conditional one ruled to apply, is neither verified nor waived." }
+              }
+            },
+            "description": "Longest first. No name and no programme: the reference opens the request for a reader who may read it."
+          }
+        }
+      },
       "OfficeDashboardPayouts": {
         "type": "object",
         "additionalProperties": false,
@@ -25025,9 +25091,22 @@
           "goods_released",
           "residents_served",
           "by_category",
-          "handed_over_by_day"
+          "handed_over_by_day",
+          "handed_over_by_week",
+          "average_days_to_hand_over"
         ],
         "properties": {
+          "handed_over_by_week": {
+            "type": "array",
+            "minItems": 8,
+            "maxItems": 8,
+            "items": { "$ref": "#/components/schemas/WeekCount" },
+            "description": "Releases handed over by the Asia/Manila week (Monday first) of released_at, over the same eight weeks as requests.received_by_week, oldest first, every week present (ADR 0011). Ignores period; honours barangay_id and category. Records, not people: not suppressed."
+          },
+          "average_days_to_hand_over": {
+            "type": ["number", "null"],
+            "description": "Calendar days from filing to handing over, averaged over the releases handed over in the period, one decimal: the summary report's rule. Imported past assistance is left out. Null when none was handed over (ADR 0011)."
+          },
           "handed_over_by_day": {
             "type": "array",
             "minItems": 7,

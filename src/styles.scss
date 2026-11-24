@@ -116,6 +116,8 @@
      legend and the table say which is which. */
   --bar-female: #f5b700;
   --chart-line: var(--blue);
+  /* A second line beside --chart-line, dashed: the legend and the table say which is which. */
+  --chart-line-compare: var(--green);
   --accent-line: var(--blue);
 
   /* Overlays */
@@ -384,6 +386,7 @@
   --area: rgb(45 84 224 / 35%);
   --bar: #3a63f0;
   --chart-line: #7c9bff;
+  --chart-line-compare: #6ee7a0;
   --accent-line: #5b82ff;
 
   --scrim: rgb(2 6 20 / 72%);

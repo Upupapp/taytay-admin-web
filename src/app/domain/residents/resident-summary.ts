@@ -23,6 +23,12 @@ export interface ResidentSummary {
     readonly current: number;
     readonly previous: number;
     readonly byMonth: readonly MonthFigure[];
+    /**
+     * The people on the registry now, by the Manila month their record was added and how — typed
+     * in at the office, or created by an imported list — over the same twelve months (backend
+     * ADR 0011). Each cell is a count of people and may be withheld on its own.
+     */
+    readonly addedByMonth: readonly AddedMonth[];
   };
   /** Records created this period (to date) and in the whole previous one; each may be withheld. */
   readonly registered: { readonly current: SummaryFigure; readonly previous: SummaryFigure };
@@ -67,6 +73,13 @@ export interface SummaryFigure {
 export interface MonthFigure {
   readonly month: string;
   readonly figure: SummaryFigure;
+}
+
+/** One month's additions to the registry, by how each record came onto it. */
+export interface AddedMonth {
+  readonly month: string;
+  readonly office: SummaryFigure;
+  readonly imported: SummaryFigure;
 }
 
 /**

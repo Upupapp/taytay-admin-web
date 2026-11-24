@@ -11,8 +11,10 @@ import {
   type AttentionSeverity,
   type AttentionSignal,
   type BarangayCount,
+  type AssistanceRequestId,
   type CategoryTotal,
   type DashboardFilter,
+  type DecisionCounts,
   type DashboardPayouts,
   type DayCount,
   type DashboardSummary,
@@ -20,11 +22,13 @@ import {
   type ResidentAppAccounts,
   type ResidentAppFigures,
   type StatusCount,
+  type WaitingRequest,
+  type WaitingSide,
   type WeekCount,
 } from '@domain/index';
 
 import type { BarangayIndex } from './resident.mapper';
-import { date, dateTime, field, int, oneOf, str } from './wire';
+import { date, dateTime, field, flag, id, int, oneOf, str } from './wire';
 
 /**
  * The dashboard, from `GET office/dashboard` (`DL-182`).
@@ -37,6 +41,9 @@ import { date, dateTime, field, int, oneOf, str } from './wire';
  * | `requests{open,awaiting_approval,by_*}`   | `openRequests`, `awaitingApproval`, …   | nothing is shown                      |
  * | `requests.received_by_week[]{week_start,count}` | `requestsReceivedByWeek`          | nothing is shown                      |
  * | `payouts.handed_over_by_day[]{date,count}` | `payouts.handedOverByDay`              | nothing is shown                      |
+ * | `payouts.handed_over_by_week[]`, `average_days_to_hand_over` | `handedOverByWeek`, `averageDaysToHandOver` (`null` kept) | nothing is shown |
+ * | `requests.waiting{office,resident}{count,longest[]}` | `waiting`, the barangay joined | nothing is shown                      |
+ * | `requests.decided_in_period{approved,rejected,returned}` | `decidedInPeriod`          | nothing is shown                      |
  * | `payouts` — null for a reader the release list refuses | `payouts` (`null` kept)    | nothing is shown                      |
  * | `resident_app` — null without an app key  | `residentApp` (`null` kept)             | nothing is shown                      |
  *
@@ -104,6 +111,10 @@ export function toDashboardSummary(
     barangayCountOf(row, barangays),
   );
   const requestsReceivedByWeek = whole(field(requests, 'received_by_week'), weekCountOf);
+  const waitingWire = field(requests, 'waiting');
+  const office = waitingSideOf(field(waitingWire, 'office'), barangays);
+  const resident = waitingSideOf(field(waitingWire, 'resident'), barangays);
+  const decidedInPeriod = decisionsOf(field(requests, 'decided_in_period'));
   const payouts = payoutsWire === null ? null : payoutsOf(payoutsWire);
   const residentApp = residentAppWire === null ? null : residentAppOf(residentAppWire);
 
@@ -116,6 +127,9 @@ export function toDashboardSummary(
     requestsByStatus === null ||
     requestsByBarangay === null ||
     requestsReceivedByWeek === null ||
+    office === null ||
+    resident === null ||
+    decidedInPeriod === null ||
     payouts === undefined ||
     residentApp === undefined
   ) {
@@ -131,9 +145,58 @@ export function toDashboardSummary(
     requestsByStatus,
     requestsByBarangay,
     requestsReceivedByWeek,
+    waiting: { office, resident },
+    decidedInPeriod,
     payouts,
     residentApp,
   };
+}
+
+function waitingSideOf(value: unknown, barangays: BarangayIndex): WaitingSide | null {
+  const n = count(field(value, 'count'));
+  const longest = whole(field(value, 'longest'), (row) => waitingRequestOf(row, barangays));
+  return n === null || longest === null ? null : { count: n, longest };
+}
+
+function waitingRequestOf(value: unknown, barangays: BarangayIndex): WaitingRequest | null {
+  const requestId = id<AssistanceRequestId>(field(value, 'id'));
+  const referenceNumber = str(field(value, 'reference_number'));
+  const status = oneOf(field(value, 'status'), STATUSES);
+  const barangayId = barangays.toConsole(str(field(value, 'barangay_id')));
+  const since = dateTime(field(value, 'since'));
+  const days = count(field(value, 'days'));
+  const documentsOwed = flag(field(value, 'documents_owed'));
+
+  if (
+    requestId === null ||
+    referenceNumber === null ||
+    status === null ||
+    barangayId === null ||
+    since === null ||
+    days === null ||
+    documentsOwed === null
+  ) {
+    return null;
+  }
+
+  return { id: requestId, referenceNumber, status, barangayId, since, days, documentsOwed };
+}
+
+function decisionsOf(value: unknown): DecisionCounts | null {
+  const approved = count(field(value, 'approved'));
+  const rejected = count(field(value, 'rejected'));
+  const returned = count(field(value, 'returned'));
+  return approved === null || rejected === null || returned === null
+    ? null
+    : { approved, rejected, returned };
+}
+
+/** Days with one decimal, from the summary report's rule; `null` on the wire stays `null`. */
+function averageDaysOf(value: unknown): number | null | undefined {
+  if (value === null) {
+    return null;
+  }
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 /** The filter as the server echoes it, its barangay joined back to this console's id. */
@@ -201,6 +264,8 @@ function payoutsOf(value: unknown): DashboardPayouts | undefined {
   const residentsServedInPeriod = count(field(value, 'residents_served'));
   const disbursedByCategory = whole(field(value, 'by_category'), categoryTotalOf);
   const handedOverByDay = whole(field(value, 'handed_over_by_day'), dayCountOf);
+  const handedOverByWeek = whole(field(value, 'handed_over_by_week'), weekCountOf);
+  const averageDaysToHandOver = averageDaysOf(field(value, 'average_days_to_hand_over'));
 
   if (
     scheduledPayouts === null ||
@@ -208,7 +273,9 @@ function payoutsOf(value: unknown): DashboardPayouts | undefined {
     goodsReleasedInPeriod === null ||
     residentsServedInPeriod === null ||
     disbursedByCategory === null ||
-    handedOverByDay === null
+    handedOverByDay === null ||
+    handedOverByWeek === null ||
+    averageDaysToHandOver === undefined
   ) {
     return undefined;
   }
@@ -220,6 +287,8 @@ function payoutsOf(value: unknown): DashboardPayouts | undefined {
     goodsReleasedInPeriod,
     disbursedByCategory,
     handedOverByDay,
+    handedOverByWeek,
+    averageDaysToHandOver,
   };
 }
 

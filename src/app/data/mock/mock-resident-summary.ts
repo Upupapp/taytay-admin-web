@@ -28,6 +28,7 @@ import {
 } from '@domain/index';
 
 import { mockAppLinkOf, mockSectorDetailsOf } from './mock-registry-facts';
+import { MOCK_IMPORTED_RESIDENT_IDS } from './mock-resident-import.repository';
 import { demoMonthEnds, demoNow, manilaDay } from './mock-time-series';
 
 /**
@@ -77,6 +78,17 @@ export function mockResidentSummary(
           active.filter((resident) => manilaDay(resident.audit.createdAt) <= end).length,
         ),
       })),
+      // How the people on the registry now came onto it, by the month their record was added.
+      addedByMonth: demoMonthEnds(12).map((end) => {
+        const month = end.slice(0, 7);
+        const added = active.filter((resident) =>
+          manilaDay(resident.audit.createdAt).startsWith(month),
+        );
+        const imported = added.filter((resident) =>
+          MOCK_IMPORTED_RESIDENT_IDS.has(resident.id),
+        ).length;
+        return { month, office: figure(added.length - imported), imported: figure(imported) };
+      }),
     },
     registered: {
       current: figure(createdBetween(period.from, now)),

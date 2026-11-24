@@ -8,6 +8,7 @@ import { SessionStore } from '@core/auth/session.store';
 import {
   RESIDENT_IMPORT_REPOSITORY,
   UNSERVED_PORTS,
+  VERIFICATION_REPOSITORY,
   asIsoDate,
   asIsoDateTime,
   RESIDENT_REPOSITORY,
@@ -57,6 +58,18 @@ const SUMMARY: ResidentSummary = {
     byMonth: [
       { month: '2026-10', figure: { value: 100, withheld: false } },
       { month: '2026-11', figure: { value: 120, withheld: false } },
+    ],
+    addedByMonth: [
+      {
+        month: '2026-10',
+        office: { value: 12, withheld: false },
+        imported: { value: null, withheld: true },
+      },
+      {
+        month: '2026-11',
+        office: { value: 8, withheld: false },
+        imported: { value: 31, withheld: false },
+      },
     ],
   },
   registered: { current: { value: null, withheld: true }, previous: { value: 9, withheld: false } },
@@ -130,10 +143,25 @@ function configure(
         provide: RESIDENT_IMPORT_REPOSITORY,
         useValue: { list: () => of({ items: [], hasMore: false, nextCursor: null }) },
       },
+      {
+        provide: VERIFICATION_REPOSITORY,
+        useValue: { list: () => of({ items: [], hasMore: false, nextCursor: null, stats: STATS }) },
+      },
     ],
   });
   return asked;
 }
+
+/** The review queue's own figures: three waiting, the oldest sent two days ago. */
+const STATS = {
+  pending: 3,
+  oldestPendingAt: new Date(Date.now() - 2.5 * 24 * 60 * 60 * 1000).toISOString(),
+  decided7d: { approved: 5, rejected: 1 },
+  sentByDay: Array.from({ length: 7 }, (_, index) => ({
+    date: `2026-11-1${index}`,
+    count: index % 3,
+  })),
+};
 
 async function render(): Promise<HTMLElement> {
   const fixture = TestBed.createComponent(CitizensOverviewPage);
@@ -226,5 +254,36 @@ describe('CitizensOverviewPage (DL-213)', () => {
 
     expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.errorHeading);
     expect(root.querySelectorAll('.kpi')).toHaveLength(0);
+  });
+});
+
+describe('CitizensOverviewPage — how the registry grew and the review queue (DL-249)', () => {
+  it('draws additions by month, office and imports apart, a withheld cell never a zero', async () => {
+    configure(of(SUMMARY));
+    const root = await render();
+    const panel = root.querySelector('app-registry-additions');
+    const rows = [...(panel?.querySelectorAll('tbody tr') ?? [])].map((row) =>
+      [...row.children].map((cell) => cell.textContent?.trim()).join(' | '),
+    );
+
+    expect(rows).toEqual(['October 2026 | 12 | Withheld', 'November 2026 | 8 | 31']);
+    expect(panel?.querySelector('thead')?.textContent).toContain('From an imported list');
+    // The month a line breaks is said in words, not left as a gap to be read as none.
+    expect(panel?.textContent).toContain('Oct 2026, imported');
+  });
+
+  it('shows the review queue only to a reviewer, its oldest wait in days', async () => {
+    configure(of(SUMMARY));
+    expect((await render()).querySelector('app-registry-review-queue')).toBeNull();
+
+    configure(of(SUMMARY), ['resident.view', 'verification.review']);
+    const queue = (await render()).querySelector('app-registry-review-queue');
+    const words = queue?.textContent?.replace(/\s+/g, ' ') ?? '';
+
+    expect(words).toMatch(/Waiting for a review\s*3/);
+    expect(words).toMatch(/Oldest has waited\s*2 days/);
+    expect(words).toContain('5 approved, 1 not accepted');
+    expect(words.toLowerCase()).not.toContain('overdue');
+    expect(queue?.querySelector('a')?.getAttribute('href')).toBe('/verification');
   });
 });
