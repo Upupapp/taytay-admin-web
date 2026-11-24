@@ -54,6 +54,7 @@
           }
         ],
         "total": 42,
+        "overlapping": false,
         "suppression_notice": null
       },
       {
@@ -82,6 +83,7 @@
           }
         ],
         "total": 2450000,
+        "overlapping": false,
         "suppression_notice": null
       }
     ],

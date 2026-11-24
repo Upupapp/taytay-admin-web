@@ -105,7 +105,7 @@
         <button
           type="button"
           class="btn btn--primary summary__print"
-          [disabled]="printing()"
+          [disabled]="printing() || !settled()"
           (click)="print()"
         >
           <app-icon name="download" [size]="16" [stroke]="2.2" />
@@ -126,7 +126,7 @@
           <button
             type="button"
             class="btn summary__excel"
-            [disabled]="exporting()"
+            [disabled]="exporting() || !settled()"
             (click)="exportCsv()"
           >
             {{ exporting() ? copy.exporting : copy.csv }}

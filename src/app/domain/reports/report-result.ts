@@ -114,6 +114,11 @@ export interface ReportSeries {
    * counts money in centavos. A screen falls back to `total`.
    */
   readonly totalDisplay?: string;
+  /**
+   * One person, household or request may be under several rows (sectors, documents). The total then
+   * counts each once, so the rows add up to more than it, and the screen says so beside it.
+   */
+  readonly overlapping?: boolean;
   /** Non-null when anything in this series was withheld (`DL-105`). */
   readonly suppressionNotice: string | null;
 }

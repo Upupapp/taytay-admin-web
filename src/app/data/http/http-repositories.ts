@@ -5600,9 +5600,14 @@ export class HttpEventRepository implements EventRepository {
   }
 
   /** Composed by the server with its conditions inside it (`DL-106`); refused here without them. */
-  exportRegistrants(id: LguEventId): Observable<RegistrantExport> {
+  exportRegistrants(id: LguEventId, filter: RegistrantFilter): Observable<RegistrantExport> {
+    const search = filter.search?.trim();
     return this.api
-      .item(`${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/registrants/export`)
+      .item(`${API_ENDPOINTS.officeEvents}/${encodeURIComponent(id)}/registrants/export`, {
+        q: search === undefined || search === '' ? undefined : search,
+        status: filter.status,
+        attendance: filter.attendance,
+      })
       .pipe(map((wire) => readEvents(toRegistrantExport(wire))));
   }
 

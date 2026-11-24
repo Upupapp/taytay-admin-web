@@ -11572,3 +11572,46 @@ title stays on the page" and `DL-209` item 1 (the sector filter as a row of tabs
 The citizens overview's hero band, the only user of `--grad-header` and `--fs-hero`, went with it.
 The `subtitle` copy stays in the copy files, so drawing the titles and descriptions again would be
 a change to `PageHeader` alone; the moved actions could stay where they are.
+
+## DL-247 — every export says what the database says, and says it the same way on screen, paper and file
+
+**Status:** Settled (24 November 2026), from an audit of every export against the database. Backend
+ADR 0010 records the server's half.
+
+The owner asked whether exported reports are true to the system. Every export the console offers —
+the Tulong summary report (screen, PDF, CSV), the citizen registry report (PDF, CSV), the fourteen
+catalogue reports and their files, the payout list and the registrant file — was compared cell by
+cell with figures computed again by direct SQL on a seeded PostgreSQL 16 database (the 1,231-row
+citizen file, the 1,145-row past Tulong file, new requests in every state, money and goods handed
+over, a payout session, releases at 23:30 and 00:30 Manila on a month's edge). The summary report, the
+citizen report and the payout list agreed in every cell. What did not, and what the console now does:
+
+1. **Overlapping rows are not totalled as people or requests.** One request may owe several
+   documents, one person may be under several sectors. The API now says so (`overlapping`) and its
+   total counts each once; the screen labels that total "each counted once, however many rows they
+   are under", and the mapper no longer checks it against the rows' sum, which it no longer is. A
+   service-reach table whose every row is zero says that, never "no people served at all".
+2. **Release status counts an imported release on the day it was handed over**, not the import day
+   (1,003 "in the last 30 days" became 10). **"Last 30 days" is thirty days**, today included, and the
+   filter in words names both boundary days.
+3. **Every withheld figure says why**, beside it: "too few to show" and "a protected sector your
+   account does not count" read alike as a bare "Withheld" and say different things.
+4. **An empty table is shown, with a sentence**, not dropped: the file lists it, and a table missing
+   from the screen reads as one the report does not have.
+5. **When a sheet or file was made is on Manila's clock with the zone said** (`manila-date-time`),
+   on screen, on paper and in the file. A laptop set to another zone printed a time eight hours off
+   the CSV made in the same minute.
+6. **Print and export wait for the figures the filter asks for**, and an answer for a filter changed
+   meanwhile is dropped rather than printed or offered under the new filter's controls.
+7. **The payout list prints its reference and the time it was read**: it re-reads live, so two
+   printouts of one session can differ and only those tell them apart.
+8. **The registrant file is the list on screen**: the same search and filters, stated on its
+   "Filter applied" line. It held every registrant while sitting beside a narrowed list.
+9. **Every report file starts with a UTF-8 byte-order mark**, which Excel needs to read "₱" and "ñ";
+   the mappers read the conditions after it and hand the file over unchanged.
+
+The audit script stays outside the repository; each finding has a focused test here or in the
+backend.
+
+**Easiest to reverse:** each item is independent; the wire's `overlapping` is the only contract
+change, and a console without it reads every series as not overlapping.

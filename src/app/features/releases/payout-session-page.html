@@ -167,6 +167,12 @@
       <p class="manifest__meta">
         {{ sheet.title }} · {{ sheet.scheduledFor | displayDate }} · {{ sheet.venue }}
       </p>
+      <!-- Which list this is and as of when: the list re-reads live, so two printouts of one session
+           can differ, and only the reference and the time tell them apart (DL-247). -->
+      <p class="manifest__meta manifest__as-of">
+        {{ copy.manifestReference(sheet.batchReference) }} ·
+        {{ copy.manifestAsOf(sheet.preparedAt | displayDate: 'manila-date-time') }}
+      </p>
 
       <div class="table-scroll" [appScrollRegion]="sheet.title">
         <table class="manifest__table">

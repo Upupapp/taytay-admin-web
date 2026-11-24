@@ -11,7 +11,7 @@ import {
   asId,
   asIsoDate,
   REPORT_CATALOGUE,
-  WITHHELD_DISPLAY,
+  WITHHELD_WITH_REASON,
   type BarangayId,
   type ReportFilter,
   type StaffUserId,
@@ -174,9 +174,12 @@ describe('reports over the API (DL-190)', () => {
       'vawc-survivor',
     ]);
     for (const row of withheld) {
-      expect(row.display).toBe(WITHHELD_DISPLAY);
+      expect(row.display).toMatch(/^Withheld: /);
       expect(row.routerLink).toBeUndefined();
     }
+    // The reason is always said beside it (DL-247): a small count and an uncounted sector differ.
+    expect(series?.rows.find((row) => row.key === 'solo-parent')?.display).toBe(WITHHELD_WITH_REASON['small-cell']);
+    expect(series?.rows.find((row) => row.key === 'vawc-survivor')?.display).toBe(WITHHELD_WITH_REASON['protected-sector']);
     // Zero is a finding and is shown as one.
     expect(series?.rows.find((row) => row.key === 'indigenous-people')?.value).toBe(0);
     expect(series?.rows.find((row) => row.key === 'indigenous-people')?.isWithheld).toBeUndefined();
@@ -215,6 +218,8 @@ describe('reports over the API (DL-190)', () => {
     const afterSuppression = copy(OFFICE_REPORT_VULNERABILITY);
     const series = afterSuppression.data.series[0];
     if (series !== undefined) {
+      // Rows that do not overlap must total at least what they show plus one for each withheld.
+      series.overlapping = false;
       series.total = 29;
     }
     expect(await refused(afterSuppression)).toBeInstanceOf(Error);
@@ -305,6 +310,30 @@ describe('reports over the API (DL-190)', () => {
     expect(file.manifest.handlingNotice).toContain('RA 10173');
     expect(file.manifest.limits).toHaveLength(1);
     expect(file.content.split('\r\n')[0]).toBe('Report,"Household vulnerability indicators"');
+  });
+
+  it('reads overlapping rows whose total counts each household once, and says they overlap', async () => {
+    // DL-247: sectors overlap, so the total is of different households and is less than the rows add up to.
+    const body = copy(OFFICE_REPORT_VULNERABILITY);
+    const series = body.data.series[0];
+    if (series !== undefined) {
+      series.total = 20;
+    }
+    const { result } = await run(body);
+    expect(result?.series[0]?.overlapping).toBe(true);
+    expect(result?.series[0]?.total).toBe(20);
+    const missing = copy(OFFICE_REPORT_VULNERABILITY) as { data: { series: Record<string, unknown>[] } };
+    delete missing.data.series[0]?.['overlapping'];
+    expect(await refused(missing)).toBeInstanceOf(Error);
+  });
+
+  it('reads a file that starts with the byte-order mark Excel needs, and hands it over unchanged', async () => {
+    const marked = copy(OFFICE_REPORT_EXPORT);
+    marked.data.content = String.fromCodePoint(0xfeff) + marked.data.content;
+    const read = firstValueFrom(repository.export('vulnerability-indicators', {}, 'csv'));
+    barangays();
+    http.expectOne((request) => request.url.endsWith('/export')).flush(marked);
+    expect((await read).content).toBe(marked.data.content);
   });
 
   it('refuses a file that does not carry its conditions, or says it names nobody when it does', async () => {

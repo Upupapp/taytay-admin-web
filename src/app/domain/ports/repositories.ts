@@ -1605,7 +1605,8 @@ export interface EventRepository {
    * and holding the same closed set of fields the screen shows — an export is
    * not a wider read than the screen it came from.
    */
-  exportRegistrants(id: LguEventId): Observable<RegistrantExport>;
+  /** The list on screen as a file: the same search and filters, stated inside it (DL-247). */
+  exportRegistrants(id: LguEventId, filter: RegistrantFilter): Observable<RegistrantExport>;
 
   history(id: LguEventId): Observable<readonly AuditRow[]>;
 }

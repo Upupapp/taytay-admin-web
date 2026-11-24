@@ -263,7 +263,7 @@ describe('events over the API (DL-192)', () => {
     });
 
     it('takes the file the server composed, and refuses one without its conditions', async () => {
-      const exported = firstValueFrom(repository.exportRegistrants(MISSION));
+      const exported = firstValueFrom(repository.exportRegistrants(MISSION, {}));
       http.expectOne(`${EVENTS}/${MISSION}/registrants/export`).flush(OFFICE_EVENT_EXPORT);
       const file = await exported;
       expect(file.manifest.handlingNotice).toBe(REGISTRANT_EXPORT_NOTICE);
@@ -272,9 +272,24 @@ describe('events over the API (DL-192)', () => {
 
       const bare = copy(OFFICE_EVENT_EXPORT);
       bare.data.content = bare.data.content.replace(REGISTRANT_EXPORT_NOTICE, 'Handle with care.');
-      const refused = firstValueFrom(repository.exportRegistrants(MISSION));
+      const refused = firstValueFrom(repository.exportRegistrants(MISSION, {}));
       http.expectOne(`${EVENTS}/${MISSION}/registrants/export`).flush(bare);
       await expect(refused).rejects.toThrow(/could not be read whole/);
+    });
+
+    it('asks for the list as narrowed on screen, and reads a file that starts with a byte-order mark', async () => {
+      // DL-247: a file beside a narrowed list held every registrant; Excel needs the mark for ñ.
+      const narrowed = firstValueFrom(
+        repository.exportRegistrants(MISSION, { search: ' Reyes ', status: 'waitlisted', attendance: 'not-checked-in' }),
+      );
+      const asked = http.expectOne((request) => request.url === `${EVENTS}/${MISSION}/registrants/export`);
+      expect(asked.request.params.get('q')).toBe('Reyes');
+      expect(asked.request.params.get('status')).toBe('waitlisted');
+      expect(asked.request.params.get('attendance')).toBe('not-checked-in');
+      const marked = copy(OFFICE_EVENT_EXPORT);
+      marked.data.content = String.fromCodePoint(0xfeff) + marked.data.content;
+      asked.flush(marked);
+      expect((await narrowed).content.codePointAt(0)).toBe(0xfeff);
     });
   });
 

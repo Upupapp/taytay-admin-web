@@ -127,7 +127,8 @@ describe('small-cell suppression', () => {
     // A missing row reads as "none", which is a different and false claim.
     expect(suppressed).toHaveLength(2);
     expect(suppressed[0]?.isWithheld).toBe(true);
-    expect(suppressed[0]?.display).toBe(WITHHELD_DISPLAY);
+    // The word, then why (DL-247).
+    expect(suppressed[0]?.display).toBe(`${WITHHELD_DISPLAY}: too few to show without identifying someone; not a zero`);
     expect(suppressed[0]?.label).toBe('a');
   });
 

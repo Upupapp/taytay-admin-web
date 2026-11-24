@@ -128,10 +128,16 @@ export class ReportViewPage {
     this.barangayId.set(null);
   }
 
-  /** Series with nothing in them are dropped: an empty table is not a finding. */
+  /**
+   * Every series the report sends, an empty one included with a sentence saying so: the file lists
+   * every series, and a table missing from the screen reads as one the report does not have (DL-247).
+   */
   protected populated(result: ReportResult): readonly ReportSeries[] {
-    return result.series.filter((series) => series.rows.length > 0);
+    return result.series;
   }
+
+  /** Whether the figures on screen are the ones the query asks for. Export waits for them. */
+  protected readonly settled = computed(() => this.state().kind === 'ready');
 
   /* ── Exporting ──────────────────────────────────────────────────────────── */
 
@@ -170,14 +176,19 @@ export class ReportViewPage {
   }
 
   private async runExport(result: ReportResult): Promise<void> {
-    if (this.exporting() || !this.canExport()) {
+    if (this.exporting() || !this.canExport() || !this.settled()) {
       return;
     }
     this.exporting.set(true);
+    const asked = this.query();
     try {
+      // The file is for the report and filter the figures on screen are for, never a newer pick.
       const file = await firstValueFrom(
-        this.repository.export(result.definition.id, this.filter(), 'csv'),
+        this.repository.export(result.definition.id, asked.filter, 'csv'),
       );
+      if (JSON.stringify(this.query()) !== JSON.stringify(asked)) {
+        return;
+      }
       // Offered as a link carrying the file's name, made from the text the data
       // layer composed; the manifest inside says the filter and the rest.
       this.objectUrls.revokeAll();

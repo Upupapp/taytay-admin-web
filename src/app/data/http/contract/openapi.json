@@ -16021,7 +16021,7 @@
       "get": {
         "operationId": "exportOfficeEventRegistrants",
         "summary": "The registrant list as a file, its conditions inside it",
-        "description": "Needs event.view and event.export-registrants. The same columns the list shows and nothing wider, as CSV text with the event, who generated it and when, the row count and the RA 10173 handling notice written into the file itself (DL-106); the manifest repeats them. Cells a spreadsheet would evaluate are prefixed with an apostrophe. Recorded in the event’s history and audited as office_event.registrants_exported.",
+        "description": "Needs event.view and event.export-registrants. The same columns the list shows and nothing wider, under the same search and filters as the list on screen (q, status, attendance), stated in words on the file’s Filter applied line and in the manifest’s applied_filter_description, as CSV text beginning with a UTF-8 byte-order mark (so Excel reads ₱ and ñ), with the event, who generated it and when, the row count and the RA 10173 handling notice written into the file itself (DL-106); the manifest repeats them. Cells a spreadsheet would evaluate are prefixed with an apostrophe. Recorded in the event’s history and audited as office_event.registrants_exported.",
         "security": [
           {
             "firebaseIdToken": []
@@ -16037,6 +16037,43 @@
               "format": "uuid"
             },
             "description": "The event."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "Up to six words, each matched in the reference or the name."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "registered",
+                "waitlisted",
+                "cancelled"
+              ]
+            }
+          },
+          {
+            "name": "attendance",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "not-checked-in",
+                "attended",
+                "no-show"
+              ]
+            }
           }
         ],
         "responses": {
@@ -31240,6 +31277,7 @@
           "measure",
           "rows",
           "total",
+          "overlapping",
           "suppression_notice"
         ],
         "description": "A named set of rows with the sentence that describes it. The chart is the table.",
@@ -31279,7 +31317,11 @@
           "total": {
             "type": "integer",
             "minimum": 0,
-            "description": "Taken before anything was withheld, over what was counted for this reader."
+            "description": "Taken before anything was withheld, over what was counted for this reader. When overlapping, each person, household or request counted once however many rows hold them, so the rows add up to more."
+          },
+          "overlapping": {
+            "type": "boolean",
+            "description": "One person, household or request may be under several rows (sectors, documents), so the rows overlap; the total counts each once and the rows add up to more. The summary, the screen and the file say so."
           },
           "suppression_notice": {
             "type": [

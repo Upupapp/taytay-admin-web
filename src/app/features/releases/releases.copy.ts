@@ -237,6 +237,8 @@ export const RELEASES_COPY = {
 
     manifestHeading: 'Payout list',
     manifestHint: 'Take this to the table. Names and vouchers only — nothing else about anybody.',
+    manifestReference: (reference: string) => `Payout list ${reference}`,
+    manifestAsOf: (at: string | null) => `as of ${at ?? 'the time it was read'}`,
     columnRow: '#',
     columnName: 'Name',
     columnVoucher: 'Voucher',

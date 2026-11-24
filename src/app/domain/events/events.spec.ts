@@ -26,6 +26,7 @@ import {
   describeCapacity,
   placesRemaining,
   promotionExceedsCapacity,
+  registrantFilterInWords,
   registrationProblems,
   safeLimitReached,
   targetStatusOf,
@@ -622,6 +623,16 @@ describe('correcting a published event (DL-195)', () => {
     ).toContain('waitlist-in-use');
     expect(eventCorrectionProblems(event({ status: 'cancelled' }), start, reasoned, NOW)).toContain(
       'not-correctable',
+    );
+  });
+});
+
+describe('the registrant file says which list it is (DL-247)', () => {
+  it('states the search and filters in words, or that it holds every registration', () => {
+    expect(registrantFilterInWords({})).toBe('All registrations for this event.');
+    expect(registrantFilterInWords({ search: '  ' })).toBe('All registrations for this event.');
+    expect(registrantFilterInWords({ search: ' Ana ', status: 'waitlisted', attendance: 'attended' })).toBe(
+      'Registrations narrowed to: Name or reference matching "Ana"; Status: Waitlisted; Attendance: Attended.',
     );
   });
 });

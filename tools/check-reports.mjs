@@ -580,7 +580,8 @@ if (!existsSync(join(root, reportMapperPath))) {
     /if\s*\(\s*row\s*\.\s*withheld\s*!==\s*null\s*\)\s*\{[\s\S]*?\n {2}\}/.exec(row)?.[0] ?? '';
   if (
     !/isWithheld:\s*true/.test(withheldBranch) ||
-    !/WITHHELD_DISPLAY/.test(withheldBranch) ||
+    // The reason may follow the word (DL-247), but the word is always there: both constants start with it.
+    !/WITHHELD_DISPLAY|WITHHELD_WITH_REASON/.test(withheldBranch) ||
     /routerLink|residentId/.test(withheldBranch)
   ) {
     problems.push(

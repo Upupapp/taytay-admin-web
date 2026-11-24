@@ -54,6 +54,7 @@
           }
         ],
         "total": 2,
+        "overlapping": false,
         "suppression_notice": null
       }
     ],

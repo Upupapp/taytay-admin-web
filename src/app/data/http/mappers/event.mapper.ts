@@ -28,7 +28,7 @@ import {
 } from '@domain/index';
 
 import type { BarangayIndex } from './resident.mapper';
-import { dateTime, field, flag, id, int, oneOf, str } from './wire';
+import { dateTime, field, flag, id, int, oneOf, str, withoutByteOrderMark } from './wire';
 
 /**
  * Events, read off the Node API (`DL-192`).
@@ -647,7 +647,7 @@ export function toRegistrantExport(wire: unknown): RegistrantExport | null {
     filename === null ||
     content === null ||
     !content.includes(REGISTRANT_EXPORT_NOTICE) ||
-    CONDITIONS_IN_THE_FILE.some((condition) => !condition.test(content))
+    CONDITIONS_IN_THE_FILE.some((condition) => !condition.test(withoutByteOrderMark(content)))
   ) {
     return null;
   }

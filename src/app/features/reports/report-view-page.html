@@ -23,7 +23,7 @@
             </div>
             <div>
               <dt>{{ copy.generated }}</dt>
-              <dd>{{ result.generatedAt | displayDate: 'date-time' }}</dd>
+              <dd>{{ result.generatedAt | displayDate: 'manila-date-time' }}</dd>
             </div>
           </dl>
 
@@ -106,20 +106,29 @@
                 </p>
               }
 
-              <!-- The chart IS the table. One artifact, so nothing drifts. -->
-              <app-chart-table
-                [caption]="series.title"
-                [summary]="series.summary"
-                [rows]="series.rows"
-                [labelHeader]="series.labelHeader"
-                [valueHeader]="series.valueHeader"
-              />
+              @if (series.rows.length === 0) {
+                <!-- Shown, not dropped: the file lists this table too, and a table missing from
+                     the screen reads as one the report does not have (DL-247). -->
+                <h2 class="section-title">{{ series.title }}</h2>
+                <p class="status-line series__empty">{{ copy.seriesEmpty }}</p>
+              } @else {
+                <!-- The chart IS the table. One artifact, so nothing drifts. -->
+                <app-chart-table
+                  [caption]="series.title"
+                  [summary]="series.summary"
+                  [rows]="series.rows"
+                  [labelHeader]="series.labelHeader"
+                  [valueHeader]="series.valueHeader"
+                />
 
-              <p class="series__total">
-                <span class="series__total-label">{{ copy.total }}:</span>
-                <span class="series__total-value">{{ series.totalDisplay ?? series.total }}</span>
-                <span class="series__total-hint">{{ copy.totalHint }}</span>
-              </p>
+                <p class="series__total">
+                  <span class="series__total-label">{{ copy.total }}:</span>
+                  <span class="series__total-value">{{ series.totalDisplay ?? series.total }}</span>
+                  <span class="series__total-hint">{{
+                    series.overlapping ? copy.totalOverlappingHint : copy.totalHint
+                  }}</span>
+                </p>
+              }
             </section>
           }
 
@@ -167,7 +176,7 @@
               <button
                 type="button"
                 class="btn btn--primary"
-                [disabled]="exporting()"
+                [disabled]="exporting() || !settled()"
                 (click)="confirmExport(result)"
               >
                 {{ copy.exportConfirm }}
@@ -189,7 +198,7 @@
             <button
               type="button"
               class="btn"
-              [disabled]="exporting()"
+              [disabled]="exporting() || !settled()"
               (click)="requestExport(result)"
             >
               {{ copy.exportCsv }}

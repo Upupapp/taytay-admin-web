@@ -41,6 +41,19 @@ export const SMALL_CELL_BASIS =
 /** What a screen prints in place of a withheld figure. Never a zero, never blank. */
 export const WITHHELD_DISPLAY = 'Withheld';
 
+/** Why a figure is withheld: too small to show, or a protected sector this reader is not cleared for. */
+export type WithheldReason = 'small-cell' | 'protected-sector';
+
+/**
+ * A withheld figure with its reason beside it, always. "Withheld" alone reads the same whether the
+ * count was three people or a sector this account may not count at all, and the two say different
+ * things about the rows around it.
+ */
+export const WITHHELD_WITH_REASON: Readonly<Record<WithheldReason, string>> = {
+  'small-cell': `${WITHHELD_DISPLAY}: too few to show without identifying someone; not a zero`,
+  'protected-sector': `${WITHHELD_DISPLAY}: a sector protected by law (RA 9262, RA 9344), not counted for your account`,
+};
+
 /**
  * Whether a count is small enough to identify somebody.
  *
@@ -62,7 +75,7 @@ export function isSmallCell(value: number): boolean {
 export function suppressSmallCells(rows: readonly ReportRow[]): readonly ReportRow[] {
   return rows.map((row) =>
     isSmallCell(row.value)
-      ? { ...row, value: 0, display: WITHHELD_DISPLAY, isWithheld: true, routerLink: undefined }
+      ? { ...row, value: 0, display: WITHHELD_WITH_REASON['small-cell'], isWithheld: true, routerLink: undefined }
       : row,
   );
 }

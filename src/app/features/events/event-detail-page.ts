@@ -508,8 +508,9 @@ export class EventDetailPage {
   protected async exportList(event: LguEvent): Promise<void> {
     this.saving.set(true);
     try {
+      // The list as it stands on screen, its search and filters said inside the file (DL-247).
       const file = await firstValueFrom(
-        this.repository.exportRegistrants(asId<LguEventId>(event.id)),
+        this.repository.exportRegistrants(asId<LguEventId>(event.id), this.registrantQuery().filter),
       );
       // Offered as a link to save rather than downloaded unasked: the office
       // should know a file naming residents now exists, and choose to keep it.

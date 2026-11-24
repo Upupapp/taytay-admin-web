@@ -4,7 +4,7 @@ import {
   REPORT_CATALOGUE,
   REPORT_PERIOD_LABELS,
   SMALL_CELL_THRESHOLD,
-  WITHHELD_DISPLAY,
+  WITHHELD_WITH_REASON,
   centavos,
   describePesos,
   isSmallCell,
@@ -25,7 +25,7 @@ import {
 } from '@domain/index';
 
 import type { BarangayIndex } from './resident.mapper';
-import { dateTime, field, flag, id, int, oneOf, str } from './wire';
+import { dateTime, field, flag, id, int, oneOf, str, withoutByteOrderMark } from './wire';
 
 /**
  * Reports, from the Node API (`DL-190`).
@@ -227,7 +227,9 @@ function toSeries(wire: unknown, grain: ReportGrain): ReportSeries | null {
   const rows = whole(field(wire, 'rows'), toWireRow);
   const total = int(field(wire, 'total'));
   const notice = nullableText(field(wire, 'suppression_notice'));
+  const overlapping = flag(field(wire, 'overlapping'));
   if (
+    overlapping === null ||
     key === null ||
     title === null ||
     // Required: the table's plain-text equivalent (`DL-108`).
@@ -268,7 +270,9 @@ function toSeries(wire: unknown, grain: ReportGrain): ReportSeries | null {
     }
     shown += value;
   }
-  if (smallWithheld > 0 && (notice === null || total - shown < smallWithheld)) {
+  // Rows that overlap add up to more than their total, which counts each person or request once, so
+  // the arithmetic only holds for rows that do not.
+  if (smallWithheld > 0 && (notice === null || (!overlapping && total - shown < smallWithheld))) {
     return null;
   }
 
@@ -282,6 +286,7 @@ function toSeries(wire: unknown, grain: ReportGrain): ReportSeries | null {
     rows: rows.map((row) => toRow(row, money)),
     total,
     ...(money ? { totalDisplay: describePesos(centavos(total)) } : {}),
+    ...(overlapping ? { overlapping } : {}),
     suppressionNotice: notice,
   };
 }
@@ -293,7 +298,8 @@ function toRow(row: WireRow, money: boolean): ReportRow {
       key: row.key,
       label: row.label,
       value: 0,
-      display: WITHHELD_DISPLAY,
+      // The reason is always beside it: three people and a sector not counted at all read differently.
+      display: WITHHELD_WITH_REASON[row.withheld],
       isWithheld: true,
     };
   }
@@ -410,7 +416,8 @@ export function toReportExport(wire: unknown): ReportExport | null {
     format === null ||
     filename === null ||
     content === null ||
-    CONDITIONS_IN_THE_FILE.some((condition) => !condition.test(content)) ||
+    // The file starts with a byte-order mark so Excel reads it as UTF-8; the conditions follow it.
+    CONDITIONS_IN_THE_FILE.some((condition) => !condition.test(withoutByteOrderMark(content))) ||
     // The file says it names people exactly when its manifest does.
     content.includes('Names individuals,"Yes"') !== includesPersonLevel
   ) {

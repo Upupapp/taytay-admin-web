@@ -144,3 +144,11 @@ export function field(source: unknown, name: string): unknown {
     ? (source as Record<string, unknown>)[name]
     : undefined;
 }
+
+/**
+ * A report file's text without the UTF-8 byte-order mark the server puts first (so Excel reads ₱ and
+ * ñ as UTF-8), for checking the conditions written inside it. The file itself is offered unchanged.
+ */
+export function withoutByteOrderMark(content: string): string {
+  return content.codePointAt(0) === 0xfeff ? content.slice(1) : content;
+}

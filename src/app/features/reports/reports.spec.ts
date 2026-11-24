@@ -260,8 +260,21 @@ describe('withheld figures', () => {
 
     expect(withheld.length).toBeGreaterThan(0);
     for (const row of withheld) {
-      expect(row.display).toBe(WITHHELD_DISPLAY);
+      // The word, then why (DL-247): never a zero, a blank, or a bare "Withheld".
+      expect(row.display?.startsWith(`${WITHHELD_DISPLAY}: `)).toBe(true);
     }
+  });
+
+  it('shows a series with nothing in it, with a sentence, rather than dropping it (DL-247)', async () => {
+    const fixture = await openReport('service-reach');
+    const page = fixture.componentInstance as unknown as {
+      populated: (result: { readonly series: readonly { readonly key: string; readonly rows: readonly unknown[] }[] }) => readonly { readonly key: string }[];
+    };
+    const series = [
+      { key: 'full', rows: [{}] },
+      { key: 'empty', rows: [] },
+    ];
+    expect(page.populated({ series }).map((entry) => entry.key)).toEqual(['full', 'empty']);
   });
 
   it('never withholds a zero, because an absence of service is the finding', async () => {

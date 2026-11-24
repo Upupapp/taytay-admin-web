@@ -323,11 +323,11 @@ export const EVENTS_COPY = {
     registrationReason: 'Why',
     export: 'Export the list',
     exportWarning:
-      'The file names residents. It carries its handling rule inside it; keep it in the office ' +
-      'and delete it once attendance is recorded.',
+      'The file is the list as it is narrowed on screen, and says so inside it. It names residents ' +
+      'and carries its handling rule; keep it in the office and delete it once attendance is recorded.',
     exported: 'Export ready.',
     fileReady:
-      'The file is ready. It carries the event, the filter, who produced it and how to handle it.',
+      'The file is ready. It holds the list as narrowed on screen, and says which filter, who produced it and how to handle it.',
     saveFile: (filename: string) => `Save ${filename}`,
 
     historyHeading: 'What the office did',

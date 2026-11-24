@@ -44,6 +44,9 @@ export const REPORTS_COPY = {
 
     total: 'Total',
     totalHint: 'Counted before anything was withheld, so it does not always match the rows above.',
+    totalOverlappingHint:
+      'Each counted once, however many rows they are under, so the rows above add up to more. Counted before anything was withheld.',
+    seriesEmpty: 'Nothing was counted in this table under this filter.',
     withheldHeading: 'Some figures are withheld',
     disclosureHeading: 'Why figures are withheld',
     limitsHeading: 'What this report cannot count',

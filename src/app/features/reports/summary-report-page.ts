@@ -202,6 +202,17 @@ export class SummaryReportPage {
     { initialValue: LOADING as ViewState<SummaryReport> },
   );
 
+  /**
+   * Whether the sheet on screen is the one the filter asks for. Print and Excel wait for it, so
+   * neither can be pressed over figures still loading for a filter just changed (DL-247).
+   */
+  protected readonly settled = computed(() => this.state().kind === 'ready');
+
+  /** Whether `asked` is still the filter on screen: an answer for an earlier one is dropped. */
+  private stillAsked(asked: SummaryReportFilter): boolean {
+    return JSON.stringify(this.filter()) === JSON.stringify(asked);
+  }
+
   /** The report as re-read for printing; gone when the filter changes. */
   private readonly reprinted = linkedSignal<SummaryReportFilter, SummaryReport | null>({
     source: this.filter,
@@ -281,7 +292,7 @@ export class SummaryReportPage {
 
   protected generatedLine(report: SummaryReport): string {
     return this.copy.generated(
-      formatDisplayDate(report.footer.generatedAt, 'date-time') ?? report.footer.generatedAt,
+      formatDisplayDate(report.footer.generatedAt, 'manila-date-time') ?? report.footer.generatedAt,
       report.footer.generatedBy,
     );
   }
@@ -296,12 +307,18 @@ export class SummaryReportPage {
    * one copy that cannot be corrected later.
    */
   protected async print(): Promise<void> {
-    if (this.printing()) {
+    if (this.printing() || !this.settled()) {
       return;
     }
     this.printing.set(true);
+    const asked = this.filter();
     try {
-      const fresh = await firstValueFrom(this.repository.summary(this.filter()));
+      const fresh = await firstValueFrom(this.repository.summary(asked));
+      if (!this.stillAsked(asked)) {
+        // The filter changed while the sheet was re-read: printing it would put the old filter's
+        // figures under the new filter's controls.
+        return;
+      }
       this.reprinted.set(fresh);
       afterNextRender(
         () => printSheet(this.document, this.copy.pdfName(fresh.period.from, fresh.period.to)),
@@ -329,12 +346,17 @@ export class SummaryReportPage {
   }
 
   protected async exportCsv(): Promise<void> {
-    if (this.exporting() || !this.canExport()) {
+    if (this.exporting() || !this.canExport() || !this.settled()) {
       return;
     }
     this.exporting.set(true);
+    const asked = this.filter();
     try {
-      const file = await firstValueFrom(this.repository.exportSummary(this.filter()));
+      const file = await firstValueFrom(this.repository.exportSummary(asked));
+      if (!this.stillAsked(asked)) {
+        // A file for a filter no longer on screen is not offered under it.
+        return;
+      }
       // The server's text, byte for byte: the page adds nothing to the file.
       this.objectUrls.revokeAll();
       this.fileReady.set({

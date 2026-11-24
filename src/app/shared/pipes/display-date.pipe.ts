@@ -13,9 +13,13 @@ import { inject, LOCALE_ID, Pipe, type PipeTransform } from '@angular/core';
  *   minute matters (an audit trail, a count's "as of").
  * - `weekday-date-time`: Sat 21 Nov 2026, 7:17 PM — when the day of the week is part of the
  *   answer (when an event is on).
+ * - `manila-date-time`: 21 Nov 2026, 7:17 PM (Asia/Manila, UTC+08:00) — when a sheet or a file
+ *   says when it was made (DL-247). On Manila's clock whatever the computer's, with the zone said,
+ *   as the file beside it writes it: a printout from a laptop set to another zone said a time eight
+ *   hours off the CSV made in the same minute.
  */
 export type DisplayDateKind =
-  'date' | 'date-time' | 'time' | 'date-time-seconds' | 'weekday-date-time';
+  'date' | 'date-time' | 'time' | 'date-time-seconds' | 'weekday-date-time' | 'manila-date-time';
 
 export const DISPLAY_DATE_FORMATS: Readonly<Record<DisplayDateKind, string>> = {
   date: 'd MMM y',
@@ -23,7 +27,11 @@ export const DISPLAY_DATE_FORMATS: Readonly<Record<DisplayDateKind, string>> = {
   time: 'h:mm a',
   'date-time-seconds': 'd MMM y, h:mm:ss a',
   'weekday-date-time': 'EEE d MMM y, h:mm a',
+  'manila-date-time': 'd MMM y, h:mm a',
 };
+
+/** The zone a `manila-date-time` is written in, said after it — the words the report files use. */
+export const MANILA_ZONE_WORDS = '(Asia/Manila, UTC+08:00)';
 
 export type DisplayDateValue = Date | string | number;
 
@@ -42,6 +50,10 @@ export function formatDisplayDate(
     return null;
   }
   try {
+    if (kind === 'manila-date-time') {
+      // The Philippines keeps no daylight saving, so Manila is UTC+08:00 all year.
+      return `${formatDate(value, DISPLAY_DATE_FORMATS[kind], locale, '+0800')} ${MANILA_ZONE_WORDS}`;
+    }
     return formatDate(value, DISPLAY_DATE_FORMATS[kind], locale);
   } catch {
     return null;

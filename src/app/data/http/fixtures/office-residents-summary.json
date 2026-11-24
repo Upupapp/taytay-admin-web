@@ -43,6 +43,7 @@
         { "key": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01", "label": "Dolores", "value": null, "display": null, "withheld": "small-cell", "resident_id": null }
       ],
       "total": 1204,
+      "overlapping": false,
       "suppression_notice": "1 figure is withheld because the count is small enough to identify somebody."
     },
     "by_sector": {
@@ -57,6 +58,7 @@
         { "key": "vawc-survivor", "label": "VAWC survivors", "value": null, "display": null, "withheld": "protected-sector", "resident_id": null }
       ],
       "total": 210,
+      "overlapping": true,
       "suppression_notice": null
     },
     "by_age_sex": {
@@ -70,6 +72,7 @@
         { "key": "senior.female", "label": "Senior citizens (60+), female", "value": 120, "display": null, "withheld": null, "resident_id": null }
       ],
       "total": 120,
+      "overlapping": false,
       "suppression_notice": null,
       "total_by_sex": { "female": 120, "male": 0 }
     },

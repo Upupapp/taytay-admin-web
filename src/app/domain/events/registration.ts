@@ -172,6 +172,21 @@ export interface RegistrantFilter {
   readonly attendance?: AttendanceStatus;
 }
 
+/**
+ * The registrant list's filter in words, as the file states it on its "Filter applied" line — the
+ * server's own sentence, kept here for the mock set. The file is the list on screen (DL-247): an
+ * export beside a narrowed list that held every registrant read as the narrowed one.
+ */
+export function registrantFilterInWords(filter: RegistrantFilter): string {
+  const search = filter.search?.trim() ?? '';
+  const parts = [
+    ...(search === '' ? [] : [`Name or reference matching "${search}"`]),
+    ...(filter.status === undefined ? [] : [`Status: ${REGISTRATION_STATUS_CATALOG[filter.status].label}`]),
+    ...(filter.attendance === undefined ? [] : [`Attendance: ${ATTENDANCE_CATALOG[filter.attendance].label}`]),
+  ];
+  return parts.length === 0 ? 'All registrations for this event.' : `Registrations narrowed to: ${parts.join('; ')}.`;
+}
+
 /* ── Capacity, honestly ───────────────────────────────────────────────────── */
 
 /**

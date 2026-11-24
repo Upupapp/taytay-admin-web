@@ -160,6 +160,17 @@ export class CitizenReportPage {
     { initialValue: LOADING as ViewState<CitizenReport> },
   );
 
+  /**
+   * Whether the sheet on screen is the one the filter asks for. Download PDF and CSV wait for it,
+   * so neither can be pressed over figures still loading for a filter just changed (DL-247).
+   */
+  protected readonly settled = computed(() => this.state().kind === 'ready');
+
+  /** Whether `asked` is still the filter on screen: an answer for an earlier one is dropped. */
+  private stillAsked(asked: CitizenReportFilter): boolean {
+    return JSON.stringify(this.filter()) === JSON.stringify(asked);
+  }
+
   /** The report as re-read for printing; gone when the filter changes. */
   private readonly reprinted = linkedSignal<CitizenReportFilter, CitizenReport | null>({
     source: this.filter,
@@ -232,7 +243,7 @@ export class CitizenReportPage {
 
   protected generatedLine(report: CitizenReport): string {
     return this.copy.generated(
-      formatDisplayDate(report.footer.generatedAt, 'date-time') ?? report.footer.generatedAt,
+      formatDisplayDate(report.footer.generatedAt, 'manila-date-time') ?? report.footer.generatedAt,
       report.footer.generatedBy,
     );
   }
@@ -247,12 +258,17 @@ export class CitizenReportPage {
    * re-checked is the one copy that cannot be corrected later.
    */
   protected async print(): Promise<void> {
-    if (this.printing()) {
+    if (this.printing() || !this.settled()) {
       return;
     }
     this.printing.set(true);
+    const asked = this.filter();
     try {
-      const fresh = await firstValueFrom(this.repository.citizens(this.filter()));
+      const fresh = await firstValueFrom(this.repository.citizens(asked));
+      if (!this.stillAsked(asked)) {
+        // The filter changed during the re-read: the old filter's sheet is not printed under the new one.
+        return;
+      }
       this.reprinted.set(fresh);
       afterNextRender(() => printSheet(this.document, this.copy.pdfName(fresh.period.to)), {
         injector: this.injector,
@@ -279,12 +295,17 @@ export class CitizenReportPage {
   }
 
   protected async exportCsv(): Promise<void> {
-    if (this.exporting() || !this.canExport()) {
+    if (this.exporting() || !this.canExport() || !this.settled()) {
       return;
     }
     this.exporting.set(true);
+    const asked = this.filter();
     try {
-      const file = await firstValueFrom(this.repository.exportCitizens(this.filter()));
+      const file = await firstValueFrom(this.repository.exportCitizens(asked));
+      if (!this.stillAsked(asked)) {
+        // A file for a filter no longer on screen is not offered under it.
+        return;
+      }
       // The server's text, byte for byte: the page adds nothing to the file.
       this.objectUrls.revokeAll();
       this.fileReady.set({
