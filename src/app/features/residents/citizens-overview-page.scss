@@ -219,6 +219,38 @@ a.overview-kpi:focus-visible .overview-kpi__label {
   grid-column: span 7;
 }
 
+/* The funnel, sectors, and age and sex: two columns, each card as tall as its own content (DL-227,
+   DL-250). The sector list stands beside the funnel and the pyramid; with no sector recorded it is a
+   sentence across the foot, under the funnel beside the pyramid. Extra height falls below the lower
+   card of the shorter column, never inside a card. */
+.overview-trio {
+  grid-column: span 12;
+  display: grid;
+  /* Longhands: the `grid-template` shorthand with areas refuses `repeat()`, and drops them all. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto 1fr;
+  grid-template-areas: 'funnel sector' 'age sector';
+  align-items: start;
+  gap: var(--space-4);
+}
+
+.overview-trio--no-sectors {
+  grid-template-rows: auto auto;
+  grid-template-areas: 'funnel age' 'sector sector';
+}
+
+.overview-trio__funnel {
+  grid-area: funnel;
+}
+
+.overview-trio__sector {
+  grid-area: sector;
+}
+
+.overview-trio__age {
+  grid-area: age;
+}
+
 .overview-panel__head {
   display: flex;
   flex-wrap: wrap;
@@ -289,5 +321,12 @@ a.overview-kpi:focus-visible .overview-kpi__label {
 
   .overview-grid > .overview-panel {
     grid-column: span 12;
+  }
+
+  .overview-trio,
+  .overview-trio--no-sectors {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas: 'funnel' 'sector' 'age';
   }
 }

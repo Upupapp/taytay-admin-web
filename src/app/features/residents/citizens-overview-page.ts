@@ -44,7 +44,8 @@ import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
-import { ChartTable } from '@shared/ui/chart-table/chart-table';
+import { ChartTable, summaryAfterCaption } from '@shared/ui/chart-table/chart-table';
+import { DonutChart } from '@shared/ui/donut-chart/donut-chart';
 import { Icon } from '@shared/ui/icon/icon';
 import type { IconName } from '@shared/ui/icon/icons';
 import { PageHeader } from '@shared/ui/page-header/page-header';
@@ -82,6 +83,15 @@ export interface PyramidBand {
   readonly label: string;
   readonly female: PyramidSide;
   readonly male: PyramidSide;
+}
+
+/**
+ * The sector panel's rows (DL-250): a row with a figure or withheld is drawn, largest first, a
+ * withheld one after them saying so; a zero is named apart rather than drawn as an empty bar.
+ */
+export interface SectorView {
+  readonly charted: readonly ReportRow[];
+  readonly none: readonly ReportRow[];
 }
 
 /** Each headline's tile, from the board's own icon tiles. */
@@ -135,6 +145,7 @@ interface Headline {
   imports: [
     AsyncContent,
     ChartTable,
+    DonutChart,
     HasPermissionDirective,
     Icon,
     NotConnected,
@@ -343,6 +354,29 @@ export class CitizensOverviewPage {
         ? { sector: row.key }
         : null,
     );
+  }
+
+  protected hasWithheld(series: ReportSeries): boolean {
+    return series.rows.some((row) => row.isWithheld === true);
+  }
+
+  protected sectorView(series: ReportSeries): SectorView {
+    const rows = this.sectorRows(series);
+    const rank = (row: ReportRow): number => (row.isWithheld === true ? -1 : row.value);
+    return {
+      charted: rows
+        .filter((row) => row.isWithheld === true || row.value > 0)
+        // The reason a row is withheld is said under the chart; the row itself says "Withheld", as
+        // the pyramid's cells and the funnel's steps do.
+        .map((row) => (row.isWithheld === true ? { ...row, display: this.copy.withheld } : row))
+        .sort((a, b) => rank(b) - rank(a)),
+      none: rows.filter((row) => row.isWithheld !== true && row.value === 0),
+    };
+  }
+
+  /** A series' summary without the title it starts with, which the caption already reads. */
+  protected captionedSummary(series: ReportSeries): string {
+    return summaryAfterCaption(series.title, series.summary);
   }
 
   protected ageSexRows(series: ReportSeries): readonly ReportRow[] {

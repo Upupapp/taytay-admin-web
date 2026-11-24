@@ -46,6 +46,7 @@ export * from './ui/async-content/async-content';
 export * from './ui/chart-table/chart-table';
 export * from './ui/bar-chart/bar-chart';
 export * from './ui/column-chart/column-chart';
+export * from './ui/donut-chart/donut-chart';
 export * from './ui/figure-tiles/figure-tiles';
 export * from './ui/line-chart/line-chart';
 export * from './ui/connection-banner/connection-banner';

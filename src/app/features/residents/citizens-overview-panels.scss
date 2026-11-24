@@ -49,10 +49,6 @@
   text-align: start;
 }
 
-.pyramid__summary {
-  display: block;
-}
-
 .pyramid__band {
   inline-size: 28%;
   padding: 0 var(--space-2);
@@ -98,15 +94,16 @@
   text-align: end;
 }
 
+/* A figure that opens the registry filtered to it: a quiet link, underlined only under the pointer
+   (DL-250), as the stacked charts' labels are. Its focus ring is the global one. */
 .pyramid__link {
   color: var(--text2);
-  text-decoration: underline;
-  text-decoration-color: var(--line2);
+  text-decoration: none;
   text-underline-offset: 3px;
 
   &:hover {
     color: var(--ink);
-    text-decoration-color: currentcolor;
+    text-decoration: underline;
   }
 }
 

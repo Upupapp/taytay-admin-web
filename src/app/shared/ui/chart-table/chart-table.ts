@@ -9,9 +9,26 @@ export interface ChartRow {
   readonly value: number;
   /** Formatted for display — e.g. a peso amount. Falls back to `value`. */
   readonly display?: string;
+  /**
+   * Withheld as a small cell (`DL-105`): the row keeps its label and says so, and draws no track, as
+   * an empty track would read as a zero (`DL-250`).
+   */
+  readonly isWithheld?: boolean;
   /** Makes the row a drill-down into the records behind it. */
   readonly routerLink?: string;
   readonly queryParams?: Readonly<Record<string, string>>;
+}
+
+/**
+ * A summary sentence after its caption, without the caption it starts with. The API words a series'
+ * summary as "Residents by sector: 1,236 people in total…", and read after a caption of "Residents by
+ * sector" that names the chart twice, on screen and to a screen reader (`DL-250`). A summary that
+ * does not start with its caption is returned unchanged.
+ */
+export function summaryAfterCaption(caption: string, summary: string): string {
+  if (caption === '' || !summary.startsWith(caption)) return summary;
+  const rest = /^\s*[:,]\s*(.+)$/su.exec(summary.slice(caption.length))?.[1];
+  return rest === undefined ? summary : rest.charAt(0).toLocaleUpperCase('en-PH') + rest.slice(1);
 }
 
 /**
@@ -40,10 +57,8 @@ export interface ChartRow {
   template: `
     <table class="chart">
       <caption class="chart__caption">
-        {{
-          caption()
-        }}
-        @if (summary(); as text) {
+        <span class="chart__caption-title">{{ caption() }}</span>
+        @if (summaryText(); as text) {
           <span class="chart__summary">{{ text }}</span>
         }
       </caption>
@@ -70,14 +85,16 @@ export interface ChartRow {
                   <span class="chart__label">{{ row.label }}</span>
                 }
                 <!-- Decoration only. The value beside it carries the meaning. -->
-                <span class="chart__track" aria-hidden="true">
-                  <span
-                    class="chart__bar"
-                    aria-hidden="true"
-                    [class.chart__bar--top]="isLargest(row.value)"
-                    [style.inline-size.%]="percentOf(row.value)"
-                  ></span>
-                </span>
+                @if (!row.isWithheld) {
+                  <span class="chart__track" aria-hidden="true">
+                    <span
+                      class="chart__bar"
+                      aria-hidden="true"
+                      [class.chart__bar--top]="isLargest(row.value)"
+                      [style.inline-size.%]="percentOf(row.value)"
+                    ></span>
+                  </span>
+                }
               </span>
             </th>
             <td class="chart__value">{{ row.display ?? row.value }}</td>
@@ -101,6 +118,12 @@ export class ChartTable {
   readonly emptyMessage = input('Nothing to show for this filter.');
   /** Plain-language description of what the chart shows, read with the caption. */
   readonly summary = input<string | null>(null);
+
+  /** The summary without the caption it would otherwise repeat: see `summaryAfterCaption`. */
+  protected readonly summaryText = computed(() => {
+    const text = this.summary();
+    return text === null ? null : summaryAfterCaption(this.caption(), text);
+  });
 
   private readonly largest = computed(() =>
     this.rows().reduce((max, row) => Math.max(max, row.value), 0),

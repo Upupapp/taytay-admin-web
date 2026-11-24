@@ -287,3 +287,117 @@ describe('CitizensOverviewPage — how the registry grew and the review queue (D
     expect(queue?.querySelector('a')?.getAttribute('href')).toBe('/verification');
   });
 });
+
+describe('CitizensOverviewPage — the sector list and the cards beside it (DL-250)', () => {
+  const sectorRow = (key: string, label: string, value: number): ReportSeries['rows'][number] => ({
+    key,
+    label,
+    value,
+  });
+
+  it('draws sectors largest first, a withheld row after them, and names a zero apart', async () => {
+    configure(
+      of({
+        ...SUMMARY,
+        bySector: series(
+          'by-sector',
+          [
+            sectorRow('senior-citizen', 'Senior citizens', 12),
+            withheld('pwd', 'Persons with disability'),
+            sectorRow('out-of-school-youth', 'Out-of-school youth', 0),
+            sectorRow('solo-parent', 'Solo parents', 30),
+          ],
+          44,
+        ),
+      }),
+    );
+    const root = await render();
+    const panel = root.querySelector('.overview-trio__sector');
+    const rows = [...(panel?.querySelectorAll('tbody tr') ?? [])].map((row) =>
+      [...row.children].map((cell) => cell.textContent?.trim()).join(' | '),
+    );
+
+    expect(rows).toEqual([
+      'Solo parents | 30',
+      'Senior citizens | 12',
+      `Persons with disability | ${CITIZENS_OVERVIEW_COPY.withheld}`,
+    ]);
+    expect(panel?.textContent).toContain(CITIZENS_OVERVIEW_COPY.bySectorNone);
+    expect([...(panel?.querySelectorAll('li.chip') ?? [])].map((chip) => chip.textContent)).toEqual(
+      ['Out-of-school youth'],
+    );
+    expect(root.querySelector('.overview-trio--no-sectors')).toBeNull();
+  });
+
+  it('says in a sentence that no sector is recorded, and draws no bar, when every row is zero', async () => {
+    configure(
+      of({
+        ...SUMMARY,
+        bySector: series(
+          'by-sector',
+          [
+            sectorRow('senior-citizen', 'Senior citizens', 0),
+            sectorRow('pwd', 'Persons with disability', 0),
+          ],
+          0,
+        ),
+      }),
+    );
+    const root = await render();
+    const panel = root.querySelector('.overview-trio__sector');
+
+    expect(panel?.querySelector('table')).toBeNull();
+    expect(panel?.querySelector('.chart__bar')).toBeNull();
+    expect(panel?.textContent).toContain(CITIZENS_OVERVIEW_COPY.bySectorEmpty);
+    expect([...(panel?.querySelectorAll('li.chip') ?? [])].map((chip) => chip.textContent)).toEqual(
+      ['Senior citizens', 'Persons with disability'],
+    );
+    // With nothing to list, the sentence runs across the foot, under the funnel and the pyramid.
+    expect(root.querySelector('.overview-trio--no-sectors')).not.toBeNull();
+  });
+
+  it('keeps a withheld sector in the table when nothing else has a figure (DL-105)', async () => {
+    configure(
+      of({
+        ...SUMMARY,
+        bySector: series(
+          'by-sector',
+          [
+            sectorRow('senior-citizen', 'Senior citizens', 0),
+            withheld('pwd', 'Persons with disability'),
+          ],
+          0,
+        ),
+      }),
+    );
+    const panel = (await render()).querySelector('.overview-trio__sector');
+
+    expect(panel?.querySelector('tbody')?.textContent).toContain('Persons with disability');
+    expect(panel?.textContent).not.toContain(CITIZENS_OVERVIEW_COPY.bySectorEmpty);
+  });
+
+  it('reads the age chart’s title once, and shows its summary without it', async () => {
+    configure(
+      of({
+        ...SUMMARY,
+        byAgeSex: {
+          ...series(
+            'by-age-sex',
+            [
+              { key: 'senior.female', label: 'Seniors, female', value: 18 },
+              { key: 'senior.male', label: 'Seniors, male', value: 7 },
+            ],
+            25,
+          ),
+          summary: 'Series by-age-sex: 25 people in total.',
+        },
+      }),
+    );
+    const caption = (await render()).querySelector('.pyramid__caption');
+
+    expect(caption?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      'Series by-age-sex 25 people in total.',
+    );
+    expect(caption?.querySelector('.visually-hidden')?.textContent).toBe('Series by-age-sex');
+  });
+});

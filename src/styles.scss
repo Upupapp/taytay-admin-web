@@ -118,6 +118,13 @@
   --chart-line: var(--blue);
   /* A second line beside --chart-line, dashed: the legend and the table say which is which. */
   --chart-line-compare: var(--green);
+  /* A donut's segments, one per category by rank (DL-250): five hues far apart, each 3:1 or more on
+     the card, the page and the fill. Decoration: the legend is a table that names each. */
+  --chart-cat-1: #1d3a9c;
+  --chart-cat-2: #a86200;
+  --chart-cat-3: #0b7285;
+  --chart-cat-4: #a1306e;
+  --chart-cat-5: #3b7d23;
   --accent-line: var(--blue);
 
   /* Overlays */
@@ -387,6 +394,11 @@
   --bar: #3a63f0;
   --chart-line: #7c9bff;
   --chart-line-compare: #6ee7a0;
+  --chart-cat-1: #7c9bff;
+  --chart-cat-2: #f5b700;
+  --chart-cat-3: #3fc1d0;
+  --chart-cat-4: #f08ac0;
+  --chart-cat-5: #6ee7a0;
   --accent-line: #5b82ff;
 
   --scrim: rgb(2 6 20 / 72%);

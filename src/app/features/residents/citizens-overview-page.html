@@ -182,150 +182,193 @@
 
       <section class="overview-panel overview-panel--third" aria-labelledby="overview-barangay">
         <h2 id="overview-barangay" class="overview-panel__title">{{ copy.byBarangay }}</h2>
-        <app-chart-table
-          class="chart-table--quiet"
+        <!-- A donut whose legend is the table (DL-108, DL-250): the centre says the total, or the
+             barangay pointed at or focused; a withheld one is listed and left out of the ring. -->
+        <app-donut-chart
           [caption]="summary.byBarangay.title"
           [summary]="summary.byBarangay.summary"
           [labelHeader]="summary.byBarangay.labelHeader"
           [valueHeader]="summary.byBarangay.valueHeader"
+          [shareHeader]="copy.byBarangayShare"
+          [totalLabel]="copy.byBarangayTotal"
+          [withheldLabel]="copy.withheld"
+          [total]="summary.byBarangay.total"
           [rows]="barangayRows(summary.byBarangay)"
         />
-        <p class="overview-panel__note">{{ copy.total(summary.byBarangay.total) }}</p>
+        <!-- The centre says the total; taken before suppression, it is labelled so where anything
+             was withheld (DL-105). -->
+        @if (hasWithheld(summary.byBarangay)) {
+          <p class="overview-panel__note">
+            {{ copy.byBarangayWithheld }} {{ copy.total(summary.byBarangay.total) }}
+          </p>
+        }
         @if (summary.byBarangay.suppressionNotice; as notice) {
           <p class="overview-panel__note">{{ notice }}</p>
         }
       </section>
 
-      <section class="overview-panel overview-panel--third" aria-labelledby="registry-funnel">
-        <app-registry-funnel [funnel]="summary.funnel" [showLink]="opensCards()" />
-      </section>
+      <!-- The funnel, sectors, and age and sex in two columns, each card as tall as its own content
+         (DL-250): the sector list beside the funnel and the pyramid, or, with no sector recorded,
+         its sentence across the foot, under the funnel and the pyramid side by side. -->
+      @let sectors = sectorView(summary.bySector);
+      <div class="overview-trio" [class.overview-trio--no-sectors]="sectors.charted.length === 0">
+        <section class="overview-panel overview-trio__funnel" aria-labelledby="registry-funnel">
+          <app-registry-funnel [funnel]="summary.funnel" [showLink]="opensCards()" />
+        </section>
 
-      <section class="overview-panel overview-panel--third" aria-labelledby="overview-sector">
-        <h2 id="overview-sector" class="overview-panel__title">{{ copy.bySector }}</h2>
-        <app-chart-table
-          class="chart-table--quiet"
-          [caption]="summary.bySector.title"
-          [summary]="summary.bySector.summary"
-          [labelHeader]="summary.bySector.labelHeader"
-          [valueHeader]="summary.bySector.valueHeader"
-          [rows]="sectorRows(summary.bySector)"
-        />
-        <p class="overview-panel__note">{{ copy.bySectorNote }}</p>
-        @if (summary.bySector.suppressionNotice; as notice) {
-          <p class="overview-panel__note">{{ notice }}</p>
-        }
-      </section>
+        <section class="overview-panel overview-trio__sector" aria-labelledby="overview-sector">
+          <h2 id="overview-sector" class="overview-panel__title">{{ copy.bySector }}</h2>
+          @if (sectors.charted.length > 0 || sectors.none.length === 0) {
+            <!-- Largest first, a withheld row kept and said (DL-105); a zero is named below, not
+               drawn as an empty bar. -->
+            <app-chart-table
+              class="chart-table--quiet chart-table--stacked"
+              [caption]="summary.bySector.title"
+              [summary]="summary.bySector.summary"
+              [labelHeader]="summary.bySector.labelHeader"
+              [valueHeader]="summary.bySector.valueHeader"
+              [rows]="sectors.charted"
+            />
+            @if (sectors.none.length > 0) {
+              <p id="overview-sector-none" class="overview-panel__note">
+                {{ copy.bySectorNone }}
+              </p>
+              <ul class="chip-list" aria-labelledby="overview-sector-none">
+                @for (row of sectors.none; track row.key) {
+                  <li class="chip">{{ row.label }}</li>
+                }
+              </ul>
+            }
+            <p class="overview-panel__note">{{ copy.bySectorNote }}</p>
+            @if (summary.bySector.suppressionNotice; as notice) {
+              <p class="overview-panel__note">{{ notice }}</p>
+            }
+          } @else {
+            <p class="overview-panel__body">{{ copy.bySectorEmpty }}</p>
+            <ul class="chip-list" [attr.aria-label]="copy.bySectorCounted">
+              @for (row of sectors.none; track row.key) {
+                <li class="chip">{{ row.label }}</li>
+              }
+            </ul>
+          }
+        </section>
 
-      <section class="overview-panel overview-panel--third" aria-labelledby="overview-age-sex">
-        <div class="overview-panel__head">
-          <h2 id="overview-age-sex" class="overview-panel__title">{{ copy.byAgeSex }}</h2>
-          <span class="overview-legend" aria-hidden="true">
-            <span class="overview-legend__key overview-legend__key--female">{{
-              sexLabel('female')
-            }}</span>
-            <span class="overview-legend__key overview-legend__key--male">{{
-              sexLabel('male')
-            }}</span>
-          </span>
-        </div>
-        @if (pyramid(summary.byAgeSex); as bands) {
-          <!-- The pyramid is the table: each band a row, female on the left, male on the right, the
+        <section class="overview-panel overview-trio__age" aria-labelledby="overview-age-sex">
+          <div class="overview-panel__head">
+            <h2 id="overview-age-sex" class="overview-panel__title">{{ copy.byAgeSex }}</h2>
+            <span class="overview-legend" aria-hidden="true">
+              <span class="overview-legend__key overview-legend__key--female">{{
+                sexLabel('female')
+              }}</span>
+              <span class="overview-legend__key overview-legend__key--male">{{
+                sexLabel('male')
+              }}</span>
+            </span>
+          </div>
+          @if (pyramid(summary.byAgeSex); as bands) {
+            <!-- The pyramid is the table: each band a row, female on the left, male on the right, the
              bars decoration beside the figures they repeat (DL-108). -->
-          <table class="pyramid">
-            <caption class="pyramid__caption">
-              {{
-                summary.byAgeSex.title
-              }}
-              @if (summary.byAgeSex.summary; as text) {
-                <span class="pyramid__summary">{{ text }}</span>
-              }
-            </caption>
-            <thead class="visually-hidden">
-              <tr>
-                <th scope="col">{{ sexLabel('female') }}</th>
-                <th scope="col">{{ copy.ageGroup }}</th>
-                <th scope="col">{{ sexLabel('male') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (band of bands; track band.key) {
+            <table class="pyramid">
+              <!-- The heading names the chart: the caption's name is for screen readers, and the
+               summary is said once, without it (DL-250). -->
+              <caption class="pyramid__caption">
+                <span class="visually-hidden">{{ summary.byAgeSex.title }}</span>
+                {{
+                  captionedSummary(summary.byAgeSex)
+                }}
+              </caption>
+              <thead class="visually-hidden">
                 <tr>
-                  <td class="pyramid__side pyramid__side--female">
-                    <span class="pyramid__cell">
-                      @let femaleRow = band.female.row;
-                      @if (femaleRow.isWithheld) {
-                        <span class="pyramid__figure">{{ copy.withheld }}</span>
-                      } @else if (femaleRow.routerLink) {
-                        <a
-                          class="pyramid__figure pyramid__link"
-                          [routerLink]="femaleRow.routerLink"
-                          [queryParams]="femaleRow.queryParams ?? {}"
-                          >{{ femaleRow.display ?? femaleRow.value }}</a
-                        >
-                      } @else {
-                        <span class="pyramid__figure">{{
-                          femaleRow.display ?? femaleRow.value
-                        }}</span>
-                      }
-                      <span class="pyramid__track" aria-hidden="true">
-                        <span class="pyramid__bar" [style.inline-size.%]="band.female.width"></span>
-                      </span>
-                    </span>
-                  </td>
-                  <th scope="row" class="pyramid__band">{{ band.label }}</th>
-                  <td class="pyramid__side pyramid__side--male">
-                    <span class="pyramid__cell">
-                      <span class="pyramid__track" aria-hidden="true">
-                        <span class="pyramid__bar" [style.inline-size.%]="band.male.width"></span>
-                      </span>
-                      @let maleRow = band.male.row;
-                      @if (maleRow.isWithheld) {
-                        <span class="pyramid__figure">{{ copy.withheld }}</span>
-                      } @else if (maleRow.routerLink) {
-                        <a
-                          class="pyramid__figure pyramid__link"
-                          [routerLink]="maleRow.routerLink"
-                          [queryParams]="maleRow.queryParams ?? {}"
-                          >{{ maleRow.display ?? maleRow.value }}</a
-                        >
-                      } @else {
-                        <span class="pyramid__figure">{{ maleRow.display ?? maleRow.value }}</span>
-                      }
-                    </span>
-                  </td>
+                  <th scope="col">{{ sexLabel('female') }}</th>
+                  <th scope="col">{{ copy.ageGroup }}</th>
+                  <th scope="col">{{ sexLabel('male') }}</th>
                 </tr>
-              }
-            </tbody>
-          </table>
-        } @else {
-          <app-chart-table
-            class="chart-table--quiet"
-            [caption]="summary.byAgeSex.title"
-            [summary]="summary.byAgeSex.summary"
-            [labelHeader]="summary.byAgeSex.labelHeader"
-            [valueHeader]="summary.byAgeSex.valueHeader"
-            [rows]="ageSexRows(summary.byAgeSex)"
-          />
-        }
-        <!-- Taken before suppression, like the series total, and said so (DL-105). -->
-        <div class="overview-sexes">
-          <span class="overview-sexes__total">
-            <b>{{ summary.totalBySex.female }}</b
-            >{{ panels.femaleTotal }}
-          </span>
-          <span class="overview-sexes__total">
-            <b>{{ summary.totalBySex.male }}</b
-            >{{ panels.maleTotal }}
-          </span>
-        </div>
-        <p class="overview-panel__note">
-          {{ copy.total(summary.byAgeSex.total) }} {{ panels.sexTotalsNote }}
-          {{ copy.byAgeSexNote }}
-        </p>
-        @if (summary.byAgeSex.suppressionNotice; as notice) {
-          <p class="overview-panel__note">{{ notice }}</p>
-        }
-      </section>
+              </thead>
+              <tbody>
+                @for (band of bands; track band.key) {
+                  <tr>
+                    <td class="pyramid__side pyramid__side--female">
+                      <span class="pyramid__cell">
+                        @let femaleRow = band.female.row;
+                        @if (femaleRow.isWithheld) {
+                          <span class="pyramid__figure">{{ copy.withheld }}</span>
+                        } @else if (femaleRow.routerLink) {
+                          <a
+                            class="pyramid__figure pyramid__link"
+                            [routerLink]="femaleRow.routerLink"
+                            [queryParams]="femaleRow.queryParams ?? {}"
+                            >{{ femaleRow.display ?? femaleRow.value }}</a
+                          >
+                        } @else {
+                          <span class="pyramid__figure">{{
+                            femaleRow.display ?? femaleRow.value
+                          }}</span>
+                        }
+                        <span class="pyramid__track" aria-hidden="true">
+                          <span
+                            class="pyramid__bar"
+                            [style.inline-size.%]="band.female.width"
+                          ></span>
+                        </span>
+                      </span>
+                    </td>
+                    <th scope="row" class="pyramid__band">{{ band.label }}</th>
+                    <td class="pyramid__side pyramid__side--male">
+                      <span class="pyramid__cell">
+                        <span class="pyramid__track" aria-hidden="true">
+                          <span class="pyramid__bar" [style.inline-size.%]="band.male.width"></span>
+                        </span>
+                        @let maleRow = band.male.row;
+                        @if (maleRow.isWithheld) {
+                          <span class="pyramid__figure">{{ copy.withheld }}</span>
+                        } @else if (maleRow.routerLink) {
+                          <a
+                            class="pyramid__figure pyramid__link"
+                            [routerLink]="maleRow.routerLink"
+                            [queryParams]="maleRow.queryParams ?? {}"
+                            >{{ maleRow.display ?? maleRow.value }}</a
+                          >
+                        } @else {
+                          <span class="pyramid__figure">{{
+                            maleRow.display ?? maleRow.value
+                          }}</span>
+                        }
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <app-chart-table
+              class="chart-table--quiet"
+              [caption]="summary.byAgeSex.title"
+              [summary]="summary.byAgeSex.summary"
+              [labelHeader]="summary.byAgeSex.labelHeader"
+              [valueHeader]="summary.byAgeSex.valueHeader"
+              [rows]="ageSexRows(summary.byAgeSex)"
+            />
+          }
+          <!-- Taken before suppression, like the series total, and said so (DL-105). -->
+          <div class="overview-sexes">
+            <span class="overview-sexes__total">
+              <b>{{ summary.totalBySex.female }}</b
+              >{{ panels.femaleTotal }}
+            </span>
+            <span class="overview-sexes__total">
+              <b>{{ summary.totalBySex.male }}</b
+              >{{ panels.maleTotal }}
+            </span>
+          </div>
+          <p class="overview-panel__note">
+            {{ copy.total(summary.byAgeSex.total) }} {{ panels.sexTotalsNote }}
+            {{ copy.byAgeSexNote }}
+          </p>
+          @if (summary.byAgeSex.suppressionNotice; as notice) {
+            <p class="overview-panel__note">{{ notice }}</p>
+          }
+        </section>
+      </div>
 
       <section class="overview-panel overview-panel--month" aria-labelledby="registry-this-month">
         <app-registry-this-month [thisMonth]="summary.thisMonth" />

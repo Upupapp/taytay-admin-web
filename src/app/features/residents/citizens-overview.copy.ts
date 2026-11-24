@@ -55,7 +55,13 @@ export const CITIZENS_OVERVIEW_COPY = {
   },
 
   byBarangay: 'By barangay',
+  byBarangayShare: 'Share of the total',
+  byBarangayTotal: 'residents in all',
+  byBarangayWithheld: 'A withheld barangay is listed, and left out of the ring.',
   bySector: 'By sector',
+  bySectorEmpty: 'No sector is recorded for anyone under this filter yet.',
+  bySectorCounted: 'The sectors counted',
+  bySectorNone: 'None recorded under this filter',
   bySectorNote:
     'Sectors overlap: one person may be counted in several. The two protected sectors are counted only for staff cleared to see sensitive records.',
   byAgeSex: 'By age group and sex',

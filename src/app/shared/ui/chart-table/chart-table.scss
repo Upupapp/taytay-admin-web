@@ -195,8 +195,9 @@
 }
 
 /* The quiet layout (`class="chart-table--quiet"`): the panel's own heading names the chart, so the
-   caption is small print under it and the column headings are for screen readers only; the label
-   has a fixed column as the CitizensOverview board draws it (DL-230). */
+   caption's name and the column headings are for screen readers only and the summary is small print
+   under the heading; the label has a fixed column as the CitizensOverview board draws it (DL-230,
+   DL-250). */
 :host(.chart-table--quiet) {
   .chart__caption {
     color: var(--muted);
@@ -204,7 +205,12 @@
     font-weight: var(--fw-regular);
   }
 
-  .chart thead {
+  .chart__summary {
+    margin-block-start: 0;
+  }
+
+  .chart thead,
+  .chart__caption-title {
     position: absolute;
     inline-size: 1px;
     block-size: 1px;
@@ -220,4 +226,9 @@
   .chart__label-row {
     grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
   }
+}
+
+/* Quiet and stacked together: the quiet caption, each label on its own line above a thin bar. */
+:host(.chart-table--quiet.chart-table--stacked) .chart__label-row {
+  grid-template-columns: minmax(0, 1fr);
 }

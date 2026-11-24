@@ -240,6 +240,13 @@ function audit(theme, tokens) {
   require('--field-line', '--card-solid', COMPONENT_MINIMUM, 'strong border');
   require('--field-line', '--page-base', COMPONENT_MINIMUM, 'strong border');
 
+  // ── a donut's segments: graphics, visible on every surface a card sits on (DL-250) ──
+  for (let rank = 1; rank <= 5; rank += 1) {
+    for (const background of ['--page-base', '--card-solid', '--fill']) {
+      require(`--chart-cat-${rank}`, background, COMPONENT_MINIMUM, `donut segment ${rank}`);
+    }
+  }
+
   // ── the focus ring: two rings, and between them it shows on everything ────
   for (const background of ['--page-base', '--card-solid', '--fill']) {
     require('--focus-ring-inner', background, COMPONENT_MINIMUM, 'focus ring (inner)');

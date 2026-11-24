@@ -72,7 +72,8 @@ exempt from 1.4.11), `--blue-50` #ecf1fc, `--blue-100` #dce5fa.
 `--tone-{neutral,info,progress,success,warning,danger}-{fg,bg}`.
 
 **Charts:** `--axis`, `--dash`, `--area`, `--bar`, `--chart-line`, `--chart-line-compare` (a
-second line, drawn dashed, DL-248), `--accent-line`.
+second line, drawn dashed, DL-248), `--chart-cat-1` … `--chart-cat-5` (a donut's segments by rank,
+each 3:1 on the card, the page and the fill in both themes, DL-250), `--accent-line`.
 
 **Overlays and options:** `--scrim`, `--scrim2` (behind dialogs), `--ring` (the gap around a badge
 on another element), `--option-bg`, `--option-ink` (native `<option>`).
@@ -523,6 +524,18 @@ hidden table states every point; a withheld point breaks the line and the table 
 a second series over the same keys `compare` + `compareHeader` (DL-248): dashed, in
 `--chart-line-compare`, with square dots and a legend, and its own table column. Leave `callout` empty
 with two series, or it covers the legend.
+
+### DonutChart — `app-donut-chart`
+
+Shares of a whole (DL-250): a ring with one segment per category and a gap between neighbours, the
+total in its centre, beside a legend that **is** the table (`DL-108`) — caption, one row per category
+largest first, its count and its share. The ring is `aria-hidden`; a legend row is the category's one
+focus stop (its drill-down link, or the row's label), and pointing at a segment or a row, or focusing
+a row, puts that category in the centre. A withheld row is listed, says so, and has no segment
+(`DL-105`). Inputs: `caption`, `rows` (`DonutRow`, the `ChartRow` shape plus `isWithheld`), `total`
+(the base of every share, taken before suppression), `totalLabel`, `summary`, `labelHeader`,
+`valueHeader`, `shareHeader`, `withheldLabel`, `emptyMessage`. For up to five categories; past five
+the hues repeat. A breakdown that is not parts of one whole stays a `ChartTable`.
 
 ### SavedViewsBar — `app-saved-views-bar`
 

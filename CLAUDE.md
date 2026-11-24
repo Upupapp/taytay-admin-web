@@ -930,6 +930,7 @@ All but the last two rows live in `src/app/shared/` and are exported from
 | `AsyncContent`                                                                       | Wraps a `ViewState<T>`: skeleton, error panel, or content.                                       |
 | `PageHeader`                                                                         | Page title block + primary actions.                                                              |
 | `ChartTable`                                                                         | A breakdown. It **is** a real table; never add a second one.                                     |
+| `DonutChart`                                                                          | Shares of one whole. Its legend is the table; withheld rows listed, never drawn (`DL-250`).      |
 | `SavedViewsBar`                                                                      | Named filters above any list whose filters live in the URL.                                      |
 | `Icon`                                                                               | `<app-icon name="…">`, always `aria-hidden`; an icon-only button is `.icon-button` with a label. |
 | `ResidentSummaryCard`                                                                | One resident, said the same way on every screen.                                                 |

@@ -1,0 +1,199 @@
+/* A ring beside its legend, the legend a table (DL-250). Beside each other where the panel is wide
+   enough, the ring above the legend where it is not. */
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+
+.donut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4) var(--space-5);
+}
+
+.donut__figure {
+  position: relative;
+  flex: none;
+  inline-size: 168px;
+  block-size: 168px;
+}
+
+.donut__ring {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  /* The first segment starts at twelve o'clock and the rest follow clockwise. */
+  transform: rotate(-90deg);
+}
+
+.donut__track,
+.donut__segment {
+  fill: none;
+  stroke-width: 16;
+}
+
+.donut__track {
+  stroke: var(--soft);
+}
+
+.donut__segment {
+  transition:
+    opacity var(--motion-micro) var(--motion-ease-standard),
+    stroke-width var(--motion-micro) var(--motion-ease-standard);
+}
+
+.donut__segment--active {
+  stroke-width: 20;
+}
+
+.donut__segment--dim {
+  opacity: 0.3;
+}
+
+@for $rank from 1 through 5 {
+  .donut__segment--#{$rank} {
+    stroke: var(--chart-cat-#{$rank});
+  }
+
+  .donut__swatch--#{$rank} {
+    background: var(--chart-cat-#{$rank});
+  }
+}
+
+/* The centre sits inside the hole: its words wrap there rather than over the ring. */
+.donut__centre {
+  position: absolute;
+  inset: 24%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.donut__value {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--fs-kpi-sm);
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.donut__label {
+  color: var(--muted);
+  font-size: var(--fs-caption);
+  line-height: var(--lh-snug);
+}
+
+.donut__legend {
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+  border-collapse: collapse;
+  color: var(--text2);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The panel's heading names the chart and the centre says its total: the caption and the column
+   headings are for screen readers. */
+.donut__caption,
+.donut__head {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.donut__row th,
+.donut__row td {
+  padding: 3px 0;
+  text-align: start;
+  vertical-align: middle;
+}
+
+.donut__row--active > * {
+  background: var(--sel);
+}
+
+.donut__row > :first-child {
+  padding-inline-start: 6px;
+  border-start-start-radius: var(--r-sm);
+  border-end-start-radius: var(--r-sm);
+}
+
+.donut__row > :last-child {
+  padding-inline-end: 6px;
+  border-start-end-radius: var(--r-sm);
+  border-end-end-radius: var(--r-sm);
+}
+
+.donut__name {
+  inline-size: 100%;
+  font-weight: var(--fw-semibold);
+}
+
+.donut__swatch {
+  display: inline-block;
+  inline-size: 10px;
+  block-size: 10px;
+  margin-inline-end: var(--space-2);
+  border-radius: var(--r-xs);
+  vertical-align: middle;
+}
+
+/* A withheld row has no segment, so its key is an outline that matches none. */
+.donut__swatch--none {
+  border: 1px dashed var(--muted);
+}
+
+.donut__link {
+  display: inline-block;
+  /* Comfortably above the 24px pointer-target minimum (WCAG 2.5.8). */
+  min-block-size: 28px;
+  border-radius: var(--r-xs);
+  color: var(--text);
+  line-height: 28px;
+  text-decoration: none;
+}
+
+a.donut__link:hover {
+  text-decoration: underline;
+}
+
+.donut__count {
+  color: var(--ink);
+  font-weight: var(--fw-semibold);
+  text-align: end;
+  white-space: nowrap;
+}
+
+.donut__row td.donut__share {
+  min-inline-size: 3.5em;
+  padding-inline-start: var(--space-3);
+  color: var(--muted);
+  text-align: end;
+  white-space: nowrap;
+}
+
+.donut__row td.donut__count {
+  padding-inline-start: var(--space-3);
+  text-align: end;
+}
+
+.donut__empty {
+  padding-block: var(--space-4);
+  color: var(--muted);
+  font-size: var(--fs-label);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .donut__segment {
+    transition: none;
+  }
+}

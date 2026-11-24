@@ -11679,3 +11679,51 @@ choice is clipped in the closed select, and read whole in its list); the actions
 leaves, so "Register a citizen" joins the row where both fit and stands beneath "Download report",
 right-aligned, where they do not — at 1440 it does not. The dashboard's bar already holds its
 actions on one row at 1280 and 1440 and is unchanged.
+
+## DL-250 — the Citizen overview's cards are as tall as what they say; barangays are a donut
+
+**Status:** Settled (24 November 2026), on the owner's word that the funnel, sector and age cards
+"look weird" and that "By barangay" should be a donut like a reference they sent. The layout and the
+chart types were left to us.
+
+1. **No card is stretched.** The funnel, "By sector" and "By age group and sex" stood in one row, each
+   stretched to the sector card, so two of them were mostly empty. They now stand in two columns,
+   each card as tall as its content, as DESIGN_SYSTEM.md already asks of a bento (DL-227): the sector
+   list beside the funnel and the pyramid (mock data: 717 against 727 px at 1440), or — with no sector
+   recorded, as on staging — the funnel beside the pyramid and the sector sentence across the foot
+   (335 against 366 px). The areas are named in CSS; the DOM order (funnel, sectors, age) is the
+   reading order in both.
+2. **Sectors are listed, not drawn as empty bars.** A sector with a figure or withheld is a stacked
+   `ChartTable` row (its label on one line above a thin bar), largest first, a withheld one after the
+   figures saying "Withheld" — the reason is in the notice under the list, as for the pyramid and the
+   funnel. A zero is named in a chip line, "None recorded under this filter", not drawn as a bar.
+   When every sector is zero the card is one sentence, "No sector is recorded for anyone under this
+   filter yet.", and the sector names as chips; there is no table then, because there is no figure.
+3. **A withheld row draws no track** in any `ChartTable`: an empty track reads as a zero, which is
+   what DL-105 says a withheld figure must never look like.
+4. **Each caption is said once.** The API words a series' summary as "<title>: …", so a caption of
+   "Residents by sector" was followed by "Residents by sector: …" under a heading "By sector".
+   `summaryAfterCaption` drops a caption that a summary starts with (before ":" or ","), in
+   `ChartTable` and the donut, and a quiet chart's caption name is for screen readers only — the
+   panel's heading names it. The pyramid does the same. A screen reader hears the name once and the
+   sentence once.
+5. **The pyramid's figures are quiet links**: they open the registry filtered to the cell, so they
+   stay links, underlined only under the pointer, as the stacked charts' labels are.
+6. **"By barangay" is a donut** (`shared/ui/donut-chart`, no library): one segment per barangay with
+   a gap between neighbours, in `--chart-cat-1` … `--chart-cat-5` (new tokens, five hues far apart,
+   each audited at 3:1 or more on the card, the page and the fill in both themes by
+   `check:contrast`). The legend **is** the table (DL-108): caption, one row per barangay largest
+   first, its count and its share of the total taken before suppression. The centre says the total,
+   or the barangay pointed at or focused ("392 / San Juan · 32%"). A withheld barangay is listed as
+   "Withheld" and left out of the ring — a segment sized by a hidden number would draw it — and a note
+   says so, with the total labelled as taken before suppression.
+
+**Keyboard:** a legend row is the barangay's one focus stop (its drill-down link), and focusing it
+puts the barangay in the centre and lights its segment. The ring itself is `aria-hidden` and takes no
+focus: a focus stop inside a hidden graphic is an accessibility fault, and a second stop for the same
+figure doubles the Tab path. Pointing at a segment works as pointing at its row.
+
+**Rejected:** a CSS multi-column (masonry) flow, which balances the columns but moves cards between
+them as the data changes; the sector chart over all ten rows with zeros, which is the noise the owner
+named; a donut for sectors, whose rows overlap (one person in several sectors) and so are not parts
+of one whole; a charting library.

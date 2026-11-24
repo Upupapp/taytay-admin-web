@@ -1,7 +1,7 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { ChartTable, type ChartRow } from './chart-table';
+import { ChartTable, summaryAfterCaption, type ChartRow } from './chart-table';
 
 const ROWS: readonly ChartRow[] = [
   {
@@ -130,6 +130,49 @@ describe('ChartTable is a real table, not a picture of one', () => {
     const fixture = await render({ summary: 'Select a row to open those requests.' });
     expect((fixture.nativeElement as HTMLElement).querySelector('caption')?.textContent).toContain(
       'Select a row to open those requests.',
+    );
+  });
+});
+
+describe('ChartTable says its caption once (DL-250)', () => {
+  it('draws no track for a withheld row, which would read as a zero (DL-105)', async () => {
+    const fixture = await render({
+      rows: [
+        ...ROWS,
+        { key: 'e', label: 'Muzon', value: 0, display: 'Withheld', isWithheld: true },
+      ],
+    });
+    const rows = (fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr');
+
+    expect(rows[rows.length - 1]?.querySelector('.chart__track')).toBeNull();
+    expect(rows[rows.length - 1]?.textContent).toContain('Withheld');
+    expect(rows[rows.length - 2]?.querySelector('.chart__track')).not.toBeNull();
+  });
+
+  it('drops the caption a summary starts with, and keeps the rest of the sentence', async () => {
+    const fixture = await render({
+      summary: 'Requests by barangay: 19 in total. The largest shown is Dolores with 12 (63%).',
+    });
+    const caption = (fixture.nativeElement as HTMLElement).querySelector('caption');
+
+    expect(caption?.querySelector('.chart__caption-title')?.textContent).toBe(
+      'Requests by barangay',
+    );
+    expect(caption?.querySelector('.chart__summary')?.textContent).toBe(
+      '19 in total. The largest shown is Dolores with 12 (63%).',
+    );
+  });
+
+  it('leaves a summary that does not start with its caption as it is', () => {
+    expect(summaryAfterCaption('Residents by sector', 'Residents by sector are counted.')).toBe(
+      'Residents by sector are counted.',
+    );
+    expect(summaryAfterCaption('Residents', 'What residents says.')).toBe('What residents says.');
+    expect(
+      summaryAfterCaption('Residents by sector', 'Residents by sector: every row is zero.'),
+    ).toBe('Every row is zero.');
+    expect(summaryAfterCaption('Residents by sector', 'Residents by sector, active records.')).toBe(
+      'Active records.',
     );
   });
 });
