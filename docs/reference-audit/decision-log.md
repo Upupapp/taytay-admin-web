@@ -11727,3 +11727,11 @@ figure doubles the Tab path. Pointing at a segment works as pointing at its row.
 them as the data changes; the sector chart over all ten rows with zeros, which is the noise the owner
 named; a donut for sectors, whose rows overlap (one person in several sectors) and so are not parts
 of one whole; a charting library.
+
+## DL-251 — the overview's side-by-side cards are one height, and the donut sits in the middle
+
+**Status:** Settled (24 November 2026), on the owner's request. Where the funnel and the age and sex
+pyramid stand side by side (no sector recorded), the two cards are one height and the funnel spreads
+its four steps through the spare room rather than leaving an empty foot. The barangay donut and its
+legend are one group, centred both ways in the room under the card's title; the legend is as wide as
+its rows, never stretched to the card's edge. Refines `DL-250`.

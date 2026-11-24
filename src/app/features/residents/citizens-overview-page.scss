@@ -234,9 +234,17 @@ a.overview-kpi:focus-visible .overview-kpi__label {
   gap: var(--space-4);
 }
 
+/* Side by side, the funnel and the pyramid are one height, and the funnel spreads its steps to fill
+   it (DL-251, the owner's request). */
 .overview-trio--no-sectors {
   grid-template-rows: auto auto;
   grid-template-areas: 'funnel age' 'sector sector';
+  align-items: stretch;
+}
+
+/* The donut takes the panel's room below its title and centres itself in it (DL-251). */
+.overview-panel > app-donut-chart {
+  flex: 1 1 auto;
 }
 
 .overview-trio__funnel {

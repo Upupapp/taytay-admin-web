@@ -1,7 +1,11 @@
 /* A ring beside its legend, the legend a table (DL-250). Beside each other where the panel is wide
    enough, the ring above the legend where it is not. */
+/* The ring and its legend are one group, centred both ways in whatever room the host is given, so a
+   panel taller or wider than the chart keeps it in the middle rather than at the top left. */
 :host {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-inline-size: 0;
 }
 
@@ -89,9 +93,12 @@
   line-height: var(--lh-snug);
 }
 
+/* As wide as its rows need, never stretched to the panel's edge: a stretched legend pulled the
+   group off centre. */
 .donut__legend {
-  flex: 1 1 14rem;
-  min-inline-size: 0;
+  flex: 0 1 auto;
+  min-inline-size: min(14rem, 100%);
+  max-inline-size: 24rem;
   border-collapse: collapse;
   color: var(--text2);
   font-size: var(--fs-sm);
