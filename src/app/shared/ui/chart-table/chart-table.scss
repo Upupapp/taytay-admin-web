@@ -128,6 +128,16 @@
   }
 }
 
+/* `class="chart-table--fill"` on the host: the table takes its card's spare height and its rows share
+   it, so a card stretched to match a neighbour has no empty foot (DL-251). */
+:host(.chart-table--fill) {
+  flex: 1 1 auto;
+
+  .chart {
+    block-size: 100%;
+  }
+}
+
 /* The stacked layout (`class="chart-table--stacked"` on the host): the label above a thin bar,
    the figure at the row's top right, the largest row in gold — the Main board's breakdowns
    (DL-230). The table and its numbers are the same; only the drawing differs. */

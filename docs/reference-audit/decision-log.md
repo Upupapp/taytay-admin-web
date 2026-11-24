@@ -11735,3 +11735,7 @@ pyramid stand side by side (no sector recorded), the two cards are one height an
 its four steps through the spare room rather than leaving an empty foot. The barangay donut and its
 legend are one group, centred both ways in the room under the card's title; the legend is as wide as
 its rows, never stretched to the card's edge. Refines `DL-250`.
+
+**Revised the same day:** the donut keeps its ring left and legend right, filling the width as before;
+only its height is centred under the title. The sector card is as long as the funnel and the pyramid
+beside it together, and its rows share the height (`chart-table--fill`).

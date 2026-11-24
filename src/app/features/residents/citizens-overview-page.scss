@@ -251,8 +251,11 @@ a.overview-kpi:focus-visible .overview-kpi__label {
   grid-area: funnel;
 }
 
+/* As long as the funnel and the pyramid beside it together, its rows spread through the height
+   (DL-251, the owner's request). */
 .overview-trio__sector {
   grid-area: sector;
+  align-self: stretch;
 }
 
 .overview-trio__age {
