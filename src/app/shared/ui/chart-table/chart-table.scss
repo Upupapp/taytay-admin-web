@@ -131,10 +131,14 @@
 /* `class="chart-table--fill"` on the host: the table takes its card's spare height and its rows share
    it, so a card stretched to match a neighbour has no empty foot (DL-251). */
 :host(.chart-table--fill) {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
 
+  /* A flex item, not `block-size: 100%`: a percentage height sizes the table's rows only, and its
+     caption then overflowed onto the notes below. */
   .chart {
-    block-size: 100%;
+    flex: 1 1 auto;
   }
 }
 
