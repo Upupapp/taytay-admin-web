@@ -11,7 +11,11 @@
   gap: var(--space-3);
 }
 
-.page-header:has(.page-header__lead, .page-header__actions:not(:empty)) {
+.page-header:has(
+  .page-header__lead,
+  .page-header__start:not(:empty),
+  .page-header__actions:not(:empty)
+) {
   margin-block-end: var(--space-4);
 }
 
@@ -46,6 +50,16 @@
   color: var(--muted);
   font-size: var(--fs-section);
   text-wrap: pretty;
+}
+
+/* What the actions belong beside (a page's tabs), at the start of their row (DL-253). */
+.page-header__start {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.page-header__start:empty {
+  display: none;
 }
 
 /* A sentence the page owes its reader, at the start of the action row. */
@@ -86,5 +100,18 @@
   .page-header__actions {
     justify-content: flex-start;
     margin-inline-start: 0;
+  }
+
+  /* Beside tabs, the tabs take the first line and the actions the next, each the row's width. */
+  .page-header__start {
+    flex-basis: 100%;
+  }
+
+  /* A grid, not a flex row: projected buttons carry no style of this component, and a grid item
+     stretches to the row's width by itself. */
+  .page-header__start:not(:empty) ~ .page-header__actions {
+    display: grid;
+    flex-basis: 100%;
+    justify-content: stretch;
   }
 }

@@ -1,4 +1,21 @@
 <app-page-header [title]="page().title" [subtitle]="page().subtitle">
+  <!-- The three sector pages, one link each, with the page's action at the end of the same row
+       (DL-253): the current one is marked in words as well as fill. -->
+  <nav page-start class="residents__sectors" [attr.aria-label]="copy.pagesLabel">
+    <ul class="tabs tabs--scroll residents__sector-tabs">
+      @for (key of order; track key) {
+        <li>
+          <a
+            class="tab"
+            [routerLink]="['/residents/sectors', key]"
+            [class.tab--active]="key === sector()"
+            [attr.aria-current]="key === sector() ? 'page' : null"
+            >{{ pages[key].tab }}</a
+          >
+        </li>
+      }
+    </ul>
+  </nav>
   <button
     page-actions
     type="button"
@@ -10,23 +27,6 @@
     {{ page().add }}
   </button>
 </app-page-header>
-
-<!-- The three sector pages, one link each: the current one is marked in words as well as fill. -->
-<nav class="residents__sectors" [attr.aria-label]="copy.pagesLabel">
-  <ul class="tabs tabs--scroll residents__sector-tabs">
-    @for (key of order; track key) {
-      <li>
-        <a
-          class="tab"
-          [routerLink]="['/residents/sectors', key]"
-          [class.tab--active]="key === sector()"
-          [attr.aria-current]="key === sector() ? 'page' : null"
-          >{{ pages[key].tab }}</a
-        >
-      </li>
-    }
-  </ul>
-</nav>
 
 <div class="sector">
   <!-- The sector's figures, under the same barangay as the list (DL-232). -->

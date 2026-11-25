@@ -1,14 +1,6 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
-  @if (canCompose()) {
-    <a page-actions class="btn btn--primary" routerLink="/events/new">
-      <app-icon name="plus" class="events__cta-icon" [stroke]="2.2" />
-      {{ copy.compose }}
-    </a>
-  }
-</app-page-header>
-
-<div class="events">
-  <nav class="views" [attr.aria-label]="copy.title">
+  <!-- The views, with the page's action at the end of the same row (DL-253). -->
+  <nav page-start class="views" [attr.aria-label]="copy.title">
     <ul class="tabs views__list">
       @for (value of views; track value) {
         <li>
@@ -26,7 +18,15 @@
       }
     </ul>
   </nav>
+  @if (canCompose()) {
+    <a page-actions class="btn btn--primary" routerLink="/events/new">
+      <app-icon name="plus" class="events__cta-icon" [stroke]="2.2" />
+      {{ copy.compose }}
+    </a>
+  }
+</app-page-header>
 
+<div class="events">
   <div class="card card--padded toolbar filters">
     <label class="field events__search">
       <span class="field__label">{{ copy.search }}</span>

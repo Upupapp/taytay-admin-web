@@ -9,7 +9,8 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@an
  * owes its reader whatever the title does ("Residents see this in the Taytay app"), drawn in the row.
  *
  * `<ng-content select="[page-actions]">` receives the actions, which callers gate with
- * `*appHasPermission`.
+ * `*appHasPermission`. `[page-start]` receives what the actions belong beside — a page's tabs —
+ * at the start of the same row, so an action never stands alone on a row above them (DL-253).
  */
 @Component({
   selector: 'app-page-header',
@@ -26,6 +27,7 @@ import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@an
       } @else {
         <h1 class="visually-hidden">{{ title() }}</h1>
       }
+      <div class="page-header__start"><ng-content select="[page-start]"></ng-content></div>
       @if (lead(); as text) {
         <p class="page-header__lead">{{ text }}</p>
       }

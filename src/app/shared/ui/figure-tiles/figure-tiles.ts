@@ -11,92 +11,31 @@ export interface FigureTile {
 }
 
 /**
- * A row of headline figures as the list boards draw them above their lists (`DL-232`): label and a
- * coloured dot, the figure large, a hint under it. Presentational: the figures are what the page
- * was sent, and a list's figures are never the number of its rows on screen (`DL-161`).
+ * A list board's headline figures (`DL-232`) in the shared strip (`.kpi-strip`, `DL-253`): one
+ * panel, a cell per figure — the dot and the label, the figure large, the hint under it.
+ * Presentational: the figures are what the page was sent, and a list's figures are never the
+ * number of its rows on screen (`DL-161`).
  */
 @Component({
   selector: 'app-figure-tiles',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { role: 'region', '[attr.aria-label]': 'label()' },
+  host: { class: 'kpi-strip', role: 'region', '[attr.aria-label]': 'label()' },
   template: `
     @for (tile of tiles(); track tile.key) {
-      <div class="kpi figure-tiles__tile">
-        <span class="figure-tiles__label">
-          {{ tile.label }}
-          <span
-            [class]="'figure-tiles__dot figure-tiles__dot--' + tile.dot"
-            aria-hidden="true"
-          ></span>
+      <div class="kpi-strip__cell">
+        <span class="kpi-strip__label">
+          <span [class]="'kpi-strip__dot kpi-strip__dot--' + tile.dot" aria-hidden="true"></span>
+          <span class="kpi-strip__name">{{ tile.label }}</span>
         </span>
-        <span class="figure-tiles__value">{{ tile.value }}</span>
-        <span class="figure-tiles__hint">{{ tile.hint }}</span>
+        <span class="kpi-strip__value">{{ tile.value }}</span>
+        <span class="kpi-strip__hint kpi-strip__hint--note">{{ tile.hint }}</span>
       </div>
     }
   `,
   styles: `
-    /* The board's 18-20px between the row and the list below it. */
+    /* The board's 16px between the strip and the list below it. */
     :host {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
-      gap: var(--space-4);
       margin-block-end: var(--space-4);
-    }
-
-    .figure-tiles__tile {
-      gap: var(--space-1);
-      padding: 18px 20px;
-      border-radius: var(--r-card);
-    }
-
-    .figure-tiles__label {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-2);
-      font-size: var(--fs-sm);
-      font-weight: var(--fw-semibold);
-    }
-
-    .figure-tiles__dot {
-      flex: 0 0 auto;
-      inline-size: 10px;
-      block-size: 10px;
-      border-radius: var(--r-pill);
-    }
-
-    .figure-tiles__dot--bar {
-      background: var(--bar);
-    }
-
-    .figure-tiles__dot--red {
-      background: var(--red);
-    }
-
-    .figure-tiles__dot--gold {
-      background: var(--gold);
-    }
-
-    .figure-tiles__dot--green {
-      background: var(--green-ink);
-    }
-
-    .figure-tiles__dot--muted {
-      background: var(--muted);
-    }
-
-    .figure-tiles__value {
-      font-family: var(--font-display);
-      font-size: var(--fs-kpi);
-      font-weight: var(--fw-medium);
-      line-height: 1.05;
-      letter-spacing: var(--ls-display);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .figure-tiles__hint {
-      color: var(--muted);
-      font-size: var(--fs-xs);
     }
   `,
 })

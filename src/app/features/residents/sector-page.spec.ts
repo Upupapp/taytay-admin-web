@@ -214,7 +214,7 @@ describe('a sector page', () => {
       heading.textContent?.trim(),
     );
     expect(headings).toEqual(['By barangay', 'Age bands', 'Benefits and IDs', 'Needs attention']);
-    expect(element.querySelectorAll('app-sector-figures .sector-figures__kpi').length).toBe(4);
+    expect(element.querySelectorAll('app-sector-figures .kpi-strip__cell').length).toBe(4);
     expect(element.querySelector('app-not-connected')).toBeNull();
   });
 

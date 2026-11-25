@@ -56,7 +56,14 @@ const SECTOR_ICON: Readonly<Record<SectorPageSector, { icon: IconName; tone: str
 @Component({
   selector: 'app-sector-figures',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AsyncContent, ChartTable, Icon, NotConnected, SectorAttentionPanel, SectorCoveragePanel],
+  imports: [
+    AsyncContent,
+    ChartTable,
+    Icon,
+    NotConnected,
+    SectorAttentionPanel,
+    SectorCoveragePanel,
+  ],
   template: `
     <app-async-content
       [state]="state()"
@@ -67,17 +74,21 @@ const SECTOR_ICON: Readonly<Record<SectorPageSector, { icon: IconName; tone: str
     />
     <ng-template #figures let-summary>
       <div class="sector-figures">
-        <section class="sector-figures__kpis" [attr.aria-label]="copy.sectorFiguresLabel">
+        <!-- The shared strip (DL-253): label row, figure, the page's own hint. -->
+        <section class="kpi-strip" [attr.aria-label]="copy.sectorFiguresLabel">
           @for (kpi of kpis(summary); track kpi.key) {
-            <div class="kpi sector-figures__kpi">
-              <span class="sector-figures__label">
-                <span [class]="'icon-tile icon-tile--sm icon-tile--' + kpi.tone" aria-hidden="true">
-                  <app-icon [name]="kpi.icon" [size]="17" [stroke]="2" />
+            <div class="kpi-strip__cell">
+              <span class="kpi-strip__label">
+                <span
+                  [class]="'icon-tile kpi-strip__tile icon-tile--' + kpi.tone"
+                  aria-hidden="true"
+                >
+                  <app-icon [name]="kpi.icon" [size]="15" [stroke]="2" />
                 </span>
-                {{ kpi.label }}
+                <span class="kpi-strip__name">{{ kpi.label }}</span>
               </span>
-              <span class="kpi__value sector-figures__value">{{ kpi.value }}</span>
-              <span class="kpi__hint">{{ kpi.hint }}</span>
+              <span class="kpi-strip__value">{{ kpi.value }}</span>
+              <span class="kpi-strip__hint kpi-strip__hint--note">{{ kpi.hint }}</span>
             </div>
           }
         </section>
@@ -272,5 +283,7 @@ export class SectorFigures {
 }
 
 function shown(figure: SummaryFigure): string {
-  return figure.value === null ? REGISTRY_PANELS_COPY.withheld : figure.value.toLocaleString('en-PH');
+  return figure.value === null
+    ? REGISTRY_PANELS_COPY.withheld
+    : figure.value.toLocaleString('en-PH');
 }

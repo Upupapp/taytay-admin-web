@@ -11,6 +11,10 @@ import { PageHeader } from './page-header';
     </app-page-header>
     <app-page-header showTitle title="RL-2026-000001" subtitle="Cash" />
     <app-page-header title="Home screen" lead="Residents see this in the Taytay app." />
+    <app-page-header title="Solo parents">
+      <nav page-start aria-label="Sector pages"><a href="/pwd">PWD</a></nav>
+      <button page-actions type="button" class="btn btn--primary">Add a solo parent</button>
+    </app-page-header>
   `,
 })
 class Host {}
@@ -48,5 +52,24 @@ describe('PageHeader (DL-246)', () => {
     expect(owed?.querySelector('.page-header__lead')?.textContent).toBe(
       'Residents see this in the Taytay app.',
     );
+  });
+
+  it('sets the tabs at the start of the action row, the action after them (DL-253)', () => {
+    const tabbed = headers()[3];
+    const row = tabbed?.querySelector('.page-header');
+    const start = row?.querySelector(':scope > .page-header__start');
+    const actions = row?.querySelector(':scope > .page-header__actions');
+    expect(start?.querySelector('nav')?.textContent).toContain('PWD');
+    expect(actions?.textContent).toContain('Add a solo parent');
+    const follows =
+      start && actions
+        ? start.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING
+        : 0;
+    expect(follows).toBeGreaterThan(0);
+  });
+
+  it('leaves the start of the row empty when a page has no tabs', () => {
+    const [page] = headers();
+    expect(page?.querySelector('.page-header__start')?.childElementCount).toBe(0);
   });
 });
