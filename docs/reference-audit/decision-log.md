@@ -12101,3 +12101,13 @@ showed only the ID field's sentence; the link's is now said above the form.
 **Not done, and why.** No unlink (a link moves only with a same-person finding; a wrong one is
 prevented by the guidance rather than undone). No notice in the app when the office corrects a record
 (no notification type exists for it). The history is kept, not shown on a screen.
+
+## DL-261 — a pinned column wears the card's own colour in the dark theme
+
+DL-259 pinned a scrolling table's first column on `--card-solid`. In the light theme that is the
+card's colour; in the dark theme `--card-solid` is a saturated navy, while the glass card around it
+is the page veiled to 70% and lifted by a faint white — so the pinned column read as a bluer stripe.
+The pinned cells now use one token, `--card-pinned`: `--card-solid` in the light theme and under
+reduced transparency, and in the dark theme the card's own layers laid on the plain page
+(`var(--card), var(--page-base)`), which is opaque and the colour the card shows away from the
+page's glows. Nothing else changes.

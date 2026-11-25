@@ -315,17 +315,17 @@
   inset-inline-start: 0;
   z-index: 1;
   border-inline-end: 1px solid var(--line);
-  background: var(--card-solid);
+  background: var(--card-pinned);
 }
 
 .scroll-region--scrolls > .simple-table thead tr > :first-child,
 .scroll-region--scrolls.table-scroll--simple > table thead tr > :first-child {
-  background: linear-gradient(var(--soft2), var(--soft2)), var(--card-solid);
+  background: linear-gradient(var(--soft2), var(--soft2)), var(--card-pinned);
 }
 
 .scroll-region--scrolls > .simple-table tbody tr:hover > :first-child,
 .scroll-region--scrolls.table-scroll--simple > table tbody tr:hover > :first-child {
-  background: linear-gradient(var(--field), var(--field)), var(--card-solid);
+  background: linear-gradient(var(--field), var(--field)), var(--card-pinned);
 }
 
 @media (width <= 640px) {

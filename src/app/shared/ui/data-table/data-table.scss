@@ -139,19 +139,19 @@
     inset-inline-start: 0;
     z-index: 1;
     border-inline-end: 1px solid var(--line);
-    background: var(--card-solid);
+    background: var(--card-pinned);
   }
 
   .scroll-region--scrolls > .table th:first-child {
-    background: linear-gradient(var(--soft2), var(--soft2)), var(--card-solid);
+    background: linear-gradient(var(--soft2), var(--soft2)), var(--card-pinned);
   }
 
   .scroll-region--scrolls > .table .table__row:hover > td:first-child {
-    background: linear-gradient(var(--field), var(--field)), var(--card-solid);
+    background: linear-gradient(var(--field), var(--field)), var(--card-pinned);
   }
 
   .scroll-region--scrolls > .table .table__row--selectable:focus-visible > td:first-child {
-    background: linear-gradient(var(--sel), var(--sel)), var(--card-solid);
+    background: linear-gradient(var(--sel), var(--sel)), var(--card-pinned);
   }
 }
 
