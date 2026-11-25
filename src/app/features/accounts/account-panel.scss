@@ -115,3 +115,10 @@ ul.panel__problem {
   font-size: var(--fs-control);
   font-weight: var(--fw-semibold);
 }
+
+/* The later link's dialog body (DL-260): the link choice, then the statement. */
+.panel__dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

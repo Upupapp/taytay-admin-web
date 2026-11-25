@@ -11,6 +11,7 @@ import { apiHeadersInterceptor } from '@core/http/api.interceptors';
 import {
   ASSISTANCE_HISTORY_NOT_YOURS,
   asId,
+  asIsoDateTime,
   asIsoDate,
   centavos,
   describeMembershipChange,
@@ -684,6 +685,44 @@ describe('the Node adapters', () => {
       expect(answer.items.map((item) => item.status)).toEqual(['superseded']);
     });
 
+    it('links a verified account later, with the ID statement, and reads what it corrected (DL-260)', async () => {
+      const account = asId<AppAccountId>('5b0f3c1e-0000-4000-8000-000000000009');
+      const record = asId<ResidentId>('8d1c2b7e-0000-4000-8000-000000000001');
+      const linked = firstValueFrom(
+        verification.linkLater(account, {
+          decision: 'link',
+          residentId: record,
+          reason: 'PhilID seen',
+          corrections: { sex: 'female' },
+        }),
+      );
+      const request = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/users/${account}/registry-link`,
+      });
+      expect(request.request.body).toEqual({
+        account_link: {
+          decision: 'link',
+          resident_id: record,
+          reason: 'PhilID seen',
+          corrections: { sex: 'female' },
+        },
+        id_checked: true,
+      });
+      request.flush({
+        data: {
+          user_id: account,
+          account_link: { decision: 'link', resident_id: record },
+          corrected: ['sex'],
+        },
+        meta: {},
+      });
+      expect(await linked).toEqual({
+        link: { decision: 'link', residentId: record },
+        corrected: ['sex'],
+      });
+    });
+
     describe('verifying an account in person (DL-219)', () => {
       const account = asId<AppAccountId>(IN_PERSON_VERIFICATION.data.user_id);
       const check = {
@@ -1263,6 +1302,45 @@ describe('the Node adapters', () => {
       expect(Object.keys(request.request.body as object)).not.toContain('sectors');
       request.flush(OFFICE_RESIDENT);
       expect((await updated).name.last).toBe('Dela Cruz');
+    });
+
+    it('sends the version read, and the reason and the ID statement only when given (DL-260)', async () => {
+      const updated = firstValueFrom(
+        residents.update(savedId, draft(), {
+          expectedUpdatedAt: asIsoDateTime('2026-11-26T01:02:03.456Z'),
+          reason: '  PSA birth certificate seen. ',
+          idChecked: true,
+        }),
+      );
+      barangays();
+      const request = http.expectOne({
+        method: 'PATCH',
+        url: `${BASE}/office/residents/${savedId}`,
+      });
+      const body = request.request.body as Record<string, unknown>;
+      expect(body['expected_updated_at']).toBe('2026-11-26T01:02:03.456Z');
+      expect(body['reason']).toBe('PSA birth certificate seen.');
+      expect(body['id_checked']).toBe(true);
+      request.flush(OFFICE_RESIDENT);
+      await updated;
+
+      const plain = firstValueFrom(
+        residents.update(savedId, draft(), {
+          expectedUpdatedAt: null,
+          reason: null,
+          idChecked: false,
+        }),
+      );
+      // The barangay index was read once, and is kept.
+      const second = http.expectOne({
+        method: 'PATCH',
+        url: `${BASE}/office/residents/${savedId}`,
+      });
+      expect(Object.keys(second.request.body as object)).not.toContain('reason');
+      expect(Object.keys(second.request.body as object)).not.toContain('expected_updated_at');
+      expect(Object.keys(second.request.body as object)).not.toContain('id_checked');
+      second.flush(OFFICE_RESIDENT);
+      await plain;
     });
 
     it('retires and restores through two routes, each with its reason', async () => {

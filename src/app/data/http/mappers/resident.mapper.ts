@@ -8,6 +8,7 @@ import {
   VULNERABILITY_SECTORS,
   type Resident,
   type ResidentDraft,
+  type ResidentEditNote,
   type VulnerabilitySector,
 } from '@domain/residents/resident';
 import {
@@ -372,6 +373,49 @@ export function toWireResidentDraft(draft: ResidentDraft, barangayId: string): R
     email: blankToNull(draft.contact.email),
     philsys_last_four: blankToNull(draft.philsysLastFour),
     monthly_income_centavos: draft.monthlyIncome === null ? null : draft.monthlyIncome.centavos,
+  };
+}
+
+/**
+ * `OfficeResidentPatch` (`DL-260`): the draft, and what the edit says about itself — the version it
+ * was made on, the reason an identity field moved, and whether an ID was seen. A field the note
+ * leaves empty is left out rather than sent `null`: the schema takes none.
+ */
+export interface ResidentEditWire {
+  readonly first_name: string;
+  readonly middle_name: string | null;
+  readonly last_name: string;
+  readonly suffix: string | null;
+  readonly sex: string;
+  readonly birth_date: string;
+  readonly civil_status: string;
+  readonly barangay_id: string;
+  readonly purok_or_sitio: string | null;
+  readonly street_address: string;
+  readonly mobile: string | null;
+  readonly email: string | null;
+  readonly philsys_last_four: string | null;
+  readonly monthly_income_centavos: number | null;
+  readonly expected_updated_at?: string;
+  readonly reason?: string;
+  readonly id_checked?: boolean;
+}
+
+export function toWireResidentEdit(
+  draft: ResidentDraft,
+  barangayId: string,
+  note: ResidentEditNote | undefined,
+): ResidentEditWire {
+  const body = toWireResidentDraft(draft, barangayId);
+  if (note === undefined) {
+    return body;
+  }
+  const reason = (note.reason ?? '').trim();
+  return {
+    ...body,
+    ...(note.expectedUpdatedAt === null ? {} : { expected_updated_at: note.expectedUpdatedAt }),
+    ...(reason === '' ? {} : { reason }),
+    ...(note.idChecked ? { id_checked: true } : {}),
   };
 }
 

@@ -190,6 +190,11 @@ export class InPersonRefusedError extends Error {
     message: string,
     readonly kind: 'forbidden' | 'invalid' | 'conflict',
     readonly fields: Readonly<Partial<Record<InPersonField, string>>> = {},
+    /**
+     * The server's sentences about what the form has no field for — the registry link's choice —
+     * said above the form, so a refusal of the link is never lost behind an ID field's (DL-260).
+     */
+    readonly elsewhere: readonly string[] = [],
   ) {
     super(message);
     this.name = 'InPersonRefusedError';

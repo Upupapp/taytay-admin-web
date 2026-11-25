@@ -318,6 +318,19 @@ export const RESIDENTS_COPY = {
     sectorBasisHint:
       'Name what you saw — a Senior Citizen ID, a PWD card, a Solo Parent ID. This is recorded against your name with the sector.',
     sectorBasisRequired: 'Say how these sectors were established before saving.',
+    // An unticked sector is not ended by this form (DL-260): ending one is its own act with a reason.
+    sectorsUnticked: (sectors: readonly string[]): string =>
+      `Unticking does not end ${sectors.join(' or ')}. Ending a sector is its own act, with a ` +
+      'reason: use “End” beside the person on that sector’s page.',
+    identityHeading: 'Why the name, sex or birth date changed',
+    identityHint:
+      'A name, a sex or a birth date is corrected only against a document. The record keeps what it said before, with your reason and your name.',
+    identityReasonLabel: 'What shows the new value?',
+    identityReasonHint:
+      'For example: “PSA birth certificate seen at the counter” or “Marriage certificate, surname changed”. Up to 500 characters.',
+    identityReasonRequired: 'Say what shows the new name, sex or birth date before saving.',
+    identityIdChecked:
+      'I have seen a government ID or civil registry document that shows the new value.',
     /**
      * Named individually rather than counted.
      *

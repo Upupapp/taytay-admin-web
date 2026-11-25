@@ -248,11 +248,13 @@ export class VerifyInPersonDialog {
             }
             const named = Object.keys(failure.fields).length > 0;
             this.refusal.set(
-              named
-                ? ''
-                : failure.kind === 'conflict'
-                  ? `${this.copy.notDone(failure.message)} ${this.copy.nothingChanged}`
-                  : this.copy.notDone(failure.message),
+              failure.elsewhere.length > 0
+                ? this.copy.notDone(failure.elsewhere.join(' '))
+                : named
+                  ? ''
+                  : failure.kind === 'conflict'
+                    ? `${this.copy.notDone(failure.message)} ${this.copy.nothingChanged}`
+                    : this.copy.notDone(failure.message),
             );
             return;
           }

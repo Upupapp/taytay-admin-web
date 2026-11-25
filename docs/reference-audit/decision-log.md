@@ -12007,3 +12007,97 @@ page scrolls sideways at any of 1280, 1440, 768 or 390, light or dark; axe (WCAG
 **Watch.** At 1280 the registry tables now fit with little to spare on the mock's names; a longer
 name or label on live data wraps first and, past that, scrolls with the name pinned rather than
 pushing the page.
+
+## DL-260 — an account is matched to a registry record by a person, against the ID, and a record keeps what it said
+
+**Status:** Settled (26 November 2026), from the flow audit the owner asked for ("every what-if").
+Extends `DL-228` (the link at verification) and `DL-198` (the office corrects a verified name);
+supersedes nothing. The API records the same decision as its ADR 0015 (migration 0080).
+
+**What existed.** An app account and a registry record are two records. They became one person in
+three ways only: the ID reviewer's choice at verification (`DL-228`: link a proposed record, make
+one from the account, or leave it unlinked, with a reason), approving a sector application
+(`DL-215`), and a same-person finding moving a link to the record kept (`DL-74`). The proposals
+compare without disclosing (`DL-73`). What did not exist, and what the audit found:
+
+1. **Details that do not match.** The reviewer could link a record whose surname the paper list spelt
+   "Dela Krus", with no middle name, while the verified account held the name as the ID shows it.
+   Nothing said which wins, and nothing could correct the record in the same act.
+2. **No later link.** An account verified before `DL-228`, or left unlinked then, could be linked
+   only through a sector application. The app tells an unlinked resident to ask the office, and the
+   leave-unlinked sentence promised the office could link it "here" — on a decided request that no
+   longer shows the panel.
+3. **An earlier value was lost.** Editing a record overwrote its name, sex, birth date and barangay;
+   the trail says a record changed, never what it said (`DL-114`).
+4. **Two clerks, one record.** The last save won silently over a change the other had not seen.
+5. **The choice followed the reviewer to the next account.** Moving to another request in the same
+   review screen kept the record chosen and the reason typed for the last one (the comment said
+   otherwise).
+
+**Which wins, and what the reviewer does** (best practice read on 26 November 2026: NIST SP 800-63A-4
+§3.15.2, a trusted referee resolves partial matches and the session is recorded; RA 11055 §§6, 8, the
+PhilID is sufficient proof of identity and holds name, sex and birth date; RA 9048 §1 and RA 10172,
+the civil registrar — not the office — corrects a civil registry entry; RA 10173 s.11(c) and s.16(d),
+inaccurate data is rectified on the person's right to dispute it; UK GPG 45 §12.1, a name may differ
+legitimately between documents):
+
+- **The ID in hand wins for the legal identity fields** — name, sex, birth date. The reviewer
+  corrects each on its own, never all at once by default.
+- **The barangay is not identity.** People move. The reviewer asks, and if they moved changes it on
+  the record's edit page; a link never changes it.
+- **When the ID and the civil registry disagree, the office decides nothing**: the civil registrar
+  does, and the office records what they decide.
+- **When unsure, do not link.** A wrong link shows a resident another family's assistance.
+- **Two records for one person are not fixed by linking**: Duplicate review keeps both and says which
+  the office keeps (`DL-74`).
+
+**Decision.**
+
+- **Side by side.** When a proposed record is chosen, the link panel reads it through the registry's
+  own read under the reviewer's keys and shows its name, sex, birth date and barangay beside the
+  account's verified name, with "When the details do not match" listing the rules above. The
+  proposals themselves stay value-free (`DL-73`): the values appear only for the one record the
+  reviewer chose, which their keys already let them open.
+- **Correct to the ID in the same act.** "Correct the record's name to the verified name" (split into
+  parts; the server refuses another name), "Correct the sex to", "Correct the birth date to". What
+  each correction does is said before the button, and that the resident is not told in the app — tell
+  them at the counter (`DL-198`'s rule).
+- **A later link.** Users and roles → a verified account → "Registry record": linked (with a link to
+  the record), or "Link to a registry record", which opens the same choice without "leave unlinked"
+  and waits for "I have a government ID in front of me that shows the name …". `verification.review`
+  only, never one's own account. `VerificationRepository.linkLater`.
+- **The record keeps what it said.** The API appends every change of a name part, the sex, the birth
+  date or the barangay, with the earlier value, the reason and whether an ID was seen, to the record's
+  history. The edit form asks "What shows the new value?" only when a name, sex or birth date changed,
+  with "I have seen a government ID or civil registry document that shows the new value."
+- **An edit names the version it was made on.** The form sends the record's `updatedAt` as opened;
+  a record changed since answers "Somebody changed this record after you opened it, so nothing was
+  saved…", and what was typed stays on the form (`DL-196`). The same save twice is not a conflict.
+- **Sectors on the edit form.** Only sectors not already held are recorded, and only they need a
+  basis: before, editing the address of a senior citizen demanded a basis for the sector she already
+  had, and re-sent it. Unticking a held sector says it ends nothing and where ending is done.
+- **The choice resets per account**, and keeps itself when only the verified name is corrected.
+- **Two routes now need the registry.** The ID review (`/verification`) and Users and roles (`/users`)
+  read the chosen record through `RESIDENT_REPOSITORY`, so their routes and menu entries guard
+  `resident` as well (`check:unserved`, `DL-167`): the comparison is part of the decision, not a
+  side panel that could go quietly.
+- **Correcting an account's name says the record does not follow.** The account and the record are
+  two records; the name-correction effects now say the linked record keeps its own name and is
+  corrected on its edit page.
+
+**Propagation, decided.** A filed request keeps the barangay **at filing**: it is a record of where
+the office served somebody, and the request lists, the dashboard and the reports count it there. The
+API now takes it at filing rather than when the draft was started, and refuses a draft or a filing on
+a retired or superseded record. The request page says "Filed while the applicant lived in …" when the
+applicant has moved since; the applicant card above shows where they live now. Everything else about
+a person — name, sex, birth date, sectors, status — is read live wherever it is shown. When the office records a move on a record linked to an app account, the account's barangay follows in the same act, so the app's profile and the digital ID say what the registry says; a barangay the resident types in the app never moves the record, because the record's barangay decides whose caseload she is in (D-50 in the app's log).
+
+**Also fixed in the same audit.** An import row's finding kept its choice and reason only until the
+click: a refusal emptied them and was said at the top of the page. The row now sends its own finding,
+keeps what was typed until the server keeps it, says "Recording…", and says a refusal on the row. A
+counter check refused for its link choice (a 422 naming `account_link…`) and an ID field at once
+showed only the ID field's sentence; the link's is now said above the form.
+
+**Not done, and why.** No unlink (a link moves only with a same-person finding; a wrong one is
+prevented by the guidance rather than undone). No notice in the app when the office corrects a record
+(no notification type exists for it). The history is kept, not shown on a screen.

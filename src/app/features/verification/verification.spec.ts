@@ -6,10 +6,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   asId,
   asIsoDate,
+  RESIDENT_REPOSITORY,
+  UNSERVED_PORTS,
   VERIFICATION_REPOSITORY,
   type AccountLinkDecision,
   type AppAccountId,
   type ConfirmedIdentity,
+  type LaterLinkOutcome,
   type RegistryMatches,
   type ResidentId,
   type VerificationListPage,
@@ -120,6 +123,10 @@ class RecordingVerifications implements VerificationRepository {
     return this.decide(id, 'rejected', reason);
   }
 
+  linkLater(): Observable<LaterLinkOutcome> {
+    return EMPTY;
+  }
+
   openImage(_request: VerificationRequest, kind: VerificationImageKind): Observable<Blob> {
     this.opened.push(kind);
     return of(new Blob(['image bytes'], { type: 'image/png' }));
@@ -186,7 +193,12 @@ function configure(): RecordingVerifications {
   const repository = new RecordingVerifications();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
-    providers: [provideRouter([]), { provide: VERIFICATION_REPOSITORY, useValue: repository }],
+    providers: [
+      provideRouter([]),
+      { provide: VERIFICATION_REPOSITORY, useValue: repository },
+      { provide: RESIDENT_REPOSITORY, useValue: { getById: () => of(null) } },
+      { provide: UNSERVED_PORTS, useValue: [] },
+    ],
   });
   return repository;
 }

@@ -608,6 +608,29 @@
         }
       }
     },
+    "/api/v1/admin/users/{id}/registry-link": {
+      "post": {
+        "operationId": "linkAccountToRegistry",
+        "summary": "Link a verified account to its registry record after the verification",
+        "description": "Needs verification.review (admin only); never one's own account. For a verified, open resident account with no registry link: one verified before links were made at verification (0069), or left unlinked then (ADR 0015, migration 0080). The same link or create decision as at verification, with the same refusals, by a reviewer who has an ID showing the account's verified name in hand (id_checked). A link may carry corrections: the record's name, sex or birth date corrected to the ID, the earlier values appended to office_resident_changes with the link's reason. The decision is appended to verification_account_links with neither verification named; appending it is the link. Audit resident_account.linked, office_resident.updated for a correction, office_resident.created for a record made.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AccountRegistryLinkBody" } } }
+        },
+        "responses": {
+          "201": { "description": "Linked; the fields corrected, if any.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AccountRegistryLinkEnvelope" } } } },
+          "401": { "description": "No token.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "403": { "description": "Not an admin, or the caller's own account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "User not found.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "A staff or admin account; a closed account; an account not verified; an account already linked; a record superseded by a same-person finding; a record linked to another account; an account with no barangay to make a record in.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "A field is not valid; leave-unlinked; a name split or a corrected name that is not the verified name; a record not found or retired.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
     "/api/v1/admin/users/{id}/office-role": {
       "patch": {
         "operationId": "assignUserOfficeRole",
@@ -1220,8 +1243,18 @@
               }
             }
           },
+          "409": {
+            "description": "expected_updated_at is not the record's updated_at, and this edit would change the record: somebody changed it since it was read. Nothing is saved (ADR 0015).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "422": {
-            "description": "A field is not valid, or no field was sent.",
+            "description": "A field is not valid, or no field was sent; a name part, the sex or the birth date changed without a reason (details.reason).",
             "content": {
               "application/json": {
                 "schema": {
@@ -5030,7 +5063,7 @@
             }
           },
           "422": {
-            "description": "A malformed field, a person not on file or out of scope, a programme not open to requests, or a document the programme does not ask for.",
+            "description": "A malformed field, a person not on file or out of scope, a programme not open to requests, a document the programme does not ask for, or a record retired or superseded by a same-person finding (resident_id, ADR 0015).",
             "content": {
               "application/json": {
                 "schema": {
@@ -5356,7 +5389,7 @@
             }
           },
           "409": {
-            "description": "The duplicate check has changed since it was read: read it again.",
+            "description": "The duplicate check has changed since it was read: read it again. Also: the person's record is retired, superseded by a same-person finding, or now in a barangay outside the writer's scope (ADR 0015). A filed request keeps the person's barangay at filing.",
             "content": {
               "application/json": {
                 "schema": {
@@ -18707,7 +18740,7 @@
         }
       },
       "AccountLinkInput": {
-        "description": "The reviewer's decision about the account's registry record, with the ID in hand (migration 0069). link names a record; create makes one from the verified account, its name split into the registry's parts (the same words as the verified name, or 422), with the barangay, purok and mobile the account gives; leave-unlinked keeps the reason and links nothing.",
+        "description": "The reviewer's decision about the account's registry record, with the ID in hand (migration 0069). link names a record; create makes one from the verified account, its name split into the registry's parts (the same words as the verified name, or 422), with the barangay, purok and mobile the account gives; leave-unlinked keeps the reason and links nothing. A link may carry corrections (ADR 0015): the record's name, sex or birth date corrected to what the ID in hand shows, each chosen on its own, the earlier values kept in the record's history with the link's reason.",
         "oneOf": [
           {
             "type": "object",
@@ -18716,7 +18749,29 @@
             "properties": {
               "decision": { "type": "string", "const": "link" },
               "resident_id": { "type": "string", "format": "uuid" },
-              "reason": { "type": "string", "minLength": 1, "maxLength": 500 }
+              "reason": { "type": "string", "minLength": 1, "maxLength": 500 },
+              "corrections": {
+                "type": "object",
+                "additionalProperties": false,
+                "minProperties": 1,
+                "description": "What the record is corrected to, read off the ID. Left out, a field keeps the record's value.",
+                "properties": {
+                  "name": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["first_name", "last_name"],
+                    "description": "The account's verified name, split into the registry's parts: the same words, or 422 at account_link.corrections.name.",
+                    "properties": {
+                      "first_name": { "type": "string", "minLength": 1, "maxLength": 100 },
+                      "middle_name": { "type": ["string", "null"], "minLength": 1, "maxLength": 100 },
+                      "last_name": { "type": "string", "minLength": 1, "maxLength": 100 },
+                      "suffix": { "type": ["string", "null"], "minLength": 1, "maxLength": 20 }
+                    }
+                  },
+                  "sex": { "type": "string", "enum": ["female", "male"] },
+                  "birth_date": { "type": "string", "format": "date" }
+                }
+              }
             }
           },
           {
@@ -18795,6 +18850,35 @@
               "user_id": { "type": "string", "format": "uuid" },
               "linked_resident_id": { "type": ["string", "null"], "format": "uuid", "description": "The record the account is linked to now." },
               "matches": { "type": "array", "items": { "$ref": "#/components/schemas/RegistryMatch" } }
+            }
+          },
+          "meta": { "type": "object" }
+        }
+      },
+      "AccountRegistryLinkBody": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["account_link", "id_checked"],
+        "properties": {
+          "account_link": { "$ref": "#/components/schemas/AccountLinkInput", "description": "link or create; leave-unlinked is 422 (an account with no link already is unlinked)." },
+          "id_checked": { "type": "boolean", "const": true, "description": "The reviewer has a government ID showing the account's verified name in hand." }
+        }
+      },
+      "AccountRegistryLinkEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": ["user_id", "account_link", "corrected"],
+            "properties": {
+              "user_id": { "type": "string", "format": "uuid" },
+              "account_link": { "$ref": "#/components/schemas/AccountLinkOutcome" },
+              "corrected": {
+                "type": "array",
+                "items": { "type": "string", "enum": ["first_name", "middle_name", "last_name", "suffix", "sex", "birth_date"] },
+                "description": "The record's fields corrected to the ID with the link; empty when none changed."
+              }
             }
           },
           "meta": { "type": "object" }
@@ -19154,7 +19238,7 @@
         "type": "object",
         "additionalProperties": false,
         "minProperties": 1,
-        "description": "Any of the create fields. Absent leaves a field as it is; null clears an optional one.",
+        "description": "Any of the create fields, at least one. Absent leaves a field as it is; null clears an optional one. expected_updated_at, reason and id_checked say what the edit is, not what the record holds (ADR 0015).",
         "properties": {
           "first_name": { "type": "string", "minLength": 1, "maxLength": 100 },
           "middle_name": { "type": ["string", "null"], "minLength": 1, "maxLength": 100 },
@@ -19169,7 +19253,10 @@
           "mobile": { "type": ["string", "null"], "pattern": "^(\\+?63|0)9\\d{2}[- ]?\\d{3}[- ]?\\d{4}$" },
           "email": { "type": ["string", "null"], "format": "email", "maxLength": 200 },
           "philsys_last_four": { "type": ["string", "null"], "pattern": "^[0-9]{4}$" },
-          "monthly_income_centavos": { "type": ["integer", "null"], "minimum": 0 }
+          "monthly_income_centavos": { "type": ["integer", "null"], "minimum": 0 },
+          "expected_updated_at": { "type": "string", "format": "date-time", "description": "The record's updated_at as the writer read it. When the record has changed since, and this edit would change it, nothing is saved: 409." },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 500, "description": "Required when a name part, the sex or the birth date changes (422). Kept with the earlier value in the record's history (office_resident_changes)." },
+          "id_checked": { "type": "boolean", "description": "The writer saw a government ID showing the new value. Kept with the history row." }
         }
       },
       "OfficeResidentSectorRecord": {

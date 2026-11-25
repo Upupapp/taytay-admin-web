@@ -353,6 +353,9 @@ export const NAME_CORRECTION_EFFECTS: readonly string[] = [
     'office’s event lists.',
   'The earlier name is kept in the account’s name history, with who corrected it and when.',
   'The ID is not reviewed again: the account stays verified and keeps its digital ID.',
+  // The account and the registry record are two records (DL-260): one correction does not move both.
+  'The office’s registry record linked to this account keeps its own name. Correct it on the ' +
+    'record’s edit page, with the same ID and a reason; what it said before is kept there too.',
   'The audit trail records that the name was corrected, not the names. The system keeps no reason.',
   'The resident is not told in the app. Tell them at the counter.',
 ];

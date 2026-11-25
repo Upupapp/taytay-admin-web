@@ -5,6 +5,7 @@ import {
   ACCESS_CONTEXT,
   ASSISTANCE_HISTORY_NOT_YOURS,
   canReadRecord,
+  changesIdentity,
   discloseHousehold,
   discloseMember,
   discloseResident,
@@ -14,6 +15,7 @@ import {
   isWithinBarangayScope,
   PermissionDeniedError,
   ResidentDraftInvalidError,
+  toResidentDraft,
   userHasPermission,
   validateResidentDraft,
   type AuthenticatedUser,
@@ -24,6 +26,7 @@ import {
   type Permission,
   type Resident,
   type ResidentDraft,
+  type ResidentEditNote,
   type ResidentFilter,
   type ResidentId,
   type ResidentProfile,
@@ -241,7 +244,7 @@ export class MockResidentRepository implements ResidentRepository {
     return this.latency.respond(this.store.add(draft, user?.id ?? null));
   }
 
-  update(id: ResidentId, draft: ResidentDraft): Observable<Resident> {
+  update(id: ResidentId, draft: ResidentDraft, note?: ResidentEditNote): Observable<Resident> {
     const user = this.access.currentUser();
     const denied = denyUnless<Resident>(user, 'resident.update');
     if (denied) {
@@ -271,6 +274,32 @@ export class MockResidentRepository implements ResidentRepository {
     const invalid = rejectIfInvalid<Resident>(draft);
     if (invalid) {
       return invalid;
+    }
+    // As the API answers (DL-260): an edit made on a record changed since is refused, and a
+    // name part, the sex or the birth date moves only with a reason.
+    const before = toResidentDraft(existing);
+    const changed = recordedFields(before) !== recordedFields(draft);
+    if (
+      changed &&
+      note?.expectedUpdatedAt != null &&
+      note.expectedUpdatedAt !== existing.audit.updatedAt
+    ) {
+      return throwError(
+        () =>
+          new Error(
+            'Somebody changed this record after you opened it, so nothing was saved. Open it again ' +
+              'to see what it says now, and make your change on that.',
+          ),
+      );
+    }
+    if (changesIdentity(before, draft) && (note?.reason ?? '').trim() === '') {
+      return throwError(
+        () =>
+          new Error(
+            'A change to a name, the sex or the birth date needs a reason: say what shows it, such ' +
+              'as the ID or certificate seen.',
+          ),
+      );
     }
     return this.latency.respond(this.store.replace(existing, draft, user?.id ?? null));
   }
@@ -466,4 +495,24 @@ function byRegistryOrder(a: Resident, b: Resident): number {
     a.name.first.toLowerCase().localeCompare(b.name.first.toLowerCase()) ||
     (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
   );
+}
+
+/** What a PATCH writes, in one fixed order, so two drafts compare by value (sectors are their own acts). */
+function recordedFields(draft: ResidentDraft): string {
+  return JSON.stringify([
+    draft.name.first,
+    draft.name.middle,
+    draft.name.last,
+    draft.name.suffix,
+    draft.sex,
+    draft.birthDate,
+    draft.civilStatus,
+    draft.address.barangayId,
+    draft.address.purokOrSitio,
+    draft.address.streetAddress,
+    draft.contact.mobile,
+    draft.contact.email,
+    draft.philsysLastFour,
+    draft.monthlyIncome?.centavos ?? null,
+  ]);
 }

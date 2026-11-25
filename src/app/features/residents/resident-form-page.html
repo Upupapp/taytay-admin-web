@@ -264,12 +264,17 @@
                 @if (hasRestrictedSectors()) {
                   <p class="form__note">{{ copy.sectorsRestricted }}</p>
                 }
+                @if (untickedSectors().length > 0) {
+                  <p class="form__note" role="status">
+                    {{ copy.sectorsUnticked(untickedSectorLabels()) }}
+                  </p>
+                }
 
                 <!--
               Shown only once a sector is ticked. A field asking how something was established, on a
               form where nothing has been claimed yet, is a field people learn to scroll past.
             -->
-                @if (model().sectors.length > 0) {
+                @if (newSectors().length > 0) {
                   <label class="field form__basis" for="sector-basis">
                     <span class="field__label">{{ copy.sectorBasisLabel }}</span>
                     <input
@@ -297,6 +302,47 @@
                   }
                 }
               </fieldset>
+
+              <!-- Shown only when a legal identity field moved: the server keeps the earlier value with this reason (DL-260). -->
+              @if (identityChanged()) {
+                <fieldset class="form__section">
+                  <legend class="form__legend">{{ copy.identityHeading }}</legend>
+                  <p class="form__hint">{{ copy.identityHint }}</p>
+                  <label class="field" for="identity-reason">
+                    <span class="field__label">{{ copy.identityReasonLabel }}</span>
+                    <input
+                      id="identity-reason"
+                      class="field__input"
+                      type="text"
+                      maxlength="500"
+                      [value]="model().changeReason"
+                      (input)="onText('changeReason', $event)"
+                      [attr.aria-describedby]="
+                        changeReasonMissing() && saveAttempted()
+                          ? 'identity-reason-hint identity-reason-error'
+                          : 'identity-reason-hint'
+                      "
+                      [attr.aria-invalid]="changeReasonMissing() && saveAttempted() ? 'true' : null"
+                    />
+                    <span class="field__hint" id="identity-reason-hint">{{
+                      copy.identityReasonHint
+                    }}</span>
+                  </label>
+                  @if (changeReasonMissing() && saveAttempted()) {
+                    <p class="field__error" id="identity-reason-error" role="alert">
+                      {{ copy.identityReasonRequired }}
+                    </p>
+                  }
+                  <label class="check">
+                    <input
+                      type="checkbox"
+                      [checked]="model().idChecked"
+                      (change)="onIdChecked($event)"
+                    />
+                    <span>{{ copy.identityIdChecked }}</span>
+                  </label>
+                </fieldset>
+              }
             </div>
           </div>
 

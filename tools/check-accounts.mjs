@@ -259,8 +259,9 @@ const readOnly = code(read(APP, 'domain', 'access', 'permission-matrix.ts'));
 if (/user\.(change-role|assign-office)/.test(readOnly)) {
   failures.push("'user.change-role' or 'user.assign-office' is classified read-only. Each changes who may use this console.");
 }
+// The registry may be guarded beside them (DL-260): a later link compares the record chosen.
 if (
-  !/path:\s*'users',[\s\S]{0,400}?canActivate:\s*\[servedGuard\('app-account',\s*'office'\),\s*permissionGuard\('user\.view'\)\]/.test(
+  !/path:\s*'users',[\s\S]{0,400}?canActivate:\s*\[servedGuard\('app-account',\s*'office'(?:,\s*'resident')?\),\s*permissionGuard\('user\.view'\)\]/.test(
     read(APP, 'app.routes.ts'),
   )
 ) {

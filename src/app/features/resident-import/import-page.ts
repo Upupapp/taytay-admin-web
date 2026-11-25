@@ -22,7 +22,6 @@ import {
   RESIDENT_IMPORT_REPOSITORY,
   type ImportGroup,
   type ImportOutcomeKind,
-  type ImportResolution,
   type ImportRow,
   type ImportStep,
   type ResidentImport,
@@ -180,17 +179,9 @@ export class ImportPage {
     this.answer(record);
   }
 
-  protected resolve(row: ImportRow, resolution: ImportResolution): void {
-    const record = this.record();
-    if (record === null) return;
-    this.repository
-      .resolve(record.id, row.row, resolution)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (answer) => this.answer(answer),
-        error: (failure: unknown) =>
-          this.problem.set(this.copy.finding.refused(failureReason(failure) ?? this.copy.noAnswer)),
-      });
+  /** A row's finding was kept: the server's answer is the import read again (`DL-260`). */
+  protected resolved(answer: ResidentImport): void {
+    this.answer(answer);
   }
 
   private answer(record: ResidentImport): void {

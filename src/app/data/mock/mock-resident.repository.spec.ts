@@ -11,6 +11,7 @@ import {
   type HouseholdComposition,
   type HouseholdMemberView,
   asIsoDate,
+  asIsoDateTime,
   isArchiveRefusal,
   isResidentDraftInvalid,
   PermissionDeniedError,
@@ -174,9 +175,7 @@ describe('a caseload reads its own clients and nobody else (DL-183)', () => {
 
   it('refuses the registry list to a caseload', async () => {
     signedInAs(worker('sw-1'));
-    await expect(
-      firstValueFrom(repo().list({}, { limit: 20, cursor: null })),
-    ).rejects.toThrow();
+    await expect(firstValueFrom(repo().list({}, { limit: 20, cursor: null }))).rejects.toThrow();
   });
 });
 
@@ -276,10 +275,11 @@ describe('one call answers "who is this, and what have we done for them?"', () =
     const profile = await firstValueFrom(repo().getProfile(FAMILY_HEAD));
     expect(profile).not.toBeNull();
     expect(profile?.household?.referenceNumber).toBe('HH-DL-2024-0088');
-    expect(membersOf(profile?.householdMembers ?? EMPTY_COMPOSITION).map((m: HouseholdMemberView) => m.role)).toEqual([
-      'spouse',
-      'child',
-    ]);
+    expect(
+      membersOf(profile?.householdMembers ?? EMPTY_COMPOSITION).map(
+        (m: HouseholdMemberView) => m.role,
+      ),
+    ).toEqual(['spouse', 'child']);
     expect(profile?.history.kind).toBe('read');
     expect(historyOf(profile)?.cases.length).toBeGreaterThan(0);
   });
@@ -429,6 +429,8 @@ describe('writes are permission- and scope-checked in the adapter', () => {
             streetAddress: '12 Sampaguita Street',
           },
         }),
+        // A name that differs from the record's moves only with a reason (DL-260).
+        { expectedUpdatedAt: null, reason: 'Name as the PSA certificate shows it.', idChecked: true },
       ),
     );
     expect(updated.sectors).toContain('vawc-survivor');
@@ -654,8 +656,56 @@ describe('the Citizens overview shows every count of people as it is (DL-213, DL
 
   it('refuses a caseload, as the API does', async () => {
     signedInAs(authenticated('social-worker'));
-    await expect(firstValueFrom(repo().summary({}))).rejects.toBeInstanceOf(
-      PermissionDeniedError,
+    await expect(firstValueFrom(repo().summary({}))).rejects.toBeInstanceOf(PermissionDeniedError);
+  });
+});
+
+describe('an edit names the version it was made on, and why an identity field moved (DL-260)', () => {
+  it('refuses a stale edit and a name change with no reason, and answers a repeat as done', async () => {
+    signedInAs(authenticated('system-administrator'));
+    const created = await firstValueFrom(repo().create(draft()));
+    const read = created.audit.updatedAt;
+
+    const moved = draft({ address: { ...draft().address, streetAddress: '6 Acacia Street' } });
+    const first = await firstValueFrom(
+      repo().update(created.id, moved, { expectedUpdatedAt: read, reason: null, idChecked: false }),
     );
+    expect(first.address.streetAddress).toBe('6 Acacia Street');
+
+    // The same save again is not a conflict.
+    await firstValueFrom(
+      repo().update(created.id, moved, { expectedUpdatedAt: read, reason: null, idChecked: false }),
+    );
+    // A second clerk who opened the record before the first saved is refused, and nothing changes.
+    const stale = await firstValueFrom(
+      repo().update(
+        created.id,
+        draft({ address: { ...draft().address, streetAddress: '9 Other St' } }),
+        {
+          expectedUpdatedAt: asIsoDateTime('2000-01-01T00:00:00.000Z'),
+          reason: null,
+          idChecked: false,
+        },
+      ),
+    ).catch((error: unknown) => error);
+    expect(String(stale)).toMatch(/changed this record after you opened it/);
+
+    const renamed = draft({ ...moved, name: { ...draft().name, last: 'Villanueva-Cruz' } });
+    const unexplained = await firstValueFrom(
+      repo().update(created.id, renamed, {
+        expectedUpdatedAt: null,
+        reason: null,
+        idChecked: false,
+      }),
+    ).catch((error: unknown) => error);
+    expect(String(unexplained)).toMatch(/needs a reason/);
+    const explained = await firstValueFrom(
+      repo().update(created.id, renamed, {
+        expectedUpdatedAt: null,
+        reason: 'Marriage certificate seen.',
+        idChecked: true,
+      }),
+    );
+    expect(explained.name.last).toBe('Villanueva-Cruz');
   });
 });

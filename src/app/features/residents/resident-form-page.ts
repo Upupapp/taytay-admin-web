@@ -27,6 +27,7 @@ import {
   TAYTAY_BARANGAYS,
   toDecimal,
   toResidentDraft,
+  changesIdentity,
   validateResidentDraft,
   VULNERABILITY_SECTOR_LABELS,
   VULNERABILITY_SECTORS,
@@ -68,8 +69,12 @@ interface FormModel {
   philsysLastFour: string;
   monthlyIncome: string;
   sectors: readonly VulnerabilitySector[];
-  /** How the office established these. Required once any sector is ticked. */
+  /** How the office established these. Required once a sector not already held is ticked. */
   sectorBasis: string;
+  /** Why a name part, the sex or the birth date changed (`DL-260`). Required when one did. */
+  changeReason: string;
+  /** The writer saw a government ID showing the new value. Kept with the earlier value. */
+  idChecked: boolean;
 }
 
 const BLANK: FormModel = {
@@ -89,6 +94,8 @@ const BLANK: FormModel = {
   monthlyIncome: '',
   sectors: [],
   sectorBasis: '',
+  changeReason: '',
+  idChecked: false,
 };
 
 /**
@@ -166,7 +173,43 @@ export class ResidentFormPage {
    * has been created and the sectors refused.
    */
   protected readonly sectorBasisMissing = computed(
-    () => this.model().sectors.length > 0 && this.model().sectorBasis.trim().length === 0,
+    () => this.newSectors().length > 0 && this.model().sectorBasis.trim().length === 0,
+  );
+
+  /**
+   * The record as it was opened, on the edit route (`DL-260`): its version goes with the save, so an
+   * edit made on a record somebody changed since is refused rather than written over their change.
+   */
+  private readonly loaded = signal<ResidentView | null>(null);
+
+  /**
+   * The sectors ticked that the person does not already hold. Only these are recorded, and only
+   * these need a basis: a sector already held was established when it was recorded, and asking
+   * again on every edit of an address made every clerk type a basis for nothing (`DL-260`).
+   */
+  protected readonly newSectors = computed<readonly VulnerabilitySector[]>(() => {
+    const held = this.loaded()?.resident.sectors ?? [];
+    return this.model().sectors.filter((sector) => !held.includes(sector));
+  });
+
+  /** Held sectors the clerk unticked: ending one is its own act, on the record's page. */
+  protected readonly untickedSectors = computed<readonly VulnerabilitySector[]>(() => {
+    const ticked = this.model().sectors;
+    return (this.loaded()?.resident.sectors ?? []).filter((sector) => !ticked.includes(sector));
+  });
+
+  protected readonly untickedSectorLabels = computed(() =>
+    this.untickedSectors().map((sector) => VULNERABILITY_SECTOR_LABELS[sector]),
+  );
+
+  /** A name part, the sex or the birth date differs from the record as opened (`DL-260`). */
+  protected readonly identityChanged = computed(() => {
+    const loaded = this.loaded();
+    return loaded !== null && changesIdentity(toResidentDraft(loaded.resident), this.toDraft());
+  });
+
+  protected readonly changeReasonMissing = computed(
+    () => this.identityChanged() && this.model().changeReason.trim().length === 0,
   );
 
   /**
@@ -273,6 +316,7 @@ export class ResidentFormPage {
   }
 
   private seed(view: ResidentView): void {
+    this.loaded.set(view);
     const draft = toResidentDraft(view.resident);
     this.model.set({
       first: draft.name.first,
@@ -291,12 +335,19 @@ export class ResidentFormPage {
       monthlyIncome: draft.monthlyIncome === null ? '' : String(toDecimal(draft.monthlyIncome)),
       sectors: draft.sectors,
       sectorBasis: '',
+      changeReason: '',
+      idChecked: false,
     });
   }
 
   /* ── controls ───────────────────────────────────────────────────────────── */
 
-  protected onText(field: keyof Omit<FormModel, 'sectors'>, event: Event): void {
+  protected onIdChecked(event: Event): void {
+    const checked = event.target instanceof HTMLInputElement && event.target.checked;
+    this.model.update((model) => ({ ...model, idChecked: checked }));
+  }
+
+  protected onText(field: keyof Omit<FormModel, 'sectors' | 'idChecked'>, event: Event): void {
     const value = (event.target as HTMLInputElement | HTMLSelectElement).value;
     this.model.update((model) => ({ ...model, [field]: value }));
   }
@@ -343,17 +394,23 @@ export class ResidentFormPage {
     const draft = this.toDraft();
     const problems = validateResidentDraft(draft);
     this.problems.set(problems);
-    if (problems.length > 0 || this.sectorBasisMissing()) {
+    if (problems.length > 0 || this.sectorBasisMissing() || this.changeReasonMissing()) {
       return;
     }
 
     const id = this.id();
+    const sectors = this.newSectors();
+    const model = this.model();
     this.submitting.set(true);
     this.saveFailure.set(null);
     const save$ =
       id === undefined
         ? this.repository.create(draft)
-        : this.repository.update(asId<ResidentId>(id), draft);
+        : this.repository.update(asId<ResidentId>(id), draft, {
+            expectedUpdatedAt: this.loaded()?.resident.audit.updatedAt ?? null,
+            reason: this.identityChanged() ? model.changeReason.trim() : null,
+            idChecked: this.identityChanged() && model.idChecked,
+          });
 
     save$
       .pipe(
@@ -370,7 +427,7 @@ export class ResidentFormPage {
          * "saved" while a safeguarding flag was refused would be the worst possible lie.
          */
         switchMap((saved) =>
-          this.recordSectors(asId<ResidentId>(saved.id), draft.sectors).pipe(
+          this.recordSectors(asId<ResidentId>(saved.id), sectors).pipe(
             map((refused) => ({ saved, refused })),
           ),
         ),
@@ -400,9 +457,10 @@ export class ResidentFormPage {
   /**
    * Records each ticked sector and returns the ones that were refused.
    *
-   * Sequential rather than concurrent, and it never fails the stream: the resident record is
+   * Concurrent, one request a sector, and it never fails the stream: the resident record is
    * already saved by the time this runs, so an error here must degrade into a warning rather than
-   * into an error message about a save that actually succeeded.
+   * into an error message about a save that actually succeeded. Only sectors not already held are
+   * sent (`DL-260`).
    *
    * On edit this records what is ticked and does **not** end what was un-ticked — removing a
    * sector is its own act with its own reason, and inferring a removal from a checkbox somebody

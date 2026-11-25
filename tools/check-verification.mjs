@@ -647,8 +647,9 @@ if (/verification\.review/.test(readOnly)) {
     "'verification.review' is classified read-only. It approves or rejects an identity.",
   );
 }
+// The registry may be guarded beside it (DL-260): the link compares the record chosen.
 if (
-  !/path:\s*'verification',[\s\S]*?canActivate:\s*\[servedGuard\('verification'\),\s*permissionGuard\('verification\.review'\)\]/.test(
+  !/path:\s*'verification',[\s\S]*?canActivate:\s*\[servedGuard\('verification'(?:,\s*'[a-z-]+')*\),\s*permissionGuard\('verification\.review'\)\]/.test(
     read(APP, 'app.routes.ts'),
   )
 ) {

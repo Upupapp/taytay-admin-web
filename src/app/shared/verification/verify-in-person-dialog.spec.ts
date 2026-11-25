@@ -9,12 +9,15 @@ import {
   IN_PERSON_CORRECTION_EFFECT,
   IN_PERSON_EFFECTS,
   InPersonRefusedError,
+  RESIDENT_REPOSITORY,
+  UNSERVED_PORTS,
   VERIFICATION_REPOSITORY,
   type AppAccountId,
   type InPersonCheck,
   type InPersonOutcome,
   type InPersonVerification,
   type InPersonVerificationId,
+  type LaterLinkOutcome,
   type RegistryMatches,
   type ResidentId,
   type VerificationRepository,
@@ -69,6 +72,10 @@ class RecordingChecks implements VerificationRepository {
     return of(this.matches);
   }
 
+  linkLater(): Observable<LaterLinkOutcome> {
+    return EMPTY;
+  }
+
   verifyInPerson(
     accountId: AppAccountId,
     check: InPersonCheck,
@@ -88,7 +95,12 @@ function open(name = 'Ana Cruz') {
   const repository = new RecordingChecks();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
-    providers: [provideRouter([]), { provide: VERIFICATION_REPOSITORY, useValue: repository }],
+    providers: [
+      provideRouter([]),
+      { provide: VERIFICATION_REPOSITORY, useValue: repository },
+      { provide: RESIDENT_REPOSITORY, useValue: { getById: () => of(null) } },
+      { provide: UNSERVED_PORTS, useValue: [] },
+    ],
   });
   const fixture = TestBed.createComponent(VerifyInPersonDialog);
   fixture.componentRef.setInput('subject', { accountId: ACCOUNT, name });

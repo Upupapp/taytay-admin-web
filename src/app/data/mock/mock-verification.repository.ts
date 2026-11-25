@@ -13,9 +13,12 @@ import {
   mediaFor,
   reviewNoteProblem,
   selfieErased,
+  toResidentDraft,
   type AccountLinkDecision,
   type AccountLinkOutcome,
   type AppAccountId,
+  type LinkCorrectedField,
+  type LaterLinkOutcome,
   type ConfirmedIdentity,
   type RegistryMatch,
   type RegistryMatches,
@@ -75,10 +78,7 @@ export class MockVerificationRepository implements VerificationRepository {
     { readonly body: string; readonly record: InPersonVerification }
   >();
 
-  list(
-    filter: VerificationFilter,
-    page: CursorRequest,
-  ): Observable<VerificationListPage> {
+  list(filter: VerificationFilter, page: CursorRequest): Observable<VerificationListPage> {
     const denied = denyUnless<VerificationListPage>(
       this.access.currentUser(),
       'verification.review',
@@ -113,8 +113,7 @@ export class MockVerificationRepository implements VerificationRepository {
     const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
     const pending = this.requests.filter((request) => request.status === 'pending');
     const decided = this.requests.filter(
-      (request) =>
-        request.reviewedAt !== null && Date.parse(request.reviewedAt) >= weekAgo,
+      (request) => request.reviewedAt !== null && Date.parse(request.reviewedAt) >= weekAgo,
     );
     return {
       pending: pending.length,
@@ -434,6 +433,72 @@ export class MockVerificationRepository implements VerificationRepository {
    * is linked. `create` makes no record here — the sample registry is not written from this port —
    * so it answers as linked to nothing new.
    */
+  /**
+   * A link made once the account is verified (`DL-260`), as the API makes it: only a verified
+   * resident account with no link, never one's own; a correction moves only the fields chosen.
+   */
+  linkLater(accountId: AppAccountId, decision: AccountLinkDecision): Observable<LaterLinkOutcome> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<LaterLinkOutcome>(user, 'verification.review');
+    if (denied) {
+      return denied;
+    }
+    const account = this.accounts.find(accountId);
+    if (account === undefined) {
+      return throwError(() => new Error('That user was not found.'));
+    }
+    if (account.role !== 'verified') {
+      return throwError(
+        () =>
+          new Error(
+            'This account is not verified. Its link is decided when its ID is reviewed, or when ' +
+              'it is verified in person.',
+          ),
+      );
+    }
+    if (decision.decision === 'leave-unlinked') {
+      return throwError(() => new Error('An account is linked here, or left as it is.'));
+    }
+    const linked = this.link(accountId, decision);
+    if (typeof linked === 'string') {
+      return throwError(() => new Error(linked));
+    }
+    const corrected: LinkCorrectedField[] = [];
+    const record = linked.residentId === null ? undefined : this.residents.find(linked.residentId);
+    if (
+      decision.decision === 'link' &&
+      decision.corrections !== undefined &&
+      record !== undefined
+    ) {
+      const draft = toResidentDraft(record);
+      const { name, sex, birthDate } = decision.corrections;
+      const next = {
+        ...draft,
+        name:
+          name === undefined
+            ? draft.name
+            : {
+                first: name.firstName,
+                middle: name.middleName,
+                last: name.lastName,
+                suffix: name.suffix,
+              },
+        sex: sex ?? draft.sex,
+        birthDate: birthDate ?? draft.birthDate,
+      };
+      if (next.name.first !== draft.name.first) corrected.push('firstName');
+      if (next.name.middle !== draft.name.middle) corrected.push('middleName');
+      if (next.name.last !== draft.name.last) corrected.push('lastName');
+      if (next.name.suffix !== draft.name.suffix) corrected.push('suffix');
+      if (next.sex !== draft.sex) corrected.push('sex');
+      if (next.birthDate !== draft.birthDate) corrected.push('birthDate');
+      if (corrected.length > 0) {
+        this.residents.replace(record, next, user?.id ?? null);
+      }
+    }
+    return this.latency.respond({ link: linked, corrected });
+  }
+
   private link(
     accountId: AppAccountId,
     decision: AccountLinkDecision,

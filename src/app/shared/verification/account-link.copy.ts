@@ -99,8 +99,73 @@ export const ACCOUNT_LINK_COPY = {
       'No email, PhilSys digits or income is written.',
     'leave-unlinked':
       'Verifying links nothing. The resident’s My requests and applications stay empty until the ' +
-      'office links the account, here or by approving a sector application. Your reason is kept.',
+      'office links the account — on Users and roles, under “Registry record”, or by approving a ' +
+      'sector application. Your reason is kept.',
   } satisfies Record<AccountLinkDecisionKind, unknown>,
+
+  /** Said before the button when an account already verified is linked on its own (`DL-260`). */
+  effectLater: {
+    link: (label: string): string =>
+      `Linking connects this account to ${label}${label.endsWith('.') ? '' : '.'} The resident’s My ` +
+      'requests and applications in the app then show what the office holds on that record, and ' +
+      'she can apply for Tulong from the app. The link and your reason are kept with your name.',
+    create:
+      'Linking makes a registry record from this account — the verified name, the account’s ' +
+      'barangay, purok and mobile number, and what you give above — and connects the account to ' +
+      'it. No email, PhilSys digits or income is written.',
+  },
+
+  /** The side-by-side comparison of the chosen record and the account (`DL-260`). */
+  compare: {
+    heading: 'The chosen record beside this account',
+    loading: 'Reading the chosen record…',
+    failed: 'The chosen record could not be read. Open it from its link to compare.',
+    onRecord: 'On the registry record',
+    onAccount: 'On the account and the ID',
+    name: 'Name',
+    sex: 'Sex',
+    birthDate: 'Birth date',
+    barangay: 'Barangay',
+    readOffId: 'Read it off the ID in front of you',
+    noBirthDate: 'The app does not ask for one: read it off the ID',
+    barangaySignal: (outcome: string): string => `The account’s barangay is ${outcome}`,
+  },
+
+  /** What the reviewer should do when the record and the ID disagree (`DL-260`). */
+  mismatch: {
+    heading: 'When the details do not match',
+    lines: [
+      'The ID in front of you is the source of truth for the name, the sex and the birth date. ' +
+        'Correct the record to it below: what the record said before is kept in its history with ' +
+        'your reason, never lost.',
+      'A spelling, a missing or different middle name, a suffix: tick “Correct the name”. The ' +
+        'record then holds the verified name, split into its parts.',
+      'A birth date or sex that differs: type it as the ID shows it. If the ID and the birth ' +
+        'certificate themselves disagree, correct nothing here: the civil registrar corrects that ' +
+        '(RA 9048 and RA 10172), and the office records what they decide.',
+      'A different barangay is not a different person: people move. Ask where they live now; if ' +
+        'they moved, change the barangay on the record’s edit page after linking. Requests already ' +
+        'filed keep the barangay they were filed in.',
+      'If you are not sure this record is the same person, do not link it. A wrong link shows this ' +
+        'resident another family’s assistance in the app.',
+      'Two records for one person are not fixed by linking: settle them in Duplicate review, which ' +
+        'keeps both records and says which one the office keeps.',
+    ],
+  },
+  correctName: 'Correct the record’s name to the verified name',
+  correctNameHint: (name: string): string =>
+    `The record takes “${name}”, split into the parts below: the same words, nothing added. The ` +
+    'system refuses a split that is not that name.',
+  correctSex: 'Correct the sex to',
+  correctSexKeep: 'Keep the record’s',
+  correctBirthDate: 'Correct the birth date to (optional)',
+  correctBirthDateHint: 'As the ID shows it. Leave empty to keep the record’s.',
+  correctedField: { name: 'name', sex: 'sex', birthDate: 'birth date' },
+  correctionEffect: (fields: readonly string[]): string =>
+    `The record’s ${fields.join(', ')} ${fields.length === 1 ? 'is' : 'are'} corrected to the ID; ` +
+    'what it said before is kept in its history with your reason. The resident is not told in the ' +
+    'app: tell them at the counter what was corrected.',
+  laterLegend: 'Which registry record is this person?',
   refusedTogether:
     'A refused link refuses the verification too: nothing is verified until the registry choice ' +
     'is accepted.',

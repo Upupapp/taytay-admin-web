@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { asId, WriteIntent, type ResidentId } from '@domain/index';
+import { asId, asIsoDate, WriteIntent, type ResidentId } from '@domain/index';
 
 import IN_PERSON from '../fixtures/in-person-verification.json';
 import APPROVED from '../fixtures/verification-approved.json';
@@ -12,7 +12,10 @@ import MATCHES from '../fixtures/registry-matches.json';
 
 import {
   toAccountLinkOutcome,
+  inPersonUnplacedErrors,
   toInPersonFieldErrors,
+  toLaterLinkOutcome,
+  toWireLaterLink,
   toInPersonVerification,
   toRegistryProposals,
   toVerificationRequest,
@@ -235,7 +238,10 @@ describe('the registry decision at verification (DL-228)', () => {
   it('refuses the answer when one proposal or one signal cannot be read', () => {
     const [first, second] = MATCHES.data.matches;
     expect(
-      toRegistryProposals({ ...MATCHES.data, matches: [first, { ...second, strength: 'certain' }] }),
+      toRegistryProposals({
+        ...MATCHES.data,
+        matches: [first, { ...second, strength: 'certain' }],
+      }),
     ).toBeNull();
     expect(
       toRegistryProposals({
@@ -319,5 +325,74 @@ describe('the registry decision at verification (DL-228)', () => {
         intent,
       ).account_link,
     ).toEqual({ decision: 'leave-unlinked', reason: 'Why' });
+  });
+});
+
+describe('linking after verification, and correcting the record to the ID (DL-260)', () => {
+  const RECORD = asId<ResidentId>('8d1c2b7e-0000-4000-8000-000000000001');
+
+  it('sends a correction only for what the reviewer chose, in the API’s words', () => {
+    expect(
+      toWireLaterLink({
+        decision: 'link',
+        residentId: RECORD,
+        reason: 'PhilID seen',
+        corrections: {
+          name: { firstName: 'Ligaya', middleName: 'Bautista', lastName: 'Mercado', suffix: null },
+          birthDate: asIsoDate('1980-04-03'),
+        },
+      }),
+    ).toEqual({
+      account_link: {
+        decision: 'link',
+        resident_id: RECORD,
+        reason: 'PhilID seen',
+        corrections: {
+          name: {
+            first_name: 'Ligaya',
+            middle_name: 'Bautista',
+            last_name: 'Mercado',
+            suffix: null,
+          },
+          birth_date: '1980-04-03',
+        },
+      },
+      id_checked: true,
+    });
+    expect(toWireAccountLink({ decision: 'link', residentId: RECORD, reason: 'Seen' })).toEqual({
+      decision: 'link',
+      resident_id: RECORD,
+      reason: 'Seen',
+    });
+  });
+
+  it('reads the link and the fields it corrected, and refuses a field it does not know', () => {
+    expect(
+      toLaterLinkOutcome({
+        user_id: 'u',
+        account_link: { decision: 'link', resident_id: RECORD },
+        corrected: ['middle_name', 'birth_date'],
+      }),
+    ).toEqual({
+      link: { decision: 'link', residentId: RECORD },
+      corrected: ['middleName', 'birthDate'],
+    });
+    expect(
+      toLaterLinkOutcome({
+        account_link: { decision: 'link', resident_id: RECORD },
+        corrected: ['income'],
+      }),
+    ).toBeNull();
+    expect(toLaterLinkOutcome({ account_link: null, corrected: [] })).toBeNull();
+  });
+
+  it('keeps the sentences the counter form has no field for, so a refused link is said (DL-260)', () => {
+    expect(
+      inPersonUnplacedErrors({
+        id_last_four: ['Only the last four characters of the ID number.'],
+        'account_link.resident_id': ['That registry record was not found, or it is retired.', 'x'],
+      }),
+    ).toEqual(['That registry record was not found, or it is retired.']);
+    expect(inPersonUnplacedErrors(null)).toEqual([]);
   });
 });

@@ -22,6 +22,7 @@ import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
+  barangayName,
   CONDITIONAL_APPLICABILITY_LABELS,
   REQUIREMENT_OBLIGATION_LABELS,
   awaitsApplicabilityDecision,
@@ -287,6 +288,21 @@ export class AssessmentPage {
   );
 
   protected readonly profile = computed(() => valueOf(this.profileState()) ?? null);
+
+  /**
+   * The barangay a filed request was filed in, when the applicant has moved since (DL-260): the
+   * request keeps it as its history, and the lists, the dashboard and the reports count it there.
+   */
+  protected readonly filedElsewhere = computed<string | null>(() => {
+    const request = this.request();
+    const view = this.profile()?.view;
+    if (request === null || view === undefined || request.referenceNumber === '') {
+      return null;
+    }
+    return request.barangayId === view.resident.address.barangayId
+      ? null
+      : barangayName(request.barangayId);
+  });
   protected readonly profileFailure = computed(() => {
     const state = this.profileState();
     return state.kind === 'error' ? state.message : null;

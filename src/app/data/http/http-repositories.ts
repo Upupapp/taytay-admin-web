@@ -25,6 +25,7 @@ import {
   selfieErased,
   type AccountLinkDecision,
   type ConfirmedIdentity,
+  type LaterLinkOutcome,
   type RegistryMatches,
   type CursorPage,
   type CursorRequest,
@@ -127,6 +128,7 @@ import {
   validateResidentDraft,
   type Resident,
   type ResidentDraft,
+  type ResidentEditNote,
   type ResidentFilter,
   type ResidentId,
   type ResidentRepository,
@@ -445,6 +447,7 @@ import {
   toResidentView,
   toWireReason,
   toWireResidentDraft,
+  toWireResidentEdit,
   toWireSectorRecord,
   type BarangayIndex,
 } from './mappers/resident.mapper';
@@ -570,10 +573,13 @@ import { toSavedView, toWireSavedViewDraft } from './mappers/saved-view.mapper';
 import {
   toVerificationQueueStats,
   toInPersonFieldErrors,
+  inPersonUnplacedErrors,
   toInPersonVerification,
   toVerificationRequest,
   toWireInPersonCheck,
   toWireVerificationApproval,
+  toWireLaterLink,
+  toLaterLinkOutcome,
   toRegistryProposals,
 } from './mappers/verification.mapper';
 import {
@@ -804,6 +810,24 @@ export class HttpVerificationRepository implements VerificationRepository {
     );
   }
 
+  /** A link made once the account is verified, with what it corrected (`DL-260`). */
+  linkLater(accountId: AppAccountId, decision: AccountLinkDecision): Observable<LaterLinkOutcome> {
+    return this.api
+      .post(`${API_ENDPOINTS.adminUsers}/${accountId}/registry-link`, toWireLaterLink(decision))
+      .pipe(
+        map((wire) => {
+          const outcome = toLaterLinkOutcome(wire);
+          if (outcome === null) {
+            throw new Error(
+              'The link was sent, but its answer could not be read. Open the account again to see ' +
+                'whether it is linked.',
+            );
+          }
+          return outcome;
+        }),
+      );
+  }
+
   /** `notes` is the reason the resident reads in the app (`issues` on their copy). */
   reject(id: VerificationRequestId, reason: string): Observable<VerificationRequest> {
     return this.api
@@ -876,7 +900,12 @@ function withInPersonRefusal(failure: unknown): Observable<never> {
     case 422:
       return throwError(
         () =>
-          new InPersonRefusedError(read.message, 'invalid', toInPersonFieldErrors(read.details)),
+          new InPersonRefusedError(
+            read.message,
+            'invalid',
+            toInPersonFieldErrors(read.details),
+            inPersonUnplacedErrors(read.details),
+          ),
       );
     default:
       return throwError(() => failure);
@@ -2131,9 +2160,9 @@ export class HttpResidentRepository implements ResidentRepository {
     );
   }
 
-  update(id: ResidentId, draft: ResidentDraft): Observable<Resident> {
+  update(id: ResidentId, draft: ResidentDraft, note?: ResidentEditNote): Observable<Resident> {
     return this.write(draft, (barangayId) =>
-      this.api.patch(`${API_ENDPOINTS.officeResidents}/${id}`, toWireResidentDraft(draft, barangayId)),
+      this.api.patch(`${API_ENDPOINTS.officeResidents}/${id}`, toWireResidentEdit(draft, barangayId, note)),
     );
   }
 

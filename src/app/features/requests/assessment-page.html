@@ -955,6 +955,11 @@
             </p>
           } @else {
             <p class="status-line assessment__note">{{ copy.applicantNote }}</p>
+            @if (filedElsewhere(); as barangay) {
+              <p class="status-line assessment__note" role="note">
+                {{ copy.filedInBarangay(barangay) }}
+              </p>
+            }
             @if (profile(); as context) {
               @if (linksRegistry()) {
                 <app-resident-summary-card

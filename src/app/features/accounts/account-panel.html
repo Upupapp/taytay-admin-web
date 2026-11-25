@@ -183,6 +183,13 @@
       (announced)="outcome.set($event)"
     />
 
+    <!-- Its own section, for a verified account: linked to the registry after verification (DL-260). -->
+    <app-account-registry-link
+      [account]="account()"
+      [own]="own()"
+      (announced)="outcome.set($event)"
+    />
+
     <!-- Always in the DOM, so a screen reader hears the outcome when the text arrives. -->
     <p class="panel__outcome" role="status" aria-live="polite">{{ outcome() }}</p>
   </div>

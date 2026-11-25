@@ -27,7 +27,7 @@
     }
 
     <fieldset class="choice-list">
-      <legend>{{ copy.legend }}</legend>
+      <legend>{{ mode() === 'later' ? copy.laterLegend : copy.legend }}</legend>
       @if (read.kind === 'ready') {
         @for (match of read.value.matches; track match.residentId) {
           <label class="choice">
@@ -71,24 +71,138 @@
           <span class="choice__hint">{{ copy.createHint }}</span>
         </span>
       </label>
-      <label class="choice">
-        <input
-          type="radio"
-          [name]="idPrefix() + '-decision'"
-          [checked]="draft().decision === 'leave-unlinked'"
-          (change)="choose('leave-unlinked')"
-        />
-        <span class="choice__text">
-          {{ copy.leave }}
-          <span class="choice__hint">{{ copy.leaveHint }}</span>
-        </span>
-      </label>
+      @if (mode() === 'verify') {
+        <label class="choice">
+          <input
+            type="radio"
+            [name]="idPrefix() + '-decision'"
+            [checked]="draft().decision === 'leave-unlinked'"
+            (change)="choose('leave-unlinked')"
+          />
+          <span class="choice__text">
+            {{ copy.leave }}
+            <span class="choice__hint">{{ copy.leaveHint }}</span>
+          </span>
+        </label>
+      }
     </fieldset>
 
-    @if (draft().decision === 'create') {
+    @if (draft().decision === 'link' && draft().residentId !== null) {
+      <!-- The chosen record beside the account, read under the reviewer's own keys (DL-260). -->
+      <div class="link__record">
+        <h5 class="link__subheading">{{ copy.compare.heading }}</h5>
+        @let chosen = chosenRecord();
+        @if (chosen.kind === 'error') {
+          <p class="link__problem" role="status">{{ copy.compare.failed }}</p>
+        } @else if (chosen.kind !== 'ready') {
+          <app-loading-indicator size="small" [message]="copy.compare.loading" />
+        } @else if (chosenView(); as record) {
+          <dl class="facts link__compare">
+            <div>
+              <dt>{{ copy.compare.name }}</dt>
+              <dd>
+                {{ copy.compare.onRecord }}: {{ record.fullName }}
+                <br />
+                {{ copy.compare.onAccount }}: {{ verifiedName() }}
+              </dd>
+            </div>
+            <div>
+              <dt>{{ copy.compare.sex }}</dt>
+              <dd>
+                {{ copy.compare.onRecord }}:
+                {{ sexLabels[record.resident.sex] }}
+                <br />
+                {{ copy.compare.onAccount }}: {{ copy.compare.readOffId }}
+              </dd>
+            </div>
+            <div>
+              <dt>{{ copy.compare.birthDate }}</dt>
+              <dd>
+                {{ copy.compare.onRecord }}:
+                {{ record.resident.birthDate }}
+                <br />
+                {{ copy.compare.onAccount }}: {{ copy.compare.noBirthDate }}
+              </dd>
+            </div>
+            <div>
+              <dt>{{ copy.compare.barangay }}</dt>
+              <dd>
+                {{ copy.compare.onRecord }}: {{ barangayLabel(record) }}
+                @if (barangaySignal(); as said) {
+                  <br />
+                  {{ copy.compare.barangaySignal(said) }}
+                }
+              </dd>
+            </div>
+          </dl>
+        }
+
+        <div class="callout link__guide">
+          <p class="callout__title">{{ copy.mismatch.heading }}</p>
+          <ul>
+            @for (line of copy.mismatch.lines; track $index) {
+              <li>{{ line }}</li>
+            }
+          </ul>
+        </div>
+
+        <label class="check">
+          <input
+            type="checkbox"
+            [checked]="draft().correctName"
+            (change)="toggleCorrectName($event)"
+          />
+          {{ copy.correctName }}
+        </label>
+        <div class="field-row">
+          <div class="field">
+            <label class="field__label" [for]="idPrefix() + '-correct-sex'">{{
+              copy.correctSex
+            }}</label>
+            <select
+              class="field__input"
+              [id]="idPrefix() + '-correct-sex'"
+              (change)="chooseCorrectSex($event)"
+            >
+              <option value="" [selected]="draft().correctSex === null">
+                {{ copy.correctSexKeep }}
+              </option>
+              <option value="female" [selected]="draft().correctSex === 'female'">
+                {{ copy.sexes.female }}
+              </option>
+              <option value="male" [selected]="draft().correctSex === 'male'">
+                {{ copy.sexes.male }}
+              </option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field__label" [for]="idPrefix() + '-correct-birth'">{{
+              copy.correctBirthDate
+            }}</label>
+            <input
+              class="field__input"
+              type="date"
+              [id]="idPrefix() + '-correct-birth'"
+              [value]="draft().correctBirthDate"
+              [attr.aria-describedby]="idPrefix() + '-correct-birth-hint'"
+              (input)="typed('correctBirthDate', $event)"
+            />
+            <p class="field__hint" [id]="idPrefix() + '-correct-birth-hint'">
+              {{ copy.correctBirthDateHint }}
+            </p>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (draft().decision === 'create' || (draft().decision === 'link' && draft().correctName)) {
       <div class="link__record">
         <p class="link__note" [id]="idPrefix() + '-name-hint'">
-          {{ copy.nameHint(verifiedName()) }}
+          {{
+            draft().decision === 'create'
+              ? copy.nameHint(verifiedName())
+              : copy.correctNameHint(verifiedName())
+          }}
         </p>
         <div class="field-row">
           <div class="field">
@@ -134,6 +248,11 @@
             />
           </div>
         </div>
+      </div>
+    }
+
+    @if (draft().decision === 'create') {
+      <div class="link__record">
         <div class="field-row">
           <div class="field">
             <label class="field__label" [for]="idPrefix() + '-sex'">{{ copy.sex }}</label>
@@ -214,7 +333,12 @@
 
     @let current = state();
     @if (current.kind === 'ready') {
-      <p class="callout link__effect">{{ current.effect }} {{ copy.refusedTogether }}</p>
+      <p class="callout link__effect">
+        {{ current.effect }}
+        @if (mode() === 'verify') {
+          {{ copy.refusedTogether }}
+        }
+      </p>
     } @else if (current.kind === 'incomplete') {
       <p class="link__problem" role="status">{{ current.problem }}</p>
     }

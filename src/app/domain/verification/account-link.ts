@@ -77,9 +77,32 @@ export interface AccountLinkRecord {
   readonly streetAddress: string | null;
 }
 
+/**
+ * What a link corrects on the record, read off the ID in hand (`DL-260`): the name as verified, split
+ * into the registry's parts (the server refuses another name), the sex, the birth date. Each is the
+ * reviewer's own choice; a field left out keeps the record's value. The record's earlier values are
+ * kept in its history on the server, with the link's reason.
+ */
+export interface AccountLinkCorrections {
+  readonly name?: {
+    readonly firstName: string;
+    readonly middleName: string | null;
+    readonly lastName: string;
+    readonly suffix: string | null;
+  };
+  readonly sex?: RegistrySex;
+  readonly birthDate?: IsoDate;
+}
+
 /** The reviewer's decision, sent with the approval in one act: a refused link approves nothing. */
 export type AccountLinkDecision =
-  | { readonly decision: 'link'; readonly residentId: ResidentId; readonly reason: string }
+  | {
+      readonly decision: 'link';
+      readonly residentId: ResidentId;
+      readonly reason: string;
+      /** Absent when the record is linked as it stands. */
+      readonly corrections?: AccountLinkCorrections;
+    }
   | {
       readonly decision: 'create';
       readonly record: AccountLinkRecord;
@@ -92,6 +115,23 @@ export type AccountLinkDecision =
 export interface AccountLinkOutcome {
   readonly decision: AccountLinkDecisionKind;
   readonly residentId: ResidentId | null;
+}
+
+/** The record fields a correction can move. */
+export const LINK_CORRECTED_FIELDS = [
+  'firstName',
+  'middleName',
+  'lastName',
+  'suffix',
+  'sex',
+  'birthDate',
+] as const;
+export type LinkCorrectedField = (typeof LINK_CORRECTED_FIELDS)[number];
+
+/** A link made after the account was verified (`DL-260`): the link, and what it corrected. */
+export interface LaterLinkOutcome {
+  readonly link: AccountLinkOutcome;
+  readonly corrected: readonly LinkCorrectedField[];
 }
 
 export const ACCOUNT_LINK_LIMITS = {
@@ -114,6 +154,13 @@ export interface AccountLinkDraft {
   readonly birthDate: string;
   readonly civilStatus: CivilStatus | null;
   readonly streetAddress: string;
+  /**
+   * For a link: which of the record's fields to correct to the ID (`DL-260`). The name uses the
+   * parts above; the sex and the birth date their own values, read off the ID.
+   */
+  readonly correctName: boolean;
+  readonly correctSex: RegistrySex | null;
+  readonly correctBirthDate: string;
 }
 
 export type AccountLinkProblem =
@@ -157,6 +204,14 @@ export function accountLinkProblems(
       if (reason === '') {
         problems.push('reason');
       }
+      if (draft.correctName) {
+        if (draft.firstName.trim() === '') problems.push('first-name');
+        if (draft.lastName.trim() === '') problems.push('last-name');
+        if (namePartsTooLong(draft)) problems.push('name-too-long');
+      }
+      if (draft.correctBirthDate.trim() !== '' && !ISO_DATE.test(draft.correctBirthDate.trim())) {
+        problems.push('birth-date');
+      }
       return problems;
     }
     case 'leave-unlinked':
@@ -167,11 +222,7 @@ export function accountLinkProblems(
     case 'create': {
       if (draft.firstName.trim() === '') problems.push('first-name');
       if (draft.lastName.trim() === '') problems.push('last-name');
-      const parts = [draft.firstName, draft.middleName, draft.lastName];
-      if (
-        parts.some((part) => part.trim().length > ACCOUNT_LINK_LIMITS.namePart) ||
-        draft.suffix.trim().length > ACCOUNT_LINK_LIMITS.suffix
-      ) {
+      if (namePartsTooLong(draft)) {
         problems.push('name-too-long');
       }
       if (draft.civilStatus === null) problems.push('civil-status');
@@ -186,6 +237,35 @@ export function accountLinkProblems(
   }
 }
 
+function namePartsTooLong(draft: AccountLinkDraft): boolean {
+  const parts = [draft.firstName, draft.middleName, draft.lastName];
+  return (
+    parts.some((part) => part.trim().length > ACCOUNT_LINK_LIMITS.namePart) ||
+    draft.suffix.trim().length > ACCOUNT_LINK_LIMITS.suffix
+  );
+}
+
+/** What the draft corrects on a linked record, or `undefined` when it corrects nothing. */
+function correctionsOf(draft: AccountLinkDraft): AccountLinkCorrections | undefined {
+  const optional = (value: string): string | null => (value.trim() === '' ? null : value.trim());
+  const birth = draft.correctBirthDate.trim();
+  const corrections: AccountLinkCorrections = {
+    ...(draft.correctName
+      ? {
+          name: {
+            firstName: draft.firstName.trim(),
+            middleName: optional(draft.middleName),
+            lastName: draft.lastName.trim(),
+            suffix: optional(draft.suffix),
+          },
+        }
+      : {}),
+    ...(draft.correctSex === null ? {} : { sex: draft.correctSex }),
+    ...(birth === '' ? {} : { birthDate: asIsoDate(birth) }),
+  };
+  return Object.keys(corrections).length === 0 ? undefined : corrections;
+}
+
 /** The draft as a decision, or `null` while `accountLinkProblems` names anything. */
 export function toAccountLinkDecision(
   draft: AccountLinkDraft,
@@ -197,10 +277,15 @@ export function toAccountLinkDecision(
   const reason = draft.reason.trim();
   const optional = (value: string): string | null => (value.trim() === '' ? null : value.trim());
   switch (draft.decision) {
-    case 'link':
-      return draft.residentId === null
-        ? null
-        : { decision: 'link', residentId: draft.residentId, reason };
+    case 'link': {
+      if (draft.residentId === null) {
+        return null;
+      }
+      const corrections = correctionsOf(draft);
+      return corrections === undefined
+        ? { decision: 'link', residentId: draft.residentId, reason }
+        : { decision: 'link', residentId: draft.residentId, reason, corrections };
+    }
     case 'leave-unlinked':
       return { decision: 'leave-unlinked', reason };
     case 'create':
@@ -245,5 +330,8 @@ export function startAccountLinkDraft(verifiedName: string): AccountLinkDraft {
     birthDate: '',
     civilStatus: null,
     streetAddress: '',
+    correctName: false,
+    correctSex: null,
+    correctBirthDate: '',
   };
 }

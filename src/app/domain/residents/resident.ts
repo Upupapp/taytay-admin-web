@@ -1,5 +1,5 @@
 import type { AuditStamp } from '../shared/audit';
-import type { BarangayId, HouseholdId, IsoDate, ResidentId } from '../shared/ids';
+import type { BarangayId, HouseholdId, IsoDate, IsoDateTime, ResidentId } from '../shared/ids';
 import type { Money } from '../shared/money';
 
 export type Sex = 'female' | 'male';
@@ -399,4 +399,29 @@ export function toResidentDraft(resident: Resident): ResidentDraft {
     monthlyIncome: resident.monthlyIncome,
     householdId: resident.householdId,
   };
+}
+
+/**
+ * What an edit says about itself (`DL-260`): the record's `updatedAt` as the writer read it, so an
+ * edit made on a record somebody changed since is refused rather than written over their change
+ * unseen; why a name part, the sex or the birth date moved, which the server requires; and whether
+ * the writer saw a government ID showing the new value. The server keeps the earlier values.
+ */
+export interface ResidentEditNote {
+  readonly expectedUpdatedAt: IsoDateTime | null;
+  readonly reason: string | null;
+  readonly idChecked: boolean;
+}
+
+/** True when an edit moves a legal identity field — a name part, the sex or the birth date. */
+export function changesIdentity(before: ResidentDraft, after: ResidentDraft): boolean {
+  const blank = (value: string | null): string => (value ?? '').trim();
+  return (
+    blank(before.name.first) !== blank(after.name.first) ||
+    blank(before.name.middle) !== blank(after.name.middle) ||
+    blank(before.name.last) !== blank(after.name.last) ||
+    blank(before.name.suffix) !== blank(after.name.suffix) ||
+    before.sex !== after.sex ||
+    before.birthDate !== after.birthDate
+  );
 }

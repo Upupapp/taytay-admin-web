@@ -104,6 +104,7 @@ import type { ReleaseManifest } from '../releases/release-manifest';
 import type {
   Resident,
   ResidentDraft,
+  ResidentEditNote,
   ResidentFilter,
   VulnerabilitySector,
 } from '../residents/resident';
@@ -219,7 +220,11 @@ import type {
   VerificationRequest,
 } from '../verification/verification-request';
 import type { InPersonCheck, InPersonVerification } from '../verification/in-person-verification';
-import type { AccountLinkDecision, RegistryMatches } from '../verification/account-link';
+import type {
+  AccountLinkDecision,
+  LaterLinkOutcome,
+  RegistryMatches,
+} from '../verification/account-link';
 import type {
   Family,
   FamilyDraft,
@@ -333,7 +338,12 @@ export interface ResidentRepository {
    */
   getProfile(id: ResidentId): Observable<ResidentProfile | null>;
   create(draft: ResidentDraft): Observable<Resident>;
-  update(id: ResidentId, draft: ResidentDraft): Observable<Resident>;
+  /**
+   * Changes the record. `note` says what the edit is (`DL-260`): the version it was made on (a
+   * record changed since is refused, and nothing is written), and the reason a name part, the sex
+   * or the birth date moved — required by the server, which keeps the earlier value.
+   */
+  update(id: ResidentId, draft: ResidentDraft, note?: ResidentEditNote): Observable<Resident>;
   /**
    * Registry records are retired, never deleted: history must stay attributable. Retiring and
    * restoring each carry a reason, kept with the change on the server (`DL-174`): a record that
@@ -1654,6 +1664,14 @@ export interface VerificationRepository {
    * (`DL-73`) — and the record the account is linked to now, if any.
    */
   registryMatches(accountId: AppAccountId): Observable<RegistryMatches>;
+
+  /**
+   * Links a verified account that has no registry link yet (`DL-260`): one verified before links
+   * were made at verification, or left unlinked then. The same `link` or `create` decision, by a
+   * reviewer with an ID showing the account's verified name in hand; a link may correct the
+   * record's name, sex or birth date to the ID, the earlier values kept on the server.
+   */
+  linkLater(accountId: AppAccountId, decision: AccountLinkDecision): Observable<LaterLinkOutcome>;
 
   /** Refuses it. The resident reads `reason` in the app as what was wrong. */
   reject(id: VerificationRequestId, reason: string): Observable<VerificationRequest>;

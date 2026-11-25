@@ -11,10 +11,11 @@ import {
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { switchMap } from 'rxjs';
+import { distinctUntilChanged, of, switchMap } from 'rxjs';
 
 import {
   accountLinkProblems,
+  barangayName,
   CIVIL_STATUS_LABELS,
   CIVIL_STATUSES,
   startAccountLinkDraft,
@@ -29,6 +30,9 @@ import {
   type RegistryMatches,
   type RegistrySex,
   type ResidentId,
+  type ResidentView,
+  RESIDENT_REPOSITORY,
+  SEX_LABELS,
 } from '@domain/index';
 import { LOADING, toViewState, type ViewState } from '@shared/state/view-state';
 import { LoadingIndicator } from '@shared/ui/loading/loading-indicator';
@@ -63,17 +67,24 @@ export type AccountLinkState =
 })
 export class AccountLinkChoice {
   private readonly repository = inject(VERIFICATION_REPOSITORY);
+  private readonly residents = inject(RESIDENT_REPOSITORY);
 
   readonly accountId = input.required<AppAccountId>();
   /** The name as verified — the account's, or as corrected from the ID. */
   readonly verifiedName = input.required<string>();
   readonly idPrefix = input('account-link');
+  /**
+   * `verify`: decided with a verification, and refused with it. `later`: an account already verified
+   * is linked on its own (`DL-260`) — there is no "leave unlinked", which is what it already is.
+   */
+  readonly mode = input<'verify' | 'later'>('verify');
 
   readonly changed = output<AccountLinkState>();
 
   protected readonly copy = ACCOUNT_LINK_COPY;
   protected readonly civilStatuses = CIVIL_STATUSES;
   protected readonly civilLabels = CIVIL_STATUS_LABELS;
+  protected readonly sexLabels = SEX_LABELS;
 
   protected readonly matches = toSignal(
     toObservable(this.accountId).pipe(
@@ -96,6 +107,42 @@ export class AccountLinkChoice {
 
   protected readonly problems = computed(() => accountLinkProblems(this.draft(), this.proposals()));
 
+  /** The record chosen to link to, as the registry's own read gives it under the reader's keys. */
+  private readonly chosenResidentId = computed<ResidentId | null>(() => {
+    const draft = this.draft();
+    return draft.decision === 'link' ? draft.residentId : null;
+  });
+
+  /**
+   * The chosen record side by side with the account (`DL-260`): read through the registry under the
+   * reviewer's own keys, so it shows only what they may already open from the record's link — the
+   * proposals themselves stay value-free (`DL-73`).
+   */
+  protected readonly chosenRecord = toSignal(
+    toObservable(this.chosenResidentId).pipe(
+      distinctUntilChanged(),
+      switchMap((id) =>
+        id === null
+          ? of<ViewState<ResidentView | null>>({ kind: 'ready', value: null })
+          : toViewState(this.residents.getById(id)),
+      ),
+    ),
+    { initialValue: { kind: 'ready', value: null } as ViewState<ResidentView | null> },
+  );
+
+  protected readonly chosenView = computed<ResidentView | null>(() => {
+    const state = this.chosenRecord();
+    return state.kind === 'ready' ? state.value : null;
+  });
+
+  /** The barangay signal of the chosen proposal, said in words: the account's value is not sent. */
+  protected readonly barangaySignal = computed<string | null>(() => {
+    const id = this.chosenResidentId();
+    const match = this.proposals().find((candidate) => candidate.residentId === id);
+    const signal = match?.signals.find((entry) => entry.attribute === 'barangay');
+    return signal === undefined ? null : this.copy.outcome[signal.outcome];
+  });
+
   protected readonly state = computed<AccountLinkState>(() => {
     const linked = this.linkedResidentId();
     if (linked !== null) {
@@ -114,18 +161,30 @@ export class AccountLinkChoice {
     return state.kind === 'ready' ? state.effect : null;
   });
 
+  /** The account the draft was started for: another account starts from nothing chosen. */
+  private draftFor: AppAccountId | null = null;
+
   constructor() {
-    // Another account starts from nothing chosen, its name parts from its own verified name.
+    // Another account starts from nothing chosen — no record, no reason, no correction carried over
+    // from the last one — and its name parts from its own verified name. The same account with a
+    // corrected name keeps what was chosen and only re-splits the name.
     effect(() => {
-      this.accountId();
+      const account = this.accountId();
       const name = this.verifiedName();
       untracked(() => {
+        const fresh = startAccountLinkDraft(name);
+        if (this.draftFor !== account) {
+          this.draftFor = account;
+          this.draft.set(fresh);
+          return;
+        }
         const current = this.draft();
         this.draft.set({
-          ...startAccountLinkDraft(name),
-          decision: current.decision,
-          residentId: current.residentId,
-          reason: current.reason,
+          ...current,
+          firstName: fresh.firstName,
+          middleName: fresh.middleName,
+          lastName: fresh.lastName,
+          suffix: fresh.suffix,
         });
       });
     });
@@ -136,11 +195,37 @@ export class AccountLinkChoice {
   }
 
   protected chooseMatch(match: RegistryMatch): void {
-    this.patch({ decision: 'link', residentId: match.residentId });
+    // Corrections are about one record: another record starts with none chosen.
+    this.patch({
+      decision: 'link',
+      residentId: match.residentId,
+      correctName: false,
+      correctSex: null,
+      correctBirthDate: '',
+    });
   }
 
   protected choose(decision: AccountLinkDecisionKind): void {
-    this.patch({ decision, residentId: null });
+    this.patch({
+      decision,
+      residentId: null,
+      correctName: false,
+      correctSex: null,
+      correctBirthDate: '',
+    });
+  }
+
+  protected toggleCorrectName(event: Event): void {
+    this.patch({ correctName: event.target instanceof HTMLInputElement && event.target.checked });
+  }
+
+  protected chooseCorrectSex(event: Event): void {
+    const value = event.target instanceof HTMLSelectElement ? event.target.value : '';
+    this.patch({ correctSex: value === 'female' || value === 'male' ? value : null });
+  }
+
+  protected barangayLabel(view: ResidentView): string {
+    return barangayName(view.resident.address.barangayId);
   }
 
   protected isChosen(match: RegistryMatch): boolean {
@@ -150,7 +235,14 @@ export class AccountLinkChoice {
 
   protected typed(
     key:
-      'reason' | 'firstName' | 'middleName' | 'lastName' | 'suffix' | 'birthDate' | 'streetAddress',
+      | 'reason'
+      | 'firstName'
+      | 'middleName'
+      | 'lastName'
+      | 'suffix'
+      | 'birthDate'
+      | 'streetAddress'
+      | 'correctBirthDate',
     event: Event,
   ): void {
     const value =
@@ -185,14 +277,24 @@ export class AccountLinkChoice {
   }
 
   private effectOf(decision: AccountLinkDecision): string {
+    const effects = this.mode() === 'later' ? this.copy.effectLater : this.copy.effect;
     switch (decision.decision) {
       case 'link': {
         const label =
           this.proposals().find((match) => match.residentId === decision.residentId)?.label ?? '';
-        return this.copy.effect.link(label);
+        const corrections = decision.corrections;
+        if (corrections === undefined) {
+          return effects.link(label);
+        }
+        const fields = [
+          ...(corrections.name === undefined ? [] : [this.copy.correctedField.name]),
+          ...(corrections.sex === undefined ? [] : [this.copy.correctedField.sex]),
+          ...(corrections.birthDate === undefined ? [] : [this.copy.correctedField.birthDate]),
+        ];
+        return `${effects.link(label)} ${this.copy.correctionEffect(fields)}`;
       }
       case 'create':
-        return this.copy.effect.create;
+        return effects.create;
       case 'leave-unlinked':
         return this.copy.effect['leave-unlinked'];
     }

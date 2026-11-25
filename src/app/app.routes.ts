@@ -731,7 +731,7 @@ export const routes: Routes = [
         title: 'ID verification — Taytay Social Welfare',
         // The API grants `verification.review` to administrators alone, and this guard mirrors it.
         // It is not the protection: the API refuses anybody else whatever this console shows (rule 4).
-        canActivate: [servedGuard('verification'), permissionGuard('verification.review')],
+        canActivate: [servedGuard('verification', 'resident'), permissionGuard('verification.review')],
         loadComponent: () =>
           import('@features/verification/verification-queue-page').then(
             (m) => m.VerificationQueuePage,
@@ -800,7 +800,7 @@ export const routes: Routes = [
         // reads the office directory too, to name a staff account's office and to offer one.
         path: 'users',
         title: 'Users and roles — Taytay Social Welfare',
-        canActivate: [servedGuard('app-account', 'office'), permissionGuard('user.view')],
+        canActivate: [servedGuard('app-account', 'office', 'resident'), permissionGuard('user.view')],
         loadComponent: () =>
           import('@features/accounts/accounts-page').then((m) => m.AccountsPage),
       },

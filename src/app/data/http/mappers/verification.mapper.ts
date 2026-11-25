@@ -4,15 +4,18 @@ import {
   REGISTRY_MATCH_OUTCOMES,
   REGISTRY_MATCH_STRENGTHS,
   VERIFICATION_STATUSES,
+  type AccountLinkCorrections,
   type AccountLinkDecision,
   type AccountLinkOutcome,
   type AppAccountId,
+  type LinkCorrectedField,
   type ConfirmedIdentity,
   type IdDocumentType,
   type InPersonCheck,
   type InPersonField,
   type InPersonVerification,
   type InPersonVerificationId,
+  type LaterLinkOutcome,
   type MediaId,
   type RegistryMatch,
   type RegistryMatches,
@@ -187,13 +190,48 @@ export function toAccountLinkOutcome(wire: unknown): AccountLinkOutcome | null {
 
 /** `AccountLinkInput`, strict on the server: one of three shapes, nothing else. */
 export type AccountLinkWire =
-  | { readonly decision: 'link'; readonly resident_id: string; readonly reason: string }
+  | {
+      readonly decision: 'link';
+      readonly resident_id: string;
+      readonly reason: string;
+      readonly corrections?: AccountLinkCorrectionsWire;
+    }
   | {
       readonly decision: 'create';
       readonly record: AccountLinkRecordWire;
       readonly reason?: string;
     }
   | { readonly decision: 'leave-unlinked'; readonly reason: string };
+
+/** `AccountLinkInput.corrections` (`DL-260`): only what the reviewer chose to correct. */
+export interface AccountLinkCorrectionsWire {
+  readonly name?: {
+    readonly first_name: string;
+    readonly middle_name: string | null;
+    readonly last_name: string;
+    readonly suffix: string | null;
+  };
+  readonly sex?: 'female' | 'male';
+  readonly birth_date?: string;
+}
+
+function toWireLinkCorrections(corrections: AccountLinkCorrections): AccountLinkCorrectionsWire {
+  const name = corrections.name;
+  return {
+    ...(name === undefined
+      ? {}
+      : {
+          name: {
+            first_name: name.firstName,
+            middle_name: name.middleName,
+            last_name: name.lastName,
+            suffix: name.suffix,
+          },
+        }),
+    ...(corrections.sex === undefined ? {} : { sex: corrections.sex }),
+    ...(corrections.birthDate === undefined ? {} : { birth_date: corrections.birthDate }),
+  };
+}
 
 export interface AccountLinkRecordWire {
   readonly first_name: string;
@@ -213,7 +251,14 @@ export interface AccountLinkRecordWire {
 export function toWireAccountLink(link: AccountLinkDecision): AccountLinkWire {
   switch (link.decision) {
     case 'link':
-      return { decision: 'link', resident_id: link.residentId, reason: link.reason };
+      return link.corrections === undefined
+        ? { decision: 'link', resident_id: link.residentId, reason: link.reason }
+        : {
+            decision: 'link',
+            resident_id: link.residentId,
+            reason: link.reason,
+            corrections: toWireLinkCorrections(link.corrections),
+          };
     case 'leave-unlinked':
       return { decision: 'leave-unlinked', reason: link.reason };
     case 'create': {
@@ -233,6 +278,42 @@ export function toWireAccountLink(link: AccountLinkDecision): AccountLinkWire {
         : { decision: 'create', record: wire, reason: link.reason };
     }
   }
+}
+
+/** `AccountRegistryLinkBody` (`DL-260`): a link made after the account was verified. */
+export interface LaterLinkWire {
+  readonly account_link: AccountLinkWire;
+  readonly id_checked: true;
+}
+
+export function toWireLaterLink(link: AccountLinkDecision): LaterLinkWire {
+  return { account_link: toWireAccountLink(link), id_checked: true };
+}
+
+/** The record's columns as the API names them in `corrected`, in the domain's words. */
+const CORRECTED_FIELD_BY_WIRE: Readonly<Record<string, LinkCorrectedField>> = {
+  first_name: 'firstName',
+  middle_name: 'middleName',
+  last_name: 'lastName',
+  suffix: 'suffix',
+  sex: 'sex',
+  birth_date: 'birthDate',
+};
+
+/** `AccountRegistryLinkEnvelope.data`: the link, and the record fields it corrected. */
+export function toLaterLinkOutcome(wire: unknown): LaterLinkOutcome | null {
+  const link = toAccountLinkOutcome(field(wire, 'account_link'));
+  const corrected = field(wire, 'corrected');
+  if (link === null || !Array.isArray(corrected)) {
+    return null;
+  }
+  const fields = corrected.map((entry: unknown) =>
+    typeof entry === 'string' ? (CORRECTED_FIELD_BY_WIRE[entry] ?? null) : null,
+  );
+  if (fields.some((entry) => entry === null)) {
+    return null;
+  }
+  return { link, corrected: fields.filter((entry): entry is LinkCorrectedField => entry !== null) };
 }
 
 /** `VerificationApproval`: what the reviewer checked, sent back as read (`DL-197`), and the link. */
@@ -428,4 +509,13 @@ export function toInPersonFieldErrors(
     }
   }
   return fields;
+}
+
+/** The server's sentences for fields the counter form does not have, such as the link's (DL-260). */
+export function inPersonUnplacedErrors(
+  details: Readonly<Record<string, readonly string[]>> | null,
+): readonly string[] {
+  return Object.entries(details ?? {})
+    .filter(([key]) => IN_PERSON_FIELD_BY_WIRE[key] === undefined)
+    .flatMap(([, sentences]) => sentences.slice(0, 1));
 }

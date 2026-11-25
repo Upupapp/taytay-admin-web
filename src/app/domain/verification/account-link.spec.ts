@@ -103,3 +103,63 @@ describe('the registry decision at verification (DL-228)', () => {
     });
   });
 });
+
+describe('correcting the linked record to the ID (DL-260)', () => {
+  const linking = (change: Partial<AccountLinkDraft>): AccountLinkDraft =>
+    draft({
+      decision: 'link',
+      residentId: RECORD,
+      reason: 'PhilID seen at the counter',
+      ...change,
+    });
+
+  it('links the record as it stands when nothing is chosen to correct', () => {
+    expect(toAccountLinkDecision(linking({}), MATCHES)).toEqual({
+      decision: 'link',
+      residentId: RECORD,
+      reason: 'PhilID seen at the counter',
+    });
+  });
+
+  it('corrects only the fields chosen, each read off the ID', () => {
+    expect(
+      toAccountLinkDecision(
+        linking({
+          correctName: true,
+          firstName: 'Lorna',
+          middleName: 'Dela Cruz',
+          lastName: 'Mercado',
+          correctBirthDate: '1980-04-03',
+        }),
+        MATCHES,
+      ),
+    ).toEqual({
+      decision: 'link',
+      residentId: RECORD,
+      reason: 'PhilID seen at the counter',
+      corrections: {
+        name: { firstName: 'Lorna', middleName: 'Dela Cruz', lastName: 'Mercado', suffix: null },
+        birthDate: '1980-04-03',
+      },
+    });
+    expect(toAccountLinkDecision(linking({ correctSex: 'female' }), MATCHES)).toEqual({
+      decision: 'link',
+      residentId: RECORD,
+      reason: 'PhilID seen at the counter',
+      corrections: { sex: 'female' },
+    });
+  });
+
+  it('asks for the name parts and a real date before a correction is sent', () => {
+    expect(
+      accountLinkProblems(linking({ correctName: true, firstName: ' ', lastName: '' }), MATCHES),
+    ).toEqual(['first-name', 'last-name']);
+    expect(accountLinkProblems(linking({ correctBirthDate: '03/04/1980' }), MATCHES)).toEqual([
+      'birth-date',
+    ]);
+    // A name split typed for a record made is not a correction of a record linked.
+    expect(
+      toAccountLinkDecision(linking({ correctName: false, firstName: 'Other' }), MATCHES),
+    ).toEqual({ decision: 'link', residentId: RECORD, reason: 'PhilID seen at the counter' });
+  });
+});

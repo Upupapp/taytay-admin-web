@@ -298,7 +298,7 @@ export const NAVIGATION: readonly NavSection[] = [
       {
         label: 'ID verification',
         route: '/verification',
-        reads: ['verification'],
+        reads: ['verification', 'resident'],
         glyph: 'IV',
         permissions: ['verification.review'],
         description: 'Residents asking to have their app account verified against an ID.',
@@ -328,7 +328,7 @@ export const NAVIGATION: readonly NavSection[] = [
         // `DL-168`. Every app account, residents included, and who among them is staff.
         label: 'Users and roles',
         route: '/users',
-        reads: ['app-account', 'office'],
+        reads: ['app-account', 'office', 'resident'],
         glyph: 'UR',
         permissions: ['user.view'],
         description: 'Every residents’ app account, and who among them is staff.',

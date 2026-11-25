@@ -16,6 +16,7 @@ import {
   type StaffRole,
   type StaffUserId,
   type AppAccountId,
+  type ResidentId,
   type InPersonCheck,
   type VerificationRequest,
   type VerificationRequestId,
@@ -23,6 +24,7 @@ import {
 import type { AppEnvironment } from '@env/environment.model';
 
 import { MockAppAccountStore } from './mock-app-account.store';
+import { MockResidentStore } from './mock-resident.store';
 import { MockVerificationRepository } from './mock-verification.repository';
 import { SAMPLE_IMAGE_MARKER } from './seed/verification-requests.seed';
 
@@ -359,5 +361,49 @@ describe('MockVerificationRepository', () => {
       }),
     );
     expect(approved.registryOutcome).toEqual({ decision: 'leave-unlinked', residentId: null });
+  });
+
+  it('links a verified account later, correcting only what was chosen, and only once (DL-260)', async () => {
+    const repository = signedInAs('system-administrator');
+    const danilo = asId<AppAccountId>('app-account-0004');
+    const aurora = asId<ResidentId>('res-0001');
+
+    const unverified = await firstValueFrom(
+      repository.linkLater(asId<AppAccountId>('app-account-0005'), {
+        decision: 'link',
+        residentId: aurora,
+        reason: 'Seen',
+      }),
+    ).catch((error: unknown) => error);
+    expect(unverified).toBeInstanceOf(Error);
+
+    const outcome = await firstValueFrom(
+      repository.linkLater(danilo, {
+        decision: 'link',
+        residentId: aurora,
+        reason: 'PhilID seen at the counter',
+        corrections: {
+          sex: 'female',
+          name: { firstName: 'Aurora', middleName: null, lastName: 'Mercado', suffix: null },
+        },
+      }),
+    );
+    expect(outcome.link).toEqual({ decision: 'link', residentId: aurora });
+    expect(outcome.corrected).toEqual(['middleName']);
+    expect(TestBed.inject(MockResidentStore).find(aurora)?.name.middle).toBeNull();
+
+    const again = await firstValueFrom(
+      repository.linkLater(danilo, { decision: 'link', residentId: aurora, reason: 'Again' }),
+    ).catch((error: unknown) => error);
+    expect(again).toBeInstanceOf(Error);
+
+    const denied = await firstValueFrom(
+      signedInAs('intake-officer').linkLater(danilo, {
+        decision: 'link',
+        residentId: aurora,
+        reason: 'x',
+      }),
+    ).catch((error: unknown) => error);
+    expect(isPermissionDenied(denied)).toBe(true);
   });
 });

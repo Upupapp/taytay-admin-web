@@ -43,6 +43,7 @@ import {
   asIsoDateTime,
   IN_PERSON_EFFECTS,
   UNSERVED_PORTS,
+  RESIDENT_REPOSITORY,
   VERIFICATION_REPOSITORY,
   type DataPort,
 } from '@domain/index';
@@ -201,6 +202,7 @@ function configure(
     registryMatches: (accountId) =>
       of({ accountId, linkedResidentId: asId<ResidentId>('resident-9'), matches: [] }),
     verifyInPerson: (accountId, check, intent) => checks.verifyInPerson(accountId, check, intent),
+    linkLater: () => EMPTY,
   };
   const offices: OfficeRepository = { list: () => of(OFFICES) };
   TestBed.resetTestingModule();
@@ -210,6 +212,7 @@ function configure(
       { provide: APP_ACCOUNT_REPOSITORY, useValue: repository },
       { provide: OFFICE_REPOSITORY, useValue: offices },
       { provide: VERIFICATION_REPOSITORY, useValue: verifications },
+      { provide: RESIDENT_REPOSITORY, useValue: { getById: () => of(null) } },
       { provide: UNSERVED_PORTS, useValue: unserved },
       { provide: SessionStore, useValue: { user: signal({ id: READER }) } },
       {

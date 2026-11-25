@@ -1,0 +1,81 @@
+@if (applies() && canLink()) {
+  <section class="subpanel panel__block" aria-labelledby="account-registry-link">
+    <h3 id="account-registry-link" class="section-title">{{ copy.heading }}</h3>
+
+    @if (own()) {
+      <p class="panel__note">{{ copy.ownAccount }}</p>
+    } @else {
+      @let read = current();
+      @if (read.kind === 'error') {
+        <p class="panel__problem" role="alert">{{ copy.readFailed }}</p>
+      } @else if (read.kind !== 'ready') {
+        <p class="panel__note" role="status">{{ copy.reading }}</p>
+      } @else if (linkedResidentId(); as linked) {
+        <p class="panel__note panel__note--plain">
+          {{ copy.linked }}
+          <a [routerLink]="['/residents', linked]">{{ copy.openRecord }}</a>
+        </p>
+      } @else {
+        <p class="panel__note panel__note--plain">{{ copy.unlinked }}</p>
+        <button type="button" class="btn btn--primary" (click)="open()">{{ copy.open }}</button>
+      }
+    }
+  </section>
+
+  @if (opened() && account().name; as name) {
+    <app-modal
+      [open]="true"
+      size="large"
+      [heading]="copy.dialogHeading"
+      [description]="copy.dialogIntro"
+      [dismissible]="!busy()"
+      (dismissed)="close()"
+    >
+      <div modal-body class="panel__dialog">
+        @if (refusal(); as message) {
+          <div class="callout callout--danger" role="alert">
+            <p>{{ message }}</p>
+          </div>
+        }
+
+        <app-account-link-choice
+          idPrefix="later-link"
+          mode="later"
+          [accountId]="account().id"
+          [verifiedName]="name"
+          (changed)="chosen($event)"
+        />
+
+        <label class="check">
+          <input type="checkbox" [checked]="seen()" [disabled]="busy()" (change)="tick($event)" />
+          {{ copy.statement(name) }}
+        </label>
+
+        @if (link(); as state) {
+          @if (state.kind === 'incomplete') {
+            <p class="status-line">{{ state.problem }}</p>
+          }
+        }
+      </div>
+
+      <button
+        type="button"
+        modal-actions
+        class="btn btn--secondary"
+        [disabled]="busy()"
+        (click)="close()"
+      >
+        {{ copy.cancel }}
+      </button>
+      <button
+        type="button"
+        modal-actions
+        class="btn btn--primary"
+        [disabled]="!ready()"
+        (click)="save()"
+      >
+        {{ busy() ? copy.saving : copy.confirm }}
+      </button>
+    </app-modal>
+  }
+}

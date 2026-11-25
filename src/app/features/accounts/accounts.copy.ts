@@ -199,4 +199,37 @@ export const ACCOUNTS_COPY = {
     notDone: (why: string): string => `That was not done. ${why}`,
     failed: 'The system refused it or could not be reached.',
   },
+
+  /** Linking a verified account to its registry record after the verification (`DL-260`). */
+  registryLink: {
+    heading: 'Registry record',
+    ownAccount: 'This is your own account. The system refuses a link made by its own holder.',
+    reading: 'Reading the account’s registry link…',
+    readFailed:
+      'The account’s registry link could not be read. Close this panel and open it again.',
+    linked: 'This account is linked to a registry record. The link stays as it is.',
+    openRecord: 'Open the record',
+    unlinked:
+      'This account is not linked to any registry record, so the resident’s My requests stay ' +
+      'empty and she cannot apply for Tulong from the app. Link it with an ID that shows the ' +
+      'account’s verified name in front of you.',
+    open: 'Link to a registry record',
+    dialogHeading: 'Link this account to a registry record',
+    dialogIntro:
+      'Choose the record that is this person, or make one. The system compares names and says ' +
+      'how much they resemble; it decides nothing.',
+    statement: (name: string): string =>
+      `I have a government ID in front of me that shows the name ${name}, and the person it belongs to.`,
+    cancel: 'Cancel',
+    confirm: 'Link the account',
+    saving: 'Linking…',
+    done: (corrected: number): string =>
+      corrected === 0
+        ? 'The account is linked to the registry record.'
+        : `The account is linked, and ${corrected} ${corrected === 1 ? 'detail' : 'details'} of the record ` +
+          'corrected to the ID. What it said before is kept in its history. Tell the resident what ' +
+          'was corrected.',
+    notDone: (why: string): string => `The account was not linked. ${why}`,
+    failed: 'The system refused it or could not be reached.',
+  },
 } as const;

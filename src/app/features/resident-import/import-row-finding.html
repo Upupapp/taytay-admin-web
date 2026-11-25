@@ -1,4 +1,7 @@
-<article class="card card--padded stack" [attr.aria-label]="check.rowLabel(row().row, row().sourceLine)">
+<article
+  class="card card--padded stack"
+  [attr.aria-label]="check.rowLabel(row().row, row().sourceLine)"
+>
   <h3 class="section-title">{{ check.rowLabel(row().row, row().sourceLine) }}</h3>
 
   <div class="record-grid">
@@ -44,7 +47,9 @@
 
   @if (row().resolution; as decided) {
     <p class="status-line" role="status">
-      {{ check.decided(actionLabel(decided.action), decided.by ?? check.decidedBy, decided.reason) }}
+      {{
+        check.decided(actionLabel(decided.action), decided.by ?? check.decidedBy, decided.reason)
+      }}
     </p>
     @if (!editing()) {
       <button type="button" class="btn btn--small" (click)="editing.set(true)">
@@ -118,7 +123,9 @@
       }
 
       <div class="form-footer">
-        <button type="submit" class="btn btn--primary">{{ copy.submit }}</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving()">
+          {{ saving() ? copy.saving : copy.submit }}
+        </button>
       </div>
     </form>
   }

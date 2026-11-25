@@ -154,6 +154,11 @@ export const REQUESTS_COPY = {
     applicantHeading: 'Applicant',
     applicantNote:
       'The same picture the encoder saw, read fresh. Nothing here was retyped into this request.',
+    // A filed request keeps the barangay at filing; the card above is the person today (DL-260).
+    filedInBarangay: (barangay: string): string =>
+      'Filed while the applicant lived in ' +
+      barangay +
+      '. The request keeps that barangay for its lists and reports; the card above shows where they live now.',
 
     requestHeading: 'The request',
     programme: 'Programme',

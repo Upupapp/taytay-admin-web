@@ -1,15 +1,29 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 
 import {
   barangayName,
   IMPORT_REASON_MAX_LENGTH,
+  RESIDENT_IMPORT_REPOSITORY,
   type BarangayId,
   type ImportAction,
   type ImportResolution,
   type ImportRow,
   type ResidentId,
+  type ResidentImport,
+  type ResidentImportId,
 } from '@domain/index';
+import { failureReason } from '@shared/state/failure-reason';
 
 import { RESIDENT_IMPORT_COPY } from './resident-import.copy';
 
@@ -29,10 +43,15 @@ import { RESIDENT_IMPORT_COPY } from './resident-import.copy';
   templateUrl: './import-row-finding.html',
 })
 export class ImportRowFinding {
+  private readonly repository = inject(RESIDENT_IMPORT_REPOSITORY);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly importId = input.required<ResidentImportId>();
   readonly row = input.required<ImportRow>();
   /** The labels of the row's cells, in the server's words. */
   readonly labels = input.required<Readonly<Record<string, string>>>();
-  readonly resolved = output<ImportResolution>();
+  /** The import as the server answered the finding: the page shows it whole. */
+  readonly answered = output<ResidentImport>();
 
   protected readonly copy = RESIDENT_IMPORT_COPY.finding;
   protected readonly check = RESIDENT_IMPORT_COPY.check;
@@ -43,6 +62,13 @@ export class ImportRowFinding {
   protected readonly residentId = signal<ResidentId | null>(null);
   protected readonly reason = signal('');
   protected readonly problem = signal('');
+  /**
+   * While the finding is on its way. The choice and the reason stay on the row until the server
+   * has kept them, and a refusal is said on the row it is about (`DL-260`): clearing them on the
+   * click lost the reason whenever the server refused, and the refusal appeared at the top of a
+   * long page, away from the row.
+   */
+  protected readonly saving = signal(false);
 
   /**
    * A live re-read that brings somebody else's finding on this row does not close a finding this
@@ -102,9 +128,28 @@ export class ImportRowFinding {
       this.problem.set(this.copy.reasonMissing);
       return;
     }
-    this.resolved.emit(this.resolution(action, reason));
-    this.editing.set(false);
-    this.reason.set('');
-    this.action.set(null);
+    if (this.saving()) {
+      return;
+    }
+    this.saving.set(true);
+    this.problem.set('');
+    this.repository
+      .resolve(this.importId(), this.row().row, this.resolution(action, reason))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (answer) => {
+          this.saving.set(false);
+          this.editing.set(false);
+          this.reason.set('');
+          this.action.set(null);
+          this.answered.emit(answer);
+        },
+        error: (failure: unknown) => {
+          this.saving.set(false);
+          this.problem.set(
+            this.copy.refused(failureReason(failure) ?? RESIDENT_IMPORT_COPY.noAnswer),
+          );
+        },
+      });
   }
 }

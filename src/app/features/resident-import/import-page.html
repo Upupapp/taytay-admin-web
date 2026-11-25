@@ -122,9 +122,10 @@
             @default {
               @for (row of rowsOf(record, tab()); track row.row) {
                 <app-import-row-finding
+                  [importId]="record.id"
                   [row]="row"
                   [labels]="fieldLabels()"
-                  (resolved)="resolve(row, $event)"
+                  (answered)="resolved($event)"
                 />
               } @empty {
                 <p class="note-box">{{ copy.check.none }}</p>
