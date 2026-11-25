@@ -180,10 +180,11 @@
         view.listedName
       }}</a>
       <span class="residents__sub">{{ nameMeta(view) }}</span>
+      <!-- Under the name rather than beside it, so the column is as wide as a name (DL-259). -->
+      @if (view.isProtected) {
+        <span class="chip chip--danger residents__protected">{{ copy.restricted }}</span>
+      }
     </span>
-    @if (view.isProtected) {
-      <span class="chip chip--danger residents__protected">{{ copy.restricted }}</span>
-    }
   </span>
 </ng-template>
 

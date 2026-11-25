@@ -10,6 +10,9 @@ import { Skeleton } from '../loading/skeleton';
 import { ScrollRegion } from '../scroll-region/scroll-region';
 import { columnText, type TableColumn } from './table-column';
 
+/** From this many columns a table uses the closer cell spacing (`DL-259`). */
+export const DENSE_FROM_COLUMNS = 8;
+
 /**
  * The shared table primitive.
  *
@@ -50,6 +53,12 @@ export class DataTable<TRow> {
   readonly emptyActionSelected = output<void>();
 
   protected readonly isEmpty = computed(() => !this.loading() && this.rows().length === 0);
+
+  /**
+   * A table of many columns draws its cells closer together, so a registry fits a laptop's width
+   * without scrolling sideways (`DL-259`). A short table keeps the roomier spacing.
+   */
+  protected readonly dense = computed(() => this.columns().length >= DENSE_FROM_COLUMNS);
 
   protected readonly rangeLabel = computed(() => {
     const page = this.page();

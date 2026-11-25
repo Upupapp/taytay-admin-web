@@ -109,7 +109,7 @@ export class LinksSection {
       value: (link) => String(link.sortOrder),
     },
     { key: 'label', header: this.copy.columnLabel, value: (link) => link.label },
-    { key: 'href', header: this.copy.columnHref, value: (link) => link.href },
+    { key: 'href', header: this.copy.columnHref, value: (link) => link.href, wrapAnywhere: true },
     ...(this.archived()
       ? [{ key: 'archived', header: this.copy.columnArchived, cell: this.archivedCell() }]
       : []),

@@ -453,7 +453,7 @@ describe.each(CASES)('$title — archive, never delete (DL-225)', (c) => {
 
     expect(c.log(home).listed).toEqual([false]);
     expect(buttonNamed(label('Edit', c.current.name))).not.toBeNull();
-    expect(buttonNamed(label('Archive', c.current.name))?.className).toBe('btn');
+    expect(buttonNamed(label('Archive', c.current.name))?.className).toBe('btn btn--small');
     expect(element.textContent).not.toMatch(/delete/i);
   });
 

@@ -132,10 +132,16 @@
 <ng-template #nameCell let-view>
   <span class="residents__who">
     <span class="avatar" aria-hidden="true">{{ view.listedName | initials }}</span>
-    <a class="record-link residents__name" [routerLink]="detailLink(view)">{{ view.listedName }}</a>
-    @if (view.isProtected) {
-      <span class="chip chip--danger residents__protected">{{ listCopy.restricted }}</span>
-    }
+    <!-- The restricted chip under the name rather than beside it, so the column is as wide as a
+         name, not a name and a chip (DL-259). -->
+    <span class="residents__stack">
+      <a class="record-link residents__name" [routerLink]="detailLink(view)">{{
+        view.listedName
+      }}</a>
+      @if (view.isProtected) {
+        <span class="chip chip--danger residents__protected">{{ listCopy.restricted }}</span>
+      }
+    </span>
   </span>
 </ng-template>
 
@@ -172,7 +178,7 @@
     [attr.aria-label]="copy.endLabel(view.listedName, page().phrase)"
     (click)="openEnd(view)"
   >
-    {{ copy.columnEnd }}
+    {{ copy.end }}
   </button>
 </ng-template>
 

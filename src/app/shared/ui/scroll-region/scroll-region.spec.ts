@@ -63,6 +63,7 @@ describe('ScrollRegion (DL-227)', () => {
     expect(box.hasAttribute('tabindex')).toBe(false);
     expect(box.hasAttribute('role')).toBe(false);
     expect(box.hasAttribute('aria-label')).toBe(false);
+    expect(box.classList.contains('scroll-region--scrolls')).toBe(false);
   });
 
   it('becomes a focusable, labelled region once it scrolls, and stops being one after', async () => {
@@ -83,6 +84,22 @@ describe('ScrollRegion (DL-227)', () => {
     await fixture.whenStable();
     expect(box.hasAttribute('tabindex')).toBe(false);
     expect(box.hasAttribute('role')).toBe(false);
+  });
+
+  // The class pins the first column while, and only while, the box scrolls (DL-259).
+  it('marks the box as scrolling exactly while it scrolls', async () => {
+    const { fixture, box } = await render();
+    const observer = FakeResizeObserver.instances[0];
+
+    sizeBox(box, 900, 340);
+    observer?.fire();
+    await fixture.whenStable();
+    expect(box.classList.contains('scroll-region--scrolls')).toBe(true);
+
+    sizeBox(box, 340, 340);
+    observer?.fire();
+    await fixture.whenStable();
+    expect(box.classList.contains('scroll-region--scrolls')).toBe(false);
   });
 
   it('stops observing when the box goes', async () => {

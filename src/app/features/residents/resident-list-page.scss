@@ -81,6 +81,7 @@
 // Stated in words, never by colour alone: a masked record has to announce
 // itself to every reader (WCAG 1.4.1).
 .residents__protected {
+  align-self: flex-start;
   font-weight: var(--fw-bold);
 }
 

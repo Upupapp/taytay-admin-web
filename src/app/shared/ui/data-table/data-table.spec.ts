@@ -2,7 +2,7 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 
 import type { Page, SortSpec } from '@domain/index';
 
-import { DataTable } from './data-table';
+import { DataTable, DENSE_FROM_COLUMNS } from './data-table';
 import type { TableColumn } from './table-column';
 
 interface Row {
@@ -57,6 +57,36 @@ describe('DataTable', () => {
     const cells = element.querySelectorAll('tbody tr:first-child td');
     expect(cells[0]?.classList.contains('table__cell--nowrap')).toBe(false);
     expect(cells[1]?.classList.contains('table__cell--nowrap')).toBe(true);
+  });
+
+  it('lets a wrapAnywhere column break its value anywhere, and only that column (DL-259)', async () => {
+    const columns: readonly TableColumn<Row>[] = [
+      { key: 'name', header: 'Name', value: (row) => row.name },
+      {
+        key: 'email',
+        header: 'Email',
+        value: () => 'aurora.mercado@example.com',
+        wrapAnywhere: true,
+      },
+    ];
+    const element = (await render({ columns })).nativeElement as HTMLElement;
+    const cells = element.querySelectorAll('tbody tr:first-child td');
+    expect(cells[0]?.classList.contains('table__cell--anywhere')).toBe(false);
+    expect(cells[1]?.classList.contains('table__cell--anywhere')).toBe(true);
+  });
+
+  it('draws its cells closer once it has eight columns, and not before (DL-259)', async () => {
+    const many = (count: number): readonly TableColumn<Row>[] =>
+      Array.from({ length: count }, (_, index) => ({
+        key: `c${index}`,
+        header: `Column ${index}`,
+        value: (row: Row) => row.name,
+      }));
+    expect(DENSE_FROM_COLUMNS).toBe(8);
+    const seven = (await render({ columns: many(7) })).nativeElement as HTMLElement;
+    expect(seven.querySelector('table')?.classList.contains('table--dense')).toBe(false);
+    const eight = (await render({ columns: many(8) })).nativeElement as HTMLElement;
+    expect(eight.querySelector('table')?.classList.contains('table--dense')).toBe(true);
   });
 
   it('renders an accessible caption', async () => {

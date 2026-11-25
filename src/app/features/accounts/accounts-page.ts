@@ -212,6 +212,7 @@ export class AccountsPage {
       key: 'email',
       header: this.copy.columnEmail,
       value: (account) => account.email ?? this.copy.noEmail,
+      wrapAnywhere: true,
     },
     { key: 'role', header: this.copy.columnRole, cell: this.roleCell() },
     { key: 'office', header: this.copy.columnOffice, value: (account) => this.officeOf(account) },

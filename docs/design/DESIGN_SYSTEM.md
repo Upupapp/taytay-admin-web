@@ -381,7 +381,9 @@ Inputs: `columns`, `rows`, `rowKey`, `caption` (required); `loading`, `page`, `s
 `emptyVariant`, `emptyHeading`, `emptyMessage`, `emptyActionLabel`.
 Outputs: `sortChanged`, `pageChanged`, `rowSelected`, `emptyActionSelected`.
 A column (`TableColumn<T>`) has `key`, `header`, and either `value: (row) => string` or a `cell`
-template; optional `sortField`, `align`, `width`, `hideHeader`.
+template; optional `sortField`, `align`, `width`, `hideHeader`, `nowrap` (a short value kept on one
+line, such as a phone number) and `wrapAnywhere` (an email or a web address, which may break
+anywhere; never a name or a reference, `DL-259`).
 
 ```ts
 private readonly nameCell = viewChild.required<TemplateRef<{ $implicit: ResidentView }>>('nameCell');
@@ -416,6 +418,21 @@ across the row under the values, so no action falls off the card; sortable heade
 rows as sort buttons, the others are hidden only visually; the table keeps explicit `role`s so a
 stacked row is still read as a row. Wider, a table that does not fit scrolls inside `.table-wrap`,
 which then becomes a focusable region named by the caption (`ScrollRegion`, `DL-227`).
+
+**Fitting the screen (`DL-259`).** At **1280 and wider** (sidebar shown) every list fits its card
+with no sideways scroll. A table of eight columns or more draws its cells closer
+(`DENSE_FROM_COLUMNS`, 12px instead of 16px); a chip or a status badge in a cell may wrap, so a
+column is as wide as its longest word rather than its longest label; an email or a web address
+breaks anywhere (`wrapAnywhere`, or `.wrap-anywhere` in a cell template); a flag beside a name
+(Restricted) goes under the name; and a row action is a `.btn--small` with a short word whose
+accessible name says the rest ("End", named "End membership of {name} in {sector}"). A column is
+dropped at a width only if what it says is also on the record's own page, and never a protected or
+sensitive indicator. On a **tablet**, a table that still does not fit scrolls inside its own box,
+never the page, and while it does (`ScrollRegion` adds `scroll-region--scrolls`) its first column —
+the name a row is read by — stays pinned at the box's start on `--card-solid` with a `--line`
+hairline after it, no shadow. A plain `.simple-table` in a `.table-scroll` gets the same. On a
+**phone** (≤640px) a `DataTable` stacks as above; a plain number table (a report's months or
+barangays) keeps its columns and scrolls with its first column pinned.
 
 Put it inside a `.card.card--panel.card--padded` (it has no padding of its own). The API sends no
 totals: say "N shown, more available" in a `.status-line`, never "page 1 of N" (`DL-161`).
@@ -1031,11 +1048,13 @@ preview, and the paper is the deliverable.
    queued or promised, `DL-118`).
 6. **Visible focus.** Keep the two-ring focus; every focusable thing shows it. Icon-only buttons are
    `.icon-button` with a label. `check:shell` and `check:hardening` hold the contract.
-7. **Widths.** Check every page at **1280** and **1440** wide: no horizontal page scroll; a wide
-   table scrolls inside its own `.table-scroll` (positioned) or wraps. The frame also adapts at
-   narrow widths (the sidebar becomes a drawer at ≤900px). At **390** a `DataTable` stacks its rows
-   (§5) and no word is broken to fit a column: wrapping is `overflow-wrap: break-word`, never
-   `anywhere`, which splits "Mendoza" and "FAM-2026-000001" to make a column narrower (`DL-227`).
+7. **Widths.** Check every page at **1280** and **1440** wide: no horizontal page scroll, and every
+   list table fits its card (`DL-259`, §5). Narrower, a table that cannot fit scrolls inside its own
+   `.table-wrap` or `.table-scroll` (positioned) with its first column pinned, never the page. The
+   frame also adapts at narrow widths (the sidebar becomes a drawer at ≤900px). At **390** a
+   `DataTable` stacks its rows (§5) and no word is broken to fit a column: wrapping is
+   `overflow-wrap: break-word`, never `anywhere`, which splits "Mendoza" and "FAM-2026-000001" to
+   make a column narrower (`DL-227`) — except an email or a web address (`wrapAnywhere`, `DL-259`).
 8. **Checks win over a mock-up.** Privacy, access and domain checks (`check:verification`,
    `check:inbox`, `check:directory`, `check:balita`, …) and the decision log outrank any drawing.
    Where they read a class or an exact attribute, keep it beside the new classes.

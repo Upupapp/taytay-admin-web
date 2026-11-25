@@ -26,6 +26,12 @@ export interface TableColumn<TRow> {
    * "0000", reads as two numbers. Only for values that are short by nature.
    */
   readonly nowrap?: boolean;
+  /**
+   * Lets a value with no spaces break anywhere — an email address or a web address, which would
+   * otherwise hold its column as wide as the whole value (`DL-259`). Never for a name or a
+   * reference, which must not be split (`DL-227`).
+   */
+  readonly wrapAnywhere?: boolean;
 }
 
 export function columnText<TRow>(column: TableColumn<TRow>, row: TRow): string {

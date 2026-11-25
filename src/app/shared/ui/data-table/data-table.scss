@@ -66,6 +66,18 @@
   white-space: nowrap;
 }
 
+/* An email or a web address: one long "word" that would otherwise hold the column open (DL-259).
+   Qualified by `td`, or the cell's own `break-word` above would win. */
+.table td.table__cell--anywhere {
+  overflow-wrap: anywhere;
+}
+
+/* Many columns: the cells sit closer, so a registry fits 1280px without scrolling (DL-259). */
+.table--dense th,
+.table--dense td {
+  padding-inline: var(--space-3);
+}
+
 .table__row:last-child td {
   border-block-end: none;
 }
@@ -113,6 +125,34 @@
 .table-wrap > app-skeleton {
   display: block;
   margin-block-start: var(--space-3);
+}
+
+/* ── Tablet: the name stays in view (DL-259) ───────────────────────────────
+   A table that still does not fit scrolls inside its own box, never the page. While it does
+   (ScrollRegion's class), the first column — the name a row is read by — is pinned at the box's
+   start edge, on a solid surface with a hairline after it, so a row scrolled sideways still says
+   whose it is. The header band's tint and a row's hover tint are laid over the solid surface. */
+@media (width > 640px) {
+  .scroll-region--scrolls > .table th:first-child,
+  .scroll-region--scrolls > .table td:first-child {
+    position: sticky;
+    inset-inline-start: 0;
+    z-index: 1;
+    border-inline-end: 1px solid var(--line);
+    background: var(--card-solid);
+  }
+
+  .scroll-region--scrolls > .table th:first-child {
+    background: linear-gradient(var(--soft2), var(--soft2)), var(--card-solid);
+  }
+
+  .scroll-region--scrolls > .table .table__row:hover > td:first-child {
+    background: linear-gradient(var(--field), var(--field)), var(--card-solid);
+  }
+
+  .scroll-region--scrolls > .table .table__row--selectable:focus-visible > td:first-child {
+    background: linear-gradient(var(--sel), var(--sel)), var(--card-solid);
+  }
 }
 
 /* ── Phone: each row a block of header–value lines (DL-227) ────────────────

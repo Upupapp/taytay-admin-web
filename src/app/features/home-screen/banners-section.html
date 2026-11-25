@@ -44,7 +44,7 @@
 <ng-template #titleCell let-banner>
   <span class="home-section__label">
     <span class="home-section__primary">{{ banner.title }}</span>
-    <span class="home-section__secondary">{{ banner.href ?? copy.noLink }}</span>
+    <span class="home-section__secondary wrap-anywhere">{{ banner.href ?? copy.noLink }}</span>
   </span>
 </ng-template>
 
@@ -68,7 +68,7 @@
     @if (banner.archived === null) {
       <button
         type="button"
-        class="btn"
+        class="btn btn--small"
         [attr.aria-label]="copy.editLabel(banner.title)"
         (click)="edit(banner)"
       >
@@ -76,7 +76,7 @@
       </button>
       <button
         type="button"
-        class="btn"
+        class="btn btn--small"
         [attr.aria-label]="copy.archiveLabel(banner.title)"
         (click)="askArchive(banner)"
       >
@@ -85,7 +85,7 @@
     } @else {
       <button
         type="button"
-        class="btn"
+        class="btn btn--small"
         [attr.aria-label]="copy.historyLabel(banner.title)"
         (click)="showHistory(banner)"
       >
@@ -93,7 +93,7 @@
       </button>
       <button
         type="button"
-        class="btn"
+        class="btn btn--small"
         [attr.aria-label]="copy.restoreLabel(banner.title)"
         (click)="askRestore(banner)"
       >

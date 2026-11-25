@@ -6,7 +6,7 @@
      header a phone prints beside its value, drawn by CSS with empty alternative
      text so a reader hears the header once, from the header cell (DL-227). -->
 <div class="table-wrap" [appScrollRegion]="caption()" [attr.aria-busy]="loading() ? 'true' : null">
-  <table class="table" role="table">
+  <table class="table" role="table" [class.table--dense]="dense()">
     <caption class="visually-hidden">
       {{
         caption()
@@ -58,6 +58,7 @@
                 role="cell"
                 [class.table__cell--end]="column.align === 'end'"
                 [class.table__cell--nowrap]="column.nowrap === true"
+                [class.table__cell--anywhere]="column.wrapAnywhere === true"
                 [attr.data-label]="column.hideHeader ? null : column.header"
               >
                 <div class="table__value">

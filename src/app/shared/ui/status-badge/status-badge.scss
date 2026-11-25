@@ -13,6 +13,13 @@
   white-space: nowrap;
 }
 
+/* In a table cell the label may wrap, so a long status ("On the app, not verified") gives its
+   column the width of its longest word, not of the whole label, and a registry fits 1280px
+   (DL-259). The dot stays beside the label. */
+:host-context(td) .badge {
+  white-space: normal;
+}
+
 .badge__dot {
   flex: none;
   inline-size: 7px;

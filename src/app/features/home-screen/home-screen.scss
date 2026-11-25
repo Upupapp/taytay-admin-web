@@ -71,10 +71,10 @@
   font-weight: var(--fw-semibold);
 }
 
+/* Wraps as its cell does (break-word); a web address under a title is `.wrap-anywhere` (DL-259). */
 .home-section__secondary {
   color: var(--muted);
   font-size: var(--fs-xs);
-  overflow-wrap: break-word;
 }
 
 /* Wraps in a narrow cell, so the table does not scroll at 1280px. */

@@ -305,6 +305,38 @@
   }
 }
 
+/* While a `.table-scroll` scrolls (ScrollRegion's class), its first column stays in view on a
+   solid surface with a hairline after it, as the DataTable's does (DL-259): a report's month or
+   barangay, a record's date. A `--stack` table lays its rows out as blocks on a phone instead, and
+   has no column to pin there. */
+.scroll-region--scrolls > .simple-table tr > :first-child,
+.scroll-region--scrolls.table-scroll--simple > table tr > :first-child {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  border-inline-end: 1px solid var(--line);
+  background: var(--card-solid);
+}
+
+.scroll-region--scrolls > .simple-table thead tr > :first-child,
+.scroll-region--scrolls.table-scroll--simple > table thead tr > :first-child {
+  background: linear-gradient(var(--soft2), var(--soft2)), var(--card-solid);
+}
+
+.scroll-region--scrolls > .simple-table tbody tr:hover > :first-child,
+.scroll-region--scrolls.table-scroll--simple > table tbody tr:hover > :first-child {
+  background: linear-gradient(var(--field), var(--field)), var(--card-solid);
+}
+
+@media (width <= 640px) {
+  .scroll-region--scrolls > .simple-table--stack tr > :first-child,
+  .scroll-region--scrolls > .simple-table--stack tbody tr:hover > :first-child {
+    position: static;
+    border-inline-end: none;
+    background: none;
+  }
+}
+
 /* The same look for a table whose class a repository check reads by its exact
    value (the events registrant list): put it in `.table-scroll.table-scroll--simple`. */
 .table-scroll--simple > table {
@@ -351,6 +383,12 @@
 .chip--danger {
   background: var(--tone-danger-bg);
   color: var(--tone-danger-fg);
+}
+
+/* In a table cell a chip may wrap: its column gives way to the longest word, not the whole label,
+   so a row of sectors does not hold the table wider than a laptop's screen (DL-259). */
+td .chip {
+  white-space: normal;
 }
 
 .chip-list {
@@ -1532,6 +1570,12 @@ a.kpi-strip__cell:is(:hover, :focus-visible) .kpi-strip__tile {
   block-size: 18px;
   margin: 0;
   accent-color: var(--link);
+}
+
+/* An email or a web address under a name, in a cell: one long "word" that may break anywhere
+   rather than hold its column open (DL-259). Never on a name or a reference (DL-227). */
+.wrap-anywhere {
+  overflow-wrap: anywhere;
 }
 
 /* A record's reference or name as the way into it, in a table cell. */

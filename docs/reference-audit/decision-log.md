@@ -11949,3 +11949,61 @@ withheld (`DL-252`). A "—" appears only for a field with no value recorded (a 
 digits, a programme's maximum grant), never for a count. The figure strip stays one column on a
 phone (`DL-253`). No console errors, no focus without a visible ring in the first twelve stops of any
 page.
+
+## DL-259 — tables fit a laptop's screen; on a tablet the name stays in view; on a phone a row is a card
+
+**Status:** Settled (26 November 2026), on the owner's approval of the target behaviour after the
+staging sweep at 1280×800 found registry tables scrolling sideways inside their cards. Refines
+`DL-120`, `DL-227`, `DL-232` and `DL-258`; adds no field and changes no data.
+
+**The rule.** At **1280 and wider**, with the sidebar shown, a list table fits its card with no
+sideways scroll, as an ordinary admin site's does. On a **tablet** a table that still cannot fit
+scrolls inside its own box — never the page — with its first column, the name a row is read by,
+pinned at the box's start. On a **phone** (≤640px, `DL-227`) a `DataTable` row is a card of
+label–value lines, name first; a plain number table (a report's months, barangays, programmes)
+keeps its columns and scrolls with its first column pinned, because a card per month would be a
+longer read than the grid.
+
+**How, once, in the shared pieces.**
+
+- `DataTable` draws its cells 12px apart instead of 16px from eight columns
+  (`DENSE_FROM_COLUMNS`); a short table keeps its air.
+- A chip (`_patterns.scss`) or a `StatusBadge` in a table cell may wrap, so a column is as wide as
+  its longest word, not its longest label ("Child in conflict with the law", "On the app, not
+  verified").
+- An email or a web address may break anywhere: `TableColumn.wrapAnywhere` for a plain column,
+  `.wrap-anywhere` for a line in a cell template. Names and references still never split
+  (`DL-227`).
+- `ScrollRegion` adds `scroll-region--scrolls` while, and only while, its box scrolls. Under it the
+  first column of a `DataTable` or a `.simple-table` is `position: sticky` on `--card-solid` with a
+  `--line` hairline after it (the header band's and a hovered row's tint laid over the solid), no
+  shadow (`check:styles`). Only then: a solid column on a table that fits would show as a band on
+  the glass card.
+
+**In the features.** A sector page's row action is a `.btn--small` reading "End", still named
+"End membership of {name} in {sector}" (`DL-258`, WCAG 2.5.3: the name starts with the word shown).
+The registry's and a sector page's Restricted chip sits under the name rather than beside it —
+still shown on every protected row, never dropped. The Citizen ID list's holder email, the home
+screen's banner and link addresses, and the accounts list's email break anywhere. A beneficiary's
+standing ("Resident · Applicant · Recipient") wraps. The home screen's Edit/Archive and
+History/Restore are `.btn--small`, still plain `.btn` (`DL-225`), and a banner's image column wraps.
+
+**No column was dropped.** Every list fits at 1280 without dropping one, so the rule that a column
+may go at a width only when its record's page says the same thing, and never a protected or
+sensitive indicator, was not needed this time and stands for the next table.
+
+**Measured** on a local mock build (scrollWidth/clientWidth of each `.table-wrap`, 1280 → after;
+768 → after, `*` = scrolls with the name pinned): Citizen IDs 995/916 → fits; 995/700 → 759/700\*.
+Residents 924/912 → fits; 924/696 → 775/696\*. Senior citizens 1130/912 → fits; 1130/696 →
+831/696\*. PWD 1286/912 → fits; 1286/696 → 878/696\*. Solo parents 1209/912 → fits; 1209/696 →
+851/696\*. Home screen banners 795/583 → fits; 795/698 → fits. Quick links 601/583 → fits. Accounts
+901/698 → fits at 768. Document requests 767/698 → fits at 768. At 390 the PWD, solo-parent and
+Citizen ID cards no longer run past the screen (336, 327, 427 → 318/322), nor does Settings' "What
+the office holds" (353 → 320). Still scrolling, pinned, at 768: beneficiaries, the document
+catalogue, Tulong pages and hotlines; at 390: the summary and citizens reports' number tables. No
+page scrolls sideways at any of 1280, 1440, 768 or 390, light or dark; axe (WCAG 2.0–2.2 A/AA,
+`main`) reports no violation on any of the 50 pages at any width in either theme.
+
+**Watch.** At 1280 the registry tables now fit with little to spare on the mock's names; a longer
+name or label on live data wraps first and, past that, scrolls with the name pinned rather than
+pushing the page.

@@ -254,14 +254,14 @@ describe('a sector page', () => {
     const element = html((await open('auditor', 'senior-citizen')).fixture);
     expect(element.querySelectorAll('tbody tr').length).toBeGreaterThan(0);
     expect(element.textContent).not.toContain(SECTOR_PAGES['senior-citizen'].add);
-    expect(button(element, 'End membership')).toBeUndefined();
+    expect(button(element, 'End')).toBeUndefined();
   });
 
   it('ends a membership only from the confirmation, with a reason, after its effects', async () => {
     const { fixture, residents } = await open('intake-officer', 'senior-citizen');
     const element = html(fixture);
 
-    button(element, 'End membership')?.click();
+    button(element, 'End')?.click();
     await fixture.whenStable();
     const dialog = element.querySelector('app-modal') as HTMLElement;
     expect(dialog.querySelector('.effects')).not.toBeNull();
@@ -302,5 +302,21 @@ describe('the end-membership button’s name (WCAG 2.5.3)', () => {
   it('contains the words the button shows', () => {
     const copy = RESIDENTS_COPY.sector;
     expect(copy.endLabel('Reyes, Ana', SECTOR_PAGES.pwd.phrase)).toContain(copy.columnEnd);
+    // The row shows the short word (DL-259); its name starts with it, so speech input still works.
+    expect(copy.endLabel('Reyes, Ana', SECTOR_PAGES.pwd.phrase).startsWith(copy.end)).toBe(true);
+  });
+});
+
+describe('the sector list at a laptop’s width (DL-259)', () => {
+  it('shows each row’s End as a short word, named in full for whose membership it ends', async () => {
+    const { fixture } = await open('intake-officer', 'pwd');
+    const element = html(fixture);
+    const rows = element.querySelectorAll('app-data-table tbody tr');
+    const ends = Array.from(element.querySelectorAll('app-data-table tbody button')).filter(
+      (candidate) => candidate.textContent?.trim() === RESIDENTS_COPY.sector.end,
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    expect(ends.length).toBe(rows.length);
+    expect(ends[0]?.getAttribute('aria-label')).toMatch(/^End membership of .+ in /);
   });
 });
