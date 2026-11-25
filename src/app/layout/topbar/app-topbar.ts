@@ -45,21 +45,25 @@ import { LiveIndicator } from './live-indicator';
         <app-global-search-trigger class="topbar__search" (activated)="searchActivated.emit()" />
       }
 
-      <app-live-indicator class="topbar__live" />
+      <!-- One unit, so a row too narrow for all of it moves the three together rather than leaving
+           the bell alone on a second line (DL-258). -->
+      <div class="topbar__tools">
+        <app-live-indicator class="topbar__live" />
 
-      <app-theme-toggle class="topbar__theme" />
+        <app-theme-toggle class="topbar__theme" />
 
-      <button
-        type="button"
-        class="icon-button topbar__inbox"
-        [attr.aria-label]="inboxLabel()"
-        (click)="inboxOpened.emit()"
-      >
-        <app-icon name="bell" [size]="20" />
-        @if (notifications.unreadCount(); as unread) {
-          <span class="topbar__badge" aria-hidden="true">{{ unread }}</span>
-        }
-      </button>
+        <button
+          type="button"
+          class="icon-button topbar__inbox"
+          [attr.aria-label]="inboxLabel()"
+          (click)="inboxOpened.emit()"
+        >
+          <app-icon name="bell" [size]="20" />
+          @if (notifications.unreadCount(); as unread) {
+            <span class="topbar__badge" aria-hidden="true">{{ unread }}</span>
+          }
+        </button>
+      </div>
     </header>
   `,
   styleUrl: './app-topbar.scss',

@@ -34,7 +34,7 @@ import {
 } from '@domain/index';
 import type { AppEnvironment } from '@env/environment.model';
 
-import { SECTOR_PAGES } from './residents.copy';
+import { RESIDENTS_COPY, SECTOR_PAGES } from './residents.copy';
 import { SectorPage } from './sector-page';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
@@ -295,5 +295,12 @@ describe('a sector page', () => {
     await fixture.whenStable();
     expect(residents.recorded).toHaveLength(0);
     expect(dialog.querySelector('[role="alert"]')?.textContent).toContain('Choose the person');
+  });
+});
+
+describe('the end-membership button’s name (WCAG 2.5.3)', () => {
+  it('contains the words the button shows', () => {
+    const copy = RESIDENTS_COPY.sector;
+    expect(copy.endLabel('Reyes, Ana', SECTOR_PAGES.pwd.phrase)).toContain(copy.columnEnd);
   });
 });

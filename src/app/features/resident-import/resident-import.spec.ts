@@ -369,3 +369,12 @@ describe('an import keeps itself current (DL-222)', () => {
     expect(root.querySelector<HTMLSelectElement>('app-import-mapping-form select')?.value).toBe('');
   });
 });
+
+describe('the recent imports’ open link (WCAG 2.5.3)', () => {
+  it('starts its name with the word it shows', () => {
+    const recent = RESIDENT_IMPORT_COPY.recent;
+    for (const action of [recent.view, recent.continue]) {
+      expect(recent.openLabel(action, 'roster.csv').startsWith(action)).toBe(true);
+    }
+  });
+});

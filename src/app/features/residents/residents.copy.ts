@@ -103,7 +103,7 @@ export const RESIDENTS_COPY = {
     fieldsHeading: 'In the list',
     columnEnd: 'End membership',
     end: 'End',
-    endLabel: (name: string, sector: string) => `End ${name}’s membership of ${sector}`,
+    endLabel: (name: string, sector: string) => `End membership of ${name} in ${sector}`,
     emptyMessage:
       'A person appears here once this sector is recorded on their registry record, with what was checked.',
     noMore: 'That is everybody in this sector matching these filters.',

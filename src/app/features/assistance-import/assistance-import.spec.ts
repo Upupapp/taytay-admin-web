@@ -562,3 +562,12 @@ describe('an import of past assistance keeps itself current (DL-222)', () => {
     ).toBe('Checking.');
   });
 });
+
+describe('the recent imports’ open link (WCAG 2.5.3)', () => {
+  it('starts its name with the word it shows', () => {
+    const recent = ASSISTANCE_IMPORT_COPY.recent;
+    for (const action of [recent.view, recent.continue]) {
+      expect(recent.openLabel(action, 'past.csv').startsWith(action)).toBe(true);
+    }
+  });
+});

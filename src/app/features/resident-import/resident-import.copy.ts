@@ -77,7 +77,8 @@ export const RESIDENT_IMPORT_COPY = {
     pending: 'Not confirmed yet',
     continue: 'Continue',
     view: 'View',
-    openLabel: (file: string) => `Open the import of ${file}`,
+    // Starts with the button's own word, so its name contains what it shows (WCAG 2.5.3).
+    openLabel: (action: string, file: string) => `${action} the import of ${file}`,
     emptyHeading: 'No imports yet',
     emptyMessage: 'Upload a file above to start the first one.',
     shown: (count: number) => `${count} shown.`,

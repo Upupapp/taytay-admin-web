@@ -4,6 +4,8 @@
    citizens overview: without it the pill ran straight into the first panel. */
 :host {
   display: grid;
+  /* One column no wider than the page (DL-258): an `auto` track grows to its widest table. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
 }
 
@@ -105,9 +107,17 @@
   letter-spacing: var(--ls-display);
 }
 
+/* A peso total keeps every digit on one line inside its tile (DL-258): the tile is the container,
+   and the figure narrows with it, from the money size down to a title's, rather than run past the
+   tile's edge, as ₱5,462,800.00 did in a 228px tile on a 1280px screen. */
+.metric:has(> .kpi__value--long) {
+  container-type: inline-size;
+}
+
 .metric .kpi__value--long {
-  font-size: var(--fs-kpi-money);
+  font-size: clamp(var(--fs-title-md), 12cqi, var(--fs-kpi-money));
   line-height: var(--lh-display);
+  white-space: nowrap;
 }
 
 /* Label, figure, hint from the top: a figure pushed to the bottom sat at whatever height its

@@ -604,8 +604,10 @@ Usually reached through `AsyncContent` or `DataTable [loading]` rather than plac
 `app-shell` mounts, in order: `app-route-progress`, the skip link, `app-connection-banner`, the glass
 sidebar (`app-brand-mark`, `app-nav`, the signed-in identity, the Dark mode button
 `app-theme-toggle` and sign-out), and the main column
-(`app-topbar`: the navigation toggle, `app-breadcrumb`, `app-global-search-trigger`, the Live
-toggle `app-live-indicator` and the notification inbox button; then `main#main-content`). The notification inbox is an `app-drawer` holding `app-notification-list`.
+(`app-topbar`: the navigation toggle, `app-breadcrumb`, `app-global-search-trigger`, then
+`.topbar__tools` — the Live toggle `app-live-indicator`, the Dark mode button and the notification
+inbox button, which wrap to a second row together, never one alone (`DL-258`); then
+`main#main-content`). The notification inbox is an `app-drawer` holding `app-notification-list`.
 
 Settled for the frame (`DL-201`): navigation sections are always open (their titles are `h2`, not
 toggles); the topbar scrolls with the page; the sidebar is the one glass element with a backdrop

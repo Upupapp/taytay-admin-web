@@ -39,7 +39,7 @@
 }
 
 .topbar__crumbs {
-  flex: 1 1 180px;
+  flex: 1 1 120px;
   min-inline-size: 0;
   overflow: hidden;
 }
@@ -48,6 +48,15 @@
   /* Wide enough for the search pill's whole prompt and its shortcut (DL-227). */
   flex: 0 1 400px;
   min-inline-size: 0;
+}
+
+/* The live toggle, the theme and the bell wrap as one, to the end of the row (DL-258). */
+.topbar__tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-3);
+  margin-inline-start: auto;
 }
 
 /* Live updates (DL-222): absent when off, so it takes no room in the mock set. */
@@ -105,5 +114,9 @@
   .topbar__search {
     flex: none;
     margin-inline-start: auto;
+  }
+
+  .topbar__tools {
+    margin-inline-start: 0;
   }
 }

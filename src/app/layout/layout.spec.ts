@@ -484,6 +484,14 @@ describe('GlobalSearchTrigger', () => {
     expect(button?.getAttribute('aria-keyshortcuts')).toContain('Control+K');
   });
 
+  it('says its visible words with a space between, so its name contains them (WCAG 2.5.3)', async () => {
+    const { element } = await render();
+    const words = (element.querySelector('button')?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    const name = LAYOUT_COPY.searchLabel.replace(/[^\p{L}\p{N} ]/gu, '');
+    expect(words).toBe(`${LAYOUT_COPY.searchPlaceholder} ${LAYOUT_COPY.searchShortcutHint}`);
+    expect(name).toContain(words.replace(/[^\p{L}\p{N} ]/gu, ''));
+  });
+
   it('activates on click', async () => {
     const { fixture, emitted, element } = await render();
     element.querySelector('button')?.click();
@@ -569,6 +577,16 @@ describe('Shell', () => {
     expect(element.querySelector('#app-sidebar app-theme-toggle')).toBeNull();
     // The topbar hides none of its controls at any width, so the button is never stranded.
     expect(buttons[0]?.textContent).toContain('Dark mode');
+  });
+
+  it('groups live updates, dark mode and the bell so they wrap together (DL-258)', async () => {
+    const { element } = await render(true);
+    const tools = element.querySelector('.topbar > .topbar__tools');
+    expect(
+      [...(tools?.children ?? [])].map((child) => child.classList.contains('topbar__live')),
+    ).toEqual([true, false, false]);
+    expect(tools?.querySelector(':scope > app-theme-toggle.topbar__theme')).not.toBeNull();
+    expect(tools?.querySelector(':scope > button.topbar__inbox')).not.toBeNull();
   });
 
   it('draws the account’s initials as decoration beside the printed name', async () => {

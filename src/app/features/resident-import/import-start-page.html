@@ -146,11 +146,12 @@
 </section>
 
 <ng-template #actionCell let-row>
+  @let action = row.status === 'committed' ? copy.recent.view : copy.recent.continue;
   <a
     class="btn btn--small"
     [routerLink]="openLink(row)"
     [queryParams]="openParams(row)"
-    [attr.aria-label]="copy.recent.openLabel(row.fileName)"
-    >{{ row.status === 'committed' ? copy.recent.view : copy.recent.continue }}</a
+    [attr.aria-label]="copy.recent.openLabel(action, row.fileName)"
+    >{{ action }}</a
   >
 </ng-template>

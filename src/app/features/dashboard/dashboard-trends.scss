@@ -7,6 +7,7 @@
   gap: 10px;
   min-inline-size: 0;
   border-radius: var(--r-panel);
+  container-type: inline-size;
 }
 
 :host(.trend) {
@@ -114,4 +115,13 @@
 
 .handover__chart {
   flex: 1 1 auto;
+}
+
+/* In a narrow card the week's total stands over the chart (DL-258): beside it, seven columns had
+   about 20px each and their day names ran together ("ThuFri Sat"). */
+@container (width < 250px) {
+  .handover__body {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

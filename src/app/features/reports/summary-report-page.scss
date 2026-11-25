@@ -2,6 +2,8 @@
    in print by src/styles/_report-print.scss; this file hides the page's own controls. */
 :host {
   display: grid;
+  /* One column no wider than the page (DL-258): an `auto` track grows to its widest table. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
 }
 

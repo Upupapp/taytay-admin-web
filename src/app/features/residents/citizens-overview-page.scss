@@ -3,6 +3,8 @@
 
 :host {
   display: grid;
+  /* One column no wider than the page (DL-258): an `auto` track grows to its widest table. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
 }
 

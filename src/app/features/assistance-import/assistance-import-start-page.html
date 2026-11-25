@@ -105,13 +105,14 @@
 }
 
 <ng-template #actionCell let-row>
+  @let action = row.status === 'open' ? copy.recent.continue : copy.recent.view;
   <span class="row-actions">
     <a
       class="btn btn--small"
       [routerLink]="openLink(row)"
       [queryParams]="openParams(row)"
-      [attr.aria-label]="copy.recent.openLabel(row.fileName)"
-      >{{ row.status === 'open' ? copy.recent.continue : copy.recent.view }}</a
+      [attr.aria-label]="copy.recent.openLabel(action, row.fileName)"
+      >{{ action }}</a
     >
     @if (canWithdraw(row)) {
       <button

@@ -11912,3 +11912,40 @@ begins at the migration, each existing card's status recorded then as a baseline
   anything else, or a summary without `active_ids_recorded_from` (whole or nothing, `DL-213`). The
   mock compares from a sample start 45 days before its anchor, taking each sample card's present
   status as held since its link was made, because the mock keeps no card history.
+
+## DL-258 — the staging recheck of 25 November: names that contain their words, pages no wider than the screen
+
+**Status:** Settled (25 November 2026), from the end-to-end recheck of staging after the day's UI
+changes (console e378cac, API fa1d216), at 390, 768, 1280 and 1440 wide, light and dark. Refines
+`DL-201`, `DL-227`, `DL-232` and `DL-253`; changes no behaviour.
+
+**Found and fixed.**
+
+- **A control's name contains the words it shows (WCAG 2.5.3, axe `label-content-name-mismatch`).**
+  The search pill read "programmesCtrl K": the prompt and its shortcut had no space between them, so
+  its name ("…programmes, Ctrl K") did not contain its text on any page. A sector page's "End
+  membership" button was named "End Reyes, Ana’s membership of …", and an import's "View" or
+  "Continue" link "Open the import of …". The search pill keeps a space (`&ngsp;`); the sector button
+  is now "End membership of {name} in {sector}", and the import link starts with its own word ("View
+  the import of {file}").
+- **A page is no wider than the screen.** A page whose host is a one-column grid sized `auto` grew
+  to its widest table: Citizen ID list ran 72px past a 1280px screen and 300px past 768 while its list
+  was empty, and an import's result 52px and 168px past a phone. Every such host
+  (`citizen-ids`, both imports, the dashboard, the summary report, the overview) now declares
+  `grid-template-columns: minmax(0, 1fr)`, so the table scrolls in its own region (`DL-227`).
+- **The topbar's tools wrap together.** At 1280 the bell alone dropped to a second line. The Live
+  toggle, Dark mode and the bell are one `.topbar__tools` group at the end of the row, and the
+  breadcrumb starts from 120px rather than 180px, so a 1280 screen holds one row and a narrower one
+  moves the three together.
+- **The dashboard's peso total stays in its tile.** "₱5,462,800.00" ran past a 228px Released tile at
+  1280. The tile is a size container and the figure narrows with it, from `--fs-kpi-money` down to
+  `--fs-title-md`, never wrapping a number. In a handover card under 250px wide the week's total
+  stands over its seven columns, whose day names had run together ("ThuFri Sat").
+- **Records to tidy up** puts "Review them" under its words: beside them it squeezed the
+  explanation into a column a few words wide, on a phone and in the half-width panel alike.
+
+**Checked and kept.** No "Withheld" figure anywhere: the one match is the sentence saying nothing is
+withheld (`DL-252`). A "—" appears only for a field with no value recorded (a resident's PhilSys
+digits, a programme's maximum grant), never for a count. The figure strip stays one column on a
+phone (`DL-253`). No console errors, no focus without a visible ring in the first twelve stops of any
+page.

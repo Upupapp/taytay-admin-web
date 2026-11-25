@@ -20,6 +20,9 @@ import { LAYOUT_COPY } from '../layout.copy';
   selector: 'app-global-search-trigger',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon],
+  // `&ngsp;` keeps a space between the prompt and the shortcut. Without it the button's text reads
+  // "programmesCtrl K", which its accessible name does not contain (WCAG 2.5.3, axe
+  // label-content-name-mismatch); a flex container draws no space for it.
   template: `
     <button
       type="button"
@@ -29,8 +32,8 @@ import { LAYOUT_COPY } from '../layout.copy';
       (click)="activate()"
     >
       <app-icon class="search-trigger__glyph" name="search" [size]="18" [stroke]="2" />
-      <span class="search-trigger__text">{{ copy.searchPlaceholder }}</span>
-      <kbd class="search-trigger__kbd" aria-hidden="true">{{ copy.searchShortcutHint }}</kbd>
+      <span class="search-trigger__text">{{ copy.searchPlaceholder }}</span
+      >&ngsp;<kbd class="search-trigger__kbd" aria-hidden="true">{{ copy.searchShortcutHint }}</kbd>
     </button>
   `,
   styleUrl: './global-search-trigger.scss',
