@@ -181,7 +181,14 @@ describe('CitizensOverviewPage (DL-213)', () => {
     expect(asked).toEqual([{}]);
     expect(text(root)).toContain('120');
     expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.delta.up(20));
-    const links = [...root.querySelectorAll<HTMLAnchorElement>('a.kpi')].map((link) =>
+    // The strip's hint line (DL-253): the change and "vs last period"; a figure the API does not
+    // compare says so rather than inventing a change.
+    expect(text(root)).toContain(
+      `${CITIZENS_OVERVIEW_COPY.change.up(20)} ${CITIZENS_OVERVIEW_COPY.change.against}`,
+    );
+    expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.delta.notCompared);
+    expect(root.querySelector('.kpi-strip')?.textContent).not.toContain('RA 9994');
+    const links = [...root.querySelectorAll<HTMLAnchorElement>('a.kpi-strip__cell')].map((link) =>
       link.getAttribute('href'),
     );
     expect(links).toContain('/residents');
@@ -193,7 +200,9 @@ describe('CitizensOverviewPage (DL-213)', () => {
     const root = await render();
 
     expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.withheld);
-    expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.delta.none);
+    // A withheld figure's one hint line says why, in place of a change (DL-253).
+    expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.withheldHint);
+    expect(text(root)).not.toContain(CITIZENS_OVERVIEW_COPY.delta.none);
     const hrefs = [...root.querySelectorAll('a')].map((link) => link.getAttribute('href') ?? '');
     expect(hrefs.some((href) => href.includes('sector=pwd'))).toBe(false);
     expect(hrefs.some((href) => href.includes('barangay=brgy-muzon'))).toBe(false);
@@ -253,7 +262,7 @@ describe('CitizensOverviewPage (DL-213)', () => {
     const root = await render();
 
     expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.errorHeading);
-    expect(root.querySelectorAll('.kpi')).toHaveLength(0);
+    expect(root.querySelectorAll('.kpi-strip__cell')).toHaveLength(0);
   });
 });
 

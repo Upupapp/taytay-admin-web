@@ -11784,3 +11784,52 @@ machinery itself (row kept and marked, no rounding, zero kept, total before) are
 **To turn it back on:** set `SMALL_CELL_THRESHOLD` to 5 here **and** in the API's `catalogue.ts`, in
 the same change; the tests that pin today's figures then need their earlier expectations back (git
 history keeps them).
+
+## DL-253 — headline figures are one strip; an action shares its tabs' row
+
+**Status:** Settled (25 November 2026), on the owner's request ("one panel" KPI strip for the Citizen
+overview, then "fix the placements" on the sector pages and "other similar screens too").
+
+**Decision.** A page's headline figures are drawn as **one glass panel with a cell per figure**, the
+shared pattern `.kpi-strip` in `src/styles/_patterns.scss`, never as a row of separate cards. Every
+cell is the same three lines: a label row (an `.icon-tile` at 28px, or a list board's dot, then at
+most two lines of label), the figure (`--fs-kpi-strip`, 34px, Inter Tight), and one hint line. Cells
+are split by hairlines, each cell pulling itself 1px over its neighbour's edges so the panel's clip
+hides the first line of every row. A linked cell (`a.kpi-strip__cell`) fills primary on hover and
+focus, as `a.kpi` does; its tile takes a light ring (`--on-primary-ring`) so a navy tile stays
+visible on the navy fill, and its change turns gold (`--gold` on `--primary`, now an audited pair).
+Because the panel clips, a focused cell draws the global gold ring inside its own edge rather than
+losing it to the clip.
+
+- **The Citizen overview's hint line is the change only:** "↑ 1,236 vs last period" (green up, red
+  down, "→ 0" unchanged), built in `citizens-overview.copy.ts`, with the sentence a screen reader
+  hears ("Up 1,236 on the previous period") beside it. The old hints (statute references, "Active
+  citizen records", "The registry cannot be filtered by when a record was added", the verified count)
+  are gone from the row. A figure the API does not compare shows "—", read as "Not compared with the
+  previous period"; nothing is invented. Today that is five of the seven: the three sector counts,
+  "On the residents' app" and "Active Digital IDs" (neither keeps an earlier state, backend ADR 0006).
+  A withheld figure keeps "Withheld" and its hint. Figures are grouped (`1,236`) as everywhere else.
+- **Explanatory hints wrap** (`.kpi-strip__hint--note`): a sector page's or a list board's hint says
+  what the figure counts, and cutting it with an ellipsis would cut the point. The overview's
+  comparison stays on one line.
+- **One definition** (`DL-120`): the overview, the three sector pages (`SectorFigures`) and every
+  `app-figure-tiles` board (Office inbox, Users, App directory) draw the same classes. A strip is
+  `repeat(auto-fit, minmax(170px, 1fr))`, one column at 700px and below.
+- **The overview's seven figures are one row only where each cell gets its 170px** (a container
+  query at 1190px). Beside the sidebar at 1440 the strip is 1120px: seven cells of 160px cut two-line
+  labels ("Persons with disability", "On the residents' app") and would overflow a five-digit figure,
+  and auto-fit put six in a row and the seventh alone. So there it is four and three, one panel with
+  a hairline between the rows; three across at tablet width, one column on a phone. This departs from
+  the owner's "seven across" sketch and is the easiest part of this entry to reverse.
+
+**An action shares its tabs' row.** `PageHeader` gains a `[page-start]` slot: a page's tabs go at the
+start of the action row and its primary action at the end, vertically centred, so the action no
+longer stands alone on a row above them. At phone width the tabs take the first line and the action
+the next, full width. Applied to the three sector pages and Events. Pages whose actions already sit
+in their filter card (`DL-246`) or beside their own section heading were already right.
+
+**Left alone, on purpose.** The dashboard's headline metrics (the `DL-231` bento: arrow chips,
+deep app-figures panel); the Verification queue's figures, whose cells carry a split bar and a
+seven-day column chart, so they are small charts rather than plain counts; Citizen IDs' lifecycle,
+a `.tally-row` inside its section card; and pages whose header row is followed by a banner or a
+card rather than tabs or filters (Requests, Cases, Balita, Staff).

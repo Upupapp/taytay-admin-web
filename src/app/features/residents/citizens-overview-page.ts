@@ -6,6 +6,7 @@ import {
   LOCALE_ID,
   signal,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink, type ParamMap } from '@angular/router';
 import { map, switchMap } from 'rxjs';
@@ -119,7 +120,6 @@ export const CITIZENS_OVERVIEW_TOPICS: readonly LiveTopic[] = [
 interface Headline {
   readonly key: string;
   readonly label: string;
-  readonly hint: string;
   /** `null` when the server withheld it (`DL-105`): said, never shown as a zero. */
   readonly value: number | null;
   readonly delta: SummaryDelta | null;
@@ -151,6 +151,7 @@ interface Headline {
     DonutChart,
     HasPermissionDirective,
     Icon,
+    NgTemplateOutlet,
     NotConnected,
     PageHeader,
     RecentImports,
@@ -240,7 +241,6 @@ export class CitizensOverviewPage {
       {
         key: 'registry',
         label: this.copy.onRegistry,
-        hint: this.copy.onRegistryHint,
         value: summary.residents.current,
         delta: summaryDelta(summary.residents.current, summary.residents.previous),
         compared: true,
@@ -249,7 +249,6 @@ export class CitizensOverviewPage {
       {
         key: 'registered',
         label: this.copy.registered(summary.period.kind),
-        hint: this.copy.registeredHint,
         value: registered.current.value,
         delta: summaryDelta(registered.current.value, registered.previous.value),
         compared: true,
@@ -267,15 +266,11 @@ export class CitizensOverviewPage {
     }
     // The app and its cards under the same filter (DL-232). Neither keeps its state at an earlier
     // instant, so neither has a previous period to compare with (backend ADR 0006).
-    const { onApp, verified, activeIds } = summary.funnel;
+    const { onApp, activeIds } = summary.funnel;
     figures.push(
       {
         key: 'on-app',
         label: this.panels.funnelSteps.onApp,
-        hint:
-          verified.value === null
-            ? this.copy.appVerifiedWithheld
-            : this.copy.appVerified(verified.value),
         value: onApp.value,
         delta: null,
         compared: false,
@@ -284,7 +279,6 @@ export class CitizensOverviewPage {
       {
         key: 'active-ids',
         label: this.panels.funnelSteps.activeIds,
-        hint: this.copy.activeIdsHint,
         value: activeIds.value,
         delta: null,
         compared: false,
@@ -298,7 +292,7 @@ export class CitizensOverviewPage {
     return HEADLINE_TILES[key] ?? { icon: 'users', tone: 'blue' };
   }
 
-  /** The chip's tone: the words carry the direction, the tint repeats it. */
+  /** The change's tone: the arrow and the words carry the direction, the colour repeats it. */
   protected deltaTone(delta: SummaryDelta | null): string {
     return delta === null ? 'none' : delta.direction;
   }
@@ -338,6 +332,13 @@ export class CitizensOverviewPage {
       });
     }
     return bands.length * 2 === rows.length ? bands : null;
+  }
+
+  /** The change as the strip shows it, beside "vs last period" (DL-253). */
+  protected changeMark(delta: SummaryDelta): string {
+    return delta.direction === 'same'
+      ? this.copy.change.same
+      : this.copy.change[delta.direction](delta.amount);
   }
 
   protected deltaText(delta: SummaryDelta | null): string {
@@ -479,11 +480,9 @@ export class CitizensOverviewPage {
   }
 
   private sectorHeadline(sector: HeadlineSector, row: ReportRow): Headline {
-    const words = this.copy.kpiSector[sector];
     return {
       key: sector,
-      label: words.label,
-      hint: row.isWithheld ? this.copy.withheldHint : words.hint,
+      label: this.copy.kpiSector[sector],
       value: row.isWithheld ? null : row.value,
       delta: null,
       compared: false,

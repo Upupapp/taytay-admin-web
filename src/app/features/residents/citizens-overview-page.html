@@ -113,61 +113,18 @@
   <div class="overview-body">
     <p class="overview__as-of" role="status">{{ asOf(summary) }}</p>
 
-    <!-- Headline figures: a link where the registry can list the same people, text where it cannot. -->
-    <section class="overview-kpis" aria-label="Headline figures">
+    <!-- Headline figures, one panel with a cell each (DL-253): a link where the registry can list
+       the same people, text where it cannot. Every cell is the same three lines. -->
+    <section class="kpi-strip overview-kpis" aria-label="Headline figures">
       @for (figure of headlines(summary); track figure.key) {
-        @let tile = tileFor(figure.key);
         @if (figure.link; as params) {
-          <a class="kpi overview-kpi" routerLink="/residents" [queryParams]="params">
-            <span class="overview-kpi__label">
-              <span
-                [class]="'overview-kpi__tile overview-kpi__tile--' + tile.tone"
-                aria-hidden="true"
-              >
-                <app-icon [name]="tile.icon" [size]="17" [stroke]="2" />
-              </span>
-              {{ figure.label }}
-            </span>
-            <span class="kpi__value overview-kpi__value">{{ figure.value }}</span>
-            @if (figure.compared) {
-              <span
-                [class]="
-                  'kpi__hint overview-kpi__delta overview-kpi__delta--' + deltaTone(figure.delta)
-                "
-                >{{ deltaText(figure.delta) }}</span
-              >
-            }
-            <span class="kpi__hint">{{ figure.hint }}</span>
+          <a class="kpi-strip__cell" routerLink="/residents" [queryParams]="params">
+            <ng-container *ngTemplateOutlet="cell; context: { $implicit: figure }" />
             <span class="visually-hidden">{{ copy.viewRecords }}</span>
           </a>
         } @else {
-          <div class="kpi overview-kpi">
-            <span class="overview-kpi__label">
-              <span
-                [class]="'overview-kpi__tile overview-kpi__tile--' + tile.tone"
-                aria-hidden="true"
-              >
-                <app-icon [name]="tile.icon" [size]="17" [stroke]="2" />
-              </span>
-              {{ figure.label }}
-            </span>
-            <span class="kpi__value overview-kpi__value">{{
-              figure.value === null ? copy.withheld : figure.value
-            }}</span>
-            @if (figure.compared) {
-              <span
-                [class]="
-                  'kpi__hint overview-kpi__delta overview-kpi__delta--' + deltaTone(figure.delta)
-                "
-                >{{ deltaText(figure.delta) }}</span
-              >
-            }
-            <span class="kpi__hint">{{
-              figure.value === null ? copy.withheldHint : figure.hint
-            }}</span>
-            @if (figure.key === 'registered') {
-              <span class="kpi__hint">{{ copy.notLinked }}</span>
-            }
+          <div class="kpi-strip__cell">
+            <ng-container *ngTemplateOutlet="cell; context: { $implicit: figure }" />
           </div>
         }
       }
@@ -468,4 +425,37 @@
       </aside>
     </div>
   </div>
+</ng-template>
+
+<!-- One headline cell of the shared strip: label row, value, one hint line (DL-253). -->
+<ng-template #cell let-figure>
+  @let tile = tileFor(figure.key);
+  <span class="kpi-strip__label">
+    <span [class]="'icon-tile kpi-strip__tile icon-tile--' + tile.tone" aria-hidden="true">
+      <app-icon [name]="tile.icon" [size]="15" [stroke]="2" />
+    </span>
+    <span class="kpi-strip__name">{{ figure.label }}</span>
+  </span>
+  <span class="kpi-strip__value">{{
+    figure.value === null ? copy.withheld : copy.count(figure.value)
+  }}</span>
+  <span class="kpi-strip__hint">
+    @if (figure.value === null) {
+      {{ copy.withheldHint }}
+    } @else if (!figure.compared) {
+      <span aria-hidden="true">{{ copy.change.none }}</span>
+      <span class="visually-hidden">{{ copy.delta.notCompared }}</span>
+    } @else if (figure.delta; as delta) {
+      <span aria-hidden="true"
+        ><b [class]="'kpi-strip__change kpi-strip__change--' + deltaTone(delta)">{{
+          changeMark(delta)
+        }}</b>
+        {{ copy.change.against }}</span
+      >
+      <span class="visually-hidden">{{ deltaText(delta) }}</span>
+    } @else {
+      <span aria-hidden="true">{{ copy.change.none }}</span>
+      <span class="visually-hidden">{{ copy.delta.none }}</span>
+    }
+  </span>
 </ng-template>

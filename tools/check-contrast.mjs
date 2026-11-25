@@ -222,6 +222,8 @@ function audit(theme, tokens) {
   require('--on-deep', '--deep', TEXT_MINIMUM, 'text on the deep panel');
   require('--on-deep-muted', '--deep', TEXT_MINIMUM, 'muted text on the deep panel');
   require('--on-deep-muted', '--primary', TEXT_MINIMUM, 'muted text on a primary panel');
+  // A linked figure under the pointer: its change in gold on the primary fill (DL-253).
+  require('--gold', '--primary', TEXT_MINIMUM, 'a change on a filled figure');
 
   // ── brand text: links, and the brand glyph on a soft brand tile ──────────
   // `--link` is the brand's text colour in both themes; in light it is the same blue as

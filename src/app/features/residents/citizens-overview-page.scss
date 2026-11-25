@@ -88,92 +88,35 @@
   gap: 18px;
 }
 
-/* ── Figures: one row, as many tiles as there are figures ─────────────────── */
-.overview-kpis {
-  display: grid;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
-  gap: 14px;
+/* ── Figures: the shared strip (`.kpi-strip`, DL-253) ─────────────────────────────────────
+   Seven figures in one row only where each cell gets the strip's 170px: narrower, a two-line label
+   is cut and a five-digit figure overflows, so a desktop beside the sidebar (1440) takes four and
+   three. Three across at tablet width, one column on a phone. Under a sector filter there are four
+   figures, and auto-fit spreads them across the row. */
+.overview-body {
+  container-type: inline-size;
 }
 
-.overview-kpi {
-  gap: 6px;
-  padding: var(--space-4) 18px;
-  border-radius: var(--r-card-sm);
+.kpi-strip.overview-kpis {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.overview-kpi__label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text2);
-  font-size: var(--fs-label);
-  font-weight: var(--fw-semibold);
+@container (width >= 1190px) {
+  .kpi-strip.overview-kpis {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  }
 }
 
-a.overview-kpi:hover .overview-kpi__label,
-a.overview-kpi:focus-visible .overview-kpi__label {
-  color: var(--on-primary);
+@media (width <= 1100px) {
+  .kpi-strip.overview-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
-.overview-kpi__tile {
-  display: grid;
-  flex: none;
-  place-items: center;
-  inline-size: 32px;
-  block-size: 32px;
-  border-radius: var(--r-sm);
-  color: var(--on-primary);
-}
-
-.overview-kpi__tile--blue {
-  background: var(--tile-blue);
-}
-
-.overview-kpi__tile--green {
-  background: var(--tile-green);
-}
-
-.overview-kpi__tile--navy {
-  background: var(--tile-navy);
-}
-
-.overview-kpi__tile--sky {
-  background: var(--tile-sky);
-}
-
-.overview-kpi__tile--red {
-  background: var(--tile-red);
-}
-
-.overview-kpi__tile--gold {
-  background: var(--tile-gold);
-  color: var(--tile-gold-ink);
-}
-
-.overview-kpi__value {
-  font-size: var(--fs-kpi-sm);
-}
-
-/* The comparison as the board's chip: the words carry the direction, the tint repeats it. */
-.overview-kpi__delta {
-  align-self: flex-start;
-  padding: 2px 7px;
-  border-radius: var(--r-pill);
-  background: var(--soft);
-  color: var(--text2);
-  font-size: var(--fs-caption);
-  font-weight: var(--fw-bold);
-}
-
-.overview-kpi__delta--up {
-  background: var(--green-tint);
-  color: var(--green-ink);
-}
-
-.overview-kpi__delta--down {
-  background: var(--red-tint);
-  color: var(--red-ink);
+@media (width <= 700px) {
+  .kpi-strip.overview-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ── Panels ───────────────────────────────────────────────────────────────── */
@@ -308,11 +251,6 @@ a.overview-kpi:focus-visible .overview-kpi__label {
     grid-column: span 12;
   }
 
-  .overview-kpis {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .overview-panel--third,
   .overview-panel--tidy,
   .overview-panel--imports,
@@ -326,10 +264,6 @@ a.overview-kpi:focus-visible .overview-kpi__label {
 }
 
 @media (width <= 700px) {
-  .overview-kpis {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .overview-grid > .overview-panel {
     grid-column: span 12;
   }

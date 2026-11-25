@@ -4,6 +4,8 @@ import {
   type ResidentSummaryPeriod,
 } from '@domain/index';
 
+const figure = (n: number): string => n.toLocaleString('en-PH');
+
 /** Every sentence the Citizens overview says (`DL-213`). */
 export const CITIZENS_OVERVIEW_COPY = {
   title: 'Citizen overview',
@@ -34,28 +36,35 @@ export const CITIZENS_OVERVIEW_COPY = {
   errorHeading: 'The figures could not be read',
 
   onRegistry: 'On the registry',
-  onRegistryHint: 'Active citizen records',
   registered: (period: ResidentSummaryPeriod) => `Registered this ${period}`,
-  registeredHint: 'Records added, to date',
-  notLinked: 'The registry cannot be filtered by when a record was added.',
-  appVerified: (n: number) => `${n.toLocaleString('en-PH')} verified`,
-  appVerifiedWithheld: 'Verified: too few to show',
-  activeIdsHint: 'Holding a card that is active and not past its date',
   viewRecords: 'Open these records in the registry',
+  /** A figure in the strip, grouped as every other count on the console is. */
+  count: figure,
   withheld: 'Withheld',
   withheldHint: 'Too few to show without identifying somebody',
 
+  /** The change, as a screen reader hears it beside the strip's arrow (DL-253). */
   delta: {
-    up: (amount: number) => `Up ${amount} on the previous period`,
-    down: (amount: number) => `Down ${amount} on the previous period`,
+    up: (amount: number) => `Up ${figure(amount)} on the previous period`,
+    down: (amount: number) => `Down ${figure(amount)} on the previous period`,
     same: 'The same as the previous period',
     none: 'No comparison: a figure was withheld',
+    notCompared: 'Not compared with the previous period',
+  },
+
+  /** The change, as the strip shows it: "↑ 1,236 vs last period" (DL-253). */
+  change: {
+    up: (amount: number) => `↑ ${figure(amount)}`,
+    down: (amount: number) => `↓ ${figure(amount)}`,
+    same: '→ 0',
+    against: 'vs last period',
+    none: '—',
   },
 
   kpiSector: {
-    'senior-citizen': { label: 'Senior citizens', hint: '60 and over (RA 9994)' },
-    pwd: { label: 'Persons with disability', hint: 'RA 7277, as amended by RA 10754' },
-    'solo-parent': { label: 'Solo parents', hint: 'RA 8972, as amended by RA 11861' },
+    'senior-citizen': 'Senior citizens',
+    pwd: 'Persons with disability',
+    'solo-parent': 'Solo parents',
   },
 
   byBarangay: 'By barangay',

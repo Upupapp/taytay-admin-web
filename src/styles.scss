@@ -159,6 +159,8 @@
   --on-deep-chip: rgb(255 255 255 / 10%);
   /* A bar on a deep panel beside the gold one that stands out (DL-232). */
   --on-deep-bar: rgb(255 255 255 / 35%);
+  /* A tile's edge on a primary fill, so a navy tile stays visible there (DL-253). */
+  --on-primary-ring: rgb(255 255 255 / 40%);
   /* The sign-in photograph (DL-243). Two layers of navy. The veil lies over the whole photograph:
      heavier at the top, where an overcast sky would otherwise glare, lightest across the hall. The
      scrim lies under the words only, so it grows with them: clear at its top edge, 82% navy once
@@ -208,6 +210,7 @@
   --fs-kpi: 38px; /* headline figure */
   --fs-kpi-md: 36px; /* a figure in a row of four (DL-231) */
   --fs-kpi-money: 34px; /* a peso total beside the counts (DL-231) */
+  --fs-kpi-strip: 34px; /* a figure in the shared KPI strip (DL-253) */
   --fs-kpi-sm: 28px; /* a figure in a row of five or six (DL-231) */
   --fs-title-2xl: 36px; /* a conversation's title beside its tile (DL-231) */
   --fs-title-xl: 32px; /* sign-in title */
