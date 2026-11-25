@@ -99,6 +99,15 @@ const SUMMARY: ResidentSummary = {
     verified: { value: 20, withheld: false },
     activeIds: { value: null, withheld: true },
   },
+  atPeriodStart: {
+    at: asIsoDateTime('2026-10-31T16:00:00.000Z'),
+    bySector: [
+      { sector: 'senior-citizen', figure: { value: 25, withheld: false } },
+      { sector: 'pwd', figure: { value: 7, withheld: false } },
+      { sector: 'solo-parent', figure: { value: 12, withheld: false } },
+    ],
+    onApp: { value: 31, withheld: false },
+  },
   thisMonth: {
     month: '2026-11',
     turning60: { value: 6, withheld: false },
@@ -181,18 +190,45 @@ describe('CitizensOverviewPage (DL-213)', () => {
     expect(asked).toEqual([{}]);
     expect(text(root)).toContain('120');
     expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.delta.up(20));
-    // The strip's hint line (DL-253): the change and "vs last period"; a figure the API does not
-    // compare says so rather than inventing a change.
+    // The strip's hint line (DL-253): the change and "vs last period".
     expect(text(root)).toContain(
       `${CITIZENS_OVERVIEW_COPY.change.up(20)} ${CITIZENS_OVERVIEW_COPY.change.against}`,
     );
-    expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.delta.notCompared);
     expect(root.querySelector('.kpi-strip')?.textContent).not.toContain('RA 9994');
     const links = [...root.querySelectorAll<HTMLAnchorElement>('a.kpi-strip__cell')].map((link) =>
       link.getAttribute('href'),
     );
     expect(links).toContain('/residents');
     expect(links).toContain('/residents?sector=senior-citizen');
+  });
+
+  it('compares the sectors and the app with the period start, and says no earlier card figure is recorded (DL-254)', async () => {
+    configure(
+      of({ ...SUMMARY, funnel: { ...SUMMARY.funnel, activeIds: { value: 3, withheld: false } } }),
+    );
+    const root = await render();
+    const cell = (key: keyof typeof CITIZENS_OVERVIEW_COPY.kpiSector): string => {
+      const label = CITIZENS_OVERVIEW_COPY.kpiSector[key];
+      const found = [...root.querySelectorAll('.kpi-strip__cell')].find((each) =>
+        each.textContent?.includes(label),
+      );
+      return found?.textContent?.replace(/\s+/g, ' ') ?? '';
+    };
+
+    // Seniors 30 now, 25 as the period began; solo parents unchanged; the app 40 against 31.
+    expect(cell('senior-citizen')).toContain(CITIZENS_OVERVIEW_COPY.delta.up(5));
+    expect(cell('solo-parent')).toContain(CITIZENS_OVERVIEW_COPY.delta.same);
+    expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.delta.up(9));
+    // A withheld figure draws no change against the earlier one.
+    expect(cell('pwd')).toContain(CITIZENS_OVERVIEW_COPY.withheldHint);
+    // The cards keep no history: said on the tile, visibly, never a dash alone.
+    const hints = [...root.querySelectorAll('.kpi-strip__hint')].map((hint) =>
+      hint.textContent?.trim(),
+    );
+    expect(hints).toContain(CITIZENS_OVERVIEW_COPY.delta.notRecorded);
+    expect(hints.filter((hint) => hint === CITIZENS_OVERVIEW_COPY.delta.notRecorded)).toHaveLength(
+      1,
+    );
   });
 
   it('says a withheld figure is withheld, links nothing to it, and draws no delta against it', async () => {

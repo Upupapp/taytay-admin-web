@@ -43,6 +43,8 @@ export interface ResidentSummary {
   readonly totalBySex: { readonly female: number; readonly male: number };
   /** From the registry to a Digital ID under the same filter (`DL-232`). */
   readonly funnel: RegistryFunnel;
+  /** The strip's figures as the period began, for "vs last period" (`DL-254`, backend ADR 0013). */
+  readonly atPeriodStart: SummaryAtPeriodStart;
   /** This Manila month: birthdays that move a person between age groups, sector IDs ending. */
   readonly thisMonth: RegistryThisMonth;
   /** With a sector filter of senior citizens, PWD or solo parents only; `null` otherwise. */
@@ -92,6 +94,25 @@ export interface RegistryFunnel {
   readonly onApp: SummaryFigure;
   readonly verified: SummaryFigure;
   readonly activeIds: SummaryFigure;
+}
+
+/**
+ * The strip's figures as the period began (`DL-254`, backend ADR 0013), each read by the server from
+ * history it only ever appends to — sector acts, account links, their moves, closures — so each is
+ * what a read at that instant said, never an estimate. Digital IDs keep no such history, so there is
+ * no earlier card figure and the screen says none is recorded.
+ */
+export interface SummaryAtPeriodStart {
+  /** Midnight, Asia/Manila, on the period's first day. */
+  readonly at: IsoDateTime;
+  /** Every sector the server sent; a protected one is withheld from a reader not cleared for it. */
+  readonly bySector: readonly SectorFigure[];
+  readonly onApp: SummaryFigure;
+}
+
+export interface SectorFigure {
+  readonly sector: VulnerabilitySector;
+  readonly figure: SummaryFigure;
 }
 
 /**

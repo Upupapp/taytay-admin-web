@@ -212,6 +212,30 @@
   text-align: end;
 }
 
+/* A narrow panel (a phone) stacks what came of an import under the file's name and details, so the
+   name keeps the width rather than breaking a word to a line beside the outcome (DL-255). */
+.registry-imports {
+  container-type: inline-size;
+}
+
+@container (width < 30rem) {
+  .registry-imports__item {
+    flex-wrap: wrap;
+    row-gap: var(--space-1);
+  }
+
+  .registry-imports__words {
+    flex-basis: calc(100% - var(--tile-sm) - var(--space-3));
+  }
+
+  .registry-imports__outcome {
+    flex-basis: 100%;
+    align-items: flex-start;
+    padding-inline-start: calc(var(--tile-sm) + var(--space-3));
+    text-align: start;
+  }
+}
+
 /* ── A sector's needs-attention counts ───────────────────────────────────── */
 .sector-attention {
   margin: 0;

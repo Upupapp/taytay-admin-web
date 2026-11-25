@@ -15,19 +15,17 @@ export const CITIZENS_OVERVIEW_COPY = {
   downloadReport: 'Download report',
 
   filterHeading: 'Filter the figures',
+  /** Each filter's visible name, and its unfiltered choice, as on the dashboard's bar (DL-255). */
   barangay: 'Barangay',
-  allBarangays: 'All barangays',
   sector: 'Sector',
-  allSectors: 'All sectors',
   ageGroup: 'Age group',
-  allAges: 'All ages',
   sex: 'Sex',
-  allSexes: 'Female and male',
-  period: 'Compared with',
+  period: 'Period',
+  all: 'All',
   periods: {
-    month: 'This month and last',
-    quarter: 'This quarter and last',
-    year: 'This year and last',
+    month: 'This month',
+    quarter: 'This quarter',
+    year: 'This year',
   } satisfies Record<ResidentSummaryPeriod, string>,
   clear: 'Clear filters',
 
@@ -49,7 +47,8 @@ export const CITIZENS_OVERVIEW_COPY = {
     down: (amount: number) => `Down ${figure(amount)} on the previous period`,
     same: 'The same as the previous period',
     none: 'No comparison: a figure was withheld',
-    notCompared: 'Not compared with the previous period',
+    /** Said on the tile itself: the server records no earlier figure for it (DL-254). */
+    notRecorded: 'No earlier figure recorded',
   },
 
   /** The change, as the strip shows it: "↑ 1,236 vs last period" (DL-253). */

@@ -2,15 +2,16 @@
      of the filter card. -->
 <app-page-header [title]="copy.title" />
 
-<!-- Filter first: it governs every figure below. Only filters this reader can use are offered. -->
+<!-- Filter first: it governs every figure below. Only filters this reader can use are offered.
+     Each field's name is shown beside it, as on the dashboard's bar (DL-255). -->
 <section class="filter-bar overview__filters" [attr.aria-label]="copy.filterHeading">
   <label class="filter-bar__field">
-    <span class="visually-hidden">{{ copy.barangay }}</span>
+    <span>{{ copy.barangay }}</span>
     <select
       class="field__input field__input--pill overview__select"
       (change)="onFilter('barangay', $event)"
     >
-      <option value="" [selected]="!filter().barangayId">{{ copy.allBarangays }}</option>
+      <option value="" [selected]="!filter().barangayId">{{ copy.all }}</option>
       @for (barangay of barangays; track barangay.id) {
         <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
           {{ barangay.name }}
@@ -20,12 +21,12 @@
   </label>
 
   <label class="filter-bar__field">
-    <span class="visually-hidden">{{ copy.sector }}</span>
+    <span>{{ copy.sector }}</span>
     <select
       class="field__input field__input--pill overview__select overview__select--narrow"
       (change)="onFilter('sector', $event)"
     >
-      <option value="" [selected]="!filter().sector">{{ copy.allSectors }}</option>
+      <option value="" [selected]="!filter().sector">{{ copy.all }}</option>
       @for (sector of sectors(); track sector) {
         <option [value]="sector" [selected]="filter().sector === sector">
           {{ sectorLabel(sector) }}
@@ -35,12 +36,12 @@
   </label>
 
   <label class="filter-bar__field">
-    <span class="visually-hidden">{{ copy.ageGroup }}</span>
+    <span>{{ copy.ageGroup }}</span>
     <select
       class="field__input field__input--pill overview__select overview__select--narrow"
       (change)="onFilter('ageGroup', $event)"
     >
-      <option value="" [selected]="!filter().ageGroup">{{ copy.allAges }}</option>
+      <option value="" [selected]="!filter().ageGroup">{{ copy.all }}</option>
       @for (group of ageGroups; track group) {
         <option [value]="group" [selected]="filter().ageGroup === group">
           {{ ageGroupLabel(group) }}
@@ -50,12 +51,12 @@
   </label>
 
   <label class="filter-bar__field">
-    <span class="visually-hidden">{{ copy.sex }}</span>
+    <span>{{ copy.sex }}</span>
     <select
-      class="field__input field__input--pill overview__select"
+      class="field__input field__input--pill overview__select overview__select--narrow"
       (change)="onFilter('sex', $event)"
     >
-      <option value="" [selected]="!filter().sex">{{ copy.allSexes }}</option>
+      <option value="" [selected]="!filter().sex">{{ copy.all }}</option>
       @for (sex of sexes; track sex) {
         <option [value]="sex" [selected]="filter().sex === sex">{{ sexLabel(sex) }}</option>
       }
@@ -63,7 +64,7 @@
   </label>
 
   <label class="filter-bar__field">
-    <span class="visually-hidden">{{ copy.period }}</span>
+    <span>{{ copy.period }}</span>
     <select class="field__input field__input--pill overview__select" (change)="onPeriod($event)">
       @for (period of periods; track period) {
         <option [value]="period" [selected]="(filter().period ?? 'month') === period">
@@ -439,12 +440,14 @@
   <span class="kpi-strip__value">{{
     figure.value === null ? copy.withheld : copy.count(figure.value)
   }}</span>
-  <span class="kpi-strip__hint">
+  <span
+    class="kpi-strip__hint"
+    [class.kpi-strip__hint--note]="figure.value !== null && !figure.compared"
+  >
     @if (figure.value === null) {
       {{ copy.withheldHint }}
     } @else if (!figure.compared) {
-      <span aria-hidden="true">{{ copy.change.none }}</span>
-      <span class="visually-hidden">{{ copy.delta.notCompared }}</span>
+      {{ copy.delta.notRecorded }}
     } @else if (figure.delta; as delta) {
       <span aria-hidden="true"
         ><b [class]="'kpi-strip__change kpi-strip__change--' + deltaTone(delta)">{{

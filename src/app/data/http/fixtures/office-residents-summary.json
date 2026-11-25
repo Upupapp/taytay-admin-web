@@ -96,6 +96,23 @@
       "verified": { "value": 180, "withheld": null },
       "active_ids": { "value": 4, "withheld": null }
     },
+    "at_period_start": {
+      "at": "2026-11-01T00:00:00+08:00",
+      "by_sector": [
+        { "key": "senior-citizen", "value": 180, "withheld": null },
+        { "key": "pwd", "value": 64, "withheld": null },
+        { "key": "solo-parent", "value": 40, "withheld": null },
+        { "key": "four-ps", "value": 0, "withheld": null },
+        { "key": "indigenous-people", "value": 0, "withheld": null },
+        { "key": "unemployed", "value": 0, "withheld": null },
+        { "key": "out-of-school-youth", "value": 0, "withheld": null },
+        { "key": "vawc-survivor", "value": null, "withheld": "protected-sector" },
+        { "key": "cicl", "value": null, "withheld": "protected-sector" },
+        { "key": "displaced-worker", "value": 0, "withheld": null }
+      ],
+      "on_app": { "value": 290, "withheld": null },
+      "active_ids": null
+    },
     "this_month": {
       "month": "2026-11",
       "turning_60": { "value": 9, "withheld": null },

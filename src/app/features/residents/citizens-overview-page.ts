@@ -123,7 +123,10 @@ interface Headline {
   /** `null` when the server withheld it (`DL-105`): said, never shown as a zero. */
   readonly value: number | null;
   readonly delta: SummaryDelta | null;
-  /** Whether a delta is part of this figure at all; a sector count has no previous period. */
+  /**
+   * Whether the server records an earlier figure for this at all: every headline but the active
+   * Digital IDs, whose cards keep no history (`DL-254`, backend ADR 0013). The screen says so.
+   */
   readonly compared: boolean;
   /** The registry filtered the same way, or `null` when the registry cannot list these people. */
   readonly link: Readonly<Record<string, string>> | null;
@@ -261,19 +264,20 @@ export class CitizensOverviewPage {
       for (const sector of HEADLINE_SECTORS) {
         const row = summary.bySector.rows.find((candidate) => candidate.key === sector);
         if (row === undefined) continue;
-        figures.push(this.sectorHeadline(sector, row));
+        figures.push(this.sectorHeadline(sector, row, summary));
       }
     }
-    // The app and its cards under the same filter (DL-232). Neither keeps its state at an earlier
-    // instant, so neither has a previous period to compare with (backend ADR 0006).
+    // The app and its cards under the same filter (DL-232). The app is compared with the accounts
+    // open as the period began, which the server reads from the links' recorded history; a card
+    // keeps only its present status, so no earlier figure is recorded for it (DL-254).
     const { onApp, activeIds } = summary.funnel;
     figures.push(
       {
         key: 'on-app',
         label: this.panels.funnelSteps.onApp,
         value: onApp.value,
-        delta: null,
-        compared: false,
+        delta: summaryDelta(onApp.value, summary.atPeriodStart.onApp.value),
+        compared: true,
         link: null,
       },
       {
@@ -479,13 +483,20 @@ export class CitizensOverviewPage {
     this.generation.update((n) => n + 1);
   }
 
-  private sectorHeadline(sector: HeadlineSector, row: ReportRow): Headline {
+  private sectorHeadline(
+    sector: HeadlineSector,
+    row: ReportRow,
+    summary: ResidentSummary,
+  ): Headline {
+    const value = row.isWithheld ? null : row.value;
+    const then = summary.atPeriodStart.bySector.find((entry) => entry.sector === sector);
     return {
       key: sector,
       label: this.copy.kpiSector[sector],
-      value: row.isWithheld ? null : row.value,
-      delta: null,
-      compared: false,
+      value,
+      // As the period began, from the sector acts the server records (DL-254).
+      delta: summaryDelta(value, then?.figure.value ?? null),
+      compared: true,
       link: row.isWithheld ? null : { ...this.base(), sector },
     };
   }

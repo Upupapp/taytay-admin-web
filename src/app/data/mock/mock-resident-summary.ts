@@ -54,6 +54,8 @@ export function mockResidentSummary(
       return created >= from.getTime() && created < to.getTime();
     }).length;
 
+  const atStart = active.filter((resident) => new Date(resident.audit.createdAt) < period.from);
+
   const sectorRows: ReportRow[] = VULNERABILITY_SECTORS.map((sector) => ({
     key: sector,
     label: VULNERABILITY_SECTOR_LABELS[sector],
@@ -71,8 +73,7 @@ export function mockResidentSummary(
     },
     residents: {
       current: active.length,
-      previous: active.filter((resident) => new Date(resident.audit.createdAt) < period.from)
-        .length,
+      previous: atStart.length,
       // The registry at each month's end, ended on the demo's today (see mock-time-series).
       byMonth: demoMonthEnds(12).map((end) => ({
         month: end.slice(0, 7),
@@ -142,6 +143,25 @@ export function mockResidentSummary(
       ),
       activeIds: figure(
         active.filter((resident) => mockAppLinkOf(resident)?.cardStatus === 'active').length,
+      ),
+    },
+    // As the period began (DL-254): the records on file by then, with the sectors they hold — the
+    // mock keeps no sector history, so a sector is taken as held since its record was made — and
+    // the app links made by then. No earlier card figure, as on the API.
+    atPeriodStart: {
+      at: asIsoDateTime(period.from),
+      bySector: VULNERABILITY_SECTORS.map((sector) => ({
+        sector,
+        figure:
+          cleared || !isProtected(sector)
+            ? figure(atStart.filter((resident) => resident.sectors.includes(sector)).length)
+            : { value: null, withheld: true },
+      })),
+      onApp: figure(
+        atStart.filter((resident) => {
+          const link = mockAppLinkOf(resident);
+          return link !== null && Date.parse(link.linkedSince) < period.from.getTime();
+        }).length,
       ),
     },
     thisMonth: thisMonthOf(active),

@@ -4277,6 +4277,7 @@
       "required": [],
       "optional": [
         "as_of",
+        "at_period_start",
         "attention",
         "by_age_sex",
         "by_barangay",

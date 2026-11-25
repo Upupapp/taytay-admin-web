@@ -25,10 +25,11 @@
   font-weight: var(--fw-semibold);
 }
 
-/* Sector and age are as wide as "All sectors" and "All ages", not their longest option, so "Download
-   report" shares the filters' row at 1440 (owner, 24 November 2026); a long choice is clipped. */
+/* Sector, age and sex are narrower than their longest option, so with each field's name shown beside it
+   (DL-255) "Download report" still shares the filters' row at 1440 (owner, 24 November 2026); a long
+   choice is clipped. */
 .overview__select--narrow {
-  max-inline-size: 9.5rem;
+  max-inline-size: 6.5rem;
 }
 
 /* The actions take what the row leaves: on the filters' row when "Download report" fits, "Register

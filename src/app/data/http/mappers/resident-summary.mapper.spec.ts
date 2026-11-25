@@ -31,6 +31,36 @@ describe('resident summary mapper (DL-213)', () => {
     });
   });
 
+  it('reads the strip as the period began, a protected sector withheld, and no card figure (DL-254)', () => {
+    const summary = toResidentSummary(SUMMARY.data, BARANGAYS);
+    const then = summary?.atPeriodStart;
+
+    expect(then?.at).toBe('2026-11-01T00:00:00+08:00');
+    expect(then?.onApp).toEqual({ value: 290, withheld: false });
+    expect(then?.bySector.find((row) => row.sector === 'pwd')?.figure).toEqual({
+      value: 64,
+      withheld: false,
+    });
+    expect(then?.bySector.find((row) => row.sector === 'cicl')?.figure).toEqual({
+      value: null,
+      withheld: true,
+    });
+    expect(then).not.toHaveProperty('activeIds');
+  });
+
+  it('refuses a summary without the period start, or with a sector it does not know (DL-254)', () => {
+    const { at_period_start: start, ...without } = SUMMARY.data;
+    expect(toResidentSummary(without, BARANGAYS)).toBeNull();
+    const unknown = {
+      ...SUMMARY.data,
+      at_period_start: {
+        ...start,
+        by_sector: [{ key: 'farmers', value: 3, withheld: null }],
+      },
+    };
+    expect(toResidentSummary(unknown, BARANGAYS)).toBeNull();
+  });
+
   it('reads a withheld addition as withheld, and refuses one shown below the threshold (DL-249)', () => {
     const months = SUMMARY.data.residents.added_by_month;
     const withheld = {

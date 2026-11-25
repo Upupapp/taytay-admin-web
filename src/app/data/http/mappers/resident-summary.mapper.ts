@@ -3,6 +3,7 @@ import {
   RESIDENT_SUMMARY_PERIODS,
   SECTOR_ATTENTION_KINDS,
   SMALL_CELL_THRESHOLD,
+  VULNERABILITY_SECTORS,
   type AddedMonth,
   type MonthFigure,
   type RecordsToTidy,
@@ -13,6 +14,8 @@ import {
   type ResidentSummaryPeriodRange,
   type SectorAttention,
   type SectorCoverage,
+  type SectorFigure,
+  type SummaryAtPeriodStart,
   type SummaryDisclosure,
   type SummaryFigure,
 } from '@domain/index';
@@ -37,6 +40,7 @@ import { date, dateTime, field, int, list, oneOf, str } from './wire';
  * | `by_age_sex`         | `byAgeSex`      | the summary is not readable     |
  * | `by_age_sex.total_by_sex` | `totalBySex` | the summary is not readable    |
  * | `funnel.*`           | `funnel`        | the summary is not readable     |
+ * | `at_period_start.{at,by_sector[],on_app}` | `atPeriodStart` | the summary is not readable |
  * | `this_month.*`       | `thisMonth`     | the summary is not readable     |
  * | `coverage` (or null) | `coverage`      | the summary is not readable     |
  * | `attention[]` (or null) | `attention`  | the summary is not readable     |
@@ -50,7 +54,9 @@ import { date, dateTime, field, int, list, oneOf, str } from './wire';
  * the API's id to the console's, so the screen can link it to the registry; a barangay the console
  * does not know keeps the API's id and is not linked.
  *
- * **Not read**: `applied_filter`, which repeats the filter the console sent.
+ * **Not read**: `applied_filter`, which repeats the filter the console sent; and
+ * `at_period_start.active_ids`, always null because no earlier card figure is recorded (`DL-254`).
+ * A protected sector withheld from this reader arrives as `protected-sector` and is read as withheld.
  *
  * @consumes GET office/residents/summary
  */
@@ -72,6 +78,7 @@ export function toResidentSummary(wire: unknown, barangays: BarangayIndex): Resi
   const female = count(field(sexWire, 'female'));
   const male = count(field(sexWire, 'male'));
   const funnel = toFunnel(field(wire, 'funnel'));
+  const atPeriodStart = toAtPeriodStart(field(wire, 'at_period_start'));
   const thisMonth = toThisMonth(field(wire, 'this_month'));
   const coverageWire = field(wire, 'coverage');
   const coverage = coverageWire === null ? null : toCoverage(coverageWire);
@@ -98,6 +105,7 @@ export function toResidentSummary(wire: unknown, barangays: BarangayIndex): Resi
     female === null ||
     male === null ||
     funnel === null ||
+    atPeriodStart === null ||
     thisMonth === null ||
     coverage === undefined ||
     (attentionWire !== null && attention === null) ||
@@ -120,6 +128,7 @@ export function toResidentSummary(wire: unknown, barangays: BarangayIndex): Resi
     byAgeSex,
     totalBySex: { female, male },
     funnel,
+    atPeriodStart,
     thisMonth,
     coverage,
     attention: attentionWire === null ? null : attention,
@@ -199,6 +208,23 @@ function toFunnel(wire: unknown): RegistryFunnel | null {
   const activeIds = toFigure(field(wire, 'active_ids'));
   if (onRegistry === null || onApp === null || verified === null || activeIds === null) return null;
   return { onRegistry, onApp, verified, activeIds };
+}
+
+function toAtPeriodStart(wire: unknown): SummaryAtPeriodStart | null {
+  const at = dateTime(field(wire, 'at'));
+  const bySector = whole(field(wire, 'by_sector'), toSectorFigure);
+  const onApp = toFigure(field(wire, 'on_app'));
+  return at === null || bySector === null || onApp === null ? null : { at, bySector, onApp };
+}
+
+function toSectorFigure(wire: unknown): SectorFigure | null {
+  const sector = oneOf(field(wire, 'key'), VULNERABILITY_SECTORS);
+  if (sector === null) return null;
+  if (field(wire, 'value') === null && field(wire, 'withheld') === 'protected-sector') {
+    return { sector, figure: { value: null, withheld: true } };
+  }
+  const figure = toFigure(wire);
+  return figure === null ? null : { sector, figure };
 }
 
 function toThisMonth(wire: unknown): RegistryThisMonth | null {

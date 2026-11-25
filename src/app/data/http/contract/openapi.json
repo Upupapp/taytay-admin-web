@@ -17778,7 +17778,7 @@
       "OfficeResidentSummary": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["as_of", "period", "applied_filter", "residents", "registered", "by_barangay", "by_sector", "by_age_sex", "funnel", "this_month", "coverage", "attention", "by_disability_type", "records_to_tidy", "disclosure"],
+        "required": ["as_of", "period", "applied_filter", "residents", "registered", "by_barangay", "by_sector", "by_age_sex", "funnel", "at_period_start", "this_month", "coverage", "attention", "by_disability_type", "records_to_tidy", "disclosure"],
         "properties": {
           "as_of": { "type": "string", "format": "date-time" },
           "period": {
@@ -17877,12 +17877,37 @@
             "type": "object",
             "additionalProperties": false,
             "required": ["on_registry", "on_app", "verified", "active_ids"],
-            "description": "From the registry to a Digital ID under the same filter (ADR 0006): on_registry is the total (residents.current); on_app the records linked to an open residents' app account; verified those whose account is verified; active_ids those whose account holds a card that is active and not past its date. The three after the total are people, each withheld below the threshold. They are also the citizens overview's KPI row (On the residents' app, Active Digital IDs); no previous-period figure is sent for either, because neither a link nor a card keeps its state at an earlier instant.",
+            "description": "From the registry to a Digital ID under the same filter (ADR 0006): on_registry is the total (residents.current); on_app the records linked to an open residents' app account; verified those whose account is verified; active_ids those whose account holds a card that is active and not past its date. The three after the total are people, each withheld below the threshold. They are also the citizens overview's KPI row (On the residents' app, Active Digital IDs); at_period_start carries on_app as the period began, read from the link's recorded history, and no earlier figure for cards, which keep none (ADR 0013).",
             "properties": {
               "on_registry": { "type": "integer", "minimum": 0 },
               "on_app": { "$ref": "#/components/schemas/PeopleFigure" },
               "verified": { "$ref": "#/components/schemas/PeopleFigure" },
               "active_ids": { "$ref": "#/components/schemas/PeopleFigure" }
+            }
+          },
+          "at_period_start": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["at", "by_sector", "on_app", "active_ids"],
+            "description": "The headline figures as the period began, under the same filter, for the change \"vs last period\" (ADR 0013). Each is read only from history the database appends to and never rewrites, so it is what a read at that instant would have said, never an estimate: by_sector from the sector acts (office_resident_sector_events) over residents.previous's population; on_app from each account link's making (office_resident_accounts.created_at), its moves (office_resident_account_relinks) and its closure (users.closed_at, written once, migration 0078). active_ids is always null: a card keeps only its present status, a suspension or revocation changing that row, so no earlier figure is recorded and none is reconstructed.",
+            "properties": {
+              "at": { "type": "string", "format": "date-time", "description": "Midnight, Asia/Manila, on period.from." },
+              "by_sector": {
+                "type": "array",
+                "description": "Every sector, as by_sector keys them; a protected sector (RA 9262, RA 9344) is withheld as protected-sector for a reader without request.view-sensitive.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["key", "value", "withheld"],
+                  "properties": {
+                    "key": { "$ref": "#/components/schemas/VulnerabilitySector" },
+                    "value": { "type": ["integer", "null"], "minimum": 0 },
+                    "withheld": { "type": ["string", "null"], "enum": ["small-cell", "protected-sector", null] }
+                  }
+                }
+              },
+              "on_app": { "$ref": "#/components/schemas/PeopleFigure" },
+              "active_ids": { "type": "null", "description": "No earlier figure is recorded for cards (ADR 0013)." }
             }
           },
           "this_month": {

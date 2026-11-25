@@ -11833,3 +11833,50 @@ deep app-figures panel); the Verification queue's figures, whose cells carry a s
 seven-day column chart, so they are small charts rather than plain counts; Citizen IDs' lifecycle,
 a `.tally-row` inside its section card; and pages whose header row is followed by a banner or a
 card rather than tabs or filters (Requests, Cases, Balita, Staff).
+
+## DL-254 — the strip compares what history records, and says where none is recorded
+
+**Status:** Settled (25 November 2026), on the owner's request for comparisons on the five figures
+`DL-253` left at "—". Backend ADR 0013 records the same decision; it supersedes ADR 0006's refusal
+for the app accounts and keeps it for the cards.
+
+**Decision.** A previous figure is shown only where the server reads it from history the database
+appends to and never rewrites, so it is what a read at the period's start said — never an estimate.
+`GET office/residents/summary` gains `at_period_start { at, by_sector[], on_app, active_ids }`,
+the instant being midnight Manila on the period's first day, the same one `residents.previous` is
+taken at, so "On the registry" and the five new comparisons all mean "now against as the period
+began".
+
+- **Senior citizens, Persons with disability, Solo parents: compared.** Every sector act (`recorded`,
+  `ended`) is appended with its time; the latest per sector at the instant is the membership then.
+  Every sector is sent; a protected one is withheld from an uncleared reader as on `by_sector`.
+- **On the residents' app: compared.** The link is made once and never deleted, a move of its record
+  is appended to the relinks (0066), and the closure is written once at the moment of the act —
+  a rule of the table since migration 0078. The account is counted under the record its link named
+  then.
+- **Active Digital IDs: not compared, and the tile says so.** A card keeps only its present status;
+  a suspension or revocation changes that row, and its time is in the audit trail, written after the
+  act rather than by it. Reconstructing from that trail is exactly what ADR 0006 refused. The hint
+  line reads "No earlier figure recorded" in words, visibly, wrapping like an explanatory hint
+  (`.kpi-strip__hint--note`) instead of a dash a reader must decode. ADR 0013 names how cards could
+  be compared later (a status history appended by a trigger) and leaves it to the owner.
+- **The console counts nothing.** `summaryDelta(now, then)` is the only arithmetic, as before; a
+  withheld figure on either side draws no change. The mapper refuses a summary without
+  `at_period_start` or with an unknown sector (whole or nothing, `DL-213`); the mock counts records
+  on file before the period, taking a sector as held since its record was made, because the mock
+  keeps no sector history.
+
+## DL-255 — the overview's filters say their names; a phone stacks an import's outcome
+
+**Status:** Settled (25 November 2026), two leftovers from the owner's review.
+
+- **Visible filter labels.** The Citizen overview's five selects had only hidden names. They now
+  show "Barangay", "Sector", "Age group", "Sex" and "Period" beside them through `.filter-bar__field`
+  exactly as the dashboard's bar does, and the unfiltered choice reads "All" as it does there, since
+  the label already says what is all. "Compared with" became "Period", the dashboard's word, and
+  its choices "This month", "This quarter" and "This year" (the strip already says "vs last period").
+  Sector, age and sex narrow to 6.5rem, so at 1440 the filters and "Download report" keep one row.
+- **Recent imports on a phone.** Beside its outcome ("12 added, 3 attached") the file's name and
+  details had about a word's width at 390px. The list is now a size container: under 30rem the
+  outcome wraps beneath the name and details, indented to the text, left-aligned, so the name keeps
+  the panel's width. Wider panels are unchanged.
