@@ -11,7 +11,10 @@
  *      and it sits behind a higher permission than reading a count.
  *   2. **An aggregate is not automatically anonymous** (`DL-105`). Counts of
  *      people below the threshold are withheld — never dropped, never rounded,
- *      never a zero — and there is no way to ask for the raw set.
+ *      never a zero — and there is no way to ask for the raw set. Since `DL-252`
+ *      the threshold is a switch the owner set to 0 (nothing withheld): the
+ *      machinery must stay intact behind it, the switch must be one literal, and
+ *      every sentence about withholding must follow it.
  *   3. **The chart IS the table.** Every series carries a summary sentence and
  *      real rows, rendered through `ChartTable`. No second chart renderer, and
  *      no charting dependency that would draw a picture instead.
@@ -129,11 +132,35 @@ notes.push(
 
 /* ── 2. An aggregate is not automatically anonymous ──────────────────────── */
 
-if (!/export const SMALL_CELL_THRESHOLD/.test(disclosure)) {
+const thresholdLiteral = /export const SMALL_CELL_THRESHOLD(?::\s*number)?\s*=\s*(\d+)\s*;/.exec(
+  disclosure,
+);
+if (thresholdLiteral === null) {
   problems.push(
-    'SMALL_CELL_THRESHOLD has gone. "Barangay San Juan: 1 VAWC survivor served" names somebody ' +
-      'to anyone who knows who has been to the office (DL-105).',
+    'SMALL_CELL_THRESHOLD is no longer one number literal. It is the switch (DL-252): turning ' +
+      'small-cell withholding back on must be a one-line change, not a search (DL-105).',
   );
+}
+const threshold = Number(thresholdLiteral?.[1] ?? NaN);
+if (!/export const WITHHOLDS_SMALL_COUNTS\s*=\s*SMALL_CELL_THRESHOLD\s*>\s*1\s*;/.test(disclosure)) {
+  problems.push(
+    'WITHHOLDS_SMALL_COUNTS no longer follows the threshold. The copy that says figures are ' +
+      'withheld reads it, and would say so whatever the switch (DL-252).',
+  );
+}
+// The threshold reaches the rule through a parameter that defaults to the switch, so the tests can
+// prove the rule still withholds while it is off. Nothing outside the domain spec may pass one.
+const isSmallSignature = /export function isSmallCell\(\s*value: number,\s*threshold: number = SMALL_CELL_THRESHOLD\s*\)/;
+if (!isSmallSignature.test(disclosure)) {
+  problems.push('isSmallCell no longer defaults its threshold to SMALL_CELL_THRESHOLD (DL-252).');
+}
+for (const file of walk('src/app', new Set(['.ts']))) {
+  if (file.endsWith('.spec.ts') || file.endsWith('report-disclosure.ts')) continue;
+  if (/(?:isSmallCell|suppressSmallCells)\([^)]*,/.test(read(file))) {
+    problems.push(
+      `${file} passes its own threshold. The switch is the constant, never a caller (DL-252).`,
+    );
+  }
 }
 
 const isSmallBody = block(disclosure, /export function isSmallCell[\s\S]*?\n\}/, 'isSmallCell');
@@ -194,10 +221,18 @@ const basisBlock = block(
   /export const SMALL_CELL_BASIS[\s\S]*?;[ \t]*(?:\r?\n)/,
   'SMALL_CELL_BASIS',
 );
-if (!/has not yet confirmed/.test(prose(basisBlock))) {
+// Both sentences stay, chosen by the switch: on, the threshold admits it is an unconfirmed
+// convention (DL-68); off, the basis says every count is shown and how to handle it (DL-252).
+if (!/WITHHOLDS_SMALL_COUNTS\s*\?/.test(basisBlock) || !/has not yet confirmed/.test(prose(basisBlock))) {
   problems.push(
-    'The threshold no longer admits it is an unconfirmed convention. A number that quietly ' +
-      'becomes policy by age is what DL-68 exists to prevent.',
+    'The threshold no longer admits, when on, that it is an unconfirmed convention. A number that ' +
+      'quietly becomes policy by age is what DL-68 exists to prevent.',
+  );
+}
+if (!/real number/.test(prose(basisBlock)) || !/RA 10173/.test(prose(basisBlock))) {
+  problems.push(
+    'With the switch off the basis no longer says every count is shown and is handled under ' +
+      'RA 10173. The owner decided to show them; the reader must still be told (DL-252).',
   );
 }
 
@@ -230,7 +265,10 @@ if (aboutPeopleBody === '') {
     );
   }
 }
-notes.push('suppression: small cells withheld and marked, zero kept, total taken before');
+notes.push(
+  `suppression: switch at ${threshold} (${threshold > 1 ? 'on' : 'off, DL-252'}); machinery intact — ` +
+    'small cells withheld and marked, zero kept, total taken before',
+);
 
 /* ── 3. The chart IS the table ───────────────────────────────────────────── */
 
@@ -594,6 +632,16 @@ if (!existsSync(join(root, reportMapperPath))) {
       "The report mapper no longer holds the server's threshold to the console's. A server that " +
         'lowered its figure would be believed here (DL-105).',
     );
+  }
+  // The summary and registry reads answer with the same disclosure: the two settings agree, or the
+  // answer is refused, so a switch flipped in one repository and not the other fails loudly (DL-252).
+  for (const other of [
+    'src/app/data/http/mappers/summary-report.mapper.ts',
+    'src/app/data/http/mappers/resident-summary.mapper.ts',
+  ]) {
+    if (!/threshold\s*!==\s*SMALL_CELL_THRESHOLD/.test(read(other))) {
+      problems.push(`${other} no longer holds the server's threshold to the console's (DL-252).`);
+    }
   }
   if (!/reportProblems\(\s*definition\s*\)/.test(definitionFn)) {
     problems.push(

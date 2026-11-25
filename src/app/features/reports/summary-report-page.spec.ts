@@ -197,17 +197,23 @@ describe('the summary report page (DL-228)', () => {
     expect(sheet?.querySelector('.report-sheet__footer')?.textContent).toContain('RA 10173');
   });
 
-  it('says a withheld cell is withheld, with why, and charts it as no bar', async () => {
+  it('shows a small count as its number and charts it, under a plain total (DL-252)', async () => {
     const { fixture } = await open(() => of(REPORT));
     const sex = html(fixture).querySelector('#summary-section-by-sex')?.closest('section');
 
-    expect(sex?.querySelector('.sheet-withheld')?.textContent).toContain(copy.withheld);
-    expect(sex?.querySelector('.sheet-withheld__reason')?.textContent).toContain(
-      'too few people to show without identifying someone',
-    );
+    expect(sex?.querySelector('.sheet-withheld')).toBeNull();
+    expect(sex?.textContent).toContain('4');
     expect(sex?.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
-    expect(sex?.querySelectorAll('rect.bar-chart__bar')).toHaveLength(1);
-    expect(sex?.querySelector('tfoot')?.textContent).toContain('includes withheld figures');
+    expect(sex?.querySelectorAll('rect.bar-chart__bar')).toHaveLength(2);
+    expect(sex?.querySelector('tfoot')?.textContent).not.toContain('withheld');
+  });
+
+  it('still says a protected sector is withheld, with why (DL-38)', async () => {
+    const { fixture } = await open(() => of(REPORT));
+    const sectors = html(fixture).querySelector('#summary-section-by-sector')?.closest('section');
+
+    expect(sectors?.querySelector('.sheet-withheld')?.textContent).toContain(copy.withheld);
+    expect(sectors?.querySelector('.sheet-withheld__reason')?.textContent).toContain('RA 9262');
   });
 
   it('says section I is not counted for this reader, and overdue is not counted at all', async () => {

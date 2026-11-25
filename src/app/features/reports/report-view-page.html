@@ -124,9 +124,10 @@
                 <p class="series__total">
                   <span class="series__total-label">{{ copy.total }}:</span>
                   <span class="series__total-value">{{ series.totalDisplay ?? series.total }}</span>
-                  <span class="series__total-hint">{{
-                    series.overlapping ? copy.totalOverlappingHint : copy.totalHint
-                  }}</span>
+                  @let totalHint = series.overlapping ? copy.totalOverlappingHint : copy.totalHint;
+                  @if (totalHint) {
+                    <span class="series__total-hint">{{ totalHint }}</span>
+                  }
                 </p>
               }
             </section>

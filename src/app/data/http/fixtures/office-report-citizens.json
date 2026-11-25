@@ -284,7 +284,7 @@
         "totals": {
           "residents": 27
         },
-        "totals_label": "Total (includes withheld figures)",
+        "totals_label": "Total",
         "suppression_notice": null,
         "key": "by-barangay",
         "letter": "C",
@@ -349,7 +349,7 @@
           "female": 14,
           "male": 13
         },
-        "totals_label": "Total (includes withheld figures)",
+        "totals_label": "Total",
         "suppression_notice": null,
         "key": "by-age-sex",
         "letter": "D",
@@ -380,11 +380,9 @@
             "key": "pwd",
             "label": "Persons with disability",
             "values": {
-              "residents": null
+              "residents": 2
             },
-            "withheld": {
-              "residents": "small-cell"
-            }
+            "withheld": {}
           },
           {
             "key": "solo-parent",
@@ -453,7 +451,7 @@
         ],
         "totals": null,
         "totals_label": null,
-        "suppression_notice": "One figure is withheld because it counts fewer than 5 people, few enough to identify someone. Withheld does not mean zero.",
+        "suppression_notice": null,
         "key": "by-sector",
         "letter": "E",
         "title": "Residents by sector"
@@ -634,9 +632,9 @@
       "handling_notice": "This export contains information held by the Municipal Social Welfare and Development Office of Taytay, Rizal and is protected under RA 10173. Keep it within the office, do not forward it, and delete it when the work it was produced for is finished."
     },
     "disclosure": {
-      "threshold": 5,
-      "provenance": "convention-pending-confirmation",
-      "basis": "A count below 5 can identify a person in a barangay of this size, so it is withheld rather than shown. The threshold follows common statistical disclosure practice; the MSWDO has not yet confirmed a figure of its own."
+      "threshold": 0,
+      "provenance": "owner-decision",
+      "basis": "Every count is shown as its real number, however small: the MSWDO decided on 24 November 2026 not to withhold small counts. A count of one or two in a barangay can identify the person behind it, so handle these figures as personal information under RA 10173."
     }
   },
   "meta": {}

@@ -217,14 +217,13 @@ describe('the citizen registry report page (DL-234)', () => {
     expect(section('this-month')?.textContent).toContain('RA 11982');
   });
 
-  it('says a withheld cell is withheld, with why, never as a zero', async () => {
+  it('shows a small count as its number, never as Withheld (DL-252)', async () => {
     const { element } = await open(() => of(REPORT));
     const sectors = element.querySelector('#summary-section-by-sector')?.closest('section');
 
-    expect(sectors?.querySelector('.sheet-withheld')?.textContent).toContain('Withheld');
-    expect(sectors?.querySelector('.sheet-withheld__reason')?.textContent).toContain(
-      'too few people to show without identifying someone',
-    );
+    expect(sectors?.querySelector('.sheet-withheld')).toBeNull();
+    expect(element.querySelector('.sheet-withheld')).toBeNull();
+    expect(sectors?.textContent).toContain('Persons with disability');
   });
 
   it('starts the signatures from the server and keeps what is typed, sending nothing', async () => {

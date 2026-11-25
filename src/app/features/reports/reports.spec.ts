@@ -20,7 +20,7 @@ import {
   REPORT_REPOSITORY,
   STAFF_REPOSITORY,
   SMALL_CELL_THRESHOLD,
-  WITHHELD_DISPLAY,
+  WITHHELD_WITH_REASON,
   asId,
   emptyPage,
   toAuthenticatedUser,
@@ -133,12 +133,13 @@ const html = (fixture: ComponentFixture<unknown>) => fixture.nativeElement as HT
 /* ── Criterion: aggregate analytics without exposing names by default ─────── */
 
 describe('the reports hub', () => {
-  it('says up front that figures are counts, and small ones are withheld', async () => {
+  it('says up front that figures are counts, each its real number, handled under RA 10173 (DL-252)', async () => {
     const element = html(await openHub());
+    const notice = element.querySelector('.hub__notice')?.textContent ?? '';
 
-    expect(element.querySelector('.hub__notice')?.textContent).toContain(
-      'withheld rather than shown',
-    );
+    expect(notice).toContain('real number');
+    expect(notice).toContain('RA 10173');
+    expect(notice).not.toContain('withheld');
   });
 
   it('flags the one report that names people, before it is opened', async () => {
@@ -243,10 +244,10 @@ describe('reports that invite a wrong reading', () => {
   });
 });
 
-/* ── Criterion: small cells are withheld, and said to be withheld ─────────── */
+/* ── Criterion: small counts are shown as they are (DL-252) ──────────────── */
 
-describe('withheld figures', () => {
-  it('labels a withheld cell rather than showing a zero or a blank', async () => {
+describe('small counts', () => {
+  it('withholds nothing for being small; a withheld row is a protected sector, and says so', async () => {
     const fixture = await openReport('service-reach');
     const page = fixture.componentInstance as unknown as {
       result: () => {
@@ -256,12 +257,11 @@ describe('withheld figures', () => {
       } | null;
     };
     const rows = page.result()?.series.flatMap((series) => series.rows) ?? [];
-    const withheld = rows.filter((row) => row.isWithheld === true);
 
-    expect(withheld.length).toBeGreaterThan(0);
-    for (const row of withheld) {
-      // The word, then why (DL-247): never a zero, a blank, or a bare "Withheld".
-      expect(row.display?.startsWith(`${WITHHELD_DISPLAY}: `)).toBe(true);
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows.filter((entry) => entry.isWithheld === true)) {
+      // The word, then why (DL-247) — and the why is never a small count.
+      expect(row.display).toBe(WITHHELD_WITH_REASON['protected-sector']);
     }
   });
 
@@ -288,36 +288,28 @@ describe('withheld figures', () => {
     };
     const rows = page.result()?.series.flatMap((series) => series.rows) ?? [];
 
-    for (const row of rows) {
-      if (row.isWithheld === true) {
-        continue;
-      }
-      expect(row.value === 0 || row.value >= SMALL_CELL_THRESHOLD).toBe(true);
+    for (const row of rows.filter((entry) => entry.value === 0)) {
+      expect(row.isWithheld).toBeUndefined();
     }
   });
 
-  it('says on screen that the column will not add up', async () => {
+  it('says nothing about a column that will not add up, and no total speaks of withholding', async () => {
+    expect(SMALL_CELL_THRESHOLD).toBe(0);
     const element = html(await openReport('service-reach'));
-    const notice = element.querySelector('.series__withheld');
 
-    expect(notice?.textContent).toContain('withheld');
-    expect(notice?.textContent).toContain('does not add up');
+    expect(element.querySelector('.series__withheld')?.textContent ?? '').not.toContain(
+      'does not add up',
+    );
+    for (const hint of Array.from(element.querySelectorAll('.series__total-hint'))) {
+      expect(hint.textContent).not.toContain('withheld');
+    }
   });
 
-  it('reports the true total, and says it was counted before suppression', async () => {
+  it('says that every count is shown, and how to handle a small one', async () => {
     const element = html(await openReport('service-reach'));
 
-    expect(element.querySelector('.series__total-hint')?.textContent).toContain(
-      'before anything was withheld',
-    );
-  });
-
-  it('states why figures are withheld, and admits the threshold is unconfirmed', async () => {
-    const element = html(await openReport('service-reach'));
-
-    expect(element.querySelector('.disclosure__basis')?.textContent).toContain(
-      'has not yet confirmed',
-    );
+    expect(element.textContent).toContain('Small counts');
+    expect(element.querySelector('.disclosure__basis')?.textContent).toContain('RA 10173');
   });
 });
 

@@ -4,6 +4,7 @@ import {
   SUMMARY_SECTION_KEYS,
   SUMMARY_SECTION_LETTERS,
   SUMMARY_WITHHELD_REASONS,
+  SMALL_CELL_THRESHOLD,
   type CitizenReport,
   type CitizenReportFigures,
   type SummaryCell,
@@ -257,7 +258,15 @@ function toDisclosure(wire: unknown): SummaryReport['disclosure'] | null {
   const threshold = int(field(wire, 'threshold'));
   const provenance = str(field(wire, 'provenance'));
   const basis = str(field(wire, 'basis'));
-  if (threshold === null || threshold < 1 || provenance === null || basis === null) return null;
+  // The console's threshold, as on a report (`DL-252`): a server on another setting is refused.
+  if (
+    threshold === null ||
+    threshold !== SMALL_CELL_THRESHOLD ||
+    provenance === null ||
+    basis === null
+  ) {
+    return null;
+  }
   return { threshold, provenance, basis };
 }
 

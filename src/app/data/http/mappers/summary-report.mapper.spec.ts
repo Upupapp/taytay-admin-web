@@ -39,20 +39,26 @@ describe('toSummaryReport (DL-228)', () => {
     expect(report?.footer.handlingNotice).toContain('RA 10173');
   });
 
-  it('keeps a withheld cell null with its reason, never a zero (DL-105)', () => {
+  it('reads a small count as its number, and a withheld cell as null with its reason (DL-252)', () => {
     const report = toSummaryReport(SUMMARY.data);
     const sex = report?.sections.find((section) => section.key === 'by-sex');
     const male = sex?.rows.find((row) => row.key === 'male');
     const sector = report?.sections.find((section) => section.key === 'by-sector');
     const vawc = sector?.rows.find((row) => row.key === 'vawc-survivor');
 
-    expect(male?.values['persons']).toBeNull();
-    expect(male?.withheld['persons']).toBe('small-cell');
+    expect(male?.values['persons']).toBe(4);
+    expect(male?.withheld['persons']).toBeUndefined();
     expect(vawc?.values['persons']).toBeNull();
     expect(vawc?.withheld['persons']).toBe('protected-sector');
-    // The total is the server's, taken before anything was withheld, under its own label.
+    // The total is the server's, under its own label.
     expect(sex?.totals).toEqual({ persons: 11 });
-    expect(sex?.totalsLabel).toContain('includes withheld figures');
+    expect(sex?.totalsLabel).toBe('Total');
+  });
+
+  it('refuses an answer on another small-cell setting than the console’s (DL-252)', () => {
+    const other = structuredClone(SUMMARY.data);
+    other.disclosure.threshold = 5;
+    expect(toSummaryReport(other)).toBeNull();
   });
 
   it('reads section I as not counted for this reader, with the server’s sentence', () => {
@@ -88,7 +94,7 @@ describe('toSummaryReport (DL-228)', () => {
     expect(toSummaryReport(body)).toBeNull();
   });
 
-  it('refuses a count of people shown below the threshold', () => {
+  it('reads a count of people of two as two, the switch being off (DL-252)', () => {
     const body = wire();
     const rows = sectionOf(body, 'by-age')['rows'] as Record<string, Record<string, unknown>>[];
     (rows[1] as Record<string, Record<string, unknown>>)['values'] = {
@@ -96,17 +102,23 @@ describe('toSummaryReport (DL-228)', () => {
       share_percent: 18,
     };
 
-    expect(toSummaryReport(body)).toBeNull();
+    const age = toSummaryReport(body)?.sections.find((section) => section.key === 'by-age');
+    expect(age?.rows[1]?.values['persons']).toBe(2);
   });
 
   it('refuses a withheld cell that carries a value, and a null cell that names no reason', () => {
+    // A protected sector's row: withheld whatever the switch (DL-38).
+    const vawc = (body: Record<string, unknown>): Record<string, unknown> => {
+      const rows = sectionOf(body, 'by-sector')['rows'] as Record<string, unknown>[];
+      const row = rows.find((entry) => entry['key'] === 'vawc-survivor');
+      if (row === undefined) throw new Error('fixture: no VAWC row');
+      return row;
+    };
     const leaked = wire();
-    const leakedRows = sectionOf(leaked, 'by-sex')['rows'] as Record<string, unknown>[];
-    (leakedRows[1] as Record<string, unknown>)['values'] = { persons: 4, share_percent: 36 };
+    vawc(leaked)['values'] = { persons: 4, share_percent: 36 };
 
     const silent = wire();
-    const silentRows = sectionOf(silent, 'by-sex')['rows'] as Record<string, unknown>[];
-    (silentRows[1] as Record<string, unknown>)['withheld'] = {};
+    vawc(silent)['withheld'] = {};
 
     expect(toSummaryReport(leaked)).toBeNull();
     expect(toSummaryReport(silent)).toBeNull();

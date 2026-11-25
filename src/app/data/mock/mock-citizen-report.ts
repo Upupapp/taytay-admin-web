@@ -6,6 +6,7 @@ import {
   SMALL_CELL_BASIS,
   SMALL_CELL_PROVENANCE,
   SMALL_CELL_THRESHOLD,
+  WITHHOLDS_SMALL_COUNTS,
   asIsoDateTime,
   isSmallCell,
   type AuthenticatedUser,
@@ -32,7 +33,8 @@ export interface MockCitizenReportInput {
   readonly cleared: boolean;
 }
 
-const TOTAL_BEFORE = 'Total (includes withheld figures)';
+/** The server's total label: "includes withheld figures" only while small counts are (`DL-252`). */
+const TOTAL_BEFORE = WITHHOLDS_SMALL_COUNTS ? 'Total (includes withheld figures)' : 'Total';
 
 /**
  * The citizen registry report over the mock registry, in the shape the API composes it (backend

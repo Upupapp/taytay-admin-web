@@ -2,6 +2,7 @@ import {
   asIsoDate,
   asIsoDateTime,
   describeSuppression,
+  isSmallCell,
   isInAgeGroup,
   isSensitiveSector,
   RESIDENT_AGE_GROUP_LABELS,
@@ -11,6 +12,7 @@ import {
   SMALL_CELL_BASIS,
   SMALL_CELL_PROVENANCE,
   SMALL_CELL_THRESHOLD,
+  WITHHOLDS_SMALL_COUNTS,
   suppressSmallCells,
   TAYTAY_BARANGAYS,
   totalBeforeSuppression,
@@ -338,9 +340,7 @@ function isProtected(key: string): boolean {
 }
 
 function figure(value: number): SummaryFigure {
-  return value > 0 && value < SMALL_CELL_THRESHOLD
-    ? { value: null, withheld: true }
-    : { value, withheld: false };
+  return isSmallCell(value) ? { value: null, withheld: true } : { value, withheld: false };
 }
 
 function series(key: string, title: string, labelHeader: string, rows: ReportRow[]): ReportSeries {
@@ -348,7 +348,9 @@ function series(key: string, title: string, labelHeader: string, rows: ReportRow
   return {
     key,
     title,
-    summary: `${title}, active records under the filter. Counts below ${SMALL_CELL_THRESHOLD} are withheld.`,
+    summary: WITHHOLDS_SMALL_COUNTS
+      ? `${title}, active records under the filter. Counts below ${SMALL_CELL_THRESHOLD} are withheld.`
+      : `${title}, active records under the filter.`,
     labelHeader,
     valueHeader: 'Residents',
     rows: shown,

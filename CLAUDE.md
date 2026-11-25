@@ -701,9 +701,17 @@ eligibility (`DL-66`) — no screen branches on a report id.
 "none"), never rounded (that puts an untrue figure in a report), never a zero
 (an absence of service is the finding), and the drill-down goes with them. The
 **total is taken before suppression** and labelled, so a reader adding up the
-visible rows is not misled. The threshold is
-`convention-pending-confirmation` and says so, like the review windows
-(`DL-68`). Nothing anywhere can ask for the unsuppressed set.
+visible rows is not misled. Nothing anywhere can ask for the unsuppressed set.
+
+**The switch is off, by the owner's decision** (`DL-252`, superseding `DL-105`'s
+withholding; the API's ADR 0012). `SMALL_CELL_THRESHOLD` is 0 in both
+repositories, so every count is shown as its real number; the RA 10173 risk was
+explained and the owner decided anyway. The machinery stays behind the switch,
+every sentence about withholding follows `WITHHOLDS_SMALL_COUNTS`, and the
+mappers refuse a server on another setting. Setting it back to 5 in both turns
+the rule on again, with the threshold `convention-pending-confirmation` as before
+(`DL-68`). Protected sectors (`DL-38`) are a permission, not a small cell, and
+stay withheld.
 
 **An export carries its own conditions, inside the file** (`DL-106`): the
 report, the question, the filter in words, when and by whom, whether it names

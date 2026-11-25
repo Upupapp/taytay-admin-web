@@ -42,7 +42,7 @@
       ]
     },
     "registered": {
-      "current": { "value": null, "withheld": "small-cell" },
+      "current": { "value": 3, "withheld": null },
       "previous": { "value": 24, "withheld": null }
     },
     "by_barangay": {
@@ -54,11 +54,11 @@
       "measure": "people",
       "rows": [
         { "key": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04", "label": "San Juan", "value": 1201, "display": null, "withheld": null, "resident_id": null },
-        { "key": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01", "label": "Dolores", "value": null, "display": null, "withheld": "small-cell", "resident_id": null }
+        { "key": "6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c01", "label": "Dolores", "value": 3, "display": null, "withheld": null, "resident_id": null }
       ],
       "total": 1204,
       "overlapping": false,
-      "suppression_notice": "1 figure is withheld because the count is small enough to identify somebody."
+      "suppression_notice": null
     },
     "by_sector": {
       "key": "by-sector",
@@ -94,14 +94,14 @@
       "on_registry": 1204,
       "on_app": { "value": 310, "withheld": null },
       "verified": { "value": 180, "withheld": null },
-      "active_ids": { "value": null, "withheld": "small-cell" }
+      "active_ids": { "value": 4, "withheld": null }
     },
     "this_month": {
       "month": "2026-11",
       "turning_60": { "value": 9, "withheld": null },
-      "turning_18": { "value": null, "withheld": "small-cell" },
+      "turning_18": { "value": 2, "withheld": null },
       "solo_parent_ids_due": { "value": 6, "withheld": null },
-      "pwd_ids_expiring": { "value": null, "withheld": "small-cell" }
+      "pwd_ids_expiring": { "value": 1, "withheld": null }
     },
     "coverage": null,
     "attention": null,
@@ -110,7 +110,7 @@
       { "key": "missing-contact", "count": 31, "basis": "Active records with no mobile number and no email." },
       { "key": "possible-duplicates", "count": null, "basis": "Same name and birth date.", "last_run_at": null }
     ],
-    "disclosure": { "threshold": 5, "provenance": "convention-pending-confirmation", "basis": "DL-105" }
+    "disclosure": { "threshold": 0, "provenance": "owner-decision", "basis": "Every count is shown as its real number, however small: the MSWDO decided on 24 November 2026 not to withhold small counts. A count of one or two in a barangay can identify the person behind it, so handle these figures as personal information under RA 10173." }
   },
   "meta": {}
 }

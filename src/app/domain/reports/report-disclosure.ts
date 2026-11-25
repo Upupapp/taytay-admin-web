@@ -19,24 +19,35 @@ import type { ReportRow } from './report-result';
  *  - **Not zero.** Zero is a real finding — "no one in this barangay was
  *    served" is exactly the gap a planning report exists to show.
  *
- * The threshold is a **convention this office has not yet confirmed**, and it
- * says so, following the same honesty as the review windows (`DL-68`). Five is
- * the figure most commonly used in Philippine and international statistical
- * disclosure practice for small-area counts, but no Taytay issuance was
- * supplied fixing it, so it is marked pending rather than presented as policy.
+ * **The switch is off** (`DL-252`, superseding `DL-105`'s withholding): on 24 November
+ * 2026 the owner decided that every figure is shown as its real number, having heard
+ * that a count of one or two in a barangay can identify somebody (RA 10173). The
+ * threshold is therefore 0 — `isSmallCell` is `value > 0 && value < threshold`, so no
+ * count of 1 or more is withheld — and the machinery below still runs, so that setting
+ * it back to 5 (here and in the API's `catalogue.ts`, which must agree: the report
+ * mapper refuses a server whose threshold differs) turns the rule back on unchanged.
+ * Five is the figure most common in statistical disclosure practice; no Taytay
+ * issuance fixes one.
  */
 
-export const SMALL_CELL_THRESHOLD = 5;
+export const SMALL_CELL_THRESHOLD = 0;
 
-export const SMALL_CELL_PROVENANCE =
-  'convention-pending-confirmation' as const;
+/** Whether the switch is on: a threshold of 0 or 1 can withhold no count of 1 or more. */
+export const WITHHOLDS_SMALL_COUNTS = SMALL_CELL_THRESHOLD > 1;
 
-export const SMALL_CELL_BASIS =
-  'A count below ' +
-  String(SMALL_CELL_THRESHOLD) +
-  ' can identify a person in a barangay of this size, so it is withheld rather than shown. The ' +
-  'threshold follows common statistical disclosure practice; the MSWDO has not yet confirmed a ' +
-  'figure of its own.';
+export const SMALL_CELL_PROVENANCE = WITHHOLDS_SMALL_COUNTS
+  ? 'convention-pending-confirmation'
+  : 'owner-decision';
+
+export const SMALL_CELL_BASIS = WITHHOLDS_SMALL_COUNTS
+  ? 'A count below ' +
+    String(SMALL_CELL_THRESHOLD) +
+    ' can identify a person in a barangay of this size, so it is withheld rather than shown. The ' +
+    'threshold follows common statistical disclosure practice; the MSWDO has not yet confirmed a ' +
+    'figure of its own.'
+  : 'Every count is shown as its real number, however small: the MSWDO decided on 24 November ' +
+    '2026 not to withhold small counts. A count of one or two in a barangay can identify the ' +
+    'person behind it, so handle these figures as personal information under RA 10173.';
 
 /** What a screen prints in place of a withheld figure. Never a zero, never blank. */
 export const WITHHELD_DISPLAY = 'Withheld';
@@ -60,8 +71,8 @@ export const WITHHELD_WITH_REASON: Readonly<Record<WithheldReason, string>> = {
  * Zero is **not** suppressed: it identifies nobody, and hiding it would hide
  * the absence of service, which is the finding a planning report most needs.
  */
-export function isSmallCell(value: number): boolean {
-  return value > 0 && value < SMALL_CELL_THRESHOLD;
+export function isSmallCell(value: number, threshold: number = SMALL_CELL_THRESHOLD): boolean {
+  return value > 0 && value < threshold;
 }
 
 /**
@@ -70,11 +81,15 @@ export function isSmallCell(value: number): boolean {
  * Only for rows counting **people or households**. A count of documents or
  * requests identifies nobody on its own, and suppressing those would make the
  * reports useless for no privacy gain — so the caller states whether the rows
- * are about people, rather than this guessing.
+ * are about people, rather than this guessing. `threshold` is the switch's; only
+ * the tests pass one, to prove the rule still withholds when it is turned on.
  */
-export function suppressSmallCells(rows: readonly ReportRow[]): readonly ReportRow[] {
+export function suppressSmallCells(
+  rows: readonly ReportRow[],
+  threshold: number = SMALL_CELL_THRESHOLD,
+): readonly ReportRow[] {
   return rows.map((row) =>
-    isSmallCell(row.value)
+    isSmallCell(row.value, threshold)
       ? { ...row, value: 0, display: WITHHELD_WITH_REASON['small-cell'], isWithheld: true, routerLink: undefined }
       : row,
   );

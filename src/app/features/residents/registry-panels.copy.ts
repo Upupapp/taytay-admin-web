@@ -1,6 +1,9 @@
-import type { ResidentImportSource } from '@domain/index';
+import { WITHHOLDS_SMALL_COUNTS, type ResidentImportSource } from '@domain/index';
 
-/** What the registry panels the boards wait on say (`DL-232`). */
+/**
+ * What the registry panels the boards wait on say (`DL-232`). A sentence about withholding small
+ * counts follows the switch (`DL-252`): off, it says nothing is withheld rather than that it is.
+ */
 export const REGISTRY_PANELS_COPY = {
   withheld: 'Withheld',
   withheldHint: 'Too few to show without identifying somebody',
@@ -10,8 +13,9 @@ export const REGISTRY_PANELS_COPY = {
   growthCaption: 'Active records on the registry at the end of each month, last 12 months',
   growthMonthHeader: 'Month',
   growthCountHeader: 'Active records',
-  growthNote:
-    'The registry under the filter at the end of each month, this month as it stands. A month too small to show is withheld, and the line breaks there.',
+  growthNote: WITHHOLDS_SMALL_COUNTS
+    ? 'The registry under the filter at the end of each month, this month as it stands. A month too small to show is withheld, and the line breaks there.'
+    : 'The registry under the filter at the end of each month, this month as it stands.',
   growthCallout: (n: number) => `${n.toLocaleString('en-PH')} now`,
 
   funnelHeading: 'From the registry to a Digital ID',
@@ -22,8 +26,9 @@ export const REGISTRY_PANELS_COPY = {
     verified: 'Verified residents',
     activeIds: 'Active Digital IDs',
   },
-  funnelNote:
-    'Only a verified resident can hold a card. Each step counts the records under the filter; the last three are people, withheld when too few to show.',
+  funnelNote: WITHHOLDS_SMALL_COUNTS
+    ? 'Only a verified resident can hold a card. Each step counts the records under the filter; the last three are people, withheld when too few to show.'
+    : 'Only a verified resident can hold a card. Each step counts the records under the filter; the last three are people.',
 
   thisMonthHeading: 'This month',
   thisMonth: {
@@ -37,7 +42,7 @@ export const REGISTRY_PANELS_COPY = {
 
   femaleTotal: 'female',
   maleTotal: 'male',
-  sexTotalsNote: 'Totals by sex, taken before any figure was withheld.',
+  sexTotalsNote: WITHHOLDS_SMALL_COUNTS ? 'Totals by sex, taken before any figure was withheld.' : '',
 
   importsHeading: 'Recent imports',
   importsLink: 'Import citizens',
@@ -75,7 +80,9 @@ export const REGISTRY_PANELS_COPY = {
     digitalIds: 'Holding an active Digital ID',
   },
   coverageOf: (total: number) => `of ${total.toLocaleString('en-PH')} on the registry`,
-  coverageNote: 'Each a count of people under the filter, withheld when too few to show.',
+  coverageNote: WITHHOLDS_SMALL_COUNTS
+    ? 'Each a count of people under the filter, withheld when too few to show.'
+    : 'Each a count of people under the filter.',
 
   /* A sector page's figures, above its list. */
   sectorFiguresLabel: 'The sector’s figures',
@@ -87,7 +94,8 @@ export const REGISTRY_PANELS_COPY = {
   ageBands: 'Age bands',
   disabilityType: 'Type of disability',
   childrenInCare: 'Children in their care',
-  total: (total: number) => `Total before anything was withheld: ${total}.`,
+  total: (total: number) =>
+    WITHHOLDS_SMALL_COUNTS ? `Total before anything was withheld: ${total}.` : `Total: ${total}.`,
   sectorKpi: {
     'senior-citizen': {
       total: 'Senior citizens',

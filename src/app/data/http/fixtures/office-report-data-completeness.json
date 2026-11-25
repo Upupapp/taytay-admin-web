@@ -64,9 +64,9 @@
       "A missing mobile number is not looked for on a record under a protected sector: your account does not read their contact details."
     ],
     "disclosure": {
-      "threshold": 5,
-      "provenance": "convention-pending-confirmation",
-      "basis": "A count below 5 can identify a person in a barangay of this size, so it is withheld rather than shown. The threshold follows common statistical disclosure practice; the MSWDO has not yet confirmed a figure of its own."
+      "threshold": 0,
+      "provenance": "owner-decision",
+      "basis": "Every count is shown as its real number, however small: the MSWDO decided on 24 November 2026 not to withhold small counts. A count of one or two in a barangay can identify the person behind it, so handle these figures as personal information under RA 10173."
     }
   },
   "meta": {}

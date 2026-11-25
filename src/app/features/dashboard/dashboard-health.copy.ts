@@ -1,4 +1,9 @@
-import type { AssistanceRequestStatus, DashboardPeriod, WaitsOn } from '@domain/index';
+import {
+  WITHHOLDS_SMALL_COUNTS,
+  type AssistanceRequestStatus,
+  type DashboardPeriod,
+  type WaitsOn,
+} from '@domain/index';
 
 const PERIOD_WORDS: Readonly<Record<DashboardPeriod, string>> = {
   'all-time': 'at any time',
@@ -113,7 +118,10 @@ export const DASHBOARD_HEALTH_COPY = {
     {
       payouts: false,
       term: 'Withheld figures',
-      text: 'Requests and releases are records, not people, so none of these is withheld. Counts of people elsewhere in the console are withheld below the small-cell threshold.',
+      // Follows the small-cell switch (`DL-252`).
+      text: WITHHOLDS_SMALL_COUNTS
+        ? 'Requests and releases are records, not people, so none of these is withheld. Counts of people elsewhere in the console are withheld below the small-cell threshold.'
+        : 'None. Every figure here and elsewhere in the console is its real number; only the two protected sectors are left uncounted for staff not cleared for them.',
     },
   ],
 } as const;

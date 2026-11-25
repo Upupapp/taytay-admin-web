@@ -31517,18 +31517,21 @@
               "threshold": {
                 "type": "integer",
                 "enum": [
+                  0,
                   5
-                ]
+                ],
+                "description": "The small-cell switch: 0 since ADR 0012 (the owner's decision), so no count of 1 or more is withheld; 5 when it is turned back on."
               },
               "provenance": {
                 "type": "string",
                 "enum": [
-                  "convention-pending-confirmation"
+                  "convention-pending-confirmation",
+                  "owner-decision"
                 ]
               },
               "basis": {
                 "type": "string",
-                "description": "Why figures are withheld; stated whether or not anything was."
+                "description": "Why figures are withheld, or, with the switch off, that every count is shown and how to handle it; stated whether or not anything was."
               }
             }
           }

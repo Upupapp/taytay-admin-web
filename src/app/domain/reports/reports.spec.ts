@@ -9,7 +9,9 @@ import {
 } from './report-definition';
 import {
   SMALL_CELL_BASIS,
+  SMALL_CELL_PROVENANCE,
   SMALL_CELL_THRESHOLD,
+  WITHHOLDS_SMALL_COUNTS,
   WITHHELD_DISPLAY,
   describeSuppression,
   isSmallCell,
@@ -108,21 +110,45 @@ describe('the report catalogue', () => {
 /* ── Criterion: an aggregate is not automatically anonymous ───────────────── */
 
 describe('small-cell suppression', () => {
-  it('withholds a count small enough to identify somebody', () => {
-    expect(isSmallCell(1)).toBe(true);
-    expect(isSmallCell(SMALL_CELL_THRESHOLD - 1)).toBe(true);
-    expect(isSmallCell(SMALL_CELL_THRESHOLD)).toBe(false);
+  // The switch is off by the owner's decision (DL-252); these use 5 to prove the rule still works
+  // when it is set again, and the first two pin what the console does today.
+  const ON = 5;
+
+  it('withholds nothing today: every count of 1 or more is shown as it is', () => {
+    expect(SMALL_CELL_THRESHOLD).toBe(0);
+    expect(WITHHOLDS_SMALL_COUNTS).toBe(false);
+    expect(isSmallCell(1)).toBe(false);
+    expect(isSmallCell(4)).toBe(false);
+    const shown = suppressSmallCells([row('a', 1), row('b', 2), row('c', 0)]);
+    expect(shown.map((entry) => [entry.value, entry.isWithheld])).toEqual([
+      [1, undefined],
+      [2, undefined],
+      [0, undefined],
+    ]);
+    expect(describeSuppression(shown)).toBeNull();
+  });
+
+  it('says the figures are shown, by whose decision, and how to handle them', () => {
+    expect(SMALL_CELL_PROVENANCE).toBe('owner-decision');
+    expect(SMALL_CELL_BASIS).toContain('real number');
+    expect(SMALL_CELL_BASIS).toContain('RA 10173');
+  });
+
+  it('withholds a count small enough to identify somebody when switched on', () => {
+    expect(isSmallCell(1, ON)).toBe(true);
+    expect(isSmallCell(ON - 1, ON)).toBe(true);
+    expect(isSmallCell(ON, ON)).toBe(false);
   });
 
   it('never suppresses zero, because an absence of service is the finding', () => {
     // Hiding "no one in this barangay was served" would hide exactly what a
     // planning report exists to show.
-    expect(isSmallCell(0)).toBe(false);
-    expect(suppressSmallCells([row('a', 0)])[0]?.isWithheld).toBeUndefined();
+    expect(isSmallCell(0, ON)).toBe(false);
+    expect(suppressSmallCells([row('a', 0)], ON)[0]?.isWithheld).toBeUndefined();
   });
 
   it('withholds the row rather than dropping it', () => {
-    const suppressed = suppressSmallCells([row('a', 2), row('b', 9)]);
+    const suppressed = suppressSmallCells([row('a', 2), row('b', 9)], ON);
 
     // A missing row reads as "none", which is a different and false claim.
     expect(suppressed).toHaveLength(2);
@@ -133,18 +159,19 @@ describe('small-cell suppression', () => {
   });
 
   it('never rounds a small count up to the threshold', () => {
-    const suppressed = suppressSmallCells([row('a', 2)]);
+    const suppressed = suppressSmallCells([row('a', 2)], ON);
 
     // Rounding 2 to 5 puts a number in a report that is not true, and somebody
     // will act on it.
     expect(suppressed[0]?.value).toBe(0);
-    expect(suppressed[0]?.display).not.toContain(String(SMALL_CELL_THRESHOLD));
+    expect(suppressed[0]?.display).not.toContain(String(ON));
   });
 
   it('strips the drill-down from a withheld row', () => {
-    const suppressed = suppressSmallCells([
-      { key: 'a', label: 'a', value: 2, routerLink: '/residents' },
-    ]);
+    const suppressed = suppressSmallCells(
+      [{ key: 'a', label: 'a', value: 2, routerLink: '/residents' }],
+      ON,
+    );
 
     // Withholding the figure and leaving a link to the four records behind it
     // would withhold nothing at all.
@@ -159,19 +186,15 @@ describe('small-cell suppression', () => {
   });
 
   it('says on the report that figures are missing, and why the total will not add up', () => {
-    const notice = describeSuppression(suppressSmallCells([row('a', 2), row('b', 9)]));
+    const notice = describeSuppression(suppressSmallCells([row('a', 2), row('b', 9)], ON));
 
     expect(notice).toContain('withheld');
     expect(notice).toContain('does not add up');
   });
 
   it('says nothing when nothing was withheld', () => {
-    expect(describeSuppression(suppressSmallCells([row('a', 9)]))).toBeNull();
-    expect(withheldCount(suppressSmallCells([row('a', 9)]))).toBe(0);
-  });
-
-  it('admits the threshold is a convention this office has not confirmed', () => {
-    expect(SMALL_CELL_BASIS).toContain('has not yet confirmed');
+    expect(describeSuppression(suppressSmallCells([row('a', 9)], ON))).toBeNull();
+    expect(withheldCount(suppressSmallCells([row('a', 9)], ON))).toBe(0);
   });
 });
 

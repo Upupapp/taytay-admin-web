@@ -1,4 +1,9 @@
-import type { SummaryAgeGroup, SummarySex, SummaryWithheldReason } from '@domain/index';
+import {
+  WITHHOLDS_SMALL_COUNTS,
+  type SummaryAgeGroup,
+  type SummarySex,
+  type SummaryWithheldReason,
+} from '@domain/index';
 
 /**
  * Screen wording for the summary report (`DL-228`), the office's standard template.
@@ -61,8 +66,8 @@ export const SUMMARY_REPORT_COPY = {
   printFailed: 'The report could not be read again, so nothing was printed. Try again.',
   excelHint:
     'Download CSV saves the same tables as a CSV file, which opens in Excel. The file ' +
-    'carries its conditions — the period, the filters, who made it and when, why figures are ' +
-    'withheld and how to handle it — above the first figure. The download is recorded in the ' +
+    'carries its conditions — the period, the filters, who made it and when, how small counts ' +
+    'are treated and how to handle it — above the first figure. The download is recorded in the ' +
     'audit trail.',
   excel: 'Download CSV (for Excel)',
   exporting: 'Preparing the file…',
@@ -109,5 +114,5 @@ export const SUMMARY_REPORT_COPY = {
 
   generated: (date: string, name: string) =>
     `Generated from the Taytay Social Welfare console on ${date} by ${name}.`,
-  disclosureHeading: 'Why some figures are withheld',
+  disclosureHeading: WITHHOLDS_SMALL_COUNTS ? 'Why some figures are withheld' : 'Small counts',
 } as const;

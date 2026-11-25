@@ -437,20 +437,17 @@
             "key": "male",
             "label": "Male",
             "values": {
-              "persons": null,
-              "share_percent": null
+              "persons": 4,
+              "share_percent": 36
             },
-            "withheld": {
-              "persons": "small-cell",
-              "share_percent": "small-cell"
-            }
+            "withheld": {}
           }
         ],
         "totals": {
           "persons": 11
         },
-        "totals_label": "Total (includes withheld figures)",
-        "suppression_notice": "One figure is withheld because it counts fewer than 5 people, few enough to identify someone. Withheld does not mean zero. The total still includes it.",
+        "totals_label": "Total",
+        "suppression_notice": null,
         "key": "by-sex",
         "letter": "E",
         "title": "Sex"
@@ -504,7 +501,7 @@
         "totals": {
           "persons": 11
         },
-        "totals_label": "Total (includes withheld figures)",
+        "totals_label": "Total",
         "suppression_notice": null,
         "key": "by-age",
         "letter": "F",
@@ -562,7 +559,7 @@
         "totals": {
           "persons": 11
         },
-        "totals_label": "Persons served (includes withheld figures)",
+        "totals_label": "Persons served",
         "suppression_notice": "The VAWC survivor sector is protected by law (RA 9262, RA 9344), so your account does not count it, and the total leaves it out.",
         "key": "by-sector",
         "letter": "G",
@@ -649,9 +646,9 @@
       "handling_notice": "This export contains information held by the Municipal Social Welfare and Development Office of Taytay, Rizal and is protected under RA 10173. Keep it within the office, do not forward it, and delete it when the work it was produced for is finished."
     },
     "disclosure": {
-      "threshold": 5,
-      "provenance": "convention-pending-confirmation",
-      "basis": "Counts of people from 1 to 4 are withheld, because a figure that small can identify somebody (DL-105)."
+      "threshold": 0,
+      "provenance": "owner-decision",
+      "basis": "Every count is shown as its real number, however small: the MSWDO decided on 24 November 2026 not to withhold small counts. A count of one or two in a barangay can identify the person behind it, so handle these figures as personal information under RA 10173."
     }
   },
   "meta": {}

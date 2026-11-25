@@ -2,6 +2,7 @@ import {
   RECORDS_TO_TIDY_KINDS,
   RESIDENT_SUMMARY_PERIODS,
   SECTOR_ATTENTION_KINDS,
+  SMALL_CELL_THRESHOLD,
   type AddedMonth,
   type MonthFigure,
   type RecordsToTidy,
@@ -268,7 +269,15 @@ function toDisclosure(wire: unknown): SummaryDisclosure | null {
   const threshold = int(field(wire, 'threshold'));
   const provenance = str(field(wire, 'provenance'));
   const basis = str(field(wire, 'basis'));
-  if (threshold === null || provenance === null || basis === null) return null;
+  // The console's threshold, as on a report (`DL-252`): a server on another setting is refused.
+  if (
+    threshold === null ||
+    threshold !== SMALL_CELL_THRESHOLD ||
+    provenance === null ||
+    basis === null
+  ) {
+    return null;
+  }
   return { threshold, provenance, basis };
 }
 

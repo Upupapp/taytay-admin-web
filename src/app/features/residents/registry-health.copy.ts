@@ -1,3 +1,5 @@
+import { WITHHOLDS_SMALL_COUNTS } from '@domain/index';
+
 /** The words of the Citizens overview's additions and review-queue panels (`DL-249`). */
 export const REGISTRY_HEALTH_COPY = {
   withheld: 'Withheld',
@@ -12,8 +14,9 @@ export const REGISTRY_HEALTH_COPY = {
   addedWithheld: (months: string) => `Withheld, below the small-cell threshold: ${months}.`,
   addedWithheldOffice: (month: string) => `${month}, typed in`,
   addedWithheldImported: (month: string) => `${month}, imported`,
-  addedNote:
-    'People on the registry now, by the month their record was added. A record an import matched to someone already listed added nobody. A figure below the small-cell threshold is withheld, never shown as zero.',
+  addedNote: WITHHOLDS_SMALL_COUNTS
+    ? 'People on the registry now, by the month their record was added. A record an import matched to someone already listed added nobody. A figure below the small-cell threshold is withheld, never shown as zero.'
+    : 'People on the registry now, by the month their record was added. A record an import matched to someone already listed added nobody.',
 
   queueHeading: 'ID review queue',
   queueLink: 'Open the queue',

@@ -161,42 +161,43 @@ describe('reports over the API (DL-190)', () => {
     http.expectNone(`${BASE}/office/reports/caseload`);
   });
 
-  it('marks a withheld figure Withheld, keeps its row and label, and gives it nothing to open', async () => {
+  it('shows a small count as it is, and marks a protected sector Withheld with nothing to open (DL-252)', async () => {
     const { result } = await run(OFFICE_REPORT_VULNERABILITY);
     const series = result?.series[0];
     expect(series?.rows).toHaveLength(10);
     const withheld = series?.rows.filter((row) => row.isWithheld === true) ?? [];
-    expect(withheld.map((row) => row.key).sort()).toEqual([
-      'cicl',
-      'displaced-worker',
-      'solo-parent',
-      'unemployed',
-      'vawc-survivor',
-    ]);
+    // Only the sectors this reader is not cleared for: nothing is withheld for being small.
+    expect(withheld.map((row) => row.key).sort()).toEqual(['cicl', 'vawc-survivor']);
     for (const row of withheld) {
       expect(row.display).toMatch(/^Withheld: /);
       expect(row.routerLink).toBeUndefined();
     }
     // The reason is always said beside it (DL-247): a small count and an uncounted sector differ.
-    expect(series?.rows.find((row) => row.key === 'solo-parent')?.display).toBe(WITHHELD_WITH_REASON['small-cell']);
+    expect(series?.rows.find((row) => row.key === 'solo-parent')?.value).toBe(3);
+    expect(series?.rows.find((row) => row.key === 'unemployed')?.value).toBe(2);
     expect(series?.rows.find((row) => row.key === 'vawc-survivor')?.display).toBe(WITHHELD_WITH_REASON['protected-sector']);
     // Zero is a finding and is shown as one.
     expect(series?.rows.find((row) => row.key === 'indigenous-people')?.value).toBe(0);
     expect(series?.rows.find((row) => row.key === 'indigenous-people')?.isWithheld).toBeUndefined();
-    // The total is the server's, taken before anything was withheld.
+    // The total is the server's; the notice is only about the protected sectors.
     expect(series?.total).toBe(35);
-    expect(series?.suppressionNotice).toMatch(/does not add up/);
+    expect(series?.suppressionNotice).toMatch(/protected by law/);
+    expect(series?.suppressionNotice).not.toMatch(/does not add up/);
     expect(result?.limits).toHaveLength(1);
-    expect(result?.disclosureBasis).toMatch(/has not yet confirmed/);
+    expect(result?.disclosureBasis).toMatch(/real number.*RA 10173/);
   });
 
-  it('refuses a series about people that shows a figure small enough to identify somebody', async () => {
+  it('reads a series about people showing a count of one, the switch being off (DL-252)', async () => {
     const body = copy(OFFICE_REPORT_VULNERABILITY);
-    const leaked = body.data.series[0]?.rows.find((row) => row.key === 'solo-parent');
-    if (leaked !== undefined) {
-      Object.assign(leaked, { value: 3, withheld: null });
+    const one = body.data.series[0]?.rows.find((row) => row.key === 'unemployed');
+    if (one !== undefined) {
+      Object.assign(one, { value: 1, withheld: null });
     }
-    expect(await refused(body)).toBeInstanceOf(Error);
+    const read = (await refused(body)) as {
+      readonly series: readonly { readonly rows: readonly { key: string; value: number }[] }[];
+    };
+    expect(read).not.toBeInstanceOf(Error);
+    expect(read.series[0]?.rows.find((row) => row.key === 'unemployed')?.value).toBe(1);
   });
 
   it('refuses a withheld row that keeps its figure, words standing in for it, or a record to open', async () => {
@@ -205,8 +206,9 @@ describe('reports over the API (DL-190)', () => {
       { display: 'three' },
       { resident_id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c01' },
     ]) {
+      // A protected sector's row: withheld whatever the switch (DL-38).
       const body = copy(OFFICE_REPORT_VULNERABILITY);
-      const row = body.data.series[0]?.rows.find((entry) => entry.key === 'solo-parent');
+      const row = body.data.series[0]?.rows.find((entry) => entry.key === 'vawc-survivor');
       if (row !== undefined) {
         Object.assign(row, plant);
       }
@@ -218,9 +220,12 @@ describe('reports over the API (DL-190)', () => {
     const afterSuppression = copy(OFFICE_REPORT_VULNERABILITY);
     const series = afterSuppression.data.series[0];
     if (series !== undefined) {
-      // Rows that do not overlap must total at least what they show plus one for each withheld.
+      // Rows that do not overlap must total at least what they show plus one for each withheld:
+      // a small cell the server withheld (the switch on) and a total that does not count it.
+      const unemployed = series.rows.find((row) => row.key === 'unemployed');
+      if (unemployed !== undefined) Object.assign(unemployed, { value: null, withheld: 'small-cell' });
       series.overlapping = false;
-      series.total = 29;
+      series.total = 36;
     }
     expect(await refused(afterSuppression)).toBeInstanceOf(Error);
 
@@ -507,13 +512,22 @@ describe('the citizen registry report over the API (DL-234)', () => {
     expect((await read).period.from).toBe(OFFICE_REPORT_CITIZENS.data.period.from);
   });
 
-  it('refuses a count of people shown below the threshold, rather than drawing part of it', async () => {
+  it('reads a count of people of one as one, the switch being off (DL-252)', async () => {
     const body = copy(OFFICE_REPORT_CITIZENS);
     const sector = body.data.sections.find((section) => section.key === 'by-sector');
     const pwd = sector?.rows.find((row) => row.key === 'pwd');
     if (pwd === undefined) throw new Error('fixture: no PWD row');
-    (pwd.values as Record<string, unknown>)['residents'] = 2;
-    (pwd as { withheld: Record<string, unknown> }).withheld = {};
+    (pwd.values as Record<string, unknown>)['residents'] = 1;
+    const read = firstValueFrom(repository.citizens({})).catch((error: unknown) => error);
+    http.expectOne(`${BASE}/office/reports/citizens`).flush(body);
+
+    const report = await read;
+    expect(report).not.toBeInstanceOf(Error);
+  });
+
+  it('refuses a registry report on another small-cell setting than the console’s (DL-252)', async () => {
+    const body = copy(OFFICE_REPORT_CITIZENS);
+    body.data.disclosure.threshold = 5;
     const read = firstValueFrom(repository.citizens({})).catch((error: unknown) => error);
     http.expectOne(`${BASE}/office/reports/citizens`).flush(body);
 

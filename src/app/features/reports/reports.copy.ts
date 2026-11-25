@@ -1,3 +1,5 @@
+import { WITHHOLDS_SMALL_COUNTS } from '@domain/index';
+
 /**
  * Screen wording for reports and exports.
  *
@@ -12,9 +14,12 @@ export const REPORTS_COPY = {
     title: 'Reports',
     subtitle: 'Figures for planning and accountability, without naming people unless it is needed.',
 
-    aggregateNotice:
-      'Every report here is a count unless it says otherwise. Figures small enough to identify ' +
-      'somebody are withheld rather than shown.',
+    // The second sentence follows the small-cell switch (`DL-252`): off, nothing small is withheld.
+    aggregateNotice: WITHHOLDS_SMALL_COUNTS
+      ? 'Every report here is a count unless it says otherwise. Figures small enough to identify ' +
+        'somebody are withheld rather than shown.'
+      : 'Every report here is a count unless it says otherwise. Every figure is its real number, ' +
+        'however small, so a small count can point to a person: handle it under RA 10173.',
 
     open: 'Open',
     namesPeople: 'Names people',
@@ -43,12 +48,15 @@ export const REPORTS_COPY = {
     clear: 'Clear filters',
 
     total: 'Total',
-    totalHint: 'Counted before anything was withheld, so it does not always match the rows above.',
-    totalOverlappingHint:
-      'Each counted once, however many rows they are under, so the rows above add up to more. Counted before anything was withheld.',
+    totalHint: WITHHOLDS_SMALL_COUNTS
+      ? 'Counted before anything was withheld, so it does not always match the rows above.'
+      : '',
+    totalOverlappingHint: WITHHOLDS_SMALL_COUNTS
+      ? 'Each counted once, however many rows they are under, so the rows above add up to more. Counted before anything was withheld.'
+      : 'Each counted once, however many rows they are under, so the rows above add up to more.',
     seriesEmpty: 'Nothing was counted in this table under this filter.',
     withheldHeading: 'Some figures are withheld',
-    disclosureHeading: 'Why figures are withheld',
+    disclosureHeading: WITHHOLDS_SMALL_COUNTS ? 'Why figures are withheld' : 'Small counts',
     limitsHeading: 'What this report cannot count',
 
     namesPeopleHeading: 'This report names people',

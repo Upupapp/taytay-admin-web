@@ -1,4 +1,8 @@
-import type { RecordsToTidyKind, ResidentSummaryPeriod } from '@domain/index';
+import {
+  WITHHOLDS_SMALL_COUNTS,
+  type RecordsToTidyKind,
+  type ResidentSummaryPeriod,
+} from '@domain/index';
 
 /** Every sentence the Citizens overview says (`DL-213`). */
 export const CITIZENS_OVERVIEW_COPY = {
@@ -66,7 +70,9 @@ export const CITIZENS_OVERVIEW_COPY = {
     'Sectors overlap: one person may be counted in several. The two protected sectors are counted only for staff cleared to see sensitive records.',
   byAgeSex: 'By age group and sex',
   byAgeSexNote: 'Ages in whole years today. Senior citizens are 60 and over (RA 9994).',
-  total: (total: number) => `Total before anything was withheld: ${total}.`,
+  // "Before anything was withheld" only while small counts are (`DL-252`).
+  total: (total: number) =>
+    WITHHOLDS_SMALL_COUNTS ? `Total before anything was withheld: ${total}.` : `Total: ${total}.`,
 
   tidyHeading: 'Records to tidy up',
   tidyNone: 'Nothing to tidy under this filter.',
@@ -78,9 +84,12 @@ export const CITIZENS_OVERVIEW_COPY = {
   tidyLastRun: (when: string) => `Last checked ${when}.`,
   tidyOpen: 'Review them',
 
-  disclosureHeading: 'Why some figures are withheld',
+  disclosureHeading: WITHHOLDS_SMALL_COUNTS ? 'Why some figures are withheld' : 'Small counts',
+  /** From the server's threshold, which the mapper holds to the console's (`DL-252`). */
   disclosure: (threshold: number) =>
-    `A count of people from 1 to ${threshold - 1} is withheld rather than shown, never shown as zero, and cannot be opened. Totals are taken before anything is withheld, so the rows shown do not add up to them.`,
+    threshold > 1
+      ? `A count of people from 1 to ${threshold - 1} is withheld rather than shown, never shown as zero, and cannot be opened. Totals are taken before anything is withheld, so the rows shown do not add up to them.`
+      : 'No count of people is withheld for being small: every figure here is its real number, and a zero is a zero.',
   /**
    * Where the threshold comes from, in words. The API sends a token; printed as it came it read
    * "…add up to them. convention-pending-confirmation" (DL-227, pass 2). An unknown token is not
@@ -90,5 +99,6 @@ export const CITIZENS_OVERVIEW_COPY = {
     'convention-pending-confirmation':
       'This threshold is a working convention: the MSWDO has not yet confirmed it.',
     'office-confirmed': 'The MSWDO has confirmed this threshold.',
+    'owner-decision': 'This is the MSWDO’s own decision, recorded as DL-252.',
   } as Readonly<Record<string, string>>,
 } as const;

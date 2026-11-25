@@ -1,4 +1,4 @@
-import type { ResidentSummaryPeriod, Sex } from '@domain/index';
+import { WITHHOLDS_SMALL_COUNTS, type ResidentSummaryPeriod, type Sex } from '@domain/index';
 
 /**
  * Screen wording for the citizen registry report (`DL-234`), in the summary report's template.
@@ -53,7 +53,7 @@ export const CITIZEN_REPORT_COPY = {
   printFailed: 'The report could not be read again, so nothing was printed. Try again.',
   csvHint:
     'Download CSV saves the same tables as a CSV file, which opens in Excel. The file carries its ' +
-    'conditions — the period, the filters, who made it and when, why figures are withheld and how ' +
+    'conditions — the period, the filters, who made it and when, how small counts are treated and how ' +
     'to handle it — above the first figure. The download is recorded in the audit trail.',
   csv: 'Download CSV (for Excel)',
   exporting: 'Preparing the file…',
@@ -85,5 +85,5 @@ export const CITIZEN_REPORT_COPY = {
 
   generated: (date: string, name: string) =>
     `Generated from the Taytay Social Welfare console on ${date} by ${name}.`,
-  disclosureHeading: 'Why some figures are withheld',
+  disclosureHeading: WITHHOLDS_SMALL_COUNTS ? 'Why some figures are withheld' : 'Small counts',
 } as const;

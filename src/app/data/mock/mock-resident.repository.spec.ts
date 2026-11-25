@@ -630,15 +630,17 @@ describe('saved views cost the same permission as the list they describe', () =>
   });
 });
 
-describe('the Citizens overview is counted with small cells withheld (DL-213)', () => {
-  it('withholds a small count, never shows it as zero, and takes the total before', async () => {
+describe('the Citizens overview shows every count of people as it is (DL-213, DL-252)', () => {
+  it('withholds no count for being small, and totals what it counts', async () => {
     signedInAs(authenticated('intake-officer'));
     const summary = await firstValueFrom(repo().summary({}));
     const rows = [...summary.byBarangay.rows, ...summary.bySector.rows, ...summary.byAgeSex.rows];
 
-    for (const row of rows) {
-      expect(row.isWithheld === true || row.value === 0 || row.value >= 5).toBe(true);
+    // Only a protected sector is withheld for this reader, and that is a permission (DL-38).
+    for (const row of rows.filter((entry) => entry.isWithheld === true)) {
+      expect(['vawc-survivor', 'cicl']).toContain(row.key);
     }
+    expect(summary.disclosure.threshold).toBe(0);
     expect(summary.byBarangay.total).toBe(summary.residents.current);
   });
 

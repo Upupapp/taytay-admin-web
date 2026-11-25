@@ -11739,3 +11739,48 @@ its rows, never stretched to the card's edge. Refines `DL-250`.
 **Revised the same day:** the donut keeps its ring left and legend right, filling the width as before;
 only its height is centred under the title. The sector card is as long as the funnel and the pyramid
 beside it together, and its rows share the height (`chart-table--fill`).
+
+## DL-252 — small counts are shown as their real numbers, by the owner's decision
+
+**Status:** Settled (24 November 2026), on the owner's explicit decision. **Supersedes `DL-105`'s
+withholding** of small counts; the rest of `DL-105` (a zero is a zero, never dropped, never rounded,
+the drill-down goes with a withheld row) stands as the machinery behind the switch. The API records
+the same decision as its ADR 0012.
+
+**Decision.** Ella, for the owner, asked that every figure be shown as its real number on every screen,
+report and export. The reasoning for `DL-105` was explained to her first: a count of 1 or 2 in a
+barangay can identify the person behind it ("Barangay San Juan: 1 VAWC survivor served"), which makes
+the figure personal information under the Data Privacy Act (RA 10173). She heard it and decided to show
+the figures anyway. This is recorded as her decision, not as a finding that the risk has gone.
+
+**How.** The rule is switched off, not removed:
+
+1. `SMALL_CELL_THRESHOLD` (`domain/reports/report-disclosure.ts`) is **0**. `isSmallCell` is
+   `value > 0 && value < threshold`, so no count of 1 or more is withheld and a true zero is still 0.
+   `WITHHOLDS_SMALL_COUNTS` (`threshold > 1`) says whether the switch is on. The API's constant
+   (`src/modules/office-reports/catalogue.ts`) is 0 too, and the report, summary-report and
+   registry-summary mappers each refuse an answer whose `disclosure.threshold` differs from the
+   console's, so the two settings cannot drift apart silently.
+2. `suppressSmallCells`, `describeSuppression`, `totalBeforeSuppression`, the mock adapters'
+   `aboutPeople` and the `withheld` wire field are unchanged. `isSmallCell` and `suppressSmallCells`
+   take an optional threshold defaulting to the switch, used only by the domain spec to prove the rule
+   still withholds at 5; `check:reports` fails if any other caller passes one.
+3. Words follow the switch. Off: the basis says every count is shown and is to be handled under
+   RA 10173, with provenance `owner-decision`; headings read "Small counts" rather than "Why figures
+   are withheld"; totals read "Total" rather than "Total (includes withheld figures)" or "Total before
+   anything was withheld"; notes no longer say a figure is withheld when too few to show. On, every one
+   of them returns to its earlier wording. True notes stay ("Sectors overlap…").
+4. **Not small-cell, so untouched:** VAWC (RA 9262) and CICL (RA 9344) are still never counted for a
+   reader without `request.view-sensitive` (`DL-38`, `DL-174`) — such a row is still "Withheld: a sector
+   protected by law…" and left out of the total — and every other withholding by permission stands.
+
+**`check:reports`** now holds the switch rather than the old constant: `SMALL_CELL_THRESHOLD` must be
+one number literal, `WITHHOLDS_SMALL_COUNTS` must follow it, `isSmallCell` must default its threshold
+to it and no caller outside the domain may pass one, the basis must carry both sentences (the
+unconfirmed-convention admission of `DL-68` when on, the RA 10173 handling sentence when off), and the
+summary and registry mappers must hold the server's threshold to the console's. Its checks on the
+machinery itself (row kept and marked, no rounding, zero kept, total before) are unchanged.
+
+**To turn it back on:** set `SMALL_CELL_THRESHOLD` to 5 here **and** in the API's `catalogue.ts`, in
+the same change; the tests that pin today's figures then need their earlier expectations back (git
+history keeps them).
