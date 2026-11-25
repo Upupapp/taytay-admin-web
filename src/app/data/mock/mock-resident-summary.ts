@@ -29,7 +29,7 @@ import {
   type SummaryFigure,
 } from '@domain/index';
 
-import { mockAppLinkOf, mockSectorDetailsOf } from './mock-registry-facts';
+import { MOCK_CARD_HISTORY_BEGAN, mockAppLinkOf, mockSectorDetailsOf } from './mock-registry-facts';
 import { MOCK_IMPORTED_RESIDENT_IDS } from './mock-resident-import.repository';
 import { demoMonthEnds, demoNow, manilaDay } from './mock-time-series';
 
@@ -147,7 +147,8 @@ export function mockResidentSummary(
     },
     // As the period began (DL-254): the records on file by then, with the sectors they hold — the
     // mock keeps no sector history, so a sector is taken as held since its record was made — and
-    // the app links made by then. No earlier card figure, as on the API.
+    // the app links made by then. Cards from the day their history began (DL-257), each card's
+    // present status taken as held since its link was made — the sample keeps no card history.
     atPeriodStart: {
       at: asIsoDateTime(period.from),
       bySector: VULNERABILITY_SECTORS.map((sector) => ({
@@ -163,6 +164,20 @@ export function mockResidentSummary(
           return link !== null && Date.parse(link.linkedSince) < period.from.getTime();
         }).length,
       ),
+      activeIds:
+        period.from.getTime() < Date.parse(MOCK_CARD_HISTORY_BEGAN)
+          ? null
+          : figure(
+              atStart.filter((resident) => {
+                const link = mockAppLinkOf(resident);
+                return (
+                  link !== null &&
+                  link.cardStatus === 'active' &&
+                  Date.parse(link.linkedSince) < period.from.getTime()
+                );
+              }).length,
+            ),
+      activeIdsRecordedFrom: MOCK_CARD_HISTORY_BEGAN,
     },
     thisMonth: thisMonthOf(active),
     coverage: coverageOf(active, filter.sector),

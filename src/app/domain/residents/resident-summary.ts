@@ -98,9 +98,10 @@ export interface RegistryFunnel {
 
 /**
  * The strip's figures as the period began (`DL-254`, backend ADR 0013), each read by the server from
- * history it only ever appends to — sector acts, account links, their moves, closures — so each is
- * what a read at that instant said, never an estimate. Digital IDs keep no such history, so there is
- * no earlier card figure and the screen says none is recorded.
+ * history it only ever appends to — sector acts, account links, their moves, closures, and since
+ * `DL-257` (backend ADR 0014) each card's changes of status — so each is what a read at that instant
+ * said, never an estimate. The cards' history began on a known day: for a period that began before
+ * it there is no earlier card figure, and the screen says so and from when one is recorded.
  */
 export interface SummaryAtPeriodStart {
   /** Midnight, Asia/Manila, on the period's first day. */
@@ -108,6 +109,10 @@ export interface SummaryAtPeriodStart {
   /** Every sector the server sent; a protected one is withheld from a reader not cleared for it. */
   readonly bySector: readonly SectorFigure[];
   readonly onApp: SummaryFigure;
+  /** `null` when the period began before the cards' status history did: unknown, not zero. */
+  readonly activeIds: SummaryFigure | null;
+  /** When the cards' status history began. */
+  readonly activeIdsRecordedFrom: IsoDateTime;
 }
 
 export interface SectorFigure {

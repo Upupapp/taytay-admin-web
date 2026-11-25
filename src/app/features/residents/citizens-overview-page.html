@@ -447,7 +447,11 @@
     @if (figure.value === null) {
       {{ copy.withheldHint }}
     } @else if (!figure.compared) {
-      {{ copy.delta.notRecorded }}
+      {{
+        figure.recordedFrom === null
+          ? copy.delta.notRecorded
+          : copy.delta.notRecordedFrom(figure.recordedFrom)
+      }}
     } @else if (figure.delta; as delta) {
       <span aria-hidden="true"
         ><b [class]="'kpi-strip__change kpi-strip__change--' + deltaTone(delta)">{{

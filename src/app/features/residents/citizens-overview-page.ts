@@ -124,10 +124,13 @@ interface Headline {
   readonly value: number | null;
   readonly delta: SummaryDelta | null;
   /**
-   * Whether the server records an earlier figure for this at all: every headline but the active
-   * Digital IDs, whose cards keep no history (`DL-254`, backend ADR 0013). The screen says so.
+   * Whether the server records an earlier figure for this at all: every headline, but the active
+   * Digital IDs only for a period that began after the cards' status history did (`DL-257`,
+   * backend ADR 0014). The screen says so, and from when the record runs.
    */
   readonly compared: boolean;
+  /** When the record of an uncompared figure begins, as the tile says it; `null` otherwise. */
+  readonly recordedFrom: string | null;
   /** The registry filtered the same way, or `null` when the registry cannot list these people. */
   readonly link: Readonly<Record<string, string>> | null;
 }
@@ -247,6 +250,7 @@ export class CitizensOverviewPage {
         value: summary.residents.current,
         delta: summaryDelta(summary.residents.current, summary.residents.previous),
         compared: true,
+        recordedFrom: null,
         link: this.base(),
       },
       {
@@ -255,6 +259,7 @@ export class CitizensOverviewPage {
         value: registered.current.value,
         delta: summaryDelta(registered.current.value, registered.previous.value),
         compared: true,
+        recordedFrom: null,
         link: null,
       },
     ];
@@ -268,9 +273,11 @@ export class CitizensOverviewPage {
       }
     }
     // The app and its cards under the same filter (DL-232). The app is compared with the accounts
-    // open as the period began, which the server reads from the links' recorded history; a card
-    // keeps only its present status, so no earlier figure is recorded for it (DL-254).
+    // open as the period began, which the server reads from the links' recorded history; the cards
+    // with those holding a card in force then, from the cards' status history — which began on a
+    // known day, so a period that began earlier has no earlier card figure (DL-254, DL-257).
     const { onApp, activeIds } = summary.funnel;
+    const idsThen = summary.atPeriodStart.activeIds;
     figures.push(
       {
         key: 'on-app',
@@ -278,14 +285,19 @@ export class CitizensOverviewPage {
         value: onApp.value,
         delta: summaryDelta(onApp.value, summary.atPeriodStart.onApp.value),
         compared: true,
+        recordedFrom: null,
         link: null,
       },
       {
         key: 'active-ids',
         label: this.panels.funnelSteps.activeIds,
         value: activeIds.value,
-        delta: null,
-        compared: false,
+        delta: idsThen === null ? null : summaryDelta(activeIds.value, idsThen.value),
+        compared: idsThen !== null,
+        recordedFrom:
+          idsThen === null
+            ? formatDisplayDate(summary.atPeriodStart.activeIdsRecordedFrom, 'date', this.locale)
+            : null,
         link: null,
       },
     );
@@ -497,6 +509,7 @@ export class CitizensOverviewPage {
       // As the period began, from the sector acts the server records (DL-254).
       delta: summaryDelta(value, then?.figure.value ?? null),
       compared: true,
+      recordedFrom: null,
       link: row.isWithheld ? null : { ...this.base(), sector },
     };
   }

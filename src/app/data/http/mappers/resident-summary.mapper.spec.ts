@@ -31,7 +31,7 @@ describe('resident summary mapper (DL-213)', () => {
     });
   });
 
-  it('reads the strip as the period began, a protected sector withheld, and no card figure (DL-254)', () => {
+  it('reads the strip as the period began, a protected sector withheld, and no card figure before the cards’ history (DL-254, DL-257)', () => {
     const summary = toResidentSummary(SUMMARY.data, BARANGAYS);
     const then = summary?.atPeriodStart;
 
@@ -45,7 +45,34 @@ describe('resident summary mapper (DL-213)', () => {
       value: null,
       withheld: true,
     });
-    expect(then).not.toHaveProperty('activeIds');
+    expect(then?.activeIds).toBeNull();
+    expect(then?.activeIdsRecordedFrom).toBe('2026-11-25T04:00:00.000Z');
+  });
+
+  it('reads the cards as the period began once their history covers it, and refuses a malformed one (DL-257)', () => {
+    const start = SUMMARY.data.at_period_start;
+    const counted = {
+      ...SUMMARY.data,
+      at_period_start: { ...start, active_ids: { value: 3, withheld: null } },
+    };
+    expect(toResidentSummary(counted, BARANGAYS)?.atPeriodStart.activeIds).toEqual({
+      value: 3,
+      withheld: false,
+    });
+    const withheld = {
+      ...SUMMARY.data,
+      at_period_start: { ...start, active_ids: { value: null, withheld: 'small-cell' } },
+    };
+    expect(toResidentSummary(withheld, BARANGAYS)?.atPeriodStart.activeIds).toEqual({
+      value: null,
+      withheld: true,
+    });
+    const malformed = { ...SUMMARY.data, at_period_start: { ...start, active_ids: 3 } };
+    expect(toResidentSummary(malformed, BARANGAYS)).toBeNull();
+    const unsaid = Object.fromEntries(
+      Object.entries(start).filter(([key]) => key !== 'active_ids_recorded_from'),
+    );
+    expect(toResidentSummary({ ...SUMMARY.data, at_period_start: unsaid }, BARANGAYS)).toBeNull();
   });
 
   it('refuses a summary without the period start, or with a sector it does not know (DL-254)', () => {

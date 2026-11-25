@@ -21,6 +21,7 @@ import {
 
 import { CitizensOverviewPage } from './citizens-overview-page';
 import { CITIZENS_OVERVIEW_COPY } from './citizens-overview.copy';
+import { REGISTRY_PANELS_COPY } from './registry-panels.copy';
 
 function series(key: string, rows: ReportSeries['rows'], total: number): ReportSeries {
   return {
@@ -107,6 +108,8 @@ const SUMMARY: ResidentSummary = {
       { sector: 'solo-parent', figure: { value: 12, withheld: false } },
     ],
     onApp: { value: 31, withheld: false },
+    activeIds: null,
+    activeIdsRecordedFrom: asIsoDateTime('2026-11-25T04:00:00.000Z'),
   },
   thisMonth: {
     month: '2026-11',
@@ -221,14 +224,29 @@ describe('CitizensOverviewPage (DL-213)', () => {
     expect(text(root)).toContain(CITIZENS_OVERVIEW_COPY.delta.up(9));
     // A withheld figure draws no change against the earlier one.
     expect(cell('pwd')).toContain(CITIZENS_OVERVIEW_COPY.withheldHint);
-    // The cards keep no history: said on the tile, visibly, never a dash alone.
+    // The period began before the cards' history did (DL-257): said on the tile, visibly, with
+    // the day the record begins — never a dash alone.
     const hints = [...root.querySelectorAll('.kpi-strip__hint')].map((hint) =>
-      hint.textContent?.trim(),
+      hint.textContent?.replace(/\s+/g, ' ').trim(),
     );
-    expect(hints).toContain(CITIZENS_OVERVIEW_COPY.delta.notRecorded);
-    expect(hints.filter((hint) => hint === CITIZENS_OVERVIEW_COPY.delta.notRecorded)).toHaveLength(
-      1,
+    const notRecorded = CITIZENS_OVERVIEW_COPY.delta.notRecordedFrom('25 Nov 2026');
+    expect(hints.filter((hint) => hint === notRecorded)).toHaveLength(1);
+  });
+
+  it('compares the active Digital IDs once the cards’ history covers the period (DL-257)', async () => {
+    configure(
+      of({
+        ...SUMMARY,
+        funnel: { ...SUMMARY.funnel, activeIds: { value: 3, withheld: false } },
+        atPeriodStart: { ...SUMMARY.atPeriodStart, activeIds: { value: 1, withheld: false } },
+      }),
     );
+    const root = await render();
+    const ids = [...root.querySelectorAll('.kpi-strip__cell')].find((each) =>
+      each.textContent?.includes(REGISTRY_PANELS_COPY.funnelSteps.activeIds),
+    );
+    expect(ids?.textContent).toContain(CITIZENS_OVERVIEW_COPY.delta.up(2));
+    expect(ids?.textContent).not.toContain(CITIZENS_OVERVIEW_COPY.delta.notRecorded);
   });
 
   it('says a withheld figure is withheld, links nothing to it, and draws no delta against it', async () => {

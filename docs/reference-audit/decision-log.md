@@ -11887,3 +11887,28 @@ began".
 strip runs four (or three) across and the figures do not fill the last row, the last figure spans
 what its row leaves. The green dot beside "Figures as of" sits by the first line when the sentence
 wraps on a phone. Refines `DL-253`.
+
+## DL-257 — the cards are compared from their status history, and say from when it runs
+
+**Status:** Settled (25 November 2026), on the owner's instruction to build the card-status history
+`DL-254` left to her. Backend ADR 0014 records the same decision and supersedes ADR 0013's refusal
+for the cards; the rest of `DL-254` stands.
+
+**Decision.** The API now keeps every change of a card's status — `digital_id_status_events`,
+migration 0079: card, holder, from, to, when, who — appended by a trigger in the statement that makes
+the change, never rewritten, and nothing else about the card or the person (RA 10173). History
+begins at the migration, each existing card's status recorded then as a baseline.
+
+- **Active Digital IDs: compared when the history covers the period.** `at_period_start.active_ids`
+  is a figure — accounts counted as `on_app` is, holding then a card in force by its last recorded
+  status and its date — when the period began at or after the history did, and `null` before:
+  unknown, not zero. `at_period_start.active_ids_recorded_from` says when it began.
+- **The tile says from when.** For a period that began earlier the hint reads "No earlier figure
+  recorded. Recorded from 25 Nov 2026" (the day as `DisplayDateKind` `date` writes it), so the
+  reader knows the comparison will come and when, instead of a refusal that reads as permanent. Once
+  the period starts after it, the tile shows "↑ N vs last period" like the other six.
+- **The console still counts nothing.** `summaryDelta(now, then)` as before; a withheld figure on
+  either side draws no change. The mapper reads `active_ids` as a figure or `null` and refuses
+  anything else, or a summary without `active_ids_recorded_from` (whole or nothing, `DL-213`). The
+  mock compares from a sample start 45 days before its anchor, taking each sample card's present
+  status as held since its link was made, because the mock keeps no card history.

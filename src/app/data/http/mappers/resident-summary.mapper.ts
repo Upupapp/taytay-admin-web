@@ -40,7 +40,7 @@ import { date, dateTime, field, int, list, oneOf, str } from './wire';
  * | `by_age_sex`         | `byAgeSex`      | the summary is not readable     |
  * | `by_age_sex.total_by_sex` | `totalBySex` | the summary is not readable    |
  * | `funnel.*`           | `funnel`        | the summary is not readable     |
- * | `at_period_start.{at,by_sector[],on_app}` | `atPeriodStart` | the summary is not readable |
+ * | `at_period_start.{at,by_sector[],on_app,active_ids,active_ids_recorded_from}` | `atPeriodStart` | the summary is not readable |
  * | `this_month.*`       | `thisMonth`     | the summary is not readable     |
  * | `coverage` (or null) | `coverage`      | the summary is not readable     |
  * | `attention[]` (or null) | `attention`  | the summary is not readable     |
@@ -54,8 +54,9 @@ import { date, dateTime, field, int, list, oneOf, str } from './wire';
  * the API's id to the console's, so the screen can link it to the registry; a barangay the console
  * does not know keeps the API's id and is not linked.
  *
- * **Not read**: `applied_filter`, which repeats the filter the console sent; and
- * `at_period_start.active_ids`, always null because no earlier card figure is recorded (`DL-254`).
+ * **Not read**: `applied_filter`, which repeats the filter the console sent.
+ * `at_period_start.active_ids` is a figure, or null when the period began before the cards' status
+ * history did (`DL-257`); anything else is unreadable, never taken as "no earlier figure".
  * A protected sector withheld from this reader arrives as `protected-sector` and is read as withheld.
  *
  * @consumes GET office/residents/summary
@@ -214,7 +215,13 @@ function toAtPeriodStart(wire: unknown): SummaryAtPeriodStart | null {
   const at = dateTime(field(wire, 'at'));
   const bySector = whole(field(wire, 'by_sector'), toSectorFigure);
   const onApp = toFigure(field(wire, 'on_app'));
-  return at === null || bySector === null || onApp === null ? null : { at, bySector, onApp };
+  const idsWire = field(wire, 'active_ids');
+  const activeIds = idsWire === null ? null : toFigure(idsWire);
+  const activeIdsRecordedFrom = dateTime(field(wire, 'active_ids_recorded_from'));
+  if (at === null || bySector === null || onApp === null || activeIdsRecordedFrom === null)
+    return null;
+  if (idsWire !== null && activeIds === null) return null;
+  return { at, bySector, onApp, activeIds, activeIdsRecordedFrom };
 }
 
 function toSectorFigure(wire: unknown): SectorFigure | null {

@@ -18,6 +18,12 @@ import { daysBeforeAnchor } from './seed/seed-utils';
  * follow a fixed rule over the seed's order — stable across runs, and never shown by the http set.
  */
 
+/**
+ * When the sample cards' status history begins (`DL-257`): a month period starting after it is
+ * compared, a longer one says from when the record runs, as the API does after its migration 0079.
+ */
+export const MOCK_CARD_HISTORY_BEGAN = daysBeforeAnchor(45);
+
 export interface MockAppLink {
   readonly linkedSince: IsoDateTime;
   readonly verified: boolean;

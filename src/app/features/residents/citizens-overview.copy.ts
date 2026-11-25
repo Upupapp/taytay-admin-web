@@ -49,6 +49,8 @@ export const CITIZENS_OVERVIEW_COPY = {
     none: 'No comparison: a figure was withheld',
     /** Said on the tile itself: the server records no earlier figure for it (DL-254). */
     notRecorded: 'No earlier figure recorded',
+    /** The same, with the day the record begins: the cards' status history (DL-257). */
+    notRecordedFrom: (date: string) => `No earlier figure recorded. Recorded from ${date}`,
   },
 
   /** The change, as the strip shows it: "↑ 1,236 vs last period" (DL-253). */

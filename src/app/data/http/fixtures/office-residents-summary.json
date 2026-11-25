@@ -111,7 +111,8 @@
         { "key": "displaced-worker", "value": 0, "withheld": null }
       ],
       "on_app": { "value": 290, "withheld": null },
-      "active_ids": null
+      "active_ids": null,
+      "active_ids_recorded_from": "2026-11-25T04:00:00.000Z"
     },
     "this_month": {
       "month": "2026-11",
