@@ -12111,3 +12111,8 @@ The pinned cells now use one token, `--card-pinned`: `--card-solid` in the light
 reduced transparency, and in the dark theme the card's own layers laid on the plain page
 (`var(--card), var(--page-base)`), which is opaque and the colour the card shows away from the
 page's glows. Nothing else changes.
+
+The staging recheck after it found one list still wider than a laptop's table box: the app audit,
+whose ids were held on one line (a 296px column). An id now breaks at its hyphens, so the six
+columns fit. The roles matrix keeps scrolling inside its box: a grid of every key against every role
+is the one table that is meant to be read across.

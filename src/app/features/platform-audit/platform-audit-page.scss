@@ -32,14 +32,8 @@
   overflow-wrap: break-word;
 }
 
-/* An id reads on one line at the hint size; a phone's stacked row lets it wrap. */
+/* An id breaks at its hyphens rather than on one line, so the six columns fit a laptop's screen
+   (DL-259, DL-261); a segment is never split. */
 .audit__code--id {
   font-size: var(--fs-xs);
-  white-space: nowrap;
-}
-
-@media (width <= 640px) {
-  .audit__code--id {
-    white-space: normal;
-  }
 }
