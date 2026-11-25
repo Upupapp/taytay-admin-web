@@ -11880,3 +11880,10 @@ began".
   details had about a word's width at 390px. The list is now a size container: under 30rem the
   outcome wraps beneath the name and details, indented to the text, left-aligned, so the name keeps
   the panel's width. Wider panels are unchanged.
+
+## DL-256 — the overview strip ends without an empty slot, and its as-of dot sits by the first line
+
+**Status:** Settled (25 November 2026), on the reviewer's notes and the owner's go-ahead. Where the
+strip runs four (or three) across and the figures do not fill the last row, the last figure spans
+what its row leaves. The green dot beside "Figures as of" sits by the first line when the sentence
+wraps on a phone. Refines `DL-253`.

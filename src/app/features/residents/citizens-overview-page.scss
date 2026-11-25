@@ -73,8 +73,11 @@
   color: var(--muted);
   font-size: var(--fs-xs);
 
+  /* Beside the first line when the sentence wraps on a phone, not centred on the block (DL-256). */
   &::before {
     flex: none;
+    align-self: flex-start;
+    margin-block-start: calc((1lh - 8px) / 2);
     inline-size: 8px;
     block-size: 8px;
     border-radius: var(--r-pill);
@@ -102,9 +105,22 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+/* The last figure takes what its row leaves, so no empty slot ends the strip (DL-256). */
+.kpi-strip.overview-kpis > :last-child:nth-child(4n + 3) {
+  grid-column: span 2;
+}
+
+.kpi-strip.overview-kpis > :last-child:nth-child(4n + 2) {
+  grid-column: span 3;
+}
+
 @container (width >= 1190px) {
   .kpi-strip.overview-kpis {
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  }
+
+  .kpi-strip.overview-kpis > :last-child:is(:nth-child(4n + 3), :nth-child(4n + 2)) {
+    grid-column: auto;
   }
 }
 
@@ -112,11 +128,28 @@
   .kpi-strip.overview-kpis {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .kpi-strip.overview-kpis > :last-child:is(:nth-child(4n + 3), :nth-child(4n + 2)) {
+    grid-column: auto;
+  }
+
+  .kpi-strip.overview-kpis > :last-child:nth-child(3n + 1) {
+    grid-column: span 3;
+  }
+
+  .kpi-strip.overview-kpis > :last-child:nth-child(3n + 2) {
+    grid-column: span 2;
+  }
 }
 
 @media (width <= 700px) {
   .kpi-strip.overview-kpis {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* As specific as the spans above, so one column never gains a spanned one. */
+  .kpi-strip.overview-kpis > :last-child:nth-child(n) {
+    grid-column: auto;
   }
 }
 
