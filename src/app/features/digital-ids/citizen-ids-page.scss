@@ -73,6 +73,23 @@
     font-size: var(--fs-label);
   }
 
+  // A stage that is a link fills primary under the pointer and the keyboard (DL-273), as the
+  // shared `a.tally` does; restated here because the outlined cards above out-rank it.
+  a.tally:is(:hover, :focus-visible) {
+    border-color: transparent;
+    background: var(--primary);
+    color: var(--on-primary);
+
+    .tally__label,
+    .tally__value {
+      color: var(--on-primary);
+    }
+
+    .tally__hint {
+      color: var(--on-deep-muted);
+    }
+  }
+
   .status-line {
     margin: 0;
     font-size: var(--fs-xs);

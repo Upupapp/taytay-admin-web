@@ -1147,3 +1147,18 @@ describe('a new record warns of records with the same name (DL-228)', () => {
     expect(element.querySelector('.form__lookalikes .callout')).toBeNull();
   });
 });
+
+describe('a resident’s totals open the history they sum (DL-273)', () => {
+  it('sends the money to the payouts and the requests to their panel, moving focus there', async () => {
+    const element = html(await openDetail('res-0002'));
+    const totals = [...element.querySelectorAll<HTMLElement>('.detail__totals .tally')];
+    expect(totals.map((total) => total.getAttribute('href')?.split('#')[1])).toEqual([
+      'payouts-heading',
+      'cases-heading',
+      'cases-heading',
+      'cases-heading',
+    ]);
+    totals[0]?.click();
+    expect(document.activeElement?.id).toBe('payouts-heading');
+  });
+});

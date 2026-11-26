@@ -485,3 +485,45 @@ describe('CitizensOverviewPage — the sector list and the cards beside it (DL-2
     expect(band?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Adults (31–59)');
   });
 });
+
+describe('CitizensOverviewPage — a figure the registry cannot list opens its panel (DL-273)', () => {
+  const cellWith = (root: HTMLElement, label: string): HTMLElement | undefined =>
+    [...root.querySelectorAll<HTMLElement>('.kpi-strip__cell')].find((each) =>
+      each.querySelector('.kpi-strip__name')?.textContent?.includes(label),
+    );
+
+  it('sends additions to the twelve-month line and the app and its cards to the funnel', async () => {
+    configure(
+      of({
+        ...SUMMARY,
+        registered: { ...SUMMARY.registered, current: { value: 12, withheld: false } },
+        funnel: { ...SUMMARY.funnel, activeIds: { value: 3, withheld: false } },
+      }),
+    );
+    const root = await render();
+
+    const registered = cellWith(root, CITIZENS_OVERVIEW_COPY.registered(SUMMARY.period.kind));
+    expect(registered?.tagName).toBe('A');
+    expect(registered?.getAttribute('href')).toMatch(/#registry-growth$/);
+    expect(registered?.textContent).toContain(CITIZENS_OVERVIEW_COPY.jumpToPanel);
+    for (const label of [
+      REGISTRY_PANELS_COPY.funnelSteps.onApp,
+      REGISTRY_PANELS_COPY.funnelSteps.activeIds,
+    ]) {
+      expect(cellWith(root, label)?.getAttribute('href')).toMatch(/#registry-funnel$/);
+    }
+    expect(root.querySelector('#registry-growth')).not.toBeNull();
+    expect(root.querySelector('#registry-funnel')).not.toBeNull();
+
+    cellWith(root, REGISTRY_PANELS_COPY.funnelSteps.onApp)?.click();
+    expect(document.activeElement?.id).toBe('registry-funnel');
+  });
+
+  it('leaves a withheld figure as text: it opens nothing (DL-105)', async () => {
+    configure(of(SUMMARY));
+    const root = await render();
+
+    const registered = cellWith(root, CITIZENS_OVERVIEW_COPY.registered(SUMMARY.period.kind));
+    expect(registered?.tagName).toBe('DIV');
+  });
+});

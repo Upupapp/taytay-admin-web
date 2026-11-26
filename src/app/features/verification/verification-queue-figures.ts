@@ -7,6 +7,7 @@ import {
   input,
   LOCALE_ID,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import type { VerificationQueueStats } from '@domain/index';
 import { formatDisplayDate } from '@shared/pipes/display-date.pipe';
@@ -25,15 +26,18 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 @Component({
   selector: 'app-verification-queue-figures',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ColumnChart],
+  imports: [ColumnChart, RouterLink],
   host: { class: 'queue-figures', role: 'region', '[attr.aria-label]': 'copy.label' },
   template: `
-    <div class="kpi queue-figures__tile">
+    <!-- The two figures about who waits open the waiting queue (DL-273); the two about the last
+         seven days stay text, since no status of the list is a window of days. -->
+    <a class="kpi queue-figures__tile" routerLink="/verification">
       <span class="queue-figures__label">{{ copy.awaiting }}</span>
       <span class="queue-figures__value">{{ stats().pending }}</span>
       <span class="queue-figures__hint">{{ copy.awaitingHint }}</span>
-    </div>
-    <div class="kpi queue-figures__tile">
+      <span class="visually-hidden">{{ copy.showWaiting }}</span>
+    </a>
+    <a class="kpi queue-figures__tile" routerLink="/verification">
       <span class="queue-figures__label">{{ copy.oldest }}</span>
       @if (oldest(); as oldest) {
         <span class="queue-figures__row">
@@ -45,7 +49,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
         <span class="queue-figures__value">0</span>
         <span class="queue-figures__hint">{{ copy.noneWaiting }}</span>
       }
-    </div>
+      <span class="visually-hidden">{{ copy.showWaiting }}</span>
+    </a>
     <div class="kpi queue-figures__tile">
       <span class="queue-figures__label">{{ copy.decided }}</span>
       <span class="queue-figures__value">{{ decidedTotal() }}</span>
@@ -119,6 +124,18 @@ const DAY_MS = 24 * 60 * 60 * 1000;
       color: var(--gold-ink);
       font-size: var(--fs-xs);
       font-weight: var(--fw-semibold);
+    }
+
+    a.queue-figures__tile:is(:hover, :focus-visible) {
+      .queue-figures__label,
+      .queue-figures__value {
+        color: var(--on-primary);
+      }
+
+      .queue-figures__unit,
+      .queue-figures__hint {
+        color: var(--on-deep-muted);
+      }
     }
 
     .queue-figures__split {

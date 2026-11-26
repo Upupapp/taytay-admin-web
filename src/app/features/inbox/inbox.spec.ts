@@ -637,3 +637,22 @@ describe('a conversation keeps itself current (DL-222)', () => {
     expect(repository.acts).toEqual([]);
   });
 });
+
+describe('InboxPage — each figure opens what it counts (DL-273)', () => {
+  const words = INBOX_COPY.list.figures;
+  const cellFor = (root: HTMLElement, label: string): HTMLElement | undefined =>
+    [...root.querySelectorAll<HTMLElement>('app-figure-tiles .kpi-strip__cell')].find(
+      (cell) => cell.querySelector('.kpi-strip__name')?.textContent === label,
+    );
+
+  it('opens the open and closed conversations on their tabs, and the unread at the list', async () => {
+    configure();
+    const element = await settle(TestBed.createComponent(InboxPage));
+
+    expect(cellFor(element, words.open.label)?.getAttribute('href')).toBe('/inbox?status=open');
+    expect(cellFor(element, words.closed.label)?.getAttribute('href')).toBe('/inbox?status=closed');
+    const unread = cellFor(element, words.unread.label);
+    expect(unread?.getAttribute('href')).toMatch(/#inbox-heading$/);
+    expect(unread?.textContent).toContain(words.toList);
+  });
+});

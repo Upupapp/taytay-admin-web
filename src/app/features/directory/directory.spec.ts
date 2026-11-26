@@ -1332,3 +1332,17 @@ describe('HotlinesSection — a line’s kind and the command center (DL-217)', 
     expect(hotlines.restoredCalls).toEqual([]);
   });
 });
+
+describe('DirectoryPage — each figure opens its section (DL-273)', () => {
+  it('links every figure to its own section, and draws none for a key the reader lacks', async () => {
+    configure(['office.manage', 'hotline.manage']);
+    const element = await settle(TestBed.createComponent(DirectoryPage));
+
+    const cells = [...element.querySelectorAll<HTMLElement>('app-figure-tiles .kpi-strip__cell')];
+    expect(cells.map((cell) => cell.getAttribute('href'))).toEqual([
+      '/directory?section=offices',
+      '/directory?section=hotlines',
+    ]);
+    expect(cells[0]?.textContent).toContain(DIRECTORY_COPY.page.figures.showSection);
+  });
+});

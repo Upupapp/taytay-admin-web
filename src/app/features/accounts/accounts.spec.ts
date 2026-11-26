@@ -895,3 +895,43 @@ describe('AccountInPerson (DL-219)', () => {
     expect(document.body.querySelector('#in-person-id-type')).toBeNull();
   });
 });
+
+describe('AccountsPage — each figure opens what it counts (DL-273)', () => {
+  const cells = (root: HTMLElement): HTMLElement[] => [
+    ...root.querySelectorAll<HTMLElement>('app-figure-tiles .kpi-strip__cell'),
+  ];
+  const cellFor = (root: HTMLElement, label: string): HTMLElement | undefined =>
+    cells(root).find((cell) => cell.querySelector('.kpi-strip__name')?.textContent === label);
+  const words = ACCOUNTS_COPY.list.figures;
+
+  it('narrows the list to the verified residents, and opens the staff directory for staff.view', async () => {
+    configure(['user.view', 'staff.view']);
+    const element = await settle(TestBed.createComponent(AccountsPage));
+
+    const verified = cellFor(element, words.verified.label);
+    expect(verified?.tagName).toBe('A');
+    expect(verified?.getAttribute('href')).toBe('/users?verification=verified');
+    const staff = cellFor(element, words.staff.label);
+    expect(staff?.getAttribute('href')).toBe('/administration/staff');
+    expect(staff?.textContent).toContain(words.toStaff);
+  });
+
+  it('sends the staff figure to the list below for a reader without the staff directory', async () => {
+    configure(['user.view']);
+    const element = await settle(TestBed.createComponent(AccountsPage));
+
+    const staff = cellFor(element, words.staff.label);
+    expect(staff?.getAttribute('href')).toMatch(/#accounts-heading$/);
+    expect(staff?.textContent).toContain(words.toList);
+  });
+
+  it('moves focus to the list for a figure the list cannot narrow to, and says so', async () => {
+    configure(['user.view']);
+    const element = await settle(TestBed.createComponent(AccountsPage));
+
+    const residents = cellFor(element, words.residents.label);
+    expect(residents?.textContent).toContain(words.toList);
+    residents?.click();
+    expect(document.activeElement?.id).toBe('accounts-heading');
+  });
+});

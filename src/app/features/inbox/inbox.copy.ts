@@ -21,6 +21,10 @@ export const INBOX_COPY = {
         hint: 'Conversations with a message nobody here has read.',
       },
       closed: { label: 'Closed', hint: 'Nobody can write in these again.' },
+      /* Where each figure leads (DL-273), read after it by a screen reader. */
+      showThese: 'Show these conversations in the list',
+      toList:
+        'Go to the list below; it has no filter for this, and marks every unread conversation',
     },
     tabsLabel: 'Status',
     tabAll: 'All',

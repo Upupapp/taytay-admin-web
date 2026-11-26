@@ -48,6 +48,7 @@ import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { ChartTable, summaryAfterCaption } from '@shared/ui/chart-table/chart-table';
 import { DonutChart } from '@shared/ui/donut-chart/donut-chart';
 import { Icon } from '@shared/ui/icon/icon';
+import { JumpLink } from '@shared/ui/jump-link/jump-link';
 import type { IconName } from '@shared/ui/icon/icons';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 
@@ -133,6 +134,11 @@ interface Headline {
   readonly recordedFrom: string | null;
   /** The registry filtered the same way, or `null` when the registry cannot list these people. */
   readonly link: Readonly<Record<string, string>> | null;
+  /**
+   * Where the registry cannot list them, the heading of the panel on this page that shows the
+   * figure (`DL-273`): additions to the twelve-month line, the app and its cards to the funnel.
+   */
+  readonly jump: string | null;
 }
 
 /**
@@ -157,6 +163,7 @@ interface Headline {
     DonutChart,
     HasPermissionDirective,
     Icon,
+    JumpLink,
     NgTemplateOutlet,
     NotConnected,
     PageHeader,
@@ -252,6 +259,7 @@ export class CitizensOverviewPage {
         compared: true,
         recordedFrom: null,
         link: this.base(),
+        jump: null,
       },
       {
         key: 'registered',
@@ -261,6 +269,7 @@ export class CitizensOverviewPage {
         compared: true,
         recordedFrom: null,
         link: null,
+        jump: registered.current.value === null ? null : 'registry-growth',
       },
     ];
     // Under a sector filter the board's sector figures would count an overlap the registry cannot
@@ -287,6 +296,7 @@ export class CitizensOverviewPage {
         compared: true,
         recordedFrom: null,
         link: null,
+        jump: onApp.value === null ? null : 'registry-funnel',
       },
       {
         key: 'active-ids',
@@ -299,6 +309,7 @@ export class CitizensOverviewPage {
             ? formatDisplayDate(summary.atPeriodStart.activeIdsRecordedFrom, 'date', this.locale)
             : null,
         link: null,
+        jump: activeIds.value === null ? null : 'registry-funnel',
       },
     );
     return figures;
@@ -511,6 +522,7 @@ export class CitizensOverviewPage {
       compared: true,
       recordedFrom: null,
       link: row.isWithheld ? null : { ...this.base(), sector },
+      jump: null,
     };
   }
 

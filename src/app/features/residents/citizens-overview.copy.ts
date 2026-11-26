@@ -36,6 +36,7 @@ export const CITIZENS_OVERVIEW_COPY = {
   onRegistry: 'On the registry',
   registered: (period: ResidentSummaryPeriod) => `Registered this ${period}`,
   viewRecords: 'Open these records in the registry',
+  jumpToPanel: 'Go to the panel below that shows this figure',
   /** A figure in the strip, grouped as every other count on the console is. */
   count: figure,
   withheld: 'Withheld',

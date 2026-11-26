@@ -176,6 +176,7 @@
       [decided]="summary.decidedInPeriod"
       [period]="summary.appliedFilter.period ?? 'all-time'"
       [payouts]="summary.payouts"
+      [handOver]="disbursedLink(summary)"
     />
 
     <!-- ── Breakdowns. Every one is a real table with decorative bars. ────── -->

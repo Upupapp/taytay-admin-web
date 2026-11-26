@@ -828,3 +828,35 @@ describe('the dashboard says what waits, on whom, and what was decided (DL-248)'
     expect(definitions?.textContent).toContain('Waiting longest');
   });
 });
+
+describe('Dashboard — every figure opens what it counts (DL-273)', () => {
+  it('links each sum with items to its heading above, and moves focus there', async () => {
+    const fixture = await setUp('mswdo-head');
+    const element = html(fixture);
+    const sums = [...element.querySelectorAll<HTMLAnchorElement>('.attention__totals a.tally')];
+    expect(sums.length).toBeGreaterThan(0);
+    for (const sum of sums) {
+      const target = sum.getAttribute('href')?.split('#')[1] ?? '';
+      expect(target).toMatch(/^attention-group-/);
+      expect(element.querySelector(`#${target}`)?.tagName).toBe('H3');
+    }
+    sums[0]?.click();
+    expect(document.activeElement?.id).toMatch(/^attention-group-/);
+    // A sum with nothing under it has no heading to go to, and stays text.
+    for (const plain of element.querySelectorAll('.attention__totals div.tally')) {
+      expect(plain.querySelector('.tally__value')?.textContent?.trim()).toBe('0');
+    }
+  });
+
+  it('opens the releases handed over in the period from the hand-over time', async () => {
+    const element = html(await setUp('mswdo-head', null, '/dashboard?period=last-30-days'));
+    const link = element.querySelector<HTMLAnchorElement>('app-dashboard-outcomes a');
+    expect(link?.textContent).toContain('Filing to hand-over');
+    const href = link?.getAttribute('href') ?? '';
+    expect(href.startsWith('/releases?')).toBe(true);
+    expect(href).toContain('group=handed-over');
+    expect(href).toContain('period=last-30-days');
+    // Approvals and returns are decisions in the period, which no list reads: text.
+    expect(element.querySelectorAll('app-dashboard-outcomes a')).toHaveLength(1);
+  });
+});

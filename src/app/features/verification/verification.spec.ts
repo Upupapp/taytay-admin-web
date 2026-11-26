@@ -34,7 +34,7 @@ import { VerificationQueuePage } from './verification-queue-page';
 import { VerificationReview } from './verification-review';
 import { ACCOUNT_LINK_COPY } from '@shared/verification/account-link.copy';
 
-import { VERIFICATION_COPY } from './verification.copy';
+import { QUEUE_FIGURES_COPY, VERIFICATION_COPY } from './verification.copy';
 
 /** The queue's figures beside every page (DL-232). */
 const STATS: VerificationQueueStats = {
@@ -810,3 +810,21 @@ function tick(root: ParentNode): void {
   box.checked = true;
   box.dispatchEvent(new Event('change'));
 }
+
+describe('VerificationQueueFigures — the waiting figures open the waiting queue (DL-273)', () => {
+  it('links who waits and the oldest wait to the queue, and leaves the week’s figures as text', async () => {
+    configure();
+    const element = await settle(TestBed.createComponent(VerificationQueuePage));
+
+    const tiles = [...element.querySelectorAll<HTMLElement>('.queue-figures__tile')];
+    const named = (label: string) =>
+      tiles.find((tile) => tile.querySelector('.queue-figures__label')?.textContent === label);
+    expect(named(QUEUE_FIGURES_COPY.awaiting)?.getAttribute('href')).toBe('/verification');
+    expect(named(QUEUE_FIGURES_COPY.oldest)?.getAttribute('href')).toBe('/verification');
+    expect(named(QUEUE_FIGURES_COPY.awaiting)?.textContent).toContain(
+      QUEUE_FIGURES_COPY.showWaiting,
+    );
+    expect(named(QUEUE_FIGURES_COPY.decided)?.tagName).toBe('DIV');
+    expect(named(QUEUE_FIGURES_COPY.sentWeek)?.tagName).toBe('DIV');
+  });
+});

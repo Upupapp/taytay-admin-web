@@ -44,6 +44,14 @@ export const CITIZEN_IDS_COPY = {
     note: 'Counted for the whole app; the search, barangay and tab below do not narrow these three.',
   },
 
+  /* Read after a figure by a screen reader: where it leads (DL-273). */
+  figureLinks: {
+    allAccounts: 'Open the account list; it shows staff accounts too',
+    reviewQueue: 'Open the ID review queue',
+    verifiedAccounts: 'Open these accounts in the account list',
+    stageTab: 'Show these cards in the list below',
+  },
+
   tabsLabel: 'Cards by status',
   allTab: 'All cards',
   noCardTab: 'Verified, no card',

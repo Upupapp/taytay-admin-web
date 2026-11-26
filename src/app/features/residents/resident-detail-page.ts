@@ -43,6 +43,7 @@ import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { Modal } from '@shared/ui/modal/modal';
 import { Icon } from '@shared/ui/icon/icon';
+import { JumpLink } from '@shared/ui/jump-link/jump-link';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { InitialsPipe } from '@shared/pipes/initials.pipe';
 import { PesoPipe } from '@shared/pipes/peso.pipe';
@@ -119,6 +120,7 @@ function panelRead<TItem>(source: Observable<readonly TItem[]>): Observable<Pane
     Icon,
     IdentityHistory,
     InitialsPipe,
+    JumpLink,
     Modal,
     NotConnected,
     PageHeader,

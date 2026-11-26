@@ -89,6 +89,9 @@ export const REGISTRY_PANELS_COPY = {
   sectorErrorHeading: 'The sector’s figures could not be read',
   sectorTotalHint: 'On the registry, under the barangay chosen below',
   sectorIdHint: 'Members with the number of their sector card recorded',
+  /* Read after a figure that moves to its part of the page (DL-273). */
+  sectorJumpList: 'Go to the list of these members below',
+  sectorJumpCoverage: 'Go to the panel below that lists this figure',
   sectorAppHint: (ids: string) => `${ids} holding an active Digital ID`,
   byBarangay: 'By barangay',
   ageBands: 'Age bands',

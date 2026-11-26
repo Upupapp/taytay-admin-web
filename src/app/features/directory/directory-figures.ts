@@ -11,7 +11,7 @@ import {
 } from '@domain/index';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
-import type { FigureTile } from '@shared/ui/figure-tiles/figure-tiles';
+import type { FigureLink, FigureTile } from '@shared/ui/figure-tiles/figure-tiles';
 
 import { DIRECTORY_COPY } from './directory.copy';
 import { DIRECTORY_HOTLINES_TOPICS } from './hotlines-section';
@@ -63,6 +63,15 @@ export function directoryFigures(): DirectoryFigures {
     DIRECTORY_HOTLINES_TOPICS,
   );
 
+  // Each figure opens its own section, records in use (`DL-273`): a tile is only here for a reader
+  // holding that section's key, so the section is always one the page offers them.
+  const section = (key: 'offices' | 'services' | 'hotlines'): FigureLink => ({
+    kind: 'route',
+    route: '/directory',
+    queryParams: { section: key },
+    says: copy.showSection,
+  });
+
   const tiles = computed<readonly FigureTile[]>(() => {
     const result: FigureTile[] = [];
     const officeRows = valueOf(officeList());
@@ -73,6 +82,7 @@ export function directoryFigures(): DirectoryFigures {
         value: String(officeRows.length),
         hint: copy.offices.hint(officeRows.filter((office) => office.hasBanner).length),
         dot: 'bar',
+        link: section('offices'),
       });
     }
     const serviceRows = valueOf(serviceList());
@@ -83,6 +93,7 @@ export function directoryFigures(): DirectoryFigures {
         value: String(serviceRows.length),
         hint: copy.services.hint(serviceRows.filter((service) => service.featured).length),
         dot: 'gold',
+        link: section('services'),
       });
     }
     const hotlineRows = valueOf(hotlineList());
@@ -93,6 +104,7 @@ export function directoryFigures(): DirectoryFigures {
         value: String(hotlineRows.filter((hotline) => hotline.active).length),
         hint: copy.hotlines.hint(hotlineRows.length),
         dot: 'red',
+        link: section('hotlines'),
       });
     }
     return result;

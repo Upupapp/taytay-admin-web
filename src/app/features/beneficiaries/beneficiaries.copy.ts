@@ -100,6 +100,8 @@ export const BENEFICIARIES_COPY = {
       'Counts only assistance actually handed over — never what was merely approved.',
     eventCount: 'Recorded events',
     openCases: 'Open cases',
+    /** Read after a total: it moves to the history below (DL-273). */
+    totalsJump: 'Go to the assistance history below',
 
     timelineHeading: 'Assistance history',
     timelineHint: 'Every request, release, referral and enrollment, newest first.',

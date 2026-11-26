@@ -26,6 +26,8 @@ export const DIRECTORY_COPY = {
         label: 'Hotlines shown',
         hint: (kept: number) => `of ${kept} ${kept === 1 ? 'line' : 'lines'} kept here`,
       },
+      /* Read after a figure by a screen reader: where it leads (DL-273). */
+      showSection: 'Open this section of the directory',
     },
     noSection: 'Your account holds none of the keys for this directory.',
     sections: {

@@ -32,7 +32,11 @@ import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-n
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { DataTable } from '@shared/ui/data-table/data-table';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
-import { FigureTiles, type FigureTile } from '@shared/ui/figure-tiles/figure-tiles';
+import {
+  FigureTiles,
+  type FigureLink,
+  type FigureTile,
+} from '@shared/ui/figure-tiles/figure-tiles';
 import { Icon } from '@shared/ui/icon/icon';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
@@ -91,18 +95,38 @@ export class InboxPage {
   );
   protected readonly statuses = THREAD_STATUSES;
 
-  /** The three figures the board draws above the list (`DL-232`). */
+  /**
+   * The three figures the board draws above the list (`DL-232`). Open and closed open the list on
+   * that tab (`DL-273`); the list has no unread filter, so that one goes to the list below, whose
+   * unread column marks each such conversation, and says so.
+   */
   protected readonly figures = computed<readonly FigureTile[] | null>(() => {
     const counts = this.counts();
     if (counts === null) return null;
-    const tile = (key: 'open' | 'unread' | 'closed', dot: FigureTile['dot']): FigureTile => ({
+    const words = this.copy.figures;
+    const tile = (
+      key: 'open' | 'unread' | 'closed',
+      dot: FigureTile['dot'],
+      link: FigureLink,
+    ): FigureTile => ({
       key,
-      label: this.copy.figures[key].label,
+      label: words[key].label,
       value: counts[key].toLocaleString('en-PH'),
-      hint: this.copy.figures[key].hint,
+      hint: words[key].hint,
       dot,
+      link,
     });
-    return [tile('open', 'bar'), tile('unread', 'red'), tile('closed', 'muted')];
+    const tab = (status: ThreadStatus): FigureLink => ({
+      kind: 'route',
+      route: '/inbox',
+      queryParams: { status },
+      says: words.showThese,
+    });
+    return [
+      tile('open', 'bar', tab('open')),
+      tile('unread', 'red', { kind: 'jump', target: 'inbox-heading', says: words.toList }),
+      tile('closed', 'muted', tab('closed')),
+    ];
   });
 
   protected readonly copy = INBOX_COPY.list;

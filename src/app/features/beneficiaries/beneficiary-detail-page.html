@@ -34,28 +34,33 @@
             }
           </ul>
 
-          <dl class="tally-row totals">
-            <div class="tally tally--primary totals__item">
-              <dt class="tally__label">{{ copy.totalReceived }}</dt>
-              <dd class="tally__value totals__amount">{{ record.totalReleased | peso }}</dd>
+          <!-- Each total is the link to the assistance history below, where what it sums is listed
+               (DL-273). -->
+          <div class="tally-row totals">
+            <a class="tally tally--primary totals__item" appJumpTo="assistance-history-heading">
+              <span class="tally__label">{{ copy.totalReceived }}</span>
+              <span class="tally__value totals__amount">{{ record.totalReleased | peso }}</span>
               <!-- Goods are counted beside the money, never valued into it (`DL-93`). -->
               @if (record.goodsReceivedCount > 0) {
-                <dd class="tally__hint totals__goods">
+                <span class="tally__hint totals__goods">
                   {{ copy.goodsReceived(record.goodsReceivedCount) }}
-                </dd>
+                </span>
               }
-            </div>
-            <div class="tally totals__item">
-              <dt class="tally__label">{{ copy.eventCount }}</dt>
-              <dd class="tally__value totals__amount">{{ record.timeline.length }}</dd>
-            </div>
-            <div class="tally totals__item">
-              <dt class="tally__label">{{ copy.openCases }}</dt>
-              <dd class="tally__value totals__amount">
+              <span class="visually-hidden">{{ copy.totalsJump }}</span>
+            </a>
+            <a class="tally totals__item" appJumpTo="assistance-history-heading">
+              <span class="tally__label">{{ copy.eventCount }}</span>
+              <span class="tally__value totals__amount">{{ record.timeline.length }}</span>
+              <span class="visually-hidden">{{ copy.totalsJump }}</span>
+            </a>
+            <a class="tally totals__item" appJumpTo="assistance-history-heading">
+              <span class="tally__label">{{ copy.openCases }}</span>
+              <span class="tally__value totals__amount">
                 {{ record.standing.evidence.openRequestCount }}
-              </dd>
-            </div>
-          </dl>
+              </span>
+              <span class="visually-hidden">{{ copy.totalsJump }}</span>
+            </a>
+          </div>
           <!-- Under the row, not inside the first tile: five lines there stretched the others (F035). -->
           <p class="status-line totals__hint">{{ copy.totalReceivedHint }}</p>
         </section>

@@ -28,6 +28,7 @@ import { PesoPipe } from '@shared/pipes/peso.pipe';
 import { liveViewState } from '@shared/state/live-view-state';
 import { LOADING, valueOf, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
+import { JumpLink } from '@shared/ui/jump-link/jump-link';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -71,6 +72,7 @@ export type FindingStanding = 'kept' | 'superseded' | 'distinct';
     AssistanceHistoryTimeline,
     AsyncContent,
     DisplayDatePipe,
+    JumpLink,
     PageHeader,
     PesoPipe,
     RouterLink,

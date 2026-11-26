@@ -123,6 +123,12 @@
             <ng-container *ngTemplateOutlet="cell; context: { $implicit: figure }" />
             <span class="visually-hidden">{{ copy.viewRecords }}</span>
           </a>
+        } @else if (figure.jump; as target) {
+          <!-- The registry cannot list these; the panel below that shows the figure can (DL-273). -->
+          <a class="kpi-strip__cell" [appJumpTo]="target">
+            <ng-container *ngTemplateOutlet="cell; context: { $implicit: figure }" />
+            <span class="visually-hidden">{{ copy.jumpToPanel }}</span>
+          </a>
         } @else {
           <div class="kpi-strip__cell">
             <ng-container *ngTemplateOutlet="cell; context: { $implicit: figure }" />

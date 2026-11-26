@@ -243,6 +243,8 @@ export const RESIDENTS_COPY = {
     openCasesHint: 'Not yet completed or closed.',
     caseCountHint: 'Every request, any status.',
     lastActivityHint: 'Newest change to one of the requests.',
+    /** Read after a total: it moves to the part of the history it sums (DL-273). */
+    totalsJump: 'Go to these records in the history below',
 
     protectedHeading: 'Protected record',
     protectedBody:

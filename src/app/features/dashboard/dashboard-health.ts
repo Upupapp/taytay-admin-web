@@ -155,35 +155,49 @@ export class DashboardWaiting {
 @Component({
   selector: 'app-dashboard-outcomes',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterLink],
   host: { class: 'health health--outcomes', role: 'region', 'aria-labelledby': 'outcomes-heading' },
   template: `
     <div class="health__head">
       <h2 id="outcomes-heading" class="health__title">{{ copy.outcomesHeading }}</h2>
       <p class="health__lead">{{ copy.outcomesLead(period()) }}</p>
     </div>
-    <dl class="outcomes">
-      <div class="outcomes__item">
-        <dt>{{ copy.approvals }}</dt>
+    <!-- One list per figure, so the hand-over figure can be the link to the releases it averages
+         over (DL-273). Approvals and returns are decisions in the period, which no list reads. -->
+    <div class="outcomes">
+      <dl class="outcomes__item">
+        <dt class="outcomes__label">{{ copy.approvals }}</dt>
         <dd class="outcomes__value">
           {{ copy.approvalsValue(decided().approved, decided().approved + decided().rejected) }}
         </dd>
         <dd class="outcomes__hint">
           {{ copy.approvalsHint(decided().approved, decided().rejected) }}
         </dd>
-      </div>
-      <div class="outcomes__item">
-        <dt>{{ copy.returned }}</dt>
+      </dl>
+      <dl class="outcomes__item">
+        <dt class="outcomes__label">{{ copy.returned }}</dt>
         <dd class="outcomes__value">{{ decided().returned }}</dd>
         <dd class="outcomes__hint">{{ copy.returnedHint }}</dd>
-      </div>
+      </dl>
       @if (payouts(); as payouts) {
-        <div class="outcomes__item">
-          <dt>{{ copy.handOver }}</dt>
-          <dd class="outcomes__value">{{ copy.handOverValue(payouts.averageDaysToHandOver) }}</dd>
-          <dd class="outcomes__hint">{{ copy.handOverHint }}</dd>
-        </div>
+        @if (handOver(); as link) {
+          <a class="outcomes__item" [routerLink]="link.route" [queryParams]="link.queryParams">
+            <span class="outcomes__label">{{ copy.handOver }}</span>
+            <span class="outcomes__value">{{
+              copy.handOverValue(payouts.averageDaysToHandOver)
+            }}</span>
+            <span class="outcomes__hint">{{ copy.handOverHint }}</span>
+            <span class="visually-hidden">{{ copy.handOverLink }}</span>
+          </a>
+        } @else {
+          <dl class="outcomes__item">
+            <dt class="outcomes__label">{{ copy.handOver }}</dt>
+            <dd class="outcomes__value">{{ copy.handOverValue(payouts.averageDaysToHandOver) }}</dd>
+            <dd class="outcomes__hint">{{ copy.handOverHint }}</dd>
+          </dl>
+        }
       }
-    </dl>
+    </div>
   `,
   styleUrl: './dashboard-health.scss',
 })
@@ -192,6 +206,8 @@ export class DashboardOutcomes {
   readonly period = input.required<DashboardPeriod>();
   /** `null` for a reader the release list refuses: the hand-over figure is left out, not zeroed. */
   readonly payouts = input.required<DashboardPayouts | null>();
+  /** The releases handed over in the period, under the board's filter; `null` leaves it text. */
+  readonly handOver = input<DrillDown | null>(null);
 
   protected readonly copy = DASHBOARD_HEALTH_COPY;
 }

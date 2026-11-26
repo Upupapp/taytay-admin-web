@@ -26,36 +26,34 @@
     aria-labelledby="citizen-ids-lifecycle"
   >
     <h2 id="citizen-ids-lifecycle" class="section-title">{{ copy.lifecycle.heading }}</h2>
-    @if (counts(); as counts) {
-      <dl class="tally-row">
-        <!-- From sign-up to card ahead of the card stages (DL-232): the whole app's figures. -->
-        @if (funnel(); as funnel) {
-          <div class="tally">
-            <dt class="tally__label">{{ copy.funnel.appAccounts.label }}</dt>
-            <dd class="tally__value">{{ funnel.appAccounts }}</dd>
-            <dd class="tally__hint">{{ copy.funnel.appAccounts.hint }}</dd>
-          </div>
-          <div class="tally">
-            <dt class="tally__label">{{ copy.funnel.pending.label }}</dt>
-            <dd class="tally__value">{{ funnel.pendingVerification }}</dd>
-            <dd class="tally__hint">
-              {{ funnel.oldestPendingAt === null ? copy.funnel.pending.hint : copy.funnel.oldest(date(funnel.oldestPendingAt)) }}
-            </dd>
-          </div>
-          <div class="tally" [class.tally--primary]="noCardView()">
-            <dt class="tally__label">{{ copy.funnel.verified.label }}</dt>
-            <dd class="tally__value">{{ funnel.verified }}</dd>
-            <dd class="tally__hint">{{ copy.funnel.verified.hint }}</dd>
-          </div>
+    @if (counts()) {
+      <!-- Each figure is the link to what it counts (DL-273): a stage its tab, the app's three the
+           account list or the review queue for a reader the menu offers them; text otherwise. -->
+      <div class="tally-row">
+        @for (tally of tallies(); track tally.key) {
+          @if (tally.link; as link) {
+            <a
+              class="tally"
+              [class.tally--primary]="tally.current"
+              [routerLink]="link.route"
+              [queryParams]="link.queryParams"
+              [queryParamsHandling]="link.merge ? 'merge' : ''"
+            >
+              <ng-container *ngTemplateOutlet="tallyBody; context: { $implicit: tally }" />
+              <span class="visually-hidden">{{ link.says }}</span>
+            </a>
+          } @else {
+            <div class="tally" [class.tally--primary]="tally.current">
+              <ng-container *ngTemplateOutlet="tallyBody; context: { $implicit: tally }" />
+            </div>
+          }
         }
-        @for (status of statuses; track status) {
-          <div class="tally" [class.tally--primary]="filter().status === status">
-            <dt class="tally__label">{{ stageLabel(status) }}</dt>
-            <dd class="tally__value">{{ counts[status] }}</dd>
-            <dd class="tally__hint">{{ copy.stages[status].hint }}</dd>
-          </div>
-        }
-      </dl>
+      </div>
+      <ng-template #tallyBody let-tally>
+        <span class="tally__label">{{ tally.label }}</span>
+        <span class="tally__value">{{ tally.value }}</span>
+        <span class="tally__hint">{{ tally.hint }}</span>
+      </ng-template>
       <p class="status-line">
         {{ copy.funnel.note }} {{ copy.lifecycle.lead }} {{ copy.lifecycle.overlap }}
       </p>

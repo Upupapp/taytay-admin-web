@@ -54,6 +54,7 @@ export * from './ui/data-table/data-table';
 export * from './ui/data-table/table-column';
 export * from './ui/drawer/drawer';
 export * from './ui/empty-state/empty-state';
+export * from './ui/jump-link/jump-link';
 export * from './ui/list-changed-notice/list-changed-notice';
 export * from './ui/icon/icon';
 export * from './ui/icon/icons';

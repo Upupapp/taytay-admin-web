@@ -1114,6 +1114,38 @@ a.kpi-strip__cell:is(:hover, :focus-visible) .kpi-strip__tile {
   color: var(--red-ink);
 }
 
+/* A tally that is the link to what it counts (`DL-273`) fills primary under the pointer and the
+   keyboard, as `a.kpi` does; a primary tally deepens. The whole tile is the link. */
+a.tally {
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+a.tally:is(:hover, :focus-visible) {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+a.tally--primary:is(:hover, :focus-visible) {
+  background: var(--primary-hover);
+}
+
+a.tally:is(:hover, :focus-visible) .tally__label {
+  color: var(--on-primary);
+}
+
+a.tally:is(:hover, :focus-visible) .tally__hint {
+  color: var(--on-deep-muted);
+}
+
+/* On the deeper fill every line takes the label colour, the pair the audit holds. */
+a.tally--primary:is(:hover, :focus-visible) .tally__label,
+a.tally--primary:is(:hover, :focus-visible) .tally__hint {
+  color: var(--on-primary);
+}
+
 /* ── Icon tiles ───────────────────────────────────────────────────────────
    A rounded square holding one <app-icon>. Decoration beside a label, so
    `aria-hidden="true"` on the tile. Gradient tiles take a white icon, except

@@ -320,3 +320,33 @@ describe('the sector list at a laptop’s width (DL-259)', () => {
     expect(ends[0]?.getAttribute('aria-label')).toMatch(/^End membership of .+ in /);
   });
 });
+
+describe('a sector page’s figures open the part of the page that shows them (DL-273)', () => {
+  it('sends the members to the list and the IDs, pension and app to their panel', async () => {
+    const element = html((await open('intake-officer', 'senior-citizen')).fixture);
+    const cells = Array.from(
+      element.querySelectorAll<HTMLElement>('app-sector-figures .kpi-strip__cell'),
+    );
+    expect(cells.map((cell) => cell.tagName)).toEqual(['A', 'A', 'A', 'A']);
+    const targets = cells.map((cell) => cell.getAttribute('href')?.split('#')[1]);
+    expect(targets).toEqual([
+      'sector-list-heading',
+      'sector-coverage',
+      'sector-coverage',
+      'sector-coverage',
+    ]);
+    for (const target of new Set(targets)) {
+      expect(element.querySelector(`#${target ?? ''}`)).not.toBeNull();
+    }
+    cells[0]?.click();
+    expect(document.activeElement?.id).toBe('sector-list-heading');
+  });
+
+  it('leaves an ID ending this month as text: nothing on the page lists who', async () => {
+    const element = html((await open('intake-officer', 'pwd')).fixture);
+    const third = Array.from(
+      element.querySelectorAll<HTMLElement>('app-sector-figures .kpi-strip__cell'),
+    ).find((cell) => cell.textContent?.includes('PWD IDs ending this month'));
+    expect(third === undefined || third.tagName === 'DIV').toBe(true);
+  });
+});

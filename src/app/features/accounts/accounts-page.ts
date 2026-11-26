@@ -15,6 +15,7 @@ import { map, switchMap, tap } from 'rxjs';
 import { SessionStore } from '@core/auth/session.store';
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
+import { MenuReach } from '@core/navigation/menu-reach';
 import {
   ACCOUNT_ROLE_CATALOG,
   ACCOUNT_VERIFICATION_STATUSES,
@@ -38,7 +39,11 @@ import { Icon } from '@shared/ui/icon/icon';
 import type { TableColumn } from '@shared/ui/data-table/table-column';
 import { ListChangedNotice } from '@shared/ui/list-changed-notice/list-changed-notice';
 import { Modal } from '@shared/ui/modal/modal';
-import { FigureTiles, type FigureTile } from '@shared/ui/figure-tiles/figure-tiles';
+import {
+  FigureTiles,
+  type FigureLink,
+  type FigureTile,
+} from '@shared/ui/figure-tiles/figure-tiles';
 import { PageHeader } from '@shared/ui/page-header/page-header';
 import { StatusBadge } from '@shared/ui/status-badge/status-badge';
 
@@ -47,6 +52,9 @@ import { ACCOUNTS_COPY } from './accounts.copy';
 
 /** One page at a time from the server; the API's own default, and well under its ceiling. */
 const PAGE_SIZE = 20;
+
+/** Where the staff and administrators are listed, and nobody else (`DL-273`). */
+const STAFF_DIRECTORY = '/administration/staff';
 
 /** App accounts: their role, office and verification all live on the account (`DL-222`). */
 export const ACCOUNTS_TOPICS: readonly LiveTopic[] = ['users'];
@@ -89,6 +97,7 @@ export class AccountsPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly live = inject(LiveUpdates);
+  private readonly reach = inject(MenuReach);
 
   protected readonly copy = ACCOUNTS_COPY.list;
   protected readonly verificationStatuses = ACCOUNT_VERIFICATION_STATUSES;
@@ -152,12 +161,25 @@ export class AccountsPage {
     { initialValue: LOADING as ViewState<AppAccountListPage> },
   );
 
-  /** "Accounts by role", whole and never narrowed by the filter (`DL-232`). */
+  /**
+   * "Accounts by role", whole and never narrowed by the filter (`DL-232`). Each opens what it counts
+   * (`DL-273`): the verified residents as the list's own filter, the staff and administrators as
+   * the staff directory, which lists exactly those, for a reader the menu offers it. The list has
+   * no role or office filter, so the residents and the staff with no office go to the list below,
+   * which shows the role and the office on every row, and say so.
+   */
   protected readonly figures = computed<readonly FigureTile[] | null>(() => {
     const counts = valueOf(this.first())?.counts;
     if (counts === undefined) return null;
     const words = this.copy.figures;
     const figure = (n: number) => n.toLocaleString('en-PH');
+    const toList: FigureLink = { kind: 'jump', target: 'accounts-heading', says: words.toList };
+    const toStaff: FigureLink = {
+      kind: 'route',
+      route: STAFF_DIRECTORY,
+      queryParams: {},
+      says: words.toStaff,
+    };
     return [
       {
         key: 'residents',
@@ -165,6 +187,7 @@ export class AccountsPage {
         value: figure(counts.residents),
         hint: words.residents.hint,
         dot: 'gold',
+        link: toList,
       },
       {
         key: 'verified',
@@ -172,6 +195,12 @@ export class AccountsPage {
         value: figure(counts.verified),
         hint: words.verified.hint,
         dot: 'green',
+        link: {
+          kind: 'route',
+          route: '/users',
+          queryParams: { verification: 'verified' },
+          says: words.showThese,
+        },
       },
       {
         key: 'staff',
@@ -179,6 +208,7 @@ export class AccountsPage {
         value: figure(counts.staff + counts.admins),
         hint: words.staff.hint(counts.staff, counts.admins),
         dot: 'bar',
+        link: this.reach.canOpen(STAFF_DIRECTORY) ? toStaff : toList,
       },
       {
         key: 'no-office',
@@ -186,6 +216,7 @@ export class AccountsPage {
         value: figure(counts.staffWithoutOffice),
         hint: words.noOffice.hint,
         dot: 'red',
+        link: toList,
       },
     ];
   });

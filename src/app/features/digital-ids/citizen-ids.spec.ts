@@ -5,6 +5,7 @@ import { of, throwError, type Observable } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionService } from '@core/access/permission.service';
+import { SessionStore } from '@core/auth/session.store';
 import {
   asId,
   asIsoDateTime,
@@ -108,6 +109,8 @@ function configure(granted: readonly Permission[]): Cards {
       provideRouter([]),
       { provide: DIGITAL_ID_REPOSITORY, useValue: cards },
       { provide: UNSERVED_PORTS, useValue: [] },
+      // The menu's scope test reads who is signed in (DL-273).
+      { provide: SessionStore, useValue: { user: signal(null) } },
       {
         provide: PermissionService,
         useValue: { can: (permission: Permission) => signal(granted.includes(permission)) },
@@ -203,5 +206,50 @@ describe('CitizenIdsPage (DL-212)', () => {
     fixture.detectChanges();
 
     expect(document.body.textContent).toContain(CITIZEN_IDS_COPY.recordHeading('Ana Reyes'));
+  });
+});
+
+describe('CitizenIdsPage — each lifecycle figure opens what it counts (DL-273)', () => {
+  const linkFor = (root: HTMLElement, label: string): HTMLAnchorElement | null =>
+    [...root.querySelectorAll<HTMLAnchorElement>('a.tally')].find(
+      (link) => link.querySelector('.tally__label')?.textContent?.trim() === label,
+    ) ?? null;
+
+  it('opens a stage on its own tab, keeping the list’s other filters', async () => {
+    configure(['digital-id.manage']);
+    const { root } = await render();
+
+    const active = linkFor(root, CITIZEN_IDS_COPY.stages.active.label);
+    expect(active?.getAttribute('href')).toBe('/citizen-ids?status=active');
+    expect(active?.textContent).toContain('7');
+    expect(active?.textContent).toContain(CITIZEN_IDS_COPY.figureLinks.stageTab);
+    expect(linkFor(root, CITIZEN_IDS_COPY.stages.revoked.label)?.getAttribute('href')).toBe(
+      '/citizen-ids?status=revoked',
+    );
+  });
+
+  it('opens the account list and the review queue for a reader the menu offers them', async () => {
+    configure(['digital-id.manage', 'user.view', 'verification.review']);
+    const { root } = await render();
+
+    expect(linkFor(root, CITIZEN_IDS_COPY.funnel.appAccounts.label)?.getAttribute('href')).toBe(
+      '/users',
+    );
+    expect(linkFor(root, CITIZEN_IDS_COPY.funnel.pending.label)?.getAttribute('href')).toBe(
+      '/verification',
+    );
+    expect(linkFor(root, CITIZEN_IDS_COPY.funnel.verified.label)?.getAttribute('href')).toBe(
+      '/users?verification=verified',
+    );
+  });
+
+  it('leaves the app figures as text for a reader who could not open where they lead', async () => {
+    configure(['digital-id.manage']);
+    const { root } = await render();
+
+    expect(linkFor(root, CITIZEN_IDS_COPY.funnel.appAccounts.label)).toBeNull();
+    expect(linkFor(root, CITIZEN_IDS_COPY.funnel.pending.label)).toBeNull();
+    expect(linkFor(root, CITIZEN_IDS_COPY.funnel.verified.label)).toBeNull();
+    expect(root.querySelectorAll('div.tally')).toHaveLength(3);
   });
 });

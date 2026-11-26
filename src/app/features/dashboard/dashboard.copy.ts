@@ -56,6 +56,8 @@ export const DASHBOARD_COPY = {
   } satisfies Record<AttentionKind, (count: number) => string>,
 
   attentionAction: 'Review',
+  /** Read after a sum at the foot: it leads to its heading above (DL-273). */
+  attentionJump: 'Go to these items above',
   /** The round button that unfolds the rule a signal counted by (DL-233). */
   attentionHow: 'How this is counted',
   attentionItems: (n: number) => (n === 1 ? '· 1 item' : `· ${n} items`),

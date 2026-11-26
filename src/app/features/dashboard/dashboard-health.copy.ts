@@ -71,6 +71,7 @@ export const DASHBOARD_HEALTH_COPY = {
     days === null ? 'None handed over' : `${days} ${days === 1 ? 'day' : 'days'}`,
   handOverHint:
     'Average calendar days over the releases handed over in this period, as the summary report counts it. Imported past assistance is not counted.',
+  handOverLink: 'Open the releases handed over in this period',
 
   // Recent activity
   activityHeading: 'Recent activity',

@@ -27,6 +27,11 @@ export const ACCOUNTS_COPY = {
           `${staff} staff · ${admins} ${admins === 1 ? 'administrator' : 'administrators'}`,
       },
       noOffice: { label: 'Staff with no office', hint: 'They answer no office’s inbox yet.' },
+      /* Where each figure leads (DL-273), read after it by a screen reader. */
+      showThese: 'Show these accounts in the list',
+      toStaff: 'Open the staff directory, which lists these accounts',
+      toList:
+        'Go to the account list below; it has no filter for this, and shows the role and office of every account',
     },
     order: 'Newest accounts first, as the system sends them.',
     minimum:

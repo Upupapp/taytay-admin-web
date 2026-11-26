@@ -12360,3 +12360,54 @@ fit, and keep their one line.
    The app audit's ids still break at their hyphens (`DL-261`).
 5. **Citizen IDs keeps no drawn title.** Its `h1` is there, visually hidden, as on every page whose
    heading is a page name (`DL-246`); the breadcrumb says where the reader is.
+
+## DL-273 — a headline figure opens what it counts
+
+**Status:** Settled (26 November 2026), on the owner's request ("make all kpi cards clickable and
+redirect to where they should go or … jump into"). Extends `DL-186` and `DL-253`.
+
+**Rule.** A headline figure — a `.kpi-strip` cell, an `a.kpi` card, a tally — is the link to the
+records it counts, the whole cell, in this order of preference: (a) the list that shows exactly
+those records, with the filter in its address and the page's own barangay, programme type and
+period carried where the list reads them; (b) where no list can, the nearest list, with words
+after the figure saying what the list holds instead; (c) where the figure sums a part of the same
+page, a jump to that part's heading (`JumpLink`, `@shared/ui/jump-link`), which moves focus there
+and leaves the address alone; (d) where nothing shows them, text. A withheld figure stays text
+(`DL-105`). A link to another screen is offered only where the menu would offer that screen
+(`MenuReach.canOpen`, the sidebar's three tests: permission, served ports, data scope; rule 8).
+The link's name is the label, the figure and the hint, then a visually hidden sentence saying where
+it goes (WCAG 2.5.3). A linked tally (`a.tally`) fills primary on hover and focus as `a.kpi` does.
+Print and export sheets are untouched.
+
+| Page               | Figure                                                                                                                  | Leads to                                                                                   |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Dashboard          | Open requests, Awaiting approval, Scheduled payouts, Handed over; the app's accounts, verifications waiting, active IDs | already links (`DL-186`)                                                                   |
+| Dashboard          | Attention sums (critical, warning, info)                                                                                | jump to that urgency's heading above; a sum of 0 has none, text                            |
+| Dashboard          | Outcomes: filing to hand-over                                                                                           | `/releases?group=handed-over` + the board's barangay, programme type, period               |
+| Citizen overview   | On the registry, three sectors                                                                                          | already links: `/residents` filtered the same way                                          |
+| Citizen overview   | Registered this period                                                                                                  | jump to the twelve-month line (the registry cannot filter by date added)                   |
+| Citizen overview   | On the residents' app, Active Digital IDs                                                                               | jump to the funnel, which links to the cards                                               |
+| Sector pages       | Members                                                                                                                 | jump to the sector list below                                                              |
+| Sector pages       | Sector ID on file, social pension, app accounts                                                                         | jump to the benefits and IDs panel                                                         |
+| Citizen IDs        | Each card stage                                                                                                         | the stage's own tab, keeping the list's search and barangay                                |
+| Citizen IDs        | Signed up on the app                                                                                                    | `/users` (b: staff accounts are listed too)                                                |
+| Citizen IDs        | Sent an ID for review                                                                                                   | `/verification` (the waiting queue)                                                        |
+| Citizen IDs        | Verified residents                                                                                                      | `/users?verification=verified`                                                             |
+| Users and roles    | Verified residents                                                                                                      | `/users?verification=verified`                                                             |
+| Users and roles    | Staff and administrators                                                                                                | `/administration/staff`, which lists exactly those; else the list below                    |
+| Users and roles    | Resident accounts, Staff with no office                                                                                 | jump to the list below (b: no role or office filter; every row shows both)                 |
+| Office inbox       | Open, Closed                                                                                                            | `/inbox?status=open`, `?status=closed`                                                     |
+| Office inbox       | Unread by the office                                                                                                    | jump to the list (b: no unread filter; the column marks them)                              |
+| App directory      | Offices, Tulong pages, Hotlines                                                                                         | `/directory?section=…`; hotlines (b): the section keeps hidden lines too, as the hint says |
+| ID review queue    | Awaiting review, Oldest waiting                                                                                         | `/verification` (the waiting queue)                                                        |
+| Resident record    | Total released                                                                                                          | jump to Payouts                                                                            |
+| Resident record    | Open cases, Cases, Last activity                                                                                        | jump to the requests panel                                                                 |
+| Beneficiary record | Total received, Recorded events, Open cases                                                                             | jump to the assistance history                                                             |
+
+**Left as text, and why.** The review queue's "Decided, last 7 days" and "Sent, last 7 days": no
+status of the list is a window of days, and the second holds a chart. The dashboard's approvals and
+returns: they count decisions made in the period, and the request list reads no decision date. A
+PWD or Solo Parent ID ending this month: nothing on the page lists who, and the registry cannot
+filter by an ID's validity. The import wizards' tallies sum a confirmation or the outcome table
+directly beneath them, and panel figures (this month, needs attention, the review queue panel on the
+overview) are rows of a panel, not headline cards; each panel keeps its own link where it has one.

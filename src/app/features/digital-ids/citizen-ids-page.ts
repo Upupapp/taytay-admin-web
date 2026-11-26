@@ -9,6 +9,7 @@ import {
   TemplateRef,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink, type ParamMap } from '@angular/router';
 import { EMPTY, map, switchMap, tap } from 'rxjs';
@@ -18,6 +19,7 @@ import { NotConnected } from '@core/access/not-connected';
 import { ServedPorts } from '@core/access/served-ports';
 import type { LiveTopic } from '@core/live/change-feed';
 import { LiveUpdates } from '@core/live/live-updates';
+import { MenuReach } from '@core/navigation/menu-reach';
 import {
   DIGITAL_ID_LIST_STATUSES,
   DIGITAL_ID_REPOSITORY,
@@ -48,6 +50,23 @@ import { CardCheck } from './card-check';
 import { CardPanel } from './card-panel';
 import { CITIZEN_IDS_COPY } from './citizen-ids.copy';
 import { VerifiedNoCard } from './verified-no-card';
+
+/** One figure of the lifecycle row, and where it leads (`DL-273`), or `null` for text. */
+interface LifecycleTally {
+  readonly key: string;
+  readonly label: string;
+  readonly value: number;
+  readonly hint: string;
+  /** The figure behind the list shown now, drawn filled. */
+  readonly current: boolean;
+  readonly link: {
+    readonly route: string;
+    readonly queryParams: Readonly<Record<string, string | null>>;
+    /** Keep the list's search and barangay, as a tab does: a stage is counted under them. */
+    readonly merge: boolean;
+    readonly says: string;
+  } | null;
+}
 
 const PAGE_SIZE = 20;
 
@@ -83,6 +102,7 @@ type CardHolderRef = Pick<AppAccount, 'id' | 'name' | 'email'>;
     InitialsPipe,
     ListChangedNotice,
     Modal,
+    NgTemplateOutlet,
     PageHeader,
     RouterLink,
     StatusBadge,
@@ -165,6 +185,82 @@ export class CitizenIdsPage {
   /** The strip counts the first page's answer: every page of one reading counts the same filter. */
   protected readonly counts = computed(() => valueOf(this.state())?.counts ?? null);
   protected readonly funnel = computed(() => valueOf(this.state())?.funnel ?? null);
+  private readonly reach = inject(MenuReach);
+
+  /**
+   * The lifecycle's figures, each the link to what it counts (`DL-273`): a card stage opens its own
+   * tab under the list's other filters, which is what its count is taken under (`DL-212`); the
+   * three app figures, counted for the whole app, open the account list or the review queue for a
+   * reader the menu offers them, and are text for anybody else (rule 8). The account list has no
+   * filter for residents only, so "Signed up" opens it whole and says so.
+   */
+  protected readonly tallies = computed<readonly LifecycleTally[]>(() => {
+    const counts = this.counts();
+    if (counts === null) return [];
+    const words = this.copy.figureLinks;
+    const opensAccounts = this.reach.canOpen('/users');
+    const result: LifecycleTally[] = [];
+    const funnel = this.funnel();
+    if (funnel !== null) {
+      result.push(
+        {
+          key: 'app-accounts',
+          label: this.copy.funnel.appAccounts.label,
+          value: funnel.appAccounts,
+          hint: this.copy.funnel.appAccounts.hint,
+          current: false,
+          link: opensAccounts
+            ? { route: '/users', queryParams: {}, merge: false, says: words.allAccounts }
+            : null,
+        },
+        {
+          key: 'pending',
+          label: this.copy.funnel.pending.label,
+          value: funnel.pendingVerification,
+          hint:
+            funnel.oldestPendingAt === null
+              ? this.copy.funnel.pending.hint
+              : this.copy.funnel.oldest(this.date(funnel.oldestPendingAt)),
+          current: false,
+          link: this.reach.canOpen('/verification')
+            ? { route: '/verification', queryParams: {}, merge: false, says: words.reviewQueue }
+            : null,
+        },
+        {
+          key: 'verified',
+          label: this.copy.funnel.verified.label,
+          value: funnel.verified,
+          hint: this.copy.funnel.verified.hint,
+          current: this.noCardView(),
+          link: opensAccounts
+            ? {
+                route: '/users',
+                queryParams: { verification: 'verified' },
+                merge: false,
+                says: words.verifiedAccounts,
+              }
+            : null,
+        },
+      );
+    }
+    for (const status of this.statuses) {
+      result.push({
+        key: status,
+        label: this.stageLabel(status),
+        value: counts[status],
+        hint: this.copy.stages[status].hint,
+        current: this.filter().status === status && !this.noCardView(),
+        link: {
+          route: '/citizen-ids',
+          queryParams: { status, view: null },
+          merge: true,
+          says: words.stageTab,
+        },
+      });
+    }
+    return result;
+  });
+
   /** The no-card tab reads the account list, which only some adapter sets serve. */
   protected readonly servesAccounts = inject(ServedPorts).serves('app-account');
 

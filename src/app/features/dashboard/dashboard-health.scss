@@ -103,14 +103,37 @@
   background: var(--soft2);
 }
 
-.outcomes__item dt {
+.outcomes__label {
   font-size: var(--fs-sm);
   font-weight: var(--fw-semibold);
   color: var(--text2);
 }
 
+.outcomes__item,
 .outcomes__item dd {
   margin: 0;
+}
+
+/* The hand-over figure as the link to its releases (DL-273): the whole tile, filled primary under
+   the pointer and the keyboard, as `a.kpi` does. */
+a.outcomes__item {
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+a.outcomes__item:is(:hover, :focus-visible) {
+  background: var(--primary);
+
+  .outcomes__label,
+  .outcomes__value {
+    color: var(--on-primary);
+  }
+
+  .outcomes__hint {
+    color: var(--on-deep-muted);
+  }
 }
 
 .outcomes__value {

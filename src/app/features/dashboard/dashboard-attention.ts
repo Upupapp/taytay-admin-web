@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import type { AttentionSeverity, AttentionSignal } from '@domain/index';
 import { Icon } from '@shared/ui/icon/icon';
+import { JumpLink } from '@shared/ui/jump-link/jump-link';
 
 import { DASHBOARD_COPY } from './dashboard.copy';
 import type { DrillDown } from './dashboard-drill-down';
@@ -31,7 +32,7 @@ export interface AttentionGroup {
 @Component({
   selector: 'app-dashboard-attention',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon, RouterLink],
+  imports: [Icon, JumpLink, RouterLink],
   template: `
     <section class="card card--panel attention" aria-labelledby="attention-heading">
       <div class="attention__head">
@@ -52,7 +53,11 @@ export interface AttentionGroup {
             @if (group.cards.length > 0) {
               <!-- Severity is stated in words as well as shown by tone, so the
                    ranking survives without colour; then how many items it holds. -->
-              <h3 class="attention__group" [class]="'attention__group--' + group.severity">
+              <h3
+                class="attention__group"
+                [class]="'attention__group--' + group.severity"
+                [id]="'attention-group-' + group.severity"
+              >
                 <span class="attention__dot" aria-hidden="true"></span>
                 <span class="attention__severity">{{ group.label }}</span>
                 <span class="attention__group-count">{{ copy.attentionItems(group.cards.length) }}</span>
@@ -99,20 +104,35 @@ export interface AttentionGroup {
           }
         </div>
         <!-- The sums, said once, in three tiles at the foot as the board draws them (DL-233). The
-             figure is drawn above its label (column-reverse), so dt stays before dd. -->
-        <dl class="tally-row attention__totals">
+             figure is drawn above its label (column-reverse), so the label stays first in the
+             words. A sum with items is the link to its heading above (DL-273); none is text. -->
+        <div class="tally-row attention__totals">
           @for (group of groups(); track group.severity) {
-            <div
-              class="tally tally--figure-first"
-              [class.tally--red]="group.severity === 'critical'"
-              [class.tally--gold]="group.severity === 'warning'"
-              [class.tally--soft]="group.severity === 'info'"
-            >
-              <dt class="tally__label">{{ group.label }}</dt>
-              <dd class="tally__value">{{ group.total }}</dd>
-            </div>
+            @if (group.cards.length > 0) {
+              <a
+                class="tally tally--figure-first"
+                [class.tally--red]="group.severity === 'critical'"
+                [class.tally--gold]="group.severity === 'warning'"
+                [class.tally--soft]="group.severity === 'info'"
+                [appJumpTo]="'attention-group-' + group.severity"
+              >
+                <span class="tally__label">{{ group.label }}</span>
+                <span class="tally__value">{{ group.total }}</span>
+                <span class="visually-hidden">{{ copy.attentionJump }}</span>
+              </a>
+            } @else {
+              <div
+                class="tally tally--figure-first"
+                [class.tally--red]="group.severity === 'critical'"
+                [class.tally--gold]="group.severity === 'warning'"
+                [class.tally--soft]="group.severity === 'info'"
+              >
+                <span class="tally__label">{{ group.label }}</span>
+                <span class="tally__value">{{ group.total }}</span>
+              </div>
+            }
           }
-        </dl>
+        </div>
       } @else {
         <div class="attention__clear">
           <h3 class="section-title">{{ copy.attentionEmptyHeading }}</h3>

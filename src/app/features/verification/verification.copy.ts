@@ -154,4 +154,6 @@ export const QUEUE_FIGURES_COPY = {
     `${approved} approved · ${rejected} rejected`,
   sentWeek: 'Sent, last 7 days',
   sentCaption: 'ID reviews sent per day, last 7 days',
+  /** Read after a waiting figure: it opens the waiting queue (DL-273). */
+  showWaiting: 'Show the waiting requests in the queue below',
 } as const;

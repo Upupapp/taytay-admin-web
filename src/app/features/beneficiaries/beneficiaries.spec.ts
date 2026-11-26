@@ -689,3 +689,17 @@ describe('permission-aware surfaces', () => {
     expect(element.textContent).not.toContain('Possible duplicate');
   });
 });
+
+describe('a beneficiary’s totals open the history they sum (DL-273)', () => {
+  it('makes each total the link to the assistance history, moving focus there', async () => {
+    const element = html(await openDetail(AURORA));
+    const totals = [...element.querySelectorAll<HTMLElement>('.totals .tally')];
+    expect(totals.length).toBe(3);
+    for (const total of totals) {
+      expect(total.tagName).toBe('A');
+      expect(total.getAttribute('href')).toMatch(/#assistance-history-heading$/);
+    }
+    totals[0]?.click();
+    expect(document.activeElement?.id).toBe('assistance-history-heading');
+  });
+});

@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs';
@@ -16,6 +17,7 @@ import { LOADING, type ViewState } from '@shared/state/view-state';
 import { AsyncContent } from '@shared/ui/async-content/async-content';
 import { ChartTable } from '@shared/ui/chart-table/chart-table';
 import { Icon } from '@shared/ui/icon/icon';
+import { JumpLink } from '@shared/ui/jump-link/jump-link';
 import type { IconName } from '@shared/ui/icon/icons';
 
 import { SectorAttentionPanel, SectorCoveragePanel } from './registry-panels';
@@ -39,6 +41,10 @@ interface SectorKpi {
   readonly value: string;
   readonly icon: IconName;
   readonly tone: string;
+  /** The heading of the part of the page that shows what it counts, or `null` (`DL-273`). */
+  readonly jump: string | null;
+  /** Where the jump goes, in words, read after the figure. */
+  readonly says: string;
 }
 
 const SECTOR_ICON: Readonly<Record<SectorPageSector, { icon: IconName; tone: string }>> = {
@@ -60,6 +66,8 @@ const SECTOR_ICON: Readonly<Record<SectorPageSector, { icon: IconName; tone: str
     AsyncContent,
     ChartTable,
     Icon,
+    JumpLink,
+    NgTemplateOutlet,
     NotConnected,
     SectorAttentionPanel,
     SectorCoveragePanel,
@@ -77,20 +85,29 @@ const SECTOR_ICON: Readonly<Record<SectorPageSector, { icon: IconName; tone: str
         <!-- The shared strip (DL-253): label row, figure, the page's own hint. -->
         <section class="kpi-strip" [attr.aria-label]="copy.sectorFiguresLabel">
           @for (kpi of kpis(summary); track kpi.key) {
-            <div class="kpi-strip__cell">
-              <span class="kpi-strip__label">
-                <span
-                  [class]="'icon-tile kpi-strip__tile icon-tile--' + kpi.tone"
-                  aria-hidden="true"
-                >
-                  <app-icon [name]="kpi.icon" [size]="15" [stroke]="2" />
-                </span>
-                <span class="kpi-strip__name">{{ kpi.label }}</span>
-              </span>
-              <span class="kpi-strip__value">{{ kpi.value }}</span>
-              <span class="kpi-strip__hint kpi-strip__hint--note">{{ kpi.hint }}</span>
-            </div>
+            <!-- A figure is the link to the part of this page that shows it (DL-273): the members
+                 to the list below, the IDs and benefits to their panel; one nothing lists is text. -->
+            @if (kpi.jump; as target) {
+              <a class="kpi-strip__cell" [appJumpTo]="target">
+                <ng-container *ngTemplateOutlet="cell; context: { $implicit: kpi }" />
+                <span class="visually-hidden">{{ kpi.says }}</span>
+              </a>
+            } @else {
+              <div class="kpi-strip__cell">
+                <ng-container *ngTemplateOutlet="cell; context: { $implicit: kpi }" />
+              </div>
+            }
           }
+          <ng-template #cell let-kpi>
+            <span class="kpi-strip__label">
+              <span [class]="'icon-tile kpi-strip__tile icon-tile--' + kpi.tone" aria-hidden="true">
+                <app-icon [name]="kpi.icon" [size]="15" [stroke]="2" />
+              </span>
+              <span class="kpi-strip__name">{{ kpi.label }}</span>
+            </span>
+            <span class="kpi-strip__value">{{ kpi.value }}</span>
+            <span class="kpi-strip__hint kpi-strip__hint--note">{{ kpi.hint }}</span>
+          </ng-template>
         </section>
 
         <div class="sector-figures__bento">
@@ -238,6 +255,7 @@ export class SectorFigures {
         : sector === 'pwd'
           ? summary.thisMonth.pwdIdsExpiring
           : summary.thisMonth.soloParentIdsDue;
+    const toCoverage = { jump: 'sector-coverage', says: this.copy.sectorJumpCoverage };
     const kpis: SectorKpi[] = [
       {
         key: 'total',
@@ -246,6 +264,8 @@ export class SectorFigures {
         value: summary.residents.current.toLocaleString('en-PH'),
         icon: tile.icon,
         tone: tile.tone,
+        jump: 'sector-list-heading',
+        says: this.copy.sectorJumpList,
       },
     ];
     if (coverage !== null) {
@@ -256,6 +276,7 @@ export class SectorFigures {
         value: shown(coverage.sectorIdOnFile),
         icon: 'idCard',
         tone: 'blue',
+        ...toCoverage,
       });
     }
     if (third !== null) {
@@ -266,6 +287,9 @@ export class SectorFigures {
         value: shown(third),
         icon: sector === 'senior-citizen' ? 'cash' : 'calendar',
         tone: 'green',
+        // The social pension is a row of the coverage panel; an ID ending this month is listed
+        // nowhere on the page, and the registry cannot filter by it, so that one stays text.
+        ...(sector === 'senior-citizen' ? toCoverage : { jump: null, says: '' }),
       });
     }
     if (coverage !== null) {
@@ -276,6 +300,7 @@ export class SectorFigures {
         value: shown(coverage.appAccounts),
         icon: 'phone',
         tone: 'red',
+        ...toCoverage,
       });
     }
     return kpis;

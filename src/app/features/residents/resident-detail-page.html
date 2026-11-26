@@ -95,36 +95,41 @@
           <!-- The record's totals first, as the mock-up's tiles; read with the history or not shown. -->
           @if (profile.history.kind === 'read') {
             @let totals = profile.history.history;
-            <dl class="tally-row detail__totals">
-              <div class="tally tally--primary">
-                <dt class="tally__label">{{ copy.totalReleased }}</dt>
-                <dd class="tally__value">{{ totals.totalReleased | peso }}</dd>
-                <dd class="tally__hint">{{ copy.totalReleasedHint }}</dd>
+            <!-- Each total is the link to the part of the history below that it sums (DL-273). -->
+            <div class="tally-row detail__totals">
+              <a class="tally tally--primary" appJumpTo="payouts-heading">
+                <span class="tally__label">{{ copy.totalReleased }}</span>
+                <span class="tally__value">{{ totals.totalReleased | peso }}</span>
+                <span class="tally__hint">{{ copy.totalReleasedHint }}</span>
                 <!-- Goods are counted beside the money, never valued into it (`DL-93`). -->
                 @if (totals.goodsReceivedCount > 0) {
-                  <dd class="tally__hint totals__goods">
+                  <span class="tally__hint totals__goods">
                     {{ copy.goodsReceived(totals.goodsReceivedCount) }}
-                  </dd>
+                  </span>
                 }
-              </div>
-              <div class="tally tally--gold">
-                <dt class="tally__label">{{ copy.openCases }}</dt>
-                <dd class="tally__value">{{ totals.openCaseCount }}</dd>
-                <dd class="tally__hint">{{ copy.openCasesHint }}</dd>
-              </div>
-              <div class="tally">
-                <dt class="tally__label">{{ copy.caseCount }}</dt>
-                <dd class="tally__value">{{ totals.cases.length }}</dd>
-                <dd class="tally__hint">{{ copy.caseCountHint }}</dd>
-              </div>
-              <div class="tally">
-                <dt class="tally__label">{{ copy.lastActivity }}</dt>
-                <dd class="tally__value">
+                <span class="visually-hidden">{{ copy.totalsJump }}</span>
+              </a>
+              <a class="tally tally--gold" appJumpTo="cases-heading">
+                <span class="tally__label">{{ copy.openCases }}</span>
+                <span class="tally__value">{{ totals.openCaseCount }}</span>
+                <span class="tally__hint">{{ copy.openCasesHint }}</span>
+                <span class="visually-hidden">{{ copy.totalsJump }}</span>
+              </a>
+              <a class="tally" appJumpTo="cases-heading">
+                <span class="tally__label">{{ copy.caseCount }}</span>
+                <span class="tally__value">{{ totals.cases.length }}</span>
+                <span class="tally__hint">{{ copy.caseCountHint }}</span>
+                <span class="visually-hidden">{{ copy.totalsJump }}</span>
+              </a>
+              <a class="tally" appJumpTo="cases-heading">
+                <span class="tally__label">{{ copy.lastActivity }}</span>
+                <span class="tally__value">
                   {{ totals.lastActivityAt ? (totals.lastActivityAt | displayDate) : '—' }}
-                </dd>
-                <dd class="tally__hint">{{ copy.lastActivityHint }}</dd>
-              </div>
-            </dl>
+                </span>
+                <span class="tally__hint">{{ copy.lastActivityHint }}</span>
+                <span class="visually-hidden">{{ copy.totalsJump }}</span>
+              </a>
+            </div>
           }
 
           <div class="detail">
