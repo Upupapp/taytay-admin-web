@@ -153,7 +153,10 @@
 
   <!-- The list carried to the table. Composed by the data layer. -->
   @if (manifest(); as sheet) {
-    <section class="card card--panel card--padded manifest" aria-labelledby="manifest-heading">
+    <section
+      class="card card--panel card--padded manifest print-sheet"
+      aria-labelledby="manifest-heading"
+    >
       <div class="manifest__header">
         <div>
           <h2 class="section-title manifest__heading" id="manifest-heading">

@@ -158,6 +158,16 @@
     padding: 0;
     border: none;
   }
+
+  /* A line and its signature space stay on one page: half a row on each sheet is a signature
+     nobody can match to a name. The column names repeat on every page. */
+  .manifest__table tr {
+    break-inside: avoid;
+  }
+
+  .manifest__table thead {
+    display: table-header-group;
+  }
 }
 
 .manifest__hint {

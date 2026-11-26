@@ -731,6 +731,38 @@ if (existsSync(join(root, viewPage)) && !/makeText\(\s*file\s*\.\s*content\s*,/.
 }
 notes.push('served: the adapter asks with named filters; the mapper refuses a leak, a bad definition and a file without its conditions');
 
+/* ── Print: the sheet goes to paper without the console around it (DL-281) ── */
+
+const printRules = read('src/styles/_report-print.scss');
+const framelessMixin = /@mixin frameless\s*\{([\s\S]*?)\n\}/.exec(printRules)?.[1] ?? '';
+if (
+  !/\.shell__sidebar/.test(framelessMixin) ||
+  !/app-topbar/.test(framelessMixin) ||
+  !/body:has\(\.print-sheet\)\s*\{\s*@include frameless;/.test(printRules)
+) {
+  problems.push(
+    'The print stylesheet no longer hides the console’s sidebar and top bar while a .print-sheet is ' +
+      'on the page (src/styles/_report-print.scss). A report would go to paper with the console — its ' +
+      'search box, the Live and theme switches and the bell — printed above it (DL-281).',
+  );
+}
+const viewTemplate = read('src/app/features/reports/report-view-page.html');
+const viewStyles = read('src/app/features/reports/report-view-page.scss');
+if (!/class="[^"]*\breport\b[^"]*\bprint-sheet\b[^"]*"/.test(viewTemplate)) {
+  problems.push(
+    'A report is no longer marked .print-sheet, so it prints inside the console frame (DL-281).',
+  );
+}
+const viewPrint = /@media print\s*\{([\s\S]*?)\n\}/.exec(viewStyles)?.[1] ?? '';
+if (/app-page-header/.test(viewPrint) || !/\.page-header h1\.visually-hidden/.test(printRules)) {
+  problems.push(
+    'A printed report no longer carries its name: the page header is hidden on paper, or its heading ' +
+      'is not drawn there. On screen the breadcrumb names the page (DL-246); on paper nothing would ' +
+      '(DL-106, DL-281).',
+  );
+}
+notes.push('print: a report prints alone and names itself');
+
 /* ── Report ──────────────────────────────────────────────────────────────── */
 
 for (const note of notes) console.log(`  ${note}`);

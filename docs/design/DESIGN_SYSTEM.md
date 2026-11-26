@@ -1009,7 +1009,10 @@ preview, and the paper is the deliverable.
   `check:reports` holds the chart to being hidden and beside a table.
 - **Print is the PDF.** `src/styles/_report-print.scss` hides the frame (sidebar, top bar, banners,
   route progress, drawer, toasts) only while a `.report-sheet` is on the page, and gives it a named
-  A4 `@page` with "Page n of N" at the foot. The page's own stylesheet hides `.summary__chrome` and the
+  A4 `@page` with "Page n of N" at the foot. Anything else that leaves the building on paper — the
+  payout list, the referral summary, a report's figures — is marked `.print-sheet` and printed
+  without the frame by the same rule; the page's `h1` is drawn on paper, because the breadcrumb that
+  names the page on screen is not (`DL-281`). The page's own stylesheet hides `.summary__chrome` and the
   filters; each section avoids breaking inside itself. Print re-reads the report first (a run the
   API audits), then calls `window.print()`; the browser's "Save as PDF" makes the file. No PDF or
   spreadsheet library.

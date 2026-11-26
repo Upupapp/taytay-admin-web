@@ -250,6 +250,30 @@ for (const permission of ['referral.view', 'referral.manage']) {
 }
 notes.push('access: every read gated, every write gated, scope applied');
 
+/* ── Print: the sheet goes to paper without the console around it (DL-281) ── */
+
+const printRules = read('src/styles/_report-print.scss');
+const framelessMixin = /@mixin frameless\s*\{([\s\S]*?)\n\}/.exec(printRules)?.[1] ?? '';
+if (
+  !/\.shell__sidebar/.test(framelessMixin) ||
+  !/app-topbar/.test(framelessMixin) ||
+  !/body:has\(\.print-sheet\)\s*\{\s*@include frameless;/.test(printRules)
+) {
+  problems.push(
+    'The print stylesheet no longer hides the console’s sidebar and top bar while a .print-sheet is ' +
+      'on the page (src/styles/_report-print.scss). The referral summary would go to paper with the console — its ' +
+      'search box, the Live and theme switches and the bell — printed above it (DL-281).',
+  );
+}
+const referralTemplate = read('src/app/features/referrals/referral-detail-page.html');
+if (!/<article class="[^"]*\bsheet\b[^"]*\bprint-sheet\b[^"]*"/.test(referralTemplate)) {
+  problems.push(
+    'The referral summary is no longer marked .print-sheet, so it prints inside the console frame, ' +
+      'with the officer signed in, on a sheet handed to another organisation (DL-81, DL-281).',
+  );
+}
+notes.push('print: the referral summary prints alone');
+
 /* ── Report ──────────────────────────────────────────────────────────────── */
 
 for (const note of notes) console.log(`  ${note}`);

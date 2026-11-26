@@ -445,6 +445,37 @@ if (!/discloseResident|disclose\(/.test(adapter)) {
 }
 notes.push('access: every read and write gated, scope applied, beneficiary disclosed');
 
+/* ── Print: the sheet goes to paper without the console around it (DL-281) ── */
+
+const printRules = read('src/styles/_report-print.scss');
+const framelessMixin = /@mixin frameless\s*\{([\s\S]*?)\n\}/.exec(printRules)?.[1] ?? '';
+if (
+  !/\.shell__sidebar/.test(framelessMixin) ||
+  !/app-topbar/.test(framelessMixin) ||
+  !/body:has\(\.print-sheet\)\s*\{\s*@include frameless;/.test(printRules)
+) {
+  problems.push(
+    'The print stylesheet no longer hides the console’s sidebar and top bar while a .print-sheet is ' +
+      'on the page (src/styles/_report-print.scss). The payout list would go to paper with the console — its ' +
+      'search box, the Live and theme switches and the bell — printed above it (DL-281).',
+  );
+}
+const sessionTemplate = read('src/app/features/releases/payout-session-page.html');
+if (!/class="[^"]*\bmanifest\b[^"]*\bprint-sheet\b[^"]*"/.test(sessionTemplate)) {
+  problems.push(
+    'The payout list is no longer marked .print-sheet, so it prints inside the console frame. ' +
+      '"Only the payout list prints" (DL-92) stops being true on paper (DL-281).',
+  );
+}
+const sessionStyles = read('src/app/features/releases/payout-session-page.scss');
+if (!/@media print[\s\S]*\.manifest__table tr\s*\{\s*break-inside:\s*avoid;/.test(sessionStyles)) {
+  problems.push(
+    'A payout list row may now split across two printed pages: half a line on each sheet is a ' +
+      'signature nobody can match to a name (DL-92, DL-281).',
+  );
+}
+notes.push('print: the payout list prints alone, each line whole');
+
 /* ── Report ──────────────────────────────────────────────────────────────── */
 
 for (const note of notes) console.log(`  ${note}`);

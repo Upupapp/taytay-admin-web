@@ -86,9 +86,9 @@
 
 /* Only the report prints — filters and the export panel are not part of it. */
 @media print {
+  /* The page header stays: on paper it is the report's name (the global print rule draws it). */
   .filters,
-  .export,
-  app-page-header {
+  .export {
     display: none;
   }
 

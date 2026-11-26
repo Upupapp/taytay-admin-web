@@ -12440,6 +12440,34 @@ that cannot be saved. Type it again rather than pasting it."), where it used to 
 "Something went wrong." The cases, counts and results are in the audit's matrix (backend tests
 `tests/audit3-*.test.ts`).
 
+## DL-281 — flow audit 4: what leaves the building prints without the console around it
+
+**Status:** Settled (27 November 2026), from a fourth flow audit that ran what the first three had
+not. In a browser — the local-api build against the in-memory API, 46 pages (every sidebar link and
+eleven records and forms) — it measured what an automated checker does not: reflow at 320 CSS pixels
+(WCAG 1.4.10), the text-spacing override (1.4.12), forced colours, reduced motion, target size
+(2.5.8) and focus hidden under the sticky top bar (2.4.11). It held: no page scrolls sideways at 320;
+the focus ring survives forced colours on every Tab stop, and every chosen tab is marked with the
+system's selection colours; nothing animates under reduced motion; no target is smaller than 24
+pixels without the spacing that excuses it; and no focused control is ever entirely covered. The
+one loss under text spacing is the top bar's search hint, which ends in "…" on a button whose name is
+intact. The cases and results are in the audit's matrix.
+
+**Printing did not hold.** The summary and citizen reports print alone (`DL-228`), but the payout
+list, the referral summary and every report's figures went to paper with the console's top bar
+printed above them — the breadcrumb, the search box, the Live and theme switches and the bell — although `DL-92` says "only the payout list prints", and the referral summary is handed to another
+organisation (`DL-81`). The frame is now hidden while any of them is on the page: each is marked
+`.print-sheet`, and `src/styles/_report-print.scss` applies the one `frameless` rule to it and to the
+report sheet alike. Because the breadcrumb is where a page's name is drawn on screen (`DL-246`), a
+printed report would then have carried no name at all; its page heading is now drawn on paper, and
+the report page no longer hides its header there. A payout line is kept whole across pages
+(`break-inside: avoid`) with the column names repeated on each, so a signature is never on a
+different sheet from its name; the five blank signature cells of the test session were all present.
+
+`check:releases`, `check:referrals` and `check:reports` now fail the build if the mark, the frameless
+rule, the whole-line rule or the printed report name goes; each was validated against a planted
+regression.
+
 ## DL-290 — flow audit 5: a figure never opens somebody else's list, money is read as typed, and a cut-short link is "not available"
 
 **Status:** Settled (27 November 2026), from a hands-on click-through of every page (the owner: "check

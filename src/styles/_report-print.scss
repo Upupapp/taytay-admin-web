@@ -1,9 +1,38 @@
-/* Printing the summary report's A4 sheet (DL-228; docs/design/DESIGN_SYSTEM.md, "Report sheet").
+/* Printing what leaves the building (DL-228, DL-281; docs/design/DESIGN_SYSTEM.md, "Report sheet").
 
-   Only while a `.report-sheet` is on the page: the console's frame — the sidebar, the top bar, the
-   connection banner, the route progress bar, the drawer and the toasts — is not part of what goes to
-   paper, and the outlet takes the whole page. Every other page prints as it did. The page's own
-   filters and buttons are hidden by its component stylesheet. */
+   Only while a sheet is on the page: the console's frame — the sidebar, the top bar, the connection
+   banner, the route progress bar, the drawer and the toasts — is not part of what goes to paper, and
+   the outlet takes the whole page. A sheet is the summary report's A4 `.report-sheet`, or a
+   `.print-sheet`: the payout list (DL-92), the referral summary (DL-81) and a report's figures
+   (DL-104). Every other page prints as it did. The page's own filters and buttons are hidden by its
+   component stylesheet. */
+
+@mixin frameless {
+  .skip-link,
+  .shell__banner,
+  .shell__scrim,
+  .shell__sidebar,
+  app-topbar,
+  app-route-progress,
+  app-drawer,
+  app-toast-host,
+  app-connection-banner {
+    display: none;
+  }
+
+  .shell {
+    display: block;
+    padding: 0;
+  }
+
+  .shell__main {
+    display: block;
+  }
+
+  .shell__content {
+    padding: 0;
+  }
+}
 
 @media print {
   body:has(.report-sheet) {
@@ -12,34 +41,28 @@
        printer's default size before the A4 sheet. */
     page: report-sheet;
 
-    .skip-link,
-    .shell__banner,
-    .shell__scrim,
-    .shell__sidebar,
-    app-topbar,
-    app-route-progress,
-    app-drawer,
-    app-toast-host,
-    app-connection-banner {
-      display: none;
-    }
-
-    .shell {
-      display: block;
-      padding: 0;
-    }
-
-    .shell__main {
-      display: block;
-    }
-
-    .shell__content {
-      padding: 0;
-    }
+    @include frameless;
   }
 
   .report-sheet {
     page: report-sheet;
+  }
+
+  /* With the top bar goes the breadcrumb, which is where a page's name is drawn on screen (DL-246):
+     on paper the page's own heading says it instead, so a printed report still names itself. */
+  body:has(.print-sheet) {
+    @include frameless;
+
+    .page-header h1.visually-hidden {
+      position: static;
+      width: auto;
+      height: auto;
+      margin: 0 0 var(--space-3);
+      overflow: visible;
+      clip-path: none;
+      white-space: normal;
+      font-size: var(--fs-heading);
+    }
   }
 }
 
