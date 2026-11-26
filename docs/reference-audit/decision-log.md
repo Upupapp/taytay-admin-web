@@ -12320,3 +12320,16 @@ counts and results are in the audit's matrix (backend tests `tests/audit2-*.test
 
 The launch gate's line 17 said journey 2 had no endpoint. It has had one since ADR 0004; the backend
 now runs journey 2 — an app application through to a payout — instead of skipping it.
+
+## DL-271 — Citizen IDs' status tabs wrap above a phone
+
+**Status:** Settled (26 November 2026), from the staging sweep after `DL-262` to `DL-270`. Refines
+`DL-232` and `DL-259`; changes no behaviour.
+
+The board's seven tabs with their counts measured 1,054px against a 958px column at 1280 wide, so
+the strip (`.tabs--scroll`) scrolled sideways on a laptop — the one sideways scroll left on a laptop
+besides the roles matrix, which scrolls by design (`DL-261`). Above 640px the strip now wraps onto a
+second line, the way a plain `.tabs` strip does, with the box radius so its corners hold a second
+row; a phone keeps the single scrolling line, where wrapping would stack four rows above the list.
+The shared `.tabs--scroll` pattern is unchanged: the registry's sector filter and the import steps
+fit, and keep their one line.

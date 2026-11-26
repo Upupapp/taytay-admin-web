@@ -174,3 +174,13 @@
   color: var(--muted);
   font-size: var(--fs-xs);
 }
+
+/* Seven status tabs with their counts are wider than a laptop's content column: above a phone they wrap onto a second
+   line rather than scroll sideways, and only a phone keeps the one scrolling line (DL-271). */
+@media (width > 640px) {
+  .citizen-ids__tabs .tabs--scroll {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    border-radius: var(--r-box);
+  }
+}
