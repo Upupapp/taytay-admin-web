@@ -16,7 +16,7 @@ import {
   type StaffUserId,
 } from '@domain/index';
 
-import { SessionStore } from './session.store';
+import { SESSION_ENDED_NOTICE, SessionStore } from './session.store';
 
 const STAFF = {
   id: 'staff-1' as StaffUserId,
@@ -237,6 +237,17 @@ describe('SessionStore — an expired session', () => {
     expect(store.isAuthenticated()).toBe(false);
     // The token was already refused; calling DELETE with it would 401 again.
     expect(revocations).toBe(0);
+    expect(store.error()).toBeNull();
+  });
+
+  it('carries why the session ended to the sign-in page (DL-280)', () => {
+    const store = storeWith(repository({}));
+    store.endExpiredSession(SESSION_ENDED_NOTICE);
+
+    expect(store.isAuthenticated()).toBe(false);
+    expect(store.error()).toBe(SESSION_ENDED_NOTICE);
+    expect(SESSION_ENDED_NOTICE).toMatch(/not kept/);
+    expect(SESSION_ENDED_NOTICE).not.toMatch(/switched off|deactivat/i);
   });
 
   it('signs out through the server when the session is still valid', () => {

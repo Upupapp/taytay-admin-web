@@ -12411,3 +12411,31 @@ PWD or Solo Parent ID ending this month: nothing on the page lists who, and the 
 filter by an ID's validity. The import wizards' tallies sum a confirmation or the outcome table
 directly beneath them, and panel figures (this month, needs attention, the review queue panel on the
 overview) are rows of a panel, not headline cards; each panel keeps its own link where it has one.
+
+## DL-280 — flow audit 3: a session that ends mid-work says so, and a hidden character is refused in words
+
+A third flow audit ran what the first two had not, against the API (backend ADR 0018), in the
+residents' app (D-236) and in a browser — the local-api build against the in-memory API. In the
+browser it held: a deep link opened while signed out returns to the same screen and filter after
+sign-in; a `returnUrl` pointing elsewhere (`https://…`, `//…`, `/\…`, `javascript:`, an encoded
+`//`) stays in the console; a resident named `<img onerror>` / `<script>` is shown as the characters
+typed on the registry, the record, search and the beneficiary list, and nothing runs; a filter in the
+URL survives back and forward, and the search box follows the URL; a dialog opened by keyboard keeps
+Tab and Shift+Tab inside it, closes on Escape and returns focus to its trigger; a role taken away
+while signed in is met with a plain refusal at the next page; after the network drops and returns,
+the change feed reconnects and the list shows a record made meanwhile, without a reload.
+
+**A session that ends under a form said nothing.** When the server refused the token — the account
+was switched off, or the session lapsed — the console went to sign-in, as it should (`DL-196`), but
+the sign-in page was blank: nothing said why the screen had gone, or what became of the half-filled
+form. It now says "Your session has ended, so anything not yet saved was not kept. Sign in again to
+continue." The words are the same for a lapsed token and a switched-off account, because sign-in
+never says whether an account was deactivated (`AUTH_COPY`); and they say plainly that nothing more
+was kept, as a failed send does (`DL-87`). The form itself is still not carried across sign-in; that
+remains TAB 02's deferred item.
+
+What the audit changed on the API, which the console shows in its own words: a NUL character pasted
+into any field or filter is refused as 422 naming the field ("This holds a hidden character (a NUL)
+that cannot be saved. Type it again rather than pasting it."), where it used to come back as
+"Something went wrong." The cases, counts and results are in the audit's matrix (backend tests
+`tests/audit3-*.test.ts`).

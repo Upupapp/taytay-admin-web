@@ -5,7 +5,7 @@ import { provideRouter, Router } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AuthTokenHolder } from '../auth/auth-token.holder';
-import { SessionStore } from '../auth/session.store';
+import { SESSION_ENDED_NOTICE, SessionStore } from '../auth/session.store';
 import { APP_ENVIRONMENT } from '../config/app-environment.token';
 import { NotificationStore } from '../notifications/notification.store';
 import { isApiFailure, isNotFound } from './api-failure';
@@ -282,7 +282,9 @@ describe('httpErrorInterceptor — where a refusal is said (DL-196)', () => {
       401,
     );
 
-    expect(endExpiredSession).toHaveBeenCalled();
+    // Sign-in says the session ended and that nothing more was kept (DL-280): the same words for
+    // a lapsed token and a switched-off account, as sign-in never says which.
+    expect(endExpiredSession).toHaveBeenCalledWith(SESSION_ENDED_NOTICE);
     expect(navigate).toHaveBeenCalledWith(['/sign-in'], expect.anything());
     http.verify();
   });

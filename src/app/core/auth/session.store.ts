@@ -18,6 +18,14 @@ export type SessionStatus =
   | 'error';
 
 /**
+ * What sign-in says after the server ended a session mid-work (`DL-280`). The same words whether
+ * the token lapsed or the account was switched off: sign-in never says which (`AUTH_COPY`), and
+ * either way nothing more was saved (`DL-87`).
+ */
+export const SESSION_ENDED_NOTICE =
+  'Your session has ended, so anything not yet saved was not kept. Sign in again to continue.';
+
+/**
  * The single source of truth for "who is signed in".
  *
  * Guards, the permission service and the shell all read these signals. Nothing
@@ -161,10 +169,15 @@ export class SessionStore {
    *
    * There is nothing to revoke — the token is already invalid — so this drops
    * the identity without a round-trip that would only 401 again.
+   *
+   * `notice` is what the sign-in page then says (`DL-280`): a person whose
+   * session ended under a half-filled form was set down on a blank sign-in page
+   * with no word of why, or of what became of the form.
    */
-  endExpiredSession(): void {
+  endExpiredSession(notice: string | null = null): void {
     this.challenge.set(null);
     this.apply(null);
+    this.lastError.set(notice);
   }
 
   private beginAttempt(): void {

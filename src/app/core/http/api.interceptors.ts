@@ -10,7 +10,7 @@ import { readApiError, type ApiFailure } from './api-failure';
 import { QUIET_FAILURE } from './quiet-failure';
 import { AuthTokenHolder } from '../auth/auth-token.holder';
 import { SESSION_REFRESHER } from '../auth/session-refresher';
-import { SessionStore } from '../auth/session.store';
+import { SESSION_ENDED_NOTICE, SessionStore } from '../auth/session.store';
 import { NotificationStore } from '../notifications/notification.store';
 
 /**
@@ -111,7 +111,7 @@ const SESSION_LAPSED: ApiFailure = {
  * credential that no longer works.
  */
 function returnToSignIn(session: SessionStore, router: Router): void {
-  session.endExpiredSession();
+  session.endExpiredSession(SESSION_ENDED_NOTICE);
   void router.navigate(['/sign-in'], {
     queryParams: { [RETURN_URL_PARAM]: router.url },
   });
