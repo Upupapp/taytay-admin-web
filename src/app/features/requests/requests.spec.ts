@@ -1263,6 +1263,22 @@ describe('how a request came in (DL-228)', () => {
     expect(headers).toContain('Came in');
     expect(html(fixture).textContent).toContain('Walk-in');
   });
+
+  // "Walk-" over "in", "TAY-2026-" over "001183": the reason gives way instead (DL-272).
+  it('keeps a control number and how a request came in on one line', async () => {
+    const element = html(await openList());
+    const headers = [...element.querySelectorAll('thead th')].map((th) => th.textContent?.trim());
+    const nowrapColumns = (header: string) => {
+      const index = headers.indexOf(header) + 1;
+      expect(index).toBeGreaterThan(0);
+      const cells = [...element.querySelectorAll(`tbody tr > td:nth-child(${index})`)];
+      expect(cells.length).toBeGreaterThan(0);
+      return cells.every((cell) => cell.classList.contains('table__cell--nowrap'));
+    };
+    expect(nowrapColumns('Control number')).toBe(true);
+    expect(nowrapColumns('Came in')).toBe(true);
+    expect(nowrapColumns('What it is for')).toBe(false);
+  });
 });
 
 describe('an applicant who moved out of the barangay the request was filed in (DL-265)', () => {

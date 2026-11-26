@@ -429,10 +429,13 @@ accessible name says the rest ("End", named "End membership of {name} in {sector
 dropped at a width only if what it says is also on the record's own page, and never a protected or
 sensitive indicator. On a **tablet**, a table that still does not fit scrolls inside its own box,
 never the page, and while it does (`ScrollRegion` adds `scroll-region--scrolls`) its first column —
-the name a row is read by — stays pinned at the box's start on `--card-solid` with a `--line`
-hairline after it, no shadow. A plain `.simple-table` in a `.table-scroll` gets the same. On a
-**phone** (≤640px) a `DataTable` stacks as above; a plain number table (a report's months or
-barangays) keeps its columns and scrolls with its first column pinned.
+the name a row is read by — stays pinned at the box's start on `--card-pinned` (the card's glass
+laid on the plain page) with a `--line` hairline after it, no shadow. A plain `.simple-table` in a
+`.table-scroll` gets the same. While a table scrolls, wrapping no longer buys the fit, so a chip or
+a status badge in it keeps its label on one line, and a `DataTable`'s pinned column keeps a name's
+width, at least 12rem (`DL-272`). On a **phone** (≤640px) a `DataTable` stacks as above; a plain
+number table (a report's months or barangays) keeps its columns and scrolls with its first column
+pinned.
 
 Put it inside a `.card.card--panel.card--padded` (it has no padding of its own). The API sends no
 totals: say "N shown, more available" in a `.status-line`, never "page 1 of N" (`DL-161`).

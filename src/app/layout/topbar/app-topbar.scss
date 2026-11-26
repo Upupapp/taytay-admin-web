@@ -38,16 +38,22 @@
   display: none;
 }
 
+/* The trail starts at its own length, and the search pill takes what is left, up to 400px, so the
+   trail is the last to give way (DL-272). It used to start at 120px beside the pill's fixed 400px:
+   with the live toggle's "Updated 10:16 AM" beside them, the trail read "D… / C… / Senior citi…"
+   at 1280. The pill's growth factor dwarfs the trail's, so it fills to 400px first and the trail
+   takes any width beyond that. */
 .topbar__crumbs {
-  flex: 1 1 120px;
+  flex: 1 1 auto;
   min-inline-size: 0;
   overflow: hidden;
 }
 
 .topbar__search {
-  /* Wide enough for the search pill's whole prompt and its shortcut (DL-227). */
-  flex: 0 1 400px;
+  /* 200px still shows the prompt and its shortcut; 400px the whole prompt (DL-227). */
+  flex: 1000 0 200px;
   min-inline-size: 0;
+  max-inline-size: 400px;
 }
 
 /* The live toggle, the theme and the bell wrap as one, to the end of the row (DL-258). */

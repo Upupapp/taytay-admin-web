@@ -153,6 +153,13 @@
   .scroll-region--scrolls > .table .table__row--selectable:focus-visible > td:first-child {
     background: linear-gradient(var(--sel), var(--sel)), var(--card-pinned);
   }
+
+  /* A table that scrolls gains nothing by squeezing its columns, and the pinned one was squeezed
+     to its longest word: a name over three lines at 768 (DL-272). It keeps a name's width; the
+     rest still scrolls under it. */
+  .scroll-region--scrolls > .table td:first-child {
+    min-inline-size: 12rem;
+  }
 }
 
 /* ── Phone: each row a block of header–value lines (DL-227) ────────────────

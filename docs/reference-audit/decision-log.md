@@ -12333,3 +12333,30 @@ second line, the way a plain `.tabs` strip does, with the box radius so its corn
 row; a phone keeps the single scrolling line, where wrapping would stack four rows above the list.
 The shared `.tabs--scroll` pattern is unchanged: the registry's sector filter and the import steps
 fit, and keep their one line.
+
+## DL-272 — the breadcrumb gives way last; a scrolling table keeps its words whole
+
+**Status:** Settled (26 November 2026), from the staging screenshots at 1280 and 768 wide. Refines
+`DL-259` and `DL-261`; changes no behaviour.
+
+1. **The breadcrumb reads in full at 1280.** With the live toggle's "Updated 10:16 AM" in the
+   topbar, the trail shrank to "D… / C… / Senior citi…" while the search pill kept its 400px. The
+   trail now starts at its own length and the pill takes what is left, from 200px up to 400px. Every
+   trail of three levels reads in full at 1280 with the sidebar open; a longer one (My work's team
+   view, Resident document requests) keeps its words and moves the live toggle, the theme and the
+   bell to a second line, as `DL-258` lets them.
+2. **A table that scrolls on a tablet keeps its words whole.** Wrapping a chip or a status badge was
+   how a table fitted a laptop (`DL-259`); in a table that scrolls anyway it buys nothing, and at 768
+   it left "Not / on / the / app" and a name over three lines in a pinned column 123px wide. While
+   a table scrolls, a chip or a badge stays on one line and the pinned column keeps at least 12rem.
+   A table that fits is unchanged.
+3. **The light pinned column is the card's colour.** `--card-pinned` is now the card's glass laid on
+   the plain page in both themes (`var(--card), var(--page-base)`), as `DL-261` did for the dark
+   one; `--card-solid`'s white was a whiter stripe down the tinted card. Reduced transparency keeps
+   it solid.
+4. **A control number and a channel stay on one line** in the request list ("TAY-2026-" over
+   "001183", "Walk-" over "in"); the reason column gives way instead. The list still fits at 1280
+   (914px of 914). At 768 it now scrolls inside its box by 38px, with the control number pinned.
+   The app audit's ids still break at their hyphens (`DL-261`).
+5. **Citizen IDs keeps no drawn title.** Its `h1` is there, visually hidden, as on every page whose
+   heading is a page name (`DL-246`); the breadcrumb says where the reader is.

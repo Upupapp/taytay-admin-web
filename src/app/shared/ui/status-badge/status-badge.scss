@@ -20,6 +20,14 @@
   white-space: normal;
 }
 
+/* In a table that scrolls anyway, wrapping buys nothing: the label stays on one line, never "Not /
+   on / the / app" (DL-272). */
+@media (width > 640px) {
+  :host-context(.scroll-region--scrolls) .badge {
+    white-space: nowrap;
+  }
+}
+
 .badge__dot {
   flex: none;
   inline-size: 7px;

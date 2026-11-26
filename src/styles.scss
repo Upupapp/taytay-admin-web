@@ -52,8 +52,11 @@
      blob fell to 3.6:1. With 40% and the inks below it clears 4.5:1 there. */
   --card: linear-gradient(135deg, rgb(255 255 255 / 62%), rgb(255 255 255 / 40%));
   --card-solid: #ffffff;
-  /* A pinned table column (DL-259): opaque, and the card's own colour where a card is glass (DL-261). */
-  --card-pinned: var(--card-solid);
+  /* A pinned table column (DL-259): opaque, and the card's own colour (DL-261, DL-272). The card's
+     glass laid on the plain page, in either theme, since the cells must hide what scrolls under them:
+     --card-solid's white was a whiter stripe down the tinted light card. Declared once: the dark
+     theme sets --card on the same root, so this gives the dark glass there. */
+  --card-pinned: var(--card), var(--page-base);
   --card-flat: rgb(255 255 255 / 40%);
   --card-edge: rgb(255 255 255 / 70%);
   /* For an element that is never an ancestor of a fixed overlay: a backdrop
@@ -337,9 +340,6 @@
     linear-gradient(135deg, rgb(255 255 255 / 12%), rgb(255 255 255 / 4%)),
     linear-gradient(rgb(4 10 34 / 70%), rgb(4 10 34 / 70%));
   --card-solid: #0c1a4f;
-  /* The dark glass is the page veiled and lifted, not --card-solid's blue: laid on the plain page it
-     matches the card around the pinned column (DL-261). */
-  --card-pinned: var(--card), var(--page-base);
   --card-flat: rgb(255 255 255 / 5%);
   --card-edge: rgb(255 255 255 / 16%);
   --soft: rgb(255 255 255 / 6%);

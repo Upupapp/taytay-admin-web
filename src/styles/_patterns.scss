@@ -391,6 +391,14 @@ td .chip {
   white-space: normal;
 }
 
+/* Wrapping only ever bought the fit: in a table that scrolls anyway, a chip stays on one line
+   rather than one word per line (DL-272). */
+@media (width > 640px) {
+  .scroll-region--scrolls td .chip {
+    white-space: nowrap;
+  }
+}
+
 .chip-list {
   display: flex;
   flex-wrap: wrap;

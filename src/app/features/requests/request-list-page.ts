@@ -274,12 +274,20 @@ export class RequestListPage {
   protected readonly rowKey = (request: AssistanceRequest): string => request.id;
 
   protected readonly columns = computed<readonly TableColumn<AssistanceRequest>[]>(() => [
-    { key: 'reference', header: this.copy.columnReference, cell: this.referenceCell() },
+    // A control number and a channel are short and break badly at a hyphen — "TAY-2026-" over
+    // "001183", "Walk-" over "in" — so they keep one line; the reason gives way instead (DL-272).
+    {
+      key: 'reference',
+      header: this.copy.columnReference,
+      cell: this.referenceCell(),
+      nowrap: true,
+    },
     { key: 'status', header: this.copy.columnStatus, cell: this.statusCell() },
     {
       key: 'channel',
       header: this.copy.columnChannel,
       value: (request) => INTAKE_COPY.requestChannelLabel[request.channel],
+      nowrap: true,
     },
     {
       key: 'reason',
