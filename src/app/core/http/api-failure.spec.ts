@@ -256,6 +256,8 @@ describe('isNotFound', () => {
     ];
     expect(isNotFound(refused({ id: malformed }))).toBe(true);
     expect(isNotFound(refused({ resident_id: malformed }))).toBe(true);
+    expect(isNotFound(refused({ residentId: malformed }))).toBe(true);
+    expect(isNotFound(refused({ valid: ['Not an id.'] }))).toBe(false);
     expect(isNotFound(refused({ id: malformed, reason: ['Say why.'] }))).toBe(false);
     expect(isNotFound(refused({ street_address: ['Use 200 characters or less.'] }))).toBe(false);
     expect(isNotFound(new HttpErrorResponse({ status: 422 }))).toBe(false);

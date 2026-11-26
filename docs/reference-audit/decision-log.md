@@ -12476,7 +12476,7 @@ wrong.
    right form (a link cut short when pasted) was answered 422 naming only `id` ("This does not name a
    record the API knows"), and all twelve detail pages showed "Could not load this section" with a
    "Try again" that could never work. `isNotFound`, the one test every optional read asks, now reads a
-   422 whose only complaint is one id (`id`, or a named one such as `resident_id`) as the absence it
+   422 whose only complaint is one id (`id`, or a named one such as `residentId`) as the absence it
    is, so each page says its own "not available". Only reads ask it, so a form is never told a
    refused field means "not found".
 6. **The case list's failed read offers "Try again"**, as every other list does. It said the server

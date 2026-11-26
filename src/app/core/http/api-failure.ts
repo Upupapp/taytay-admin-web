@@ -117,8 +117,12 @@ export function isNotFound(failure: unknown): boolean {
  */
 function namesNoRecord(failure: ApiFailure): boolean {
   const fields = failure.details === null ? [] : Object.keys(failure.details);
-  // `id`, or a named one such as the beneficiary record's `resident_id`.
-  return failure.status === 422 && fields.length === 1 && /^(?:[a-z]+_)*id$/.test(fields[0] ?? '');
+  // `id`, or a named one such as the beneficiary record's `residentId`.
+  return (
+    failure.status === 422 &&
+    fields.length === 1 &&
+    /^(?:id|[a-z]+(?:_id|Id))$/.test(fields[0] ?? '')
+  );
 }
 
 interface WireError {
