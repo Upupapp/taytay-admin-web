@@ -105,7 +105,7 @@
             "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UserProfileEnvelope" } } }
           },
           "422": { "description": "Validation failed.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
-          "409": { "description": "That email is already in use, or a change of name or birthdate while verification is pending or verified.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+          "409": { "description": "CONFLICT: that email is already in use, or a change of name or birthdate while verification is pending or verified. BARANGAY_HELD_BY_OFFICE: a verified account sent a barangay_id other than its own; the office changes it at the counter against proof of the new address, and its edit of the linked record reaches the account (ADR 0016). Re-sending the same barangay is not a change.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
         }
       }
     },
@@ -628,6 +628,46 @@
           "404": { "description": "User not found.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "409": { "description": "A staff or admin account; a closed account; an account not verified; an account already linked; a record superseded by a same-person finding; a record linked to another account; an account with no barangay to make a record in.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "422": { "description": "A field is not valid; leave-unlinked; a name split or a corrected name that is not the verified name; a record not found or retired.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/admin/users/{id}/registry-unlink": {
+      "post": {
+        "operationId": "unlinkAccountFromRegistry",
+        "summary": "End an account's link to a registry record",
+        "description": "Admin only (the reviewer who links), never one's own account (ADR 0016, migration 0081). Ends a resident account's current link to a registry record — a link made to the wrong record, which would let one family read another's assistance in the app. reason (1 to 500 characters) is required. Appended to office_resident_account_unlinks; appending it is the unlink: the link row stays as it was made, stamped unlinked_at, and office_resident_accounts (the current links) no longer holds it. Nothing is deleted: the record and everything on it stay as they are, and the account can be linked again, to the right record, as a new link with its own reason. From then on the app reads no assistance or sector of that record (GET /me says linked_to_office_record false, office_record null). Audit resident_account.unlinked; the resident is told in the app (registry_record_updated), never which record, unless any record of the person is under a protected sector. Live: residents, users, sector-applications and the owner's account.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AccountRegistryUnlinkBody" } } }
+        },
+        "responses": {
+          "200": { "description": "Unlinked: the record the link named, and when it ended.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AccountRegistryUnlinkEnvelope" } } } },
+          "401": { "description": "No token.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "403": { "description": "Not an admin, or the caller's own account.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "User not found.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "409": { "description": "A staff or admin account; an account with no current link (somebody may have unlinked it a moment ago).", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "422": { "description": "reason missing, empty or longer than 500 characters.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/admin/users/{id}/registry-link-history": {
+      "get": {
+        "operationId": "listAccountRegistryLinkHistory",
+        "summary": "An account's links as they were made and ended",
+        "description": "Admin only (ADR 0016). Every link the account was given (with the record it was made to, who made it, when and why), every unlink (who, when, why) and every move a same-person finding made (0066), oldest first. Nothing in it is ever removed. resident.name is the record's name as the registry holds it now.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Every link, unlink and move, oldest first; a bare list (meta {}).", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AccountLinkHistoryEnvelope" } } } },
+          "401": { "description": "No token.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "403": { "description": "Not an admin.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "User not found.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
         }
       }
     },
@@ -1303,6 +1343,41 @@
           "404": { "description": "Not found, or not in scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "409": { "description": "Already active.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
           "422": { "description": "No reason.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/residents/{id}/identity-history": {
+      "get": {
+        "operationId": "listResidentIdentityHistory",
+        "summary": "A registry record's identity history, without values",
+        "description": "Needs resident.view; scoped like GET /office/residents/{id} (out of scope answers 404). Every change of the record's name parts, sex, birth date or barangay (office_resident_changes, migration 0080): when, who, which field, the reason, through which act (registry-edit or account-link) and whether an ID was seen — never a value (the console's DL-114 and DL-264; ADR 0016). For a record under a protected sector, a reader without request.view-sensitive gets reason null and reason_withheld true. values_readable says whether this reader may open the values.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "The changes, newest first; a bare list (meta {}).", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResidentIdentityHistoryEnvelope" } } } },
+          "401": { "description": "No token.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "403": { "description": "Missing resident.view.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "No such record in the reader's scope.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
+        }
+      }
+    },
+    "/api/v1/office/residents/{id}/identity-history/{changeId}": {
+      "get": {
+        "operationId": "getResidentIdentityChangeValues",
+        "summary": "The earlier and later values of one change",
+        "description": "Needs resident.view and audit.view-detail (held by the auditor and the administrator), and for a record under a protected sector request.view-sensitive as well (ADR 0016; the console's DL-264). Opening them is audited office_resident.identity_values_read, quietly (it announces no live topic). previous_value and new_value are text: a date as YYYY-MM-DD, a sex as female or male, a barangay as its id.",
+        "security": [{ "firebaseIdToken": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "changeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "The values.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResidentIdentityChangeValuesEnvelope" } } } },
+          "401": { "description": "No token.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "403": { "description": "Missing audit.view-detail, or request.view-sensitive for a protected record.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } },
+          "404": { "description": "No such record in the reader's scope, or no such change in its history.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorEnvelope" } } } }
         }
       }
     },
@@ -5566,7 +5641,7 @@
             }
           },
           "404": {
-            "description": "No such request in the reader’s scope.",
+            "description": "No such request in the reader’s scope; or, for a barangay link, the applicant now lives outside its barangay (the message says so: the check reads the person's whole history, which is their current record; ADR 0016).",
             "content": {
               "application/json": {
                 "schema": {
@@ -18127,8 +18202,8 @@
             "properties": {
               "code": {
                 "type": "string",
-                "description": "Stable machine-readable code. Email and password-reset verification use code_invalid, code_expired, and code_locked. Archive, never delete (ADR 0002), answers 409 with ALREADY_ARCHIVED (archiving an archived record), NOT_ARCHIVED (restoring a live one), ARCHIVED (changing an archived record: it is read-only until restored), OFFICE_IN_USE (archiving an office staff, Tulong services or document types still hang off; details carries each count) or OFFICE_ARCHIVED (putting staff, a service, a document type or an article under an archived office). A list a resident reads that is longer than the API reads whole answers 503 LIST_TOO_LONG rather than being cut short; it is not SERVICE_UNAVAILABLE, which clients read as the platform being down.",
-                "enum": ["INVALID_JSON", "UNAUTHENTICATED", "FORBIDDEN", "VERIFICATION_REQUIRED", "BIOMETRIC_CONSENT_REQUIRED", "NOT_FOUND", "CONFLICT", "ALREADY_ARCHIVED", "NOT_ARCHIVED", "ARCHIVED", "OFFICE_IN_USE", "OFFICE_ARCHIVED", "PAYLOAD_TOO_LARGE", "VALIDATION_FAILED", "code_invalid", "code_expired", "code_locked", "RATE_LIMITED", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE", "LIST_TOO_LONG"]
+                "description": "Stable machine-readable code. Email and password-reset verification use code_invalid, code_expired, and code_locked. Archive, never delete (ADR 0002), answers 409 with ALREADY_ARCHIVED (archiving an archived record), NOT_ARCHIVED (restoring a live one), ARCHIVED (changing an archived record: it is read-only until restored), OFFICE_IN_USE (archiving an office staff, Tulong services or document types still hang off; details carries each count) or OFFICE_ARCHIVED (putting staff, a service, a document type or an article under an archived office). A verified resident who sends a new barangay_id to PATCH /me is answered 409 BARANGAY_HELD_BY_OFFICE (ADR 0016). A list a resident reads that is longer than the API reads whole answers 503 LIST_TOO_LONG rather than being cut short; it is not SERVICE_UNAVAILABLE, which clients read as the platform being down.",
+                "enum": ["INVALID_JSON", "UNAUTHENTICATED", "FORBIDDEN", "VERIFICATION_REQUIRED", "BIOMETRIC_CONSENT_REQUIRED", "NOT_FOUND", "CONFLICT", "ALREADY_ARCHIVED", "NOT_ARCHIVED", "ARCHIVED", "OFFICE_IN_USE", "OFFICE_ARCHIVED", "BARANGAY_HELD_BY_OFFICE", "PAYLOAD_TOO_LARGE", "VALIDATION_FAILED", "code_invalid", "code_expired", "code_locked", "RATE_LIMITED", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE", "LIST_TOO_LONG"]
               },
               "message": { "type": "string" },
               "details": {
@@ -18221,6 +18296,20 @@
           "rejection_reason": { "type": ["string", "null"], "description": "Notes from the latest rejection. Null unless verification_status is rejected." },
           "verification_method": { "type": ["string", "null"], "enum": ["selfie", "in-person", null], "description": "How a verified account was verified, whichever came last: an approved selfie request, or an in-person check at the office. Null unless verification_status is verified, and for an account made verified by a role change." },
           "linked_to_office_record": { "type": ["boolean", "null"], "description": "Whether the MSWDO has linked this resident account to its office registry record (ADR 0004), which applying for Tulong and My requests need. Null for a staff account." },
+          "office_record": {
+            "type": ["object", "null"],
+            "description": "The registry record this resident account is linked to, as the office keeps it: the details the office corrects and tells the resident it corrected, in the app, by name and never by value (ADR 0016). Null when not linked, and for a staff account.",
+            "required": ["first_name", "middle_name", "last_name", "suffix", "sex", "birth_date", "barangay_id"],
+            "properties": {
+              "first_name": { "type": "string" },
+              "middle_name": { "type": ["string", "null"] },
+              "last_name": { "type": "string" },
+              "suffix": { "type": ["string", "null"] },
+              "sex": { "type": "string", "enum": ["female", "male"] },
+              "birth_date": { "type": "string", "format": "date" },
+              "barangay_id": { "type": "string", "format": "uuid" }
+            }
+          },
           "role": { "type": "string", "enum": ["registered", "verified", "staff", "admin"] },
           "office_id": { "type": ["string", "null"], "format": "uuid" },
           "office_role": {
@@ -18879,6 +18968,108 @@
                 "items": { "type": "string", "enum": ["first_name", "middle_name", "last_name", "suffix", "sex", "birth_date"] },
                 "description": "The record's fields corrected to the ID with the link; empty when none changed."
               }
+            }
+          },
+          "meta": { "type": "object" }
+        }
+      },
+      "AccountRegistryUnlinkBody": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason"],
+        "properties": {
+          "reason": { "type": "string", "minLength": 1, "maxLength": 500, "description": "Why the link is ended, in words; kept with the unlink." }
+        }
+      },
+      "AccountRegistryUnlinkEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": ["user_id", "resident_id", "unlinked_at"],
+            "properties": {
+              "user_id": { "type": "string", "format": "uuid" },
+              "resident_id": { "type": "string", "format": "uuid", "description": "The record the ended link named." },
+              "unlinked_at": { "type": "string", "format": "date-time" }
+            }
+          },
+          "meta": { "type": "object" }
+        }
+      },
+      "AccountLinkHistoryEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["act", "resident", "reason", "actor", "at"],
+              "properties": {
+                "act": { "type": "string", "enum": ["linked", "unlinked", "relinked"], "description": "relinked: a same-person finding moved the link to the record kept (0066); its reason says so." },
+                "resident": {
+                  "type": "object",
+                  "required": ["id", "name"],
+                  "properties": { "id": { "type": "string", "format": "uuid" }, "name": { "type": "string" } }
+                },
+                "reason": { "type": "string" },
+                "actor": {
+                  "type": "object",
+                  "required": ["id", "name"],
+                  "properties": { "id": { "type": "string", "format": "uuid" }, "name": { "type": ["string", "null"] } }
+                },
+                "at": { "type": "string", "format": "date-time" }
+              }
+            }
+          },
+          "meta": { "type": "object" }
+        }
+      },
+      "ResidentIdentityHistoryEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "field", "reason", "reason_withheld", "source", "id_checked", "actor", "at", "values_readable"],
+              "properties": {
+                "id": { "type": "string", "format": "uuid" },
+                "field": { "type": "string", "enum": ["first_name", "middle_name", "last_name", "suffix", "sex", "birth_date", "barangay_id"] },
+                "reason": { "type": ["string", "null"], "description": "Null for a barangay move made without one, and for a protected record read without request.view-sensitive." },
+                "reason_withheld": { "type": "boolean" },
+                "source": { "type": "string", "enum": ["registry-edit", "account-link"] },
+                "id_checked": { "type": "boolean", "description": "The person making the change said they saw an ID showing the new value." },
+                "actor": {
+                  "type": "object",
+                  "required": ["id", "name"],
+                  "properties": { "id": { "type": "string", "format": "uuid" }, "name": { "type": ["string", "null"] } }
+                },
+                "at": { "type": "string", "format": "date-time" },
+                "values_readable": { "type": "boolean", "description": "Whether this reader may open GET …/identity-history/{changeId}." }
+              }
+            }
+          },
+          "meta": { "type": "object" }
+        }
+      },
+      "ResidentIdentityChangeValuesEnvelope": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "field", "previous_value", "new_value", "at"],
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "field": { "type": "string", "enum": ["first_name", "middle_name", "last_name", "suffix", "sex", "birth_date", "barangay_id"] },
+              "previous_value": { "type": ["string", "null"] },
+              "new_value": { "type": ["string", "null"] },
+              "at": { "type": "string", "format": "date-time" }
             }
           },
           "meta": { "type": "object" }
@@ -19926,7 +20117,8 @@
               "issuance_request_updated",
               "event_registration_updated",
               "sector_application_decided",
-              "assistance_request_updated"
+              "assistance_request_updated",
+              "registry_record_updated"
             ]
           },
           "title": {
@@ -20683,7 +20875,7 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["verification_decided", "message_received", "issuance_request_updated", "event_registration_updated", "sector_application_decided", "assistance_request_updated", "balita", "emergency"],
+            "enum": ["verification_decided", "message_received", "issuance_request_updated", "event_registration_updated", "sector_application_decided", "assistance_request_updated", "registry_record_updated", "balita", "emergency"],
             "description": "A notice type (GET /api/v1/notifications), or balita or emergency, which gate nothing."
           },
           "in_app": { "type": "boolean" },
@@ -22859,6 +23051,20 @@
           "self_approved": {
             "type": "boolean",
             "description": "The latest approval was made by the account that made the endorsement before it (its status_history entry says so too). False before approval."
+          },
+          "applicant": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "description": "On every answer about one request (not the list): the applicant's name as the registry discloses it to this reader — a protected person's given name an initial without request.view-sensitive — and whether this reader may open their record. A request stays with the barangay it was filed in; the person is read where they live now, so a barangay link whose applicant moved away reads outside-your-barangay, and the console says so in words (ADR 0016; the console's DL-265).",
+            "required": ["first_name", "middle_name", "last_name", "suffix", "given_name_masked", "record"],
+            "properties": {
+              "first_name": { "type": "string" },
+              "middle_name": { "type": ["string", "null"] },
+              "last_name": { "type": "string" },
+              "suffix": { "type": ["string", "null"] },
+              "given_name_masked": { "type": "boolean" },
+              "record": { "type": "string", "enum": ["readable", "outside-your-barangay"] }
+            }
           }
         }
       },

@@ -723,6 +723,50 @@ describe('the Node adapters', () => {
       });
     });
 
+    it('unlinks with the reason alone, and reads the link history whole or not at all (DL-262)', async () => {
+      const account = asId<AppAccountId>('5b0f3c1e-0000-4000-8000-000000000009');
+      const record = '8d1c2b7e-0000-4000-8000-000000000001';
+      const ended = firstValueFrom(verification.unlinkAccount(account, '  Wrong record.  '));
+      const request = http.expectOne({
+        method: 'POST',
+        url: `${BASE}/admin/users/${account}/registry-unlink`,
+      });
+      expect(request.request.body).toEqual({ reason: 'Wrong record.' });
+      request.flush({
+        data: { user_id: account, resident_id: record, unlinked_at: '2026-11-26T02:00:00.000Z' },
+        meta: {},
+      });
+      expect((await ended).residentId).toBe(record);
+
+      const entry = {
+        act: 'unlinked',
+        resident: { id: record, name: 'Ligaya Mercado' },
+        reason: 'Wrong record.',
+        actor: { id: 'a', name: 'Ana Admin' },
+        at: '2026-11-26T02:00:00.000Z',
+      };
+      const history = firstValueFrom(verification.registryLinkHistory(account));
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/admin/users/${account}/registry-link-history` })
+        .flush({ data: [entry], meta: {} });
+      expect(await history).toEqual([
+        {
+          act: 'unlinked',
+          residentId: record,
+          residentName: 'Ligaya Mercado',
+          reason: 'Wrong record.',
+          actorName: 'Ana Admin',
+          at: '2026-11-26T02:00:00.000Z',
+        },
+      ]);
+
+      const broken = firstValueFrom(verification.registryLinkHistory(account));
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/admin/users/${account}/registry-link-history` })
+        .flush({ data: [entry, { ...entry, act: 'merged' }], meta: {} });
+      await expect(broken).rejects.toThrow(/could not be read/);
+    });
+
     describe('verifying an account in person (DL-219)', () => {
       const account = asId<AppAccountId>(IN_PERSON_VERIFICATION.data.user_id);
       const check = {
@@ -1250,6 +1294,51 @@ describe('the Node adapters', () => {
           .flush({ ...OFFICE_RESIDENTS_PAGE, data: [first, broken] });
         await expect(page).rejects.toThrow(/could not be read/);
       }
+    });
+
+    it('reads the identity history without values, and one change’s values on their own (DL-264)', async () => {
+      const row = {
+        id: 'c0ffee00-0000-4000-8000-000000000001',
+        field: 'last_name',
+        reason: 'Married name.',
+        reason_withheld: false,
+        source: 'registry-edit',
+        id_checked: true,
+        actor: { id: 'a', name: 'Ana Intake' },
+        at: '2026-11-26T02:00:00.000Z',
+        values_readable: true,
+      };
+      const history = firstValueFrom(residents.identityHistory(savedId));
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/residents/${savedId}/identity-history` })
+        .flush({ data: [row], meta: {} });
+      const [change] = await history;
+      expect(change?.field).toBe('lastName');
+      expect(change).not.toHaveProperty('previous');
+
+      const values = firstValueFrom(residents.identityChangeValues(savedId, row.id));
+      http
+        .expectOne({
+          method: 'GET',
+          url: `${BASE}/office/residents/${savedId}/identity-history/${row.id}`,
+        })
+        .flush({
+          data: {
+            id: row.id,
+            field: 'barangay_id',
+            previous_value: 'a',
+            new_value: 'b',
+            at: row.at,
+          },
+          meta: {},
+        });
+      expect(await values).toEqual({ id: row.id, field: 'barangay', previous: 'a', next: 'b' });
+
+      const broken = firstValueFrom(residents.identityHistory(savedId));
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/residents/${savedId}/identity-history` })
+        .flush({ data: [row, { ...row, field: 'email' }], meta: {} });
+      await expect(broken).rejects.toThrow(/could not be read/);
     });
 
     it('reads one record, and a 404 as nobody it may see', async () => {

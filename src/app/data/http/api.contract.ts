@@ -62,7 +62,9 @@ export type ApiErrorCode =
   | 'NOT_ARCHIVED'
   | 'ARCHIVED'
   | 'OFFICE_IN_USE'
-  | 'OFFICE_ARCHIVED';
+  | 'OFFICE_ARCHIVED'
+  /** A verified resident's own change of barangay, refused to the app (`DL-266`). */
+  | 'BARANGAY_HELD_BY_OFFICE';
 
 /**
  * The same vocabulary as a runtime value, because a union vanishes at build time and
@@ -91,6 +93,7 @@ const API_ERROR_CODES: readonly string[] = [
   'ARCHIVED',
   'OFFICE_IN_USE',
   'OFFICE_ARCHIVED',
+  'BARANGAY_HELD_BY_OFFICE',
 ];
 
 /**

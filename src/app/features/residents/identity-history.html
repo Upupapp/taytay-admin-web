@@ -1,0 +1,68 @@
+<app-async-content
+  [state]="state()"
+  [content]="list"
+  [skeletonLines]="3"
+  [errorHeading]="copy.failedHeading"
+  (retryRequested)="retry()"
+/>
+
+<ng-template #list>
+  @if (changes().length === 0) {
+    <p class="identity__empty">{{ copy.empty }}</p>
+  } @else {
+    <ol class="identity__list">
+      @for (change of changes(); track change.id) {
+        <li class="identity__item">
+          <p class="identity__what">
+            <strong>{{ fieldLabels[change.field] }}</strong>
+            <span class="identity__when">
+              <time [attr.datetime]="change.at">{{ change.at | displayDate: 'date-time' }}</time>
+              · {{ change.actorName ?? copy.unnamed }}
+            </span>
+          </p>
+          <p class="identity__how">
+            {{ sourceLabels[change.source] }}.
+            {{ change.idChecked ? copy.idSeen : copy.idNotSaid }}
+          </p>
+          @if (change.reasonWithheld) {
+            <p class="identity__why identity__why--withheld">{{ copy.reasonWithheld }}</p>
+          } @else if (change.reason; as reason) {
+            <p class="identity__why">{{ reason }}</p>
+          } @else {
+            <p class="identity__why identity__why--withheld">{{ copy.noReason }}</p>
+          }
+
+          @if (change.valuesReadable && canOpenValues()) {
+            @let opened = valuesOf(change);
+            @if (opened === null) {
+              <button type="button" class="btn btn--small" (click)="open(change)">
+                {{ copy.showValues }}
+              </button>
+            } @else if (opened.kind === 'loading') {
+              <p class="identity__values" role="status">{{ copy.readingValues }}</p>
+            } @else if (opened.kind === 'error') {
+              <p class="identity__problem" role="alert">{{ opened.message }}</p>
+              <button type="button" class="btn btn--small" (click)="open(change)">
+                {{ copy.tryAgain }}
+              </button>
+            } @else {
+              <dl class="identity__values facts">
+                <div class="facts__row">
+                  <dt>{{ copy.before }}</dt>
+                  <dd>{{ shown(opened.values, opened.values.previous) }}</dd>
+                </div>
+                <div class="facts__row">
+                  <dt>{{ copy.after }}</dt>
+                  <dd>{{ shown(opened.values, opened.values.next) }}</dd>
+                </div>
+              </dl>
+            }
+          }
+        </li>
+      }
+    </ol>
+    @if (!canOpenValues()) {
+      <p class="identity__note">{{ copy.valuesNeedGrant }}</p>
+    }
+  }
+</ng-template>

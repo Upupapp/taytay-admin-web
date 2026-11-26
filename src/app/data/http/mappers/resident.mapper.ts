@@ -24,6 +24,12 @@ import {
   RESIDENT_ORIGIN_KINDS,
   type ResidentProvenance,
 } from '@domain/residents/resident-profile';
+import {
+  type IdentityChange,
+  type IdentityChangeSource,
+  type IdentityChangeValues,
+  type IdentityField,
+} from '@domain/residents/identity-history';
 import type { BarangayId, ResidentId, StaffUserId } from '@domain/shared/ids';
 import { centavos } from '@domain/shared/money';
 
@@ -441,4 +447,72 @@ export function toWireSectorRecord(sector: VulnerabilitySector, reason: string):
 function blankToNull(value: string | null): string | null {
   const trimmed = value?.trim() ?? '';
   return trimmed.length > 0 ? trimmed : null;
+}
+
+/* ── A record's identity history (`DL-264`) ─────────────────────────────── */
+
+/** The API's columns, in the domain's words. A field this console does not know is unread. */
+const IDENTITY_FIELD_BY_WIRE: Readonly<Record<string, IdentityField>> = {
+  first_name: 'firstName',
+  middle_name: 'middleName',
+  last_name: 'lastName',
+  suffix: 'suffix',
+  sex: 'sex',
+  birth_date: 'birthDate',
+  barangay_id: 'barangay',
+};
+
+const IDENTITY_SOURCES: readonly IdentityChangeSource[] = ['registry-edit', 'account-link'];
+
+function identityField(value: unknown): IdentityField | null {
+  return typeof value === 'string' ? (IDENTITY_FIELD_BY_WIRE[value] ?? null) : null;
+}
+
+/**
+ * One row of `ResidentIdentityHistoryEnvelope`, or `null` when any part of it cannot be read: the
+ * caller refuses the whole history rather than show it with a change missing.
+ */
+export function toIdentityChange(wire: unknown): IdentityChange | null {
+  const changeId = str(field(wire, 'id'));
+  const changed = identityField(field(wire, 'field'));
+  const source = oneOf(field(wire, 'source'), IDENTITY_SOURCES);
+  const at = dateTime(field(wire, 'at'));
+  const idChecked = field(wire, 'id_checked');
+  const valuesReadable = field(wire, 'values_readable');
+  if (
+    changeId === null ||
+    changed === null ||
+    source === null ||
+    at === null ||
+    typeof idChecked !== 'boolean' ||
+    typeof valuesReadable !== 'boolean'
+  ) {
+    return null;
+  }
+  return {
+    id: changeId,
+    field: changed,
+    reason: str(field(wire, 'reason')),
+    reasonWithheld: field(wire, 'reason_withheld') === true,
+    source,
+    idChecked,
+    actorName: str(field(field(wire, 'actor'), 'name')),
+    at,
+    valuesReadable,
+  };
+}
+
+/** `ResidentIdentityChangeValuesEnvelope.data`, or `null` when it cannot be read. */
+export function toIdentityChangeValues(wire: unknown): IdentityChangeValues | null {
+  const changeId = str(field(wire, 'id'));
+  const changed = identityField(field(wire, 'field'));
+  if (changeId === null || changed === null) {
+    return null;
+  }
+  return {
+    id: changeId,
+    field: changed,
+    previous: str(field(wire, 'previous_value')),
+    next: str(field(wire, 'new_value')),
+  };
 }

@@ -18,6 +18,9 @@ import {
   type HouseholdId,
   type HouseholdMember,
   type HouseholdProblem,
+  type IdentityChange,
+  type IdentityChangeSource,
+  type IdentityField,
   type MembershipChange,
   type Resident,
   type ResidentDraft,
@@ -315,8 +318,13 @@ export class MockResidentStore {
     return created;
   }
 
-  replace(existing: Resident, draft: ResidentDraft, actorId: StaffUserId | null): Resident {
-    return this.write(
+  replace(
+    existing: Resident,
+    draft: ResidentDraft,
+    actorId: StaffUserId | null,
+    note: IdentityNote | null = null,
+  ): Resident {
+    const written = this.write(
       {
         ...existing,
         ...fromDraft(draft),
@@ -326,6 +334,51 @@ export class MockResidentStore {
       },
       actorId,
     );
+    this.recordIdentity(existing, written, note);
+    return written;
+  }
+
+  /** The record's identity history with its values, oldest first, as the API keeps it (`DL-264`). */
+  identityHistoryOf(id: ResidentId): readonly StoredIdentityChange[] {
+    return this.identityChanges.get(String(id)) ?? [];
+  }
+
+  /**
+   * Appends a row for each identity field that moved, as the API's trigger does (migration 0080):
+   * the earlier and the new value, the reason, the act, whether an ID was seen, who and when.
+   */
+  private recordIdentity(before: Resident, after: Resident, note: IdentityNote | null): void {
+    const pairs: readonly (readonly [IdentityField, string | null, string | null])[] = [
+      ['firstName', before.name.first, after.name.first],
+      ['middleName', before.name.middle ?? null, after.name.middle ?? null],
+      ['lastName', before.name.last, after.name.last],
+      ['suffix', before.name.suffix ?? null, after.name.suffix ?? null],
+      ['sex', before.sex, after.sex],
+      ['birthDate', before.birthDate, after.birthDate],
+      ['barangay', before.address.barangayId, after.address.barangayId],
+    ];
+    const at = after.audit.updatedAt;
+    const rows = pairs
+      .filter(([, previous, next]) => previous !== next)
+      .map(([field, previous, next]): StoredIdentityChange => {
+        this.identitySequence += 1;
+        return {
+          id: `idc-${String(this.identitySequence).padStart(4, '0')}`,
+          field,
+          reason: note?.reason ?? null,
+          reasonWithheld: false,
+          source: note?.source ?? 'registry-edit',
+          idChecked: note?.idChecked ?? false,
+          actorName: note?.actorName ?? null,
+          at,
+          valuesReadable: false,
+          previous,
+          next,
+        };
+      });
+    if (rows.length > 0) {
+      this.identityChanges.set(String(after.id), [...this.identityHistoryOf(after.id), ...rows]);
+    }
   }
 
   setActive(existing: Resident, isActive: boolean, actorId: StaffUserId | null): Resident {
@@ -365,6 +418,9 @@ export class MockResidentStore {
     const existing = this.find(residentId);
     return existing === undefined ? undefined : this.write({ ...existing, householdId }, actorId);
   }
+
+  private readonly identityChanges = new Map<string, readonly StoredIdentityChange[]>();
+  private identitySequence = 0;
 
   private write(next: Resident, actorId: StaffUserId | null): Resident {
     const stamped: Resident = {
@@ -430,4 +486,18 @@ function fromDraft(draft: ResidentDraft): Omit<Resident, 'id' | 'isActive' | 'au
 function emptyToNull(value: string | null): string | null {
   const trimmed = (value ?? '').trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+/** What an edit says about itself, for the identity history it appends (`DL-264`). */
+export interface IdentityNote {
+  readonly reason: string | null;
+  readonly source: IdentityChangeSource;
+  readonly idChecked: boolean;
+  readonly actorName: string | null;
+}
+
+/** A history row with the values the API keeps beside it, read only behind the grant. */
+export interface StoredIdentityChange extends IdentityChange {
+  readonly previous: string | null;
+  readonly next: string | null;
 }

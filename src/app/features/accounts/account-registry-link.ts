@@ -11,16 +11,20 @@ import {
   untracked,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { of, switchMap } from 'rxjs';
 
 import { PermissionService } from '@core/access/permission.service';
 import {
   hasCheckedName,
+  REGISTRY_UNLINK_EFFECTS,
   VERIFICATION_REPOSITORY,
   type AppAccount,
+  type RegistryLinkHistoryEntry,
   type RegistryMatches,
 } from '@domain/index';
+import { ArchiveDialog } from '@shared/archive/archive-dialog';
 import { failureReason } from '@shared/state/failure-reason';
 import { LOADING, toViewState, type ViewState } from '@shared/state/view-state';
 import { Modal } from '@shared/ui/modal/modal';
@@ -38,13 +42,18 @@ import { ACCOUNTS_COPY } from './accounts.copy';
  * account and what to do when they disagree. Offered for a verified resident account only, to a
  * reader who holds `verification.review`, never for one's own.
  *
+ * A link made to the wrong record is ended here too (`DL-262`), by the same reviewer, with a
+ * reason, in the shared archive dialog's shape: its effects before its primary button, because a
+ * link is restored by linking again. The account's link history below says who linked and who
+ * unlinked it, when and why; nothing in it is ever removed.
+ *
  * Read once when the panel opens, not live: it is part of a decision, and the link it shows is
  * answered again by the server when the button is pressed.
  */
 @Component({
   selector: 'app-account-registry-link',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AccountLinkChoice, Modal, RouterLink],
+  imports: [AccountLinkChoice, ArchiveDialog, DatePipe, Modal, RouterLink],
   templateUrl: './account-registry-link.html',
   styleUrl: './account-panel.scss',
 })
@@ -90,6 +99,29 @@ export class AccountRegistryLink {
     return state.kind === 'ready' ? state.value.linkedResidentId : null;
   });
 
+  /** The account's links as made and ended, read with the link and again after every act. */
+  protected readonly history = toSignal(
+    toObservable(
+      computed(() => ({
+        account: this.account(),
+        go: this.applies() && this.canLink() && !this.own(),
+        reread: this.reread(),
+      })),
+    ).pipe(
+      switchMap(({ account, go }) =>
+        go
+          ? toViewState(this.repository.registryLinkHistory(account.id))
+          : of<ViewState<readonly RegistryLinkHistoryEntry[]>>(LOADING),
+      ),
+    ),
+    { initialValue: LOADING as ViewState<readonly RegistryLinkHistoryEntry[]> },
+  );
+
+  protected readonly unlinkEffects = REGISTRY_UNLINK_EFFECTS;
+  protected readonly unlinking = signal(false);
+  protected readonly unlinkBusy = signal(false);
+  protected readonly unlinkProblem = signal<string | null>(null);
+
   protected readonly opened = signal(false);
   protected readonly link = signal<AccountLinkState | null>(null);
   protected readonly seen = signal(false);
@@ -104,8 +136,50 @@ export class AccountRegistryLink {
     // Another account opened in the same panel starts closed, with nothing chosen or ticked.
     effect(() => {
       this.account();
-      untracked(() => this.close());
+      untracked(() => {
+        this.close();
+        this.closeUnlink();
+      });
     });
+  }
+
+  protected openUnlink(): void {
+    this.unlinkProblem.set(null);
+    this.unlinking.set(true);
+  }
+
+  protected closeUnlink(): void {
+    if (this.unlinkBusy()) {
+      return;
+    }
+    this.unlinking.set(false);
+    this.unlinkProblem.set(null);
+  }
+
+  /** Ends the link once the dialog has said what it does and a reason was given (`DL-262`). */
+  protected confirmUnlink(reason: string): void {
+    const account = this.account();
+    if (this.own() || this.unlinkBusy()) {
+      return;
+    }
+    this.unlinkBusy.set(true);
+    this.unlinkProblem.set(null);
+    this.announced.emit('');
+    this.repository
+      .unlinkAccount(account.id, reason)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.unlinkBusy.set(false);
+          this.unlinking.set(false);
+          this.announced.emit(this.copy.unlinkDone);
+          this.reread.update((count) => count + 1);
+        },
+        error: (failure: unknown) => {
+          this.unlinkBusy.set(false);
+          this.unlinkProblem.set(this.copy.notUnlinked(failureReason(failure) ?? this.copy.failed));
+        },
+      });
   }
 
   protected open(): void {

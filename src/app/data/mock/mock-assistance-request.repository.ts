@@ -91,6 +91,8 @@ import {
   type StatusChange,
   type SubmittedRequirement,
   type DocumentUpload,
+  hasSensitiveSector,
+  type RequestApplicant,
 } from '@domain/index';
 
 import { ASSESSMENT_TEMPLATE_SEED } from './seed/assessment-templates.seed';
@@ -229,7 +231,32 @@ export class MockAssistanceRequestRepository implements AssistanceRequestReposit
     if (request === undefined || !userHasPermission(user, 'request.view')) {
       return this.latency.respond(null);
     }
-    return this.latency.respond(this.disclose(request));
+    return this.latency.respond({
+      ...this.disclose(request),
+      applicant: this.applicantOf(request),
+    });
+  }
+
+  /**
+   * The applicant as the API names them on one request (`DL-265`): the name as disclosed, and
+   * whether this reader opens the record — a barangay link whose applicant moved away does not.
+   */
+  private applicantOf(request: AssistanceRequest): RequestApplicant | null {
+    const user = this.access.currentUser();
+    const person = this.residents.find(request.residentId);
+    if (person === undefined) {
+      return null;
+    }
+    const masked = hasSensitiveSector(person) && !userHasPermission(user, 'request.view-sensitive');
+    return {
+      name: masked
+        ? { ...person.name, first: person.name.first.charAt(0), middle: null, suffix: null }
+        : person.name,
+      givenNameMasked: masked,
+      record: isWithinBarangayScope(user, person.address.barangayId)
+        ? 'readable'
+        : 'outside-your-barangay',
+    };
   }
 
   /** Whole, newest first, a withheld body `null` and the entry still listed (`DL-58`). */

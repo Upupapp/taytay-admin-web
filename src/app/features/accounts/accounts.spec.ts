@@ -203,6 +203,8 @@ function configure(
       of({ accountId, linkedResidentId: asId<ResidentId>('resident-9'), matches: [] }),
     verifyInPerson: (accountId, check, intent) => checks.verifyInPerson(accountId, check, intent),
     linkLater: () => EMPTY,
+    unlinkAccount: () => EMPTY,
+    registryLinkHistory: () => of([]),
   };
   const offices: OfficeRepository = { list: () => of(OFFICES) };
   TestBed.resetTestingModule();

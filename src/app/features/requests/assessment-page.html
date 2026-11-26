@@ -947,7 +947,14 @@
           <h2 class="section-title assessment__heading" id="applicant-heading">
             {{ copy.applicantHeading }}
           </h2>
-          @if (!readsRegistry()) {
+          @if (movedAway()) {
+            <!-- DL-265: the request stays with the barangay it was filed in; the person's current
+                 record is the office's. Said in words, never as an error or a broken link. -->
+            @if (applicantName(); as name) {
+              <p class="assessment__fact">{{ name }}</p>
+            }
+            <p class="status-line assessment__note" role="note">{{ copy.movedAway }}</p>
+          } @else if (!readsRegistry()) {
             <p class="status-line assessment__note" role="note">{{ copy.registryNotRead }}</p>
           } @else if (profileFailure(); as message) {
             <p class="note-box assessment__notconnected" role="note">
@@ -985,7 +992,9 @@
         </section>
 
         <section class="card card--padded stack assessment__block">
-          @if (!readsAdvisory()) {
+          @if (readsAdvisory() && movedAway()) {
+            <p class="status-line assessment__note" role="note">{{ copy.advisoryMovedAway }}</p>
+          } @else if (!readsAdvisory()) {
             <p class="status-line assessment__note" role="note">{{ copy.advisoryNotRead }}</p>
           } @else if (advisoryFailure(); as message) {
             <!-- Never the empty panel: a check that could not be read is not "nothing found". -->

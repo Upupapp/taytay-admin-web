@@ -78,6 +78,7 @@ export * from './search/search-result';
 export * from './search/search-safety';
 export * from './residents/resident-disclosure';
 export * from './residents/resident-profile';
+export * from './residents/identity-history';
 export * from './visits/field-visit';
 export * from './visits/visit-capture';
 export * from './visits/visit-observation';

@@ -22,7 +22,9 @@ import {
   type AssessmentTemplate,
   type AssessmentTemplateStatus,
   type AssistanceImportId,
+  type ApplicantRecordAccess,
   type AssistanceRequest,
+  type RequestApplicant,
   type FilingAdvisory,
   type FilingSignal,
   type ImportedOrigin,
@@ -221,6 +223,7 @@ export function toAssistanceRequest(wire: unknown, barangays: BarangayIndex): As
     submittedAt,
     isProtected: bool(field(wire, 'is_protected')),
     withheld,
+    applicant: toRequestApplicant(field(wire, 'applicant')),
     audit: {
       createdAt,
       createdBy: id<StaffUserId>(field(wire, 'created_by')),
@@ -1114,3 +1117,32 @@ function toGaps(value: unknown): AdvisoryGap[] | null {
   });
   return gaps.every((entry): entry is AdvisoryGap => entry !== null) ? gaps : null;
 }
+
+/**
+ * `OfficeRequest.applicant` (`DL-265`): the name as disclosed, and whether the record opens. Absent
+ * or unreadable is `null` — the page then reads the record as it always has, and says what the
+ * record read answers.
+ */
+export function toRequestApplicant(wire: unknown): RequestApplicant | null {
+  const first = str(field(wire, 'first_name'));
+  const last = str(field(wire, 'last_name'));
+  const record = oneOf(field(wire, 'record'), APPLICANT_RECORD_ACCESS);
+  if (first === null || last === null || record === null) {
+    return null;
+  }
+  return {
+    name: {
+      first,
+      middle: str(field(wire, 'middle_name')),
+      last,
+      suffix: str(field(wire, 'suffix')),
+    },
+    givenNameMasked: field(wire, 'given_name_masked') === true,
+    record,
+  };
+}
+
+const APPLICANT_RECORD_ACCESS: readonly ApplicantRecordAccess[] = [
+  'readable',
+  'outside-your-barangay',
+];

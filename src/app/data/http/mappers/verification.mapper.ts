@@ -1,5 +1,6 @@
 import {
   ACCOUNT_LINK_DECISIONS,
+  REGISTRY_LINK_ACTS,
   REGISTRY_MATCH_ATTRIBUTES,
   REGISTRY_MATCH_OUTCOMES,
   REGISTRY_MATCH_STRENGTHS,
@@ -20,6 +21,8 @@ import {
   type RegistryMatch,
   type RegistryMatches,
   type RegistryMatchSignal,
+  type RegistryLinkHistoryEntry,
+  type RegistryUnlinkOutcome,
   type ResidentId,
   type VerificationQueueStats,
   type VerificationRequest,
@@ -314,6 +317,52 @@ export function toLaterLinkOutcome(wire: unknown): LaterLinkOutcome | null {
     return null;
   }
   return { link, corrected: fields.filter((entry): entry is LinkCorrectedField => entry !== null) };
+}
+
+/** `AccountRegistryUnlinkBody` (`DL-262`): the reason the server keeps with the unlink. */
+export interface RegistryUnlinkWire {
+  readonly reason: string;
+}
+
+export function toWireRegistryUnlink(reason: string): RegistryUnlinkWire {
+  return { reason: reason.trim() };
+}
+
+/** `AccountRegistryUnlinkEnvelope.data`: the record the ended link named, and when. */
+export function toRegistryUnlinkOutcome(wire: unknown): RegistryUnlinkOutcome | null {
+  const residentId = id<ResidentId>(field(wire, 'resident_id'));
+  const unlinkedAt = dateTime(field(wire, 'unlinked_at'));
+  return residentId === null || unlinkedAt === null ? null : { residentId, unlinkedAt };
+}
+
+/**
+ * One `AccountLinkHistoryEnvelope` entry (`DL-262`), or `null` when any part of it cannot be read:
+ * the caller refuses the whole history rather than show it with an act missing.
+ */
+export function toRegistryLinkHistoryEntry(wire: unknown): RegistryLinkHistoryEntry | null {
+  const act = oneOf(field(wire, 'act'), REGISTRY_LINK_ACTS);
+  const resident = field(wire, 'resident');
+  const residentId = id<ResidentId>(field(resident, 'id'));
+  const residentName = str(field(resident, 'name'));
+  const reason = str(field(wire, 'reason'));
+  const at = dateTime(field(wire, 'at'));
+  if (
+    act === null ||
+    residentId === null ||
+    residentName === null ||
+    reason === null ||
+    at === null
+  ) {
+    return null;
+  }
+  return {
+    act,
+    residentId,
+    residentName,
+    reason,
+    actorName: str(field(field(wire, 'actor'), 'name')),
+    at,
+  };
 }
 
 /** `VerificationApproval`: what the reviewer checked, sent back as read (`DL-197`), and the link. */

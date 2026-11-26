@@ -18,6 +18,8 @@ import {
   type InPersonVerification,
   type InPersonVerificationId,
   type LaterLinkOutcome,
+  type RegistryLinkHistoryEntry,
+  type RegistryUnlinkOutcome,
   type RegistryMatches,
   type ResidentId,
   type VerificationRepository,
@@ -73,6 +75,14 @@ class RecordingChecks implements VerificationRepository {
   }
 
   linkLater(): Observable<LaterLinkOutcome> {
+    return EMPTY;
+  }
+
+  unlinkAccount(): Observable<RegistryUnlinkOutcome> {
+    return EMPTY;
+  }
+
+  registryLinkHistory(): Observable<readonly RegistryLinkHistoryEntry[]> {
     return EMPTY;
   }
 

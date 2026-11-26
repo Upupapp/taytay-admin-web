@@ -325,6 +325,9 @@ export const RESIDENTS_COPY = {
     identityHeading: 'Why the name, sex or birth date changed',
     identityHint:
       'A name, a sex or a birth date is corrected only against a document. The record keeps what it said before, with your reason and your name.',
+    // DL-263: what saving does for a resident whose app account is linked to this record.
+    identityTold:
+      'If an app account is linked to this record, the resident is told in the app which details the office changed — never their values, which she reads in her profile. The same happens when you change the barangay.',
     identityReasonLabel: 'What shows the new value?',
     identityReasonHint:
       'For example: “PSA birth certificate seen at the counter” or “Marriage certificate, surname changed”. Up to 500 characters.',
@@ -376,6 +379,35 @@ export const RESIDENTS_COPY = {
     'not-a-mobile-number': 'does not look like a Philippine mobile number.',
     'not-an-email': 'does not look like an email address.',
   } satisfies Record<ResidentDraftRule, string>,
+  /** A record's identity history on its page (`DL-264`). */
+  identityHistory: {
+    heading: 'Name, sex, birth date and barangay history',
+    intro:
+      'Every change to these details, newest first: when, who, how and why. Earlier values are ' +
+      'not listed; an auditor or an administrator can open them one change at a time, and each ' +
+      'opening is recorded.',
+    failedHeading: 'The identity history could not be read',
+    empty:
+      'No change to this record’s name, sex, birth date or barangay has been recorded. Changes are ' +
+      'kept from 26 November 2026; earlier ones were not recorded.',
+    unnamed: 'an account with no name',
+    idSeen: 'An ID showing the new value was seen.',
+    idNotSaid: 'No ID was said to be seen.',
+    reasonWithheld:
+      'The reason is withheld: this record is under a protected sector, and your role does not ' +
+      'read it.',
+    noReason: 'No reason was given.',
+    showValues: 'Show earlier and later values',
+    readingValues: 'Reading the values…',
+    valuesFailed: 'The values could not be read.',
+    tryAgain: 'Try again',
+    before: 'Before',
+    after: 'After',
+    none: 'None recorded',
+    valuesNeedGrant:
+      'Earlier and later values are opened by an auditor or an administrator, and each opening is ' +
+      'recorded in the audit trail.',
+  },
 } as const;
 
 /**

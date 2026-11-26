@@ -1264,3 +1264,54 @@ describe('how a request came in (DL-228)', () => {
     expect(html(fixture).textContent).toContain('Walk-in');
   });
 });
+
+describe('an applicant who moved out of the barangay the request was filed in (DL-265)', () => {
+  it('names the applicant, says where their record is in words, and reads neither record nor history', async () => {
+    let profileReads = 0;
+    let advisoryReads = 0;
+    class MovedAway extends MockAssistanceRequestRepository {
+      override getById(id: Parameters<MockAssistanceRequestRepository['getById']>[0]) {
+        return super.getById(id).pipe(
+          map((request) =>
+            request === null
+              ? null
+              : {
+                  ...request,
+                  applicant: {
+                    name: { first: 'Corazon', middle: null, last: 'Villa', suffix: null },
+                    givenNameMasked: false,
+                    record: 'outside-your-barangay' as const,
+                  },
+                },
+          ),
+        );
+      }
+      override advisoryForCase(
+        id: Parameters<MockAssistanceRequestRepository['advisoryForCase']>[0],
+      ) {
+        advisoryReads += 1;
+        return super.advisoryForCase(id);
+      }
+    }
+    const original = MockResidentRepository.prototype.getProfile;
+    MockResidentRepository.prototype.getProfile = function (this: MockResidentRepository, id) {
+      profileReads += 1;
+      return original.call(this, id);
+    };
+    try {
+      const element = html(
+        await openAssessment(ENDORSED, 'intake-officer', MovedAway, 'staff-intake'),
+      );
+      const applicant = element.querySelector('#applicant-heading')?.parentElement;
+      expect(applicant?.textContent).toContain('Corazon Villa');
+      expect(applicant?.textContent).toContain(REQUESTS_COPY.assessment.movedAway);
+      expect(applicant?.querySelector('a[href^="/residents/"]')).toBeNull();
+      expect(element.textContent).toContain(REQUESTS_COPY.assessment.advisoryMovedAway);
+      expect(element.querySelector('[role="alert"]')?.textContent ?? '').not.toContain('could not');
+      expect(profileReads).toBe(0);
+      expect(advisoryReads).toBe(0);
+    } finally {
+      MockResidentRepository.prototype.getProfile = original;
+    }
+  });
+});

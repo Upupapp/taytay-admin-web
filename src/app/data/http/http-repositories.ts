@@ -25,7 +25,11 @@ import {
   selfieErased,
   type AccountLinkDecision,
   type ConfirmedIdentity,
+  type IdentityChange,
+  type IdentityChangeValues,
   type LaterLinkOutcome,
+  type RegistryLinkHistoryEntry,
+  type RegistryUnlinkOutcome,
   type RegistryMatches,
   type CursorPage,
   type CursorRequest,
@@ -442,6 +446,8 @@ import {
 } from './mappers/balita.mapper';
 import { toPlatformAuditEntry } from './mappers/platform-audit.mapper';
 import {
+  toIdentityChange,
+  toIdentityChangeValues,
   toResident,
   toResidentProvenance,
   toResidentView,
@@ -580,7 +586,10 @@ import {
   toWireVerificationApproval,
   toWireLaterLink,
   toLaterLinkOutcome,
+  toRegistryLinkHistoryEntry,
   toRegistryProposals,
+  toRegistryUnlinkOutcome,
+  toWireRegistryUnlink,
 } from './mappers/verification.mapper';
 import {
   toIssuanceFileGrant,
@@ -806,6 +815,43 @@ export class HttpVerificationRepository implements VerificationRepository {
           );
         }
         return matches;
+      }),
+    );
+  }
+
+  /** Ends a wrong link with its reason (`DL-262`). */
+  unlinkAccount(accountId: AppAccountId, reason: string): Observable<RegistryUnlinkOutcome> {
+    return this.api
+      .post(
+        `${API_ENDPOINTS.adminUsers}/${accountId}/registry-unlink`,
+        toWireRegistryUnlink(reason),
+      )
+      .pipe(
+        map((wire) => {
+          const outcome = toRegistryUnlinkOutcome(wire);
+          if (outcome === null) {
+            throw new Error(
+              'The unlink was sent, but its answer could not be read. Open the account again to see ' +
+                'whether it is still linked.',
+            );
+          }
+          return outcome;
+        }),
+      );
+  }
+
+  /** The account's link history, a bare list read whole, or refused whole (`DL-262`). */
+  registryLinkHistory(accountId: AppAccountId): Observable<readonly RegistryLinkHistoryEntry[]> {
+    return this.api.list(`${API_ENDPOINTS.adminUsers}/${accountId}/registry-link-history`).pipe(
+      map((rows) => {
+        const entries = rows.map(toRegistryLinkHistoryEntry);
+        if (entries.some((entry) => entry === null)) {
+          throw new Error(
+            'The account’s link history could not be read, so none is shown: a history with an act ' +
+              'missing would say the wrong thing about who the account was linked to.',
+          );
+        }
+        return entries.filter((entry): entry is RegistryLinkHistoryEntry => entry !== null);
       }),
     );
   }
@@ -2094,6 +2140,37 @@ export class HttpResidentRepository implements ResidentRepository {
    * kept as `unavailable` — never an empty history, which would say the office never helped this
    * person (`DL-112`).
    */
+  /** The identity history, a bare list read whole, or refused whole (`DL-264`). */
+  identityHistory(id: ResidentId): Observable<readonly IdentityChange[]> {
+    return this.api.list(`${API_ENDPOINTS.officeResidents}/${id}/identity-history`).pipe(
+      map((rows) => {
+        const changes = rows.map(toIdentityChange);
+        if (changes.some((change) => change === null)) {
+          throw new Error(
+            'The record’s identity history could not be read, so none is shown: a history with a ' +
+              'change missing would say the record always held what it holds now.',
+          );
+        }
+        return changes.filter((change): change is IdentityChange => change !== null);
+      }),
+    );
+  }
+
+  /** One change's values, behind `audit.view-detail`; the server records the opening (`DL-264`). */
+  identityChangeValues(id: ResidentId, changeId: string): Observable<IdentityChangeValues> {
+    return this.api
+      .item(`${API_ENDPOINTS.officeResidents}/${id}/identity-history/${changeId}`)
+      .pipe(
+        map((wire) => {
+          const values = toIdentityChangeValues(wire);
+          if (values === null) {
+            throw new Error('The values of this change could not be read.');
+          }
+          return values;
+        }),
+      );
+  }
+
   getProfile(id: ResidentId): Observable<ResidentProfile | null> {
     return this.barangays().pipe(
       switchMap((barangays) =>

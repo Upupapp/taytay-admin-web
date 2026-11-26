@@ -36,6 +36,8 @@ import {
   type ResidentView,
   isSensitiveSector,
   type VulnerabilitySector,
+  type IdentityChange,
+  type IdentityChangeValues,
 } from '@domain/index';
 
 import { historySummaryFor } from './mock-assistance-history';
@@ -301,7 +303,82 @@ export class MockResidentRepository implements ResidentRepository {
           ),
       );
     }
-    return this.latency.respond(this.store.replace(existing, draft, user?.id ?? null));
+    return this.latency.respond(
+      this.store.replace(existing, draft, user?.id ?? null, {
+        reason: (note?.reason ?? '').trim() || null,
+        source: 'registry-edit',
+        idChecked: note?.idChecked === true,
+        actorName: user?.displayName ?? null,
+      }),
+    );
+  }
+
+  /**
+   * The identity history as the API answers it (`DL-264`): scoped like the record, newest first,
+   * no value, a protected record's reasons withheld from a reader without the protected tier, and
+   * `valuesReadable` said per row.
+   */
+  identityHistory(id: ResidentId): Observable<readonly IdentityChange[]> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<readonly IdentityChange[]>(user, 'resident.view');
+    if (denied) {
+      return denied;
+    }
+    const resident = this.store.find(id);
+    if (!resident || !this.readable(user, resident)) {
+      return throwError(() => new Error('That resident was not found.'));
+    }
+    const shown = this.identityReader(user, resident);
+    return this.latency.respond(
+      [...this.store.identityHistoryOf(id)].reverse().map((entry): IdentityChange => ({
+        id: entry.id,
+        field: entry.field,
+        source: entry.source,
+        idChecked: entry.idChecked,
+        actorName: entry.actorName,
+        at: entry.at,
+        reason: shown.reasonWithheld ? null : entry.reason,
+        reasonWithheld: shown.reasonWithheld && entry.reason !== null,
+        valuesReadable: shown.valuesReadable,
+      })),
+    );
+  }
+
+  identityChangeValues(id: ResidentId, changeId: string): Observable<IdentityChangeValues> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<IdentityChangeValues>(user, 'resident.view');
+    if (denied) {
+      return denied;
+    }
+    const resident = this.store.find(id);
+    if (!resident || !this.readable(user, resident)) {
+      return throwError(() => new Error('That resident was not found.'));
+    }
+    if (!this.identityReader(user, resident).valuesReadable) {
+      return throwError(() => new PermissionDeniedError('audit.view-detail'));
+    }
+    const found = this.store.identityHistoryOf(id).find((entry) => entry.id === changeId);
+    if (found === undefined) {
+      return throwError(() => new Error('That change was not found in this record’s history.'));
+    }
+    return this.latency.respond({
+      id: found.id,
+      field: found.field,
+      previous: found.previous,
+      next: found.next,
+    });
+  }
+
+  private identityReader(
+    user: AuthenticatedUser | null,
+    resident: Resident,
+  ): { readonly reasonWithheld: boolean; readonly valuesReadable: boolean } {
+    const cleared =
+      !hasSensitiveSector(resident) || userHasPermission(user, 'request.view-sensitive');
+    return {
+      reasonWithheld: !cleared,
+      valuesReadable: cleared && userHasPermission(user, 'audit.view-detail'),
+    };
   }
 
   /**

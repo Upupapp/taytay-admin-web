@@ -53,6 +53,7 @@ import { RELATIONSHIP_COPY } from '@shared/families/relationship.copy';
 import { DisplayDatePipe } from '@shared/pipes/display-date.pipe';
 import { ScrollRegion } from '@shared/ui/scroll-region/scroll-region';
 import { RESIDENTS_COPY } from './residents.copy';
+import { IdentityHistory } from './identity-history';
 
 /**
  * A side panel's read: what it found, or the sentence saying it was refused.
@@ -116,6 +117,7 @@ function panelRead<TItem>(source: Observable<readonly TItem[]>): Observable<Pane
     DisplayDatePipe,
     HasPermissionDirective,
     Icon,
+    IdentityHistory,
     InitialsPipe,
     Modal,
     NotConnected,
@@ -130,6 +132,7 @@ function panelRead<TItem>(source: Observable<readonly TItem[]>): Observable<Pane
 })
 export class ResidentDetailPage {
   protected readonly membersOf = membersOf;
+  protected readonly identityCopy = RESIDENTS_COPY.identityHistory;
   private readonly repository = inject(RESIDENT_REPOSITORY);
   private readonly families = inject(FAMILY_REPOSITORY);
   private readonly visits = inject(FIELD_VISIT_REPOSITORY);

@@ -1623,6 +1623,7 @@
         "withheld"
       ],
       "optional": [
+        "applicant",
         "approved_amount_centavos",
         "approved_in_kind_description",
         "assessment",
@@ -1661,6 +1662,7 @@
         "withheld"
       ],
       "optional": [
+        "applicant",
         "approved_amount_centavos",
         "approved_in_kind_description",
         "assessment",
@@ -1699,6 +1701,7 @@
         "withheld"
       ],
       "optional": [
+        "applicant",
         "approved_amount_centavos",
         "approved_in_kind_description",
         "assessment",
@@ -1737,6 +1740,7 @@
         "withheld"
       ],
       "optional": [
+        "applicant",
         "approved_amount_centavos",
         "approved_in_kind_description",
         "assessment",
@@ -1811,6 +1815,7 @@
         "withheld"
       ],
       "optional": [
+        "applicant",
         "approved_amount_centavos",
         "approved_in_kind_description",
         "assessment",
@@ -1849,6 +1854,7 @@
         "withheld"
       ],
       "optional": [
+        "applicant",
         "approved_amount_centavos",
         "approved_in_kind_description",
         "assessment",
@@ -1956,6 +1962,7 @@
         "withheld"
       ],
       "optional": [
+        "applicant",
         "approved_amount_centavos",
         "approved_in_kind_description",
         "assessment",
@@ -2011,6 +2018,7 @@
         "withheld"
       ],
       "optional": [
+        "applicant",
         "approved_amount_centavos",
         "approved_in_kind_description",
         "assessment",
@@ -2064,6 +2072,7 @@
         "withheld"
       ],
       "optional": [
+        "applicant",
         "approved_amount_centavos",
         "approved_in_kind_description",
         "assessment",
@@ -2102,6 +2111,7 @@
         "withheld"
       ],
       "optional": [
+        "applicant",
         "approved_amount_centavos",
         "approved_in_kind_description",
         "assessment",

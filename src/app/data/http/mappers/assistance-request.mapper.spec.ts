@@ -17,6 +17,7 @@ import {
   toWireAssessmentAnswers,
   toWireDocumentUpload,
 } from './assistance-request.mapper';
+import { toRequestApplicant } from './assistance-request.mapper';
 import { toBarangayIndex } from './resident.mapper';
 
 /**
@@ -241,5 +242,28 @@ describe('the assistance-request mapper, how a request came in (DL-228)', () => 
     const read = toAssistanceRequest(FILED, BARANGAYS);
     expect(read?.filingAdvisory).toBeNull();
     expect(read?.imported).toBeNull();
+  });
+});
+
+describe('the assistance-request mapper, the applicant on one request (DL-265)', () => {
+  it('reads the name as disclosed and whether the record opens, and nothing it cannot read', () => {
+    expect(
+      toRequestApplicant({
+        first_name: 'C',
+        middle_name: null,
+        last_name: 'Villa',
+        suffix: null,
+        given_name_masked: true,
+        record: 'outside-your-barangay',
+      }),
+    ).toEqual({
+      name: { first: 'C', middle: null, last: 'Villa', suffix: null },
+      givenNameMasked: true,
+      record: 'outside-your-barangay',
+    });
+    expect(toRequestApplicant(undefined)).toBeNull();
+    expect(
+      toRequestApplicant({ first_name: 'C', last_name: 'Villa', record: 'elsewhere' }),
+    ).toBeNull();
   });
 });

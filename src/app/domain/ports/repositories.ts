@@ -223,7 +223,9 @@ import type { InPersonCheck, InPersonVerification } from '../verification/in-per
 import type {
   AccountLinkDecision,
   LaterLinkOutcome,
+  RegistryLinkHistoryEntry,
   RegistryMatches,
+  RegistryUnlinkOutcome,
 } from '../verification/account-link';
 import type {
   Family,
@@ -247,6 +249,7 @@ import type { RelationshipEvent } from '../families/relationship-event';
 import type { FactorState, VulnerabilityFactorCode } from '../households/household-vulnerability';
 import type { ResidentView } from '../residents/resident-disclosure';
 import type { ResidentProfile } from '../residents/resident-profile';
+import type { IdentityChange, IdentityChangeValues } from '../residents/identity-history';
 import type {
   Referral,
   ReferralDraft,
@@ -344,6 +347,16 @@ export interface ResidentRepository {
    * or the birth date moved — required by the server, which keeps the earlier value.
    */
   update(id: ResidentId, draft: ResidentDraft, note?: ResidentEditNote): Observable<Resident>;
+  /**
+   * The record's identity history, newest first, read whole (`DL-264`): when, who, which field and
+   * why — never a value (`DL-114`). Scoped like the record.
+   */
+  identityHistory(id: ResidentId): Observable<readonly IdentityChange[]>;
+  /**
+   * The earlier and later values of one change, behind `audit.view-detail` (`DL-264`). Opening them
+   * is recorded in the audit trail, so a screen reads them only when a person asks.
+   */
+  identityChangeValues(id: ResidentId, changeId: string): Observable<IdentityChangeValues>;
   /**
    * Registry records are retired, never deleted: history must stay attributable. Retiring and
    * restoring each carry a reason, kept with the change on the server (`DL-174`): a record that
@@ -1672,6 +1685,16 @@ export interface VerificationRepository {
    * record's name, sex or birth date to the ID, the earlier values kept on the server.
    */
   linkLater(accountId: AppAccountId, decision: AccountLinkDecision): Observable<LaterLinkOutcome>;
+
+  /**
+   * Ends an account's link to a registry record made to the wrong one (`DL-262`), with the reason
+   * the server keeps. The link stays in the account's history, stamped ended; the record and
+   * everything on it stay as they are, and the app reads nothing from it from then on.
+   */
+  unlinkAccount(accountId: AppAccountId, reason: string): Observable<RegistryUnlinkOutcome>;
+
+  /** Every link, unlink and finding's move of an account, oldest first, read whole (`DL-262`). */
+  registryLinkHistory(accountId: AppAccountId): Observable<readonly RegistryLinkHistoryEntry[]>;
 
   /** Refuses it. The resident reads `reason` in the app as what was wrong. */
   reject(id: VerificationRequestId, reason: string): Observable<VerificationRequest>;

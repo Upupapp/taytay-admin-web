@@ -201,6 +201,12 @@ export const REQUESTS_COPY = {
     registryNotRead:
       'The resident registry is not read by this account, so the applicant’s record is not shown here.',
     profileFailed: 'The applicant’s record could not be read, so it is not shown here.',
+    // DL-265: a barangay link's applicant who moved away since filing. Words, never an error.
+    movedAway:
+      'This person now lives outside your barangay; the MSWDO office holds their current record.',
+    advisoryMovedAway:
+      'The check of this person’s other requests is not shown: this person now lives outside your ' +
+      'barangay; the MSWDO office holds their current record.',
 
     assignmentHeading: 'Assignment',
     assignedTo: 'Assigned for assessment to',

@@ -207,8 +207,33 @@ export const ACCOUNTS_COPY = {
     reading: 'Reading the account’s registry link…',
     readFailed:
       'The account’s registry link could not be read. Close this panel and open it again.',
-    linked: 'This account is linked to a registry record. The link stays as it is.',
+    linked: 'This account is linked to a registry record.',
     openRecord: 'Open the record',
+    wrongLink:
+      'If it is linked to the wrong person’s record, unlink it, then link it to the right one with ' +
+      'an ID in front of you.',
+    unlinkOpen: 'Unlink from this record',
+    unlinkHeading: 'Unlink this account from its registry record',
+    unlinkConfirm: 'Unlink the account',
+    unlinkReasonHint:
+      'Required. Kept in the account’s link history with your name, and never shown to the resident.',
+    unlinkDone:
+      'The account is unlinked. Its link and this unlinking are kept in its link history.',
+    notUnlinked: (why: string): string => `The account was not unlinked. ${why}`,
+    historyHeading: 'Link history',
+    historyFailed:
+      'The account’s link history could not be read. Close this panel and open it again.',
+    act: (act: 'linked' | 'unlinked' | 'relinked', record: string, by: string | null): string => {
+      const who = by ?? 'an account with no name';
+      switch (act) {
+        case 'linked':
+          return `Linked to ${record} by ${who}.`;
+        case 'unlinked':
+          return `Unlinked from ${record} by ${who}.`;
+        case 'relinked':
+          return `Moved to ${record}, the record a same-person finding kept, by ${who}.`;
+      }
+    },
     unlinked:
       'This account is not linked to any registry record, so the resident’s My requests stay ' +
       'empty and she cannot apply for Tulong from the app. Link it with an ID that shows the ' +

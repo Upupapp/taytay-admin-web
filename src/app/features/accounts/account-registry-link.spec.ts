@@ -15,8 +15,12 @@ import {
   type AppAccountId,
   type LaterLinkOutcome,
   type Permission,
+  type RegistryLinkHistoryEntry,
   type RegistryMatches,
+  type RegistryUnlinkOutcome,
   type ResidentId,
+  REGISTRY_UNLINK_EFFECTS,
+  asIsoDateTime,
 } from '@domain/index';
 
 import { AccountRegistryLink } from './account-registry-link';
@@ -38,6 +42,29 @@ const LIGAYA: AppAccount = {
 class Links {
   linked: ResidentId | null = null;
   readonly sent: AccountLinkDecision[] = [];
+  readonly unlinkReasons: string[] = [];
+  history: RegistryLinkHistoryEntry[] = [];
+  unlinkAccount(_accountId: AppAccountId, reason: string): Observable<RegistryUnlinkOutcome> {
+    this.unlinkReasons.push(reason);
+    const residentId = this.linked ?? RECORD;
+    this.linked = null;
+    const at = asIsoDateTime('2026-11-26T08:00:00.000Z');
+    this.history = [
+      ...this.history,
+      {
+        act: 'unlinked',
+        residentId,
+        residentName: 'Ligaya Mercado',
+        reason,
+        actorName: 'Ana Admin',
+        at,
+      },
+    ];
+    return of({ residentId, unlinkedAt: at });
+  }
+  registryLinkHistory(): Observable<readonly RegistryLinkHistoryEntry[]> {
+    return of(this.history);
+  }
   registryMatches(accountId: AppAccountId): Observable<RegistryMatches> {
     return of({
       accountId,
@@ -155,5 +182,51 @@ describe('linking a verified account to its registry record later (DL-260)', () 
     ]);
     expect(said.at(-1)).toBe(COPY.done(0));
     expect(text(fixture)).toContain(COPY.linked);
+  });
+});
+
+describe('unlinking a wrong link (DL-262)', () => {
+  it('says what unlinking does before its primary button, takes a reason, and keeps the history', async () => {
+    const { fixture, links, said } = await render(LIGAYA);
+    links.linked = RECORD;
+    links.history = [
+      {
+        act: 'linked',
+        residentId: RECORD,
+        residentName: 'Ligaya Mercado',
+        reason: 'PhilID seen.',
+        actorName: 'Ana Admin',
+        at: asIsoDateTime('2026-11-20T08:00:00.000Z'),
+      },
+    ];
+    fixture.componentRef.setInput('account', { ...LIGAYA });
+    await settle(fixture);
+    expect(text(fixture)).toContain(COPY.linked);
+    expect(text(fixture)).toContain(COPY.historyHeading);
+    expect(text(fixture)).toContain('PhilID seen.');
+
+    button(fixture.nativeElement as HTMLElement, COPY.unlinkOpen)?.click();
+    await settle(fixture);
+    const dialog = document.body.textContent ?? '';
+    for (const effect of REGISTRY_UNLINK_EFFECTS) {
+      expect(dialog).toContain(effect);
+    }
+    const confirm = button(document.body, COPY.unlinkConfirm);
+    expect(confirm?.classList.contains('btn--primary')).toBe(true);
+    expect(confirm?.classList.contains('btn--danger')).toBe(false);
+    expect(confirm?.disabled).toBe(true);
+
+    const reason = document.body.querySelector<HTMLTextAreaElement>('textarea');
+    if (reason === null) throw new Error('no reason box');
+    reason.value = '  Wrong Ligaya: the birth date on her ID differs.  ';
+    reason.dispatchEvent(new Event('input'));
+    await settle(fixture);
+    button(document.body, COPY.unlinkConfirm)?.click();
+    await settle(fixture);
+
+    expect(links.unlinkReasons).toEqual(['Wrong Ligaya: the birth date on her ID differs.']);
+    expect(said.at(-1)).toBe(COPY.unlinkDone);
+    expect(text(fixture)).toContain(COPY.unlinked);
+    expect(text(fixture)).toContain('Wrong Ligaya: the birth date on her ID differs.');
   });
 });

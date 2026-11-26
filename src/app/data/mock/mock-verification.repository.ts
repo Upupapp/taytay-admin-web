@@ -9,6 +9,7 @@ import {
   IN_PERSON_NAME_MAX,
   InPersonRefusedError,
   awaitsReview,
+  formatPersonName,
   identityToConfirm,
   mediaFor,
   reviewNoteProblem,
@@ -20,8 +21,10 @@ import {
   type LinkCorrectedField,
   type LaterLinkOutcome,
   type ConfirmedIdentity,
+  type RegistryLinkHistoryEntry,
   type RegistryMatch,
   type RegistryMatches,
+  type RegistryUnlinkOutcome,
   type ResidentId,
   type InPersonCheck,
   type InPersonVerification,
@@ -70,6 +73,8 @@ export class MockVerificationRepository implements VerificationRepository {
   private readonly residents = inject(MockResidentStore);
   /** Account → the registry record it is linked to, as the API's link rows hold it (`DL-228`). */
   private readonly links = new Map<string, ResidentId>();
+  /** Account → every link and unlink, oldest first, as the API's history keeps them (`DL-262`). */
+  private readonly history = new Map<string, RegistryLinkHistoryEntry[]>();
 
   private requests: readonly VerificationRequest[] = MOCK_VERIFICATION_REQUESTS;
   /** Each counter check by its key, with the body it was sent with, as the API keeps them. */
@@ -493,10 +498,85 @@ export class MockVerificationRepository implements VerificationRepository {
       if (next.sex !== draft.sex) corrected.push('sex');
       if (next.birthDate !== draft.birthDate) corrected.push('birthDate');
       if (corrected.length > 0) {
-        this.residents.replace(record, next, user?.id ?? null);
+        this.residents.replace(record, next, user?.id ?? null, {
+          reason: decision.reason,
+          source: 'account-link',
+          idChecked: true,
+          actorName: user?.displayName ?? null,
+        });
       }
     }
     return this.latency.respond({ link: linked, corrected });
+  }
+
+  /**
+   * Ends a wrong link as the API does (`DL-262`): an administrator's act, never on one's own
+   * account, with a reason of 1 to 500 characters; the link stays in the history, stamped ended.
+   */
+  unlinkAccount(accountId: AppAccountId, reason: string): Observable<RegistryUnlinkOutcome> {
+    const user = this.access.currentUser();
+    const denied = denyUnless<RegistryUnlinkOutcome>(user, 'verification.review');
+    if (denied) {
+      return denied;
+    }
+    if (user !== null && String(user.id) === String(accountId)) {
+      return throwError(() => new Error('You cannot unlink your own account.'));
+    }
+    if (this.accounts.find(accountId) === undefined) {
+      return throwError(() => new Error('That user was not found.'));
+    }
+    const said = reason.trim();
+    if (said.length === 0 || said.length > 500) {
+      return throwError(() => new Error('Say why the link is ended, in 1 to 500 characters.'));
+    }
+    const residentId = this.links.get(String(accountId));
+    if (residentId === undefined) {
+      return throwError(
+        () =>
+          new Error(
+            'This account is not linked to a registry record now, so there is nothing to unlink. ' +
+              'Somebody may have unlinked it a moment ago: read the account again.',
+          ),
+      );
+    }
+    this.links.delete(String(accountId));
+    const unlinkedAt = asIsoDateTime(new Date());
+    this.remember(accountId, 'unlinked', residentId, said, unlinkedAt);
+    return this.latency.respond({ residentId, unlinkedAt });
+  }
+
+  registryLinkHistory(accountId: AppAccountId): Observable<readonly RegistryLinkHistoryEntry[]> {
+    const denied = denyUnless<readonly RegistryLinkHistoryEntry[]>(
+      this.access.currentUser(),
+      'verification.review',
+    );
+    if (denied) {
+      return denied;
+    }
+    if (this.accounts.find(accountId) === undefined) {
+      return throwError(() => new Error('That user was not found.'));
+    }
+    return this.latency.respond([...(this.history.get(String(accountId)) ?? [])]);
+  }
+
+  private remember(
+    accountId: AppAccountId,
+    act: RegistryLinkHistoryEntry['act'],
+    residentId: ResidentId,
+    reason: string,
+    at = asIsoDateTime(new Date()),
+  ): void {
+    const record = this.residents.find(residentId);
+    const user = this.access.currentUser();
+    const entry: RegistryLinkHistoryEntry = {
+      act,
+      residentId,
+      residentName: record === undefined ? '' : formatPersonName(record.name),
+      reason,
+      actorName: user?.displayName ?? null,
+      at,
+    };
+    this.history.set(String(accountId), [...(this.history.get(String(accountId)) ?? []), entry]);
   }
 
   private link(
@@ -519,6 +599,7 @@ export class MockVerificationRepository implements VerificationRepository {
       return 'That registry record was not found.';
     }
     this.links.set(String(accountId), decision.residentId);
+    this.remember(accountId, 'linked', decision.residentId, decision.reason);
     return { decision: 'link', residentId: decision.residentId };
   }
 }

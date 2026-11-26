@@ -1,5 +1,11 @@
 import type { CivilStatus } from '../residents/resident';
-import { asIsoDate, type AppAccountId, type IsoDate, type ResidentId } from '../shared/ids';
+import {
+  asIsoDate,
+  type AppAccountId,
+  type IsoDate,
+  type IsoDateTime,
+  type ResidentId,
+} from '../shared/ids';
 
 /**
  * Which registry record a verified app account is (`DL-228`, the API's ADR 0004 decision 1).
@@ -335,3 +341,41 @@ export function startAccountLinkDraft(verifiedName: string): AccountLinkDraft {
     correctBirthDate: '',
   };
 }
+
+/* ── Ending a wrong link (`DL-262`) ─────────────────────────────────────── */
+
+/**
+ * What an account's link history says happened (`DL-262`): a link made (to the record it was made
+ * to), a link ended, or a same-person finding that moved it to the record kept (`DL-74`).
+ */
+export const REGISTRY_LINK_ACTS = ['linked', 'unlinked', 'relinked'] as const;
+export type RegistryLinkAct = (typeof REGISTRY_LINK_ACTS)[number];
+
+/** One act on an account's link, as the server keeps it: who, when and why. Nothing is removed. */
+export interface RegistryLinkHistoryEntry {
+  readonly act: RegistryLinkAct;
+  readonly residentId: ResidentId;
+  /** The record's name as the registry holds it now; read by an administrator, who holds every key. */
+  readonly residentName: string;
+  readonly reason: string;
+  readonly actorName: string | null;
+  readonly at: IsoDateTime;
+}
+
+export interface RegistryUnlinkOutcome {
+  /** The record the ended link named. */
+  readonly residentId: ResidentId;
+  readonly unlinkedAt: IsoDateTime;
+}
+
+/**
+ * What ending a link does, said before its button (`DL-262`, `DL-225`). An unlink is undone by
+ * linking again, so it is confirmed with the primary button, never the destructive one.
+ */
+export const REGISTRY_UNLINK_EFFECTS: readonly string[] = [
+  'The resident’s app stops showing this record’s assistance requests and sectors at once.',
+  'The record and everything on it stay as they are: nothing is deleted, and requests filed from the app stay on the record.',
+  'The link and this unlinking stay in the account’s link history, with who, when and why.',
+  'The resident is told in the app that the office unlinked the account. The notice names no record.',
+  'You can then link the account to the right record from this page, with an ID in front of you.',
+];

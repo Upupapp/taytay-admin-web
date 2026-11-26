@@ -425,6 +425,16 @@
                   }
                 </dl>
               </section>
+
+              <!-- ── Identity history (DL-264): who changed the name, sex, birth date or barangay,
+                   when and why; values only behind audit.view-detail. -->
+              <section class="panel" aria-labelledby="identity-history-heading">
+                <h2 class="section-title panel__heading" id="identity-history-heading">
+                  {{ identityCopy.heading }}
+                </h2>
+                <p class="panel__hint">{{ identityCopy.intro }}</p>
+                <app-identity-history [residentId]="profile.view.resident.id" />
+              </section>
             </div>
           </div>
 

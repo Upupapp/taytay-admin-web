@@ -15,12 +15,45 @@
           {{ copy.linked }}
           <a [routerLink]="['/residents', linked]">{{ copy.openRecord }}</a>
         </p>
+        <p class="panel__note panel__note--muted">{{ copy.wrongLink }}</p>
+        <button type="button" class="btn btn--secondary" (click)="openUnlink()">
+          {{ copy.unlinkOpen }}
+        </button>
       } @else {
         <p class="panel__note panel__note--plain">{{ copy.unlinked }}</p>
         <button type="button" class="btn btn--primary" (click)="open()">{{ copy.open }}</button>
       }
+
+      @let past = history();
+      @if (past.kind === 'error') {
+        <p class="panel__problem" role="alert">{{ copy.historyFailed }}</p>
+      } @else if (past.kind === 'ready' && past.value.length > 0) {
+        <h4 class="panel__subheading">{{ copy.historyHeading }}</h4>
+        <ol class="panel__history">
+          @for (entry of past.value; track $index) {
+            <li>
+              <span class="panel__history-when">{{ entry.at | date: 'd MMM y, h:mm a' }}</span>
+              {{ copy.act(entry.act, entry.residentName, entry.actorName) }}
+              <span class="panel__history-why">{{ entry.reason }}</span>
+            </li>
+          }
+        </ol>
+      }
     }
   </section>
+
+  @if (unlinking()) {
+    <app-archive-dialog
+      [heading]="copy.unlinkHeading"
+      [effects]="unlinkEffects"
+      [confirmLabel]="copy.unlinkConfirm"
+      [reasonHint]="copy.unlinkReasonHint"
+      [busy]="unlinkBusy()"
+      [problem]="unlinkProblem()"
+      (confirmed)="confirmUnlink($event)"
+      (dismissed)="closeUnlink()"
+    />
+  }
 
   @if (opened() && account().name; as name) {
     <app-modal

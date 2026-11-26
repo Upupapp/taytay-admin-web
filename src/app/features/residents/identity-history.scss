@@ -1,0 +1,78 @@
+/* A record's identity history (DL-264): a plain list, newest first, each change its own block. */
+:host {
+  display: block;
+}
+
+.identity__list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.identity__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--line);
+}
+
+.identity__item:last-child {
+  padding-block-end: 0;
+  border-block-end: 0;
+}
+
+.identity__what,
+.identity__how,
+.identity__why,
+.identity__empty,
+.identity__note,
+.identity__problem {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.identity__what {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+  color: var(--ink);
+}
+
+.identity__when,
+.identity__how,
+.identity__note,
+.identity__empty {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.identity__why {
+  color: var(--text);
+}
+
+.identity__why--withheld {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.identity__problem {
+  color: var(--red-ink);
+  font-size: var(--fs-sm);
+}
+
+.identity__values {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+
+.identity__item > .btn {
+  align-self: flex-start;
+}
+
+.identity__note {
+  margin-block-start: var(--space-3);
+}

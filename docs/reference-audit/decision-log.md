@@ -12117,6 +12117,175 @@ whose ids were held on one line (a 296px column). An id now breaks at its hyphen
 columns fit. The roles matrix keeps scrolling inside its box: a grid of every key against every role
 is the one table that is meant to be read across.
 
+## DL-262 — a wrong link is ended by a person, with a reason, and both acts stay in the account's history
+
+**Status:** Settled (26 November 2026), on the owner's instruction ("you decide what's best and do
+it") about the questions `DL-260` left open. Supersedes `DL-260`'s "no unlink" (its ADR 0015, "What it
+does not do"); nothing else. The API records it as ADR 0016 decision 1 (migration 0081).
+
+**Why it is needed.** A link is the account's way into the office's record: My requests, the
+sectors, applying for Tulong. A link made to the wrong record lets one family read another family's
+assistance in the app, and until now nothing could end it — a link moved only with a same-person
+finding (`DL-74`).
+
+**What the administrator now sees.** In Users and roles, a linked resident account's Registry record
+section says it is linked, opens the record, and offers **Unlink from this record** beside the
+sentence "If it is linked to the wrong person's record, unlink it, then link it to the right one with
+an ID in front of you." The act is held in the shared `ArchiveDialog` (`DL-225`): its effects in a
+list **before** the button — the app stops showing the record's assistance and sectors at once; the
+record and everything on it stay, nothing is deleted, requests filed from the app stay on the record;
+the link and the unlinking stay in the account's link history with who, when and why; the resident
+is told in the app and the notice names no record; the right record can then be linked from the same
+page — a reason of 1 to 500 characters, kept with the unlink, and **Unlink the account** as the
+`.btn--primary`, never `.btn--danger`, because a link is restored by linking again. A refusal (409:
+nothing linked now, perhaps unlinked a moment ago) is the server's sentence, in the dialog, which stays
+open. Below, **Link history** lists every link, unlink and finding's move, oldest first: when, which
+record, who, and the reason in words.
+
+**Who.** The same reviewer as a link: the administrator (`verification.review`), never on their own
+account. Separate people are not required (an office may have one administrator on a bad day); the
+history says who did each act.
+
+**What it does not do.** It moves nothing off the record: a sector the office recorded on the wrong
+record through the account's application stays there until somebody ends it on the record, with a
+reason, as any sector is ended. It is not an archive (`DL-225`): the link history is its own record,
+and the account is not archived.
+
+**Best practice read.** NIST SP 800-63A-4 keeps a person in the loop for binding and its reversal and
+records the session; RA 10173 s.11(c) and s.16(d) ask for inaccurate data to be rectified with both the
+earlier and the new state kept; `DL-74` (no merge) and `DL-225` (archive, never delete) are this
+console's own forms of the same rule.
+
+Code: `REGISTRY_UNLINK_EFFECTS`, `RegistryLinkHistoryEntry` (`domain/verification/account-link.ts`);
+`VerificationRepository.unlinkAccount` and `registryLinkHistory` on both adapters;
+`features/accounts/account-registry-link.*`. Tests: `account-registry-link.spec.ts`,
+`mock-verification.repository.spec.ts`, `http-repositories.spec.ts`.
+
+## DL-263 — the resident is told in the app when the office links, unlinks or corrects her record, by detail and never by value
+
+**Status:** Settled (26 November 2026), as `DL-262`. Supersedes `DL-260`'s "the resident is not told
+in the app" (ADR 0015) for linking, unlinking and corrections; `DL-198`'s name correction of the
+*account* is unchanged. The API records it as ADR 0016 decision 2; the app as its D-235.
+
+**What the resident sees.** A notice in the app's own notifications — no email, no SMS, no push, and
+no new channel (`NotificationChannel` stays `toast | inbox | both` here, and the API's new type is
+in-app only): "The MSWDO office corrected your name and birth date on its record of you. Open your
+profile in the app to see your record as the office keeps it." A link and an unlink each have their
+own sentence; an unlink names no record. The notice names **which details** changed — name, sex,
+birth date, barangay — and **never their values**, because a phone's notices are read by whoever
+holds it, on its lock screen among other places (OWASP MASWE-0054); the profile in the app shows the
+record's values under her own session (`GET /me` `office_record`). The resident can silence the
+notice like every other one (the API's 0068 rule), and nothing is sent about a person any of whose
+records is under a protected sector (`DL-38`; ADR 0003 C): "your barangay changed" on a shared phone
+says she moved.
+
+**When.** In the same transaction as the act, so a correction that is refused or rolled back tells
+nobody, and one that is kept always tells. A change of a detail the notice does not speak of (an
+address, a mobile number) tells nobody.
+
+**What the office sees.** The identity section of the record's edit form now says, before Save, that
+a resident whose app account is linked to the record is told in the app which details changed —
+never their values — and that a barangay change is told the same way. `DL-260`'s link dialog already
+asks the reviewer to tell the resident at the counter; the app now says it too.
+
+Copy: `RESIDENTS_COPY.form.identityTold`.
+
+## DL-264 — a record's identity history is on its page; the values stay behind the auditor's grant
+
+**Status:** Settled (26 November 2026), as `DL-262`. Supersedes `DL-260`'s "the history is not shown on
+a screen yet" (ADR 0015). Follows `DL-114`. The API records it as ADR 0016 decision 3.
+
+**What the citizen's page shows.** Beside Record provenance, a section **Name, sex, birth date and
+barangay history** lists every change of those details, newest first: which field, when, who, how
+(edited on the record, or corrected to the ID when an app account was linked), whether an ID was said
+to be seen, and the reason. The list carries **no value**. It has its four states — a skeleton while
+it loads; "No change … has been recorded. Changes are kept from 26 November 2026; earlier ones were
+not recorded." when empty (the history began with migration 0080, and saying so keeps an empty list
+from reading as "never changed"); the shared error panel with Try again, never an empty list, when the
+read fails (offline included); and the list. It is live on the `residents` topic and re-reads without a
+skeleton (`DL-222`); values already opened stay on screen.
+
+**Which key opens the values, and why `audit.view-detail`.** The two candidates were the auditor's
+`audit.view-detail` and the identity tier's `resident.view-sensitive`. The values are held by
+`audit.view-detail`, with `request.view-sensitive` as well for a record under a protected sector:
+
+1. **It is `DL-114`'s split exactly.** The identity history is the record's own audit trail; the list
+   is the row (who, when, which field, why) and the values are the entry's detail, which `DL-114` gives
+   to the auditor and not the head: "reading the trail is oversight; reading the values is access to
+   the record".
+2. **Fewer people, for more sensitive values.** `resident.view-sensitive` is held by intake, social
+   workers, the head and the administrator — the whole counter. An earlier name can be a maiden name,
+   or a name before an adoption (RA 11642 keeps adoption records confidential) or a legitimation; an
+   earlier sex is a fact about a person. The counter has no need of them to serve the person today:
+   the reason in words says what happened ("Married name, PSA certificate seen"). The one who needs
+   the values is whoever checks that a correction was made against a document — the auditor.
+3. **Opening them is recorded**, as opening an audit entry is (`office_resident.identity_values_read`,
+   a quiet read that announces no topic), so the values are read one change at a time, on a person's
+   click, never with the list.
+
+The server says per row whether this reader may open the values (`values_readable`), so the screen
+offers **Show earlier and later values** only where the server would answer — usability, never the
+protection (rule 4). A protected record's reasons are withheld in the data layer from a reader without
+the protected tier (`DL-38`): a reason for a move can say where she lives now. Without the grant, the
+section says once that an auditor or administrator opens the values and that each opening is recorded.
+
+Code: `domain/residents/identity-history.ts`; `ResidentRepository.identityHistory` and
+`identityChangeValues` on both adapters (the mock store appends a row for each identity field an edit
+or a link correction moves, as the API's trigger does); `features/residents/identity-history.*`.
+Tests: `identity-history.spec.ts`, `mock-resident.repository.spec.ts`, `http-repositories.spec.ts`.
+
+## DL-265 — a request stays with the barangay it was filed in; a barangay link whose applicant moved is told so in words
+
+**Status:** Settled (26 November 2026), as `DL-262`. Closes the flow audit's P10. Keeps `DL-260`'s
+"a filed request keeps the barangay at filing" and `DL-31` (out of scope answers as not found). The API
+records it as ADR 0016 decision 4.
+
+**What was wrong.** A barangay link reads the requests filed with its barangay, and a person where
+they live now. When an applicant moved away after filing, the request stayed visible and the
+applicant panel asked for the person's record, was answered 404, and said "The applicant's record
+could not be read" — an error, about nothing that had failed.
+
+**What the barangay link now sees.** The request, as before, with the applicant's name as the registry
+discloses it to them (a protected person's given name an initial, `DL-38`), and in place of the record
+card the sentence **"This person now lives outside your barangay; the MSWDO office holds their current
+record."** — no link into the registry, no error. The duplicate check beside it says the same in its
+place: it reads the person's whole history, which is their current record. Neither the record nor the
+check is asked for: the API answers `applicant.record: outside-your-barangay` on the request itself,
+and refuses both reads to that reader regardless (the record 404 as before; the check 404 with the
+same sentence). Everybody else opens the record from the request as before.
+
+**Enforced where.** In the API's scope rules (requests by filing barangay, persons by live barangay)
+and its tests; the screen only follows what the request says (rule 4).
+
+Code: `RequestApplicant` on `AssistanceRequest`; `toRequestApplicant`; `AssessmentPage.movedAway`.
+Tests: `requests.spec.ts`, `assistance-request.mapper.spec.ts`.
+
+## DL-266 — a verified resident's barangay is the office's to change
+
+**Status:** Settled (26 November 2026), as `DL-262`. Closes the flow audit's M2. The API records it as
+ADR 0016 decision 5; the app as its D-235.
+
+The office records where a person lives against proof of address, its registry barangay decides whose
+caseload the person is in, and its edit of a linked record already reaches the account (ADR 0015
+decision 6). So a verified resident cannot change her barangay in the app: the API refuses it with
+409 `BARANGAY_HELD_BY_OFFICE`, and the app shows the field read-only with "To change your barangay,
+visit the MSWDO office with proof of your new address." An account not yet verified still sets its
+own. **At the counter**, the office changes it on the person's registry record through the existing
+edit (with `DL-260`'s reason and, since `DL-263`, a notice to the resident); a verified account with
+no link is linked first, from Users and roles (`DL-260`). The console names the new code in
+`API_ERROR_CODES`; it never sends `PATCH /me` for a resident, so the code never reaches a screen here.
+
+## DL-267 — the app's close-account copy says what the API does
+
+**Status:** Settled (26 November 2026), as `DL-262`. The app records it as its D-235; recorded here so
+the console's reference holds all six decisions.
+
+The resident app said "Taytay LGU has your request. The office will contact you." when a resident
+closed her account, while `POST /me/close` closes it at once: sign-in disabled, devices unregistered,
+the digital ID revoked, uploaded photos and selfies discarded; the office keeps its own records. The
+app's copy now says exactly that, before the button and after it. No console change: closures are
+not an office act here, and `DL-116`'s switching-off is a different thing, said in Users and roles.
+
 ## DL-270 — flow audit 2: a failed read is never an empty list, and approving above the maximum is warned
 
 A second flow audit ran what the first had only read, against the API (backend ADR 0017) and in a

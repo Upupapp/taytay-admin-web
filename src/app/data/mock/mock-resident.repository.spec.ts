@@ -709,3 +709,42 @@ describe('an edit names the version it was made on, and why an identity field mo
     expect(explained.name.last).toBe('Villanueva-Cruz');
   });
 });
+
+describe('a record keeps its identity history, and its values behind a grant (DL-264)', () => {
+  it('lists each change without a value, and opens the values to the auditor alone', async () => {
+    // One registry, three readers in turn: the context answers whoever is signed in now.
+    let current: AuthenticatedUser = authenticated('system-administrator');
+    signedInAs(current);
+    TestBed.overrideProvider(ACCESS_CONTEXT, { useValue: { currentUser: () => current } });
+    const created = await firstValueFrom(repo().create(draft()));
+    const renamed = draft({ name: { ...draft().name, last: 'Villanueva-Cruz' } });
+    await firstValueFrom(
+      repo().update(created.id, renamed, {
+        expectedUpdatedAt: null,
+        reason: 'Marriage certificate seen.',
+        idChecked: true,
+      }),
+    );
+
+    current = authenticated('intake-officer');
+    const listed = await firstValueFrom(repo().identityHistory(created.id));
+    expect(listed.map((change) => [change.field, change.reason, change.idChecked])).toEqual([
+      ['lastName', 'Marriage certificate seen.', true],
+    ]);
+    expect(listed[0]?.valuesReadable).toBe(false);
+    expect(listed[0]).not.toHaveProperty('previous');
+    const refused = await firstValueFrom(
+      repo().identityChangeValues(created.id, listed[0]?.id ?? ''),
+    ).catch((error: unknown) => error);
+    expect(refused).toBeInstanceOf(PermissionDeniedError);
+
+    current = authenticated('auditor');
+    const audited = await firstValueFrom(repo().identityHistory(created.id));
+    expect(audited[0]?.valuesReadable).toBe(true);
+    const values = await firstValueFrom(
+      repo().identityChangeValues(created.id, audited[0]?.id ?? ''),
+    );
+    expect(values.previous).toBe(draft().name.last);
+    expect(values.next).toBe('Villanueva-Cruz');
+  });
+});

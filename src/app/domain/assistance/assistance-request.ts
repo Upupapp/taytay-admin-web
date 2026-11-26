@@ -1,4 +1,5 @@
 import type { AuditStamp } from '../shared/audit';
+import type { PersonName } from '../residents/resident';
 import type { AssessmentRecommendation } from '../intake/assessment';
 import type { IntakeChannel } from '../intake/intake-draft';
 import type { IntakeSignalTone } from '../intake/intake-advisory';
@@ -653,7 +654,29 @@ export interface AssistanceRequest {
   readonly isProtected: boolean;
   /** What the data layer held back from this reader. Empty when nothing was. */
   readonly withheld: readonly RequestWithheldField[];
+  /**
+   * The applicant as the server names them on one request (`DL-265`), or absent where the answer
+   * carries none (a list row, an older server). A request stays with the barangay it was filed in;
+   * the person is read where they live now.
+   */
+  readonly applicant?: RequestApplicant | null;
   readonly audit: AuditStamp;
+}
+
+/**
+ * Whether this reader may open the applicant's record (`DL-265`): `outside-your-barangay` when a
+ * barangay link's applicant has moved away since the request was filed with it.
+ */
+export type ApplicantRecordAccess = 'readable' | 'outside-your-barangay';
+
+/**
+ * The applicant's name as the registry discloses it to this reader — a protected person's given
+ * name an initial without the protected tier (`DL-38`) — and whether their record opens.
+ */
+export interface RequestApplicant {
+  readonly name: PersonName;
+  readonly givenNameMasked: boolean;
+  readonly record: ApplicantRecordAccess;
 }
 
 /**

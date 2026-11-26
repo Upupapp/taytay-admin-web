@@ -61,6 +61,8 @@ import {
   EMPTY_ADVISORY,
   REQUIREMENT_STATUS_CATALOG,
   RESIDENT_REPOSITORY,
+  formatPersonName,
+  formatProtectedName,
   asId,
   assessmentReadiness,
   isValidFindings,
@@ -264,6 +266,27 @@ export class AssessmentPage {
   protected readonly linksRegistry = computed(() => this.permissions.scope() !== 'assigned-cases');
 
   /**
+   * The applicant moved out of this barangay link's barangay since the request was filed with it
+   * (`DL-265`). The request stays with the barangay it was filed in and is still this reader's; the
+   * person's current record is the office's, so it is neither asked for nor linked, and the panel
+   * says so in words rather than as an error.
+   */
+  protected readonly movedAway = computed(
+    () => this.request()?.applicant?.record === 'outside-your-barangay',
+  );
+
+  /** The applicant's name as the server disclosed it on the request, for the moved-away panel. */
+  protected readonly applicantName = computed(() => {
+    const applicant = this.request()?.applicant;
+    if (applicant === undefined || applicant === null) {
+      return null;
+    }
+    return applicant.givenNameMasked
+      ? formatProtectedName(applicant.name)
+      : formatPersonName(applicant.name);
+  });
+
+  /**
    * Keyed on the person, not the record: a re-read of the request is a new object with the same
    * applicant, and must not ask for them again with a skeleton (`DL-222`). The panel keeps itself
    * current on its own topics.
@@ -271,7 +294,10 @@ export class AssessmentPage {
   private readonly profileState = toSignal(
     toObservable(
       computed(
-        () => ({ residentId: this.request()?.residentId ?? null, reads: this.readsRegistry() }),
+        () => ({
+          residentId: this.request()?.residentId ?? null,
+          reads: this.readsRegistry() && !this.movedAway(),
+        }),
         { equal: (a, b) => a.residentId === b.residentId && a.reads === b.reads },
       ),
     ).pipe(
@@ -323,9 +349,13 @@ export class AssessmentPage {
     toObservable(
       // Keyed on the request's id, so a quiet re-read of the record does not read the check again
       // with a skeleton; the check keeps itself current on its own topics (`DL-222`).
-      computed(() => ({ id: this.request()?.id ?? null, reads: this.readsAdvisory() }), {
-        equal: (a, b) => a.id === b.id && a.reads === b.reads,
-      }),
+      computed(
+        () => ({
+          id: this.request()?.id ?? null,
+          reads: this.readsAdvisory() && !this.movedAway(),
+        }),
+        { equal: (a, b) => a.id === b.id && a.reads === b.reads },
+      ),
     ).pipe(
       switchMap(({ id, reads }) =>
         id === null || !reads

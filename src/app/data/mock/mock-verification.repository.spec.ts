@@ -406,4 +406,46 @@ describe('MockVerificationRepository', () => {
     ).catch((error: unknown) => error);
     expect(isPermissionDenied(denied)).toBe(true);
   });
+
+  it('unlinks with a reason, keeps both acts in the history, and lets the right record be linked (DL-262)', async () => {
+    const repository = signedInAs('system-administrator');
+    const danilo = asId<AppAccountId>('app-account-0004');
+    const aurora = asId<ResidentId>('res-0001');
+    const other = asId<ResidentId>('res-0002');
+
+    const nothing = await firstValueFrom(repository.unlinkAccount(danilo, 'Wrong.')).catch(
+      (error: unknown) => error,
+    );
+    expect(nothing).toBeInstanceOf(Error);
+
+    await firstValueFrom(
+      repository.linkLater(danilo, { decision: 'link', residentId: aurora, reason: 'PhilID seen' }),
+    );
+    const blank = await firstValueFrom(repository.unlinkAccount(danilo, '   ')).catch(
+      (error: unknown) => error,
+    );
+    expect(blank).toBeInstanceOf(Error);
+    const ended = await firstValueFrom(repository.unlinkAccount(danilo, ' Wrong Aurora. '));
+    expect(ended.residentId).toBe(aurora);
+    expect((await firstValueFrom(repository.registryMatches(danilo))).linkedResidentId).toBeNull();
+
+    await firstValueFrom(
+      repository.linkLater(danilo, {
+        decision: 'link',
+        residentId: other,
+        reason: 'The right one',
+      }),
+    );
+    const history = await firstValueFrom(repository.registryLinkHistory(danilo));
+    expect(history.map((entry) => [entry.act, entry.residentId, entry.reason])).toEqual([
+      ['linked', aurora, 'PhilID seen'],
+      ['unlinked', aurora, 'Wrong Aurora.'],
+      ['linked', other, 'The right one'],
+    ]);
+
+    const denied = await firstValueFrom(
+      signedInAs('intake-officer').unlinkAccount(danilo, 'x'),
+    ).catch((error: unknown) => error);
+    expect(isPermissionDenied(denied)).toBe(true);
+  });
 });

@@ -13,6 +13,8 @@ import {
   type AppAccountId,
   type ConfirmedIdentity,
   type LaterLinkOutcome,
+  type RegistryLinkHistoryEntry,
+  type RegistryUnlinkOutcome,
   type RegistryMatches,
   type ResidentId,
   type VerificationListPage,
@@ -124,6 +126,14 @@ class RecordingVerifications implements VerificationRepository {
   }
 
   linkLater(): Observable<LaterLinkOutcome> {
+    return EMPTY;
+  }
+
+  unlinkAccount(): Observable<RegistryUnlinkOutcome> {
+    return EMPTY;
+  }
+
+  registryLinkHistory(): Observable<readonly RegistryLinkHistoryEntry[]> {
     return EMPTY;
   }
 
