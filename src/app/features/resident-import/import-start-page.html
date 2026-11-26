@@ -126,6 +126,7 @@
     [rows]="rows()"
     [rowKey]="rowKey"
     [loading]="state().kind === 'loading'"
+    [failed]="failure() !== null"
     [emptyHeading]="copy.recent.emptyHeading"
     [emptyMessage]="copy.recent.emptyMessage"
   />

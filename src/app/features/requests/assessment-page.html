@@ -1103,6 +1103,11 @@
                   />
                   <span class="field__hint">{{ copy.approveAmountHint }}</span>
                 </label>
+                @if (aboveProgrammeMaximum(request); as maximum) {
+                  <p class="callout callout--warning assessment__above-maximum" role="status">
+                    {{ copy.approveAboveMaximum(maximum | peso) }}
+                  </p>
+                }
               } @else {
                 <label class="field">
                   <span class="field__label">{{ copy.approveGoods }}</span>

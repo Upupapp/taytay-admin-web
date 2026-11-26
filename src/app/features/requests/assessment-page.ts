@@ -52,6 +52,7 @@ import {
   approvalProblem,
   holdsRequestOpen,
   parsePesos,
+  type Money,
   type Release,
   type RequestApproval,
   PROGRAM_REPOSITORY,
@@ -661,6 +662,24 @@ export class AssessmentPage {
       return { approval };
     },
   );
+
+  /**
+   * The programme's maximum grant when the amount typed is above it (`DL-270`). Said before the
+   * button and never refused, like a self-approval (`DL-226`): the maximum is the office's own
+   * guidance (`DL-66`), and a person decides an exception, with their reason on the record.
+   */
+  protected aboveProgrammeMaximum(request: AssistanceRequest): Money | null {
+    if (this.approvalKind() !== 'money') {
+      return null;
+    }
+    const amount = parsePesos(this.approvalAmount());
+    const programs = valueOf(this.programState()) ?? [];
+    const maximum =
+      programs.find((program) => program.id === request.programId)?.maximumGrant ?? null;
+    return amount !== null && maximum !== null && amount.centavos > maximum.centavos
+      ? maximum
+      : null;
+  }
 
   /** Said once the approver has tried, never while they are still typing. */
   protected readonly approvalProblemText = computed(() => {

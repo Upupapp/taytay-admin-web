@@ -38,6 +38,12 @@ export class DataTable<TRow> {
 
   readonly caption = input.required<string>();
   readonly loading = input(false);
+  /**
+   * The read behind the rows failed, and the page says so above the table (`DL-270`). The table then
+   * shows no empty state: "No residents yet" under "Something went wrong" tells the office the
+   * registry is empty, which nobody knows while the read is failing.
+   */
+  readonly failed = input(false);
   readonly page = input<Page<unknown> | null>(null);
   readonly sort = input<SortSpec | null>(null);
   readonly selectable = input(false);
@@ -52,7 +58,9 @@ export class DataTable<TRow> {
   readonly rowSelected = output<TRow>();
   readonly emptyActionSelected = output<void>();
 
-  protected readonly isEmpty = computed(() => !this.loading() && this.rows().length === 0);
+  protected readonly isEmpty = computed(
+    () => !this.loading() && !this.failed() && this.rows().length === 0,
+  );
 
   /**
    * A table of many columns draws its cells closer together, so a registry fits a laptop's width

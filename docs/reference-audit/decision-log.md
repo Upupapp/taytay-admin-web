@@ -12116,3 +12116,38 @@ The staging recheck after it found one list still wider than a laptop's table bo
 whose ids were held on one line (a 296px column). An id now breaks at its hyphens, so the six
 columns fit. The roles matrix keeps scrolling inside its box: a grid of every key against every role
 is the one table that is meant to be read across.
+
+## DL-270 — flow audit 2: a failed read is never an empty list, and approving above the maximum is warned
+
+A second flow audit ran what the first had only read, against the API (backend ADR 0017) and in a
+browser: the local-api build against the in-memory API, signed in as the administrator and as each of
+the six office roles. Every sidebar link opened for its role and every route outside a role's
+sidebar was refused, never broken (rule 8). Two things on the console's side did not hold.
+
+**A failed read showed "nothing here".** With the API answering every office read with a fault,
+eleven list pages showed the failure above the table and, inside it, the table's own "No residents
+yet" — the registry, the three sector pages, requests, cases, households, families, referrals,
+citizen IDs, verified accounts without a card, and both imports. The programme catalogue showed only
+"No programmes yet — the catalog is empty", and the beneficiary list showed nothing at all, its
+programme filter's failed read throwing out of the template. An office that reads "No residents yet"
+during an outage concludes the registry is empty. `DataTable` now takes `failed`: when the read
+behind the rows failed it shows no empty state, and every list page that says a failure above its
+table binds it. The catalogue and the beneficiary list now say the failure, with Try again, as the
+registry does, and the beneficiary filter's programme read keeps "All programmes" when it fails.
+
+**Approving above a programme's maximum grant is warned, never refused.** The API accepted it
+silently, and the approve panel did not mention the maximum. The maximum is the office's own
+guidance (DL-66), and an exception is a person's decision, so it is said before the button — "This
+is more than the programme's maximum grant of ₱10,000.00. You may still approve it…" — like a
+self-approval (DL-226), and the amount is recorded as given.
+
+What the audit changed on the API, which the console shows in its own words: field refusals are
+sentences ("This cannot be left empty."), not a parser's ("String must contain at least 1
+character(s)"), so `describeFailure` now reads as its comment always said; a second approval with a
+different figure is refused, saying the figure that stands, instead of answering as if it stood; a
+senior-citizen sector for somebody under 60 is refused with the birth date on the record; a document
+is not issued after today; a CSV saved by Excel as "CSV (Comma delimited)" keeps its ñ. The cases,
+counts and results are in the audit's matrix (backend tests `tests/audit2-*.test.ts`).
+
+The launch gate's line 17 said journey 2 had no endpoint. It has had one since ADR 0004; the backend
+now runs journey 2 — an app application through to a payout — instead of skipping it.

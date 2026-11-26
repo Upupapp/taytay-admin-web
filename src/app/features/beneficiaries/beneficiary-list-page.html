@@ -118,6 +118,13 @@
     </p>
   }
 
+  @if (failure(); as message) {
+    <div class="callout callout--danger beneficiaries__problem" role="alert">
+      <p>{{ message }}</p>
+      <button type="button" class="btn" (click)="reloadList()">{{ copy.tryAgain }}</button>
+    </div>
+  }
+
   @if (listChanged()) {
     <app-list-changed-notice (reload)="reloadList()" />
   }
@@ -128,6 +135,7 @@
     [rows]="rows()"
     [rowKey]="rowKey"
     [loading]="isLoading()"
+    [failed]="failure() !== null"
     [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
     [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
     [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"

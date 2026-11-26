@@ -253,6 +253,14 @@ account id (`ff7eac7`).
 **Still open on this line:** journeys run in no CI (no Actions credit) and not against the deployed
 API; journey 2 has no endpoint; no adversarial suite beyond the journeys' refusals; no role sign-offs.
 
+**Update 2026-11-26 (flow audit 2, `DL-270`, backend ADR 0017).** Journey 2 runs: a resident applies
+from the app and the request is taken through to a payout (`tests/journeys/app-application.ts`, on
+PGlite and on real PostgreSQL). The backend's `tests/audit2-*.test.ts` add an adversarial pass: every
+keyed list route for every office role, a tampered id on every route with an id, other residents'
+ids, oversized and malformed bodies, every illegal lifecycle move; and two staff on one request race
+on real PostgreSQL (`tests/pg/request-move-races.test.ts`). Still open: no CI, not against the
+deployed API, no role sign-offs.
+
 ### 18 — Pipelines in place; backup restored with observed figures; rollback rehearsed and timed
 **NO-GO. Release-gate blocker 3.** ~~No pipeline, no backup, no restore, no rollback rehearsal.~~
 *"A backup that has never been restored is a hypothesis."*

@@ -368,6 +368,9 @@ export const REQUESTS_COPY = {
       ].join(' '),
     approveGoods: 'What goods are approved',
     approveGoodsHint: 'Goods are described, never priced.',
+    // DL-270: above the programme's maximum grant is warned before the button, never refused.
+    approveAboveMaximum: (maximum: string): string =>
+      `This is more than the programme’s maximum grant of ${maximum}. You may still approve it: the amount is recorded as you give it. Say in the reason why this request needs more.`,
     approveReason: 'Why it is approved',
     approveSubmit: 'Approve',
     approvedNotice: 'The request has been approved.',

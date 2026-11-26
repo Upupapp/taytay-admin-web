@@ -96,6 +96,7 @@
       [rows]="rows()"
       [rowKey]="rowKey"
       [loading]="isLoading()"
+      [failed]="failure() !== null"
       [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
       [emptyHeading]="hasFilters() ? listCopy.noResultsHeading : page().emptyHeading"
       [emptyMessage]="hasFilters() ? listCopy.noResultsMessage : copy.emptyMessage"

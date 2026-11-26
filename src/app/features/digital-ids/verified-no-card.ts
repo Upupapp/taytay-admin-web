@@ -73,6 +73,7 @@ type Holder = Pick<AppAccount, 'id' | 'name' | 'email'>;
         [rows]="rows()"
         [rowKey]="rowKey"
         [loading]="state().kind === 'loading'"
+        [failed]="failure() !== null"
         emptyVariant="empty"
         [emptyHeading]="copy.emptyHeading"
         [emptyMessage]="copy.emptyMessage"

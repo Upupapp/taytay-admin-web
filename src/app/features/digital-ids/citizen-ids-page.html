@@ -193,6 +193,7 @@
       [rows]="rows()"
       [rowKey]="rowKey"
       [loading]="isLoading()"
+      [failed]="failure() !== null"
       [emptyVariant]="narrowed() ? 'no-results' : 'empty'"
       [emptyHeading]="narrowed() ? copy.noResultsHeading : copy.emptyHeading"
       [emptyMessage]="narrowed() ? copy.noResultsMessage : copy.emptyMessage"

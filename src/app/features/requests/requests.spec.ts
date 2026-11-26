@@ -750,6 +750,47 @@ describe('approving one’s own endorsement is warned, never refused (DL-226)', 
   });
 });
 
+describe('approving above the programme maximum is warned, never refused (DL-270)', () => {
+  const approveSection = (element: HTMLElement) =>
+    element.querySelector('#approve-heading')?.parentElement;
+
+  it('says the maximum before the button once the amount is above it, and approves when asked', async () => {
+    const fixture = await openAssessment(
+      ENDORSED,
+      'mswdo-head',
+      MockAssistanceRequestRepository,
+      'staff-head',
+    );
+    const section = approveSection(html(fixture));
+    type(section?.querySelector('input[type="text"]'), '3,000');
+    fixture.detectChanges();
+    expect(section?.querySelector('.assessment__above-maximum')).toBeNull();
+
+    type(section?.querySelector('input[type="text"]'), '12,000');
+    fixture.detectChanges();
+    const warning = section?.querySelector('.assessment__above-maximum');
+    const button = buttonNamed(section, 'Approve');
+    expect(warning?.textContent).toContain('more than the programme’s maximum grant of ₱10,000.00');
+    expect(warning?.textContent).toContain('You may still approve it');
+    expect(
+      warning !== null &&
+        warning !== undefined &&
+        button !== undefined &&
+        (warning.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
+    ).toBe(true);
+    expect(button?.disabled).toBe(false);
+
+    type(section?.querySelector('textarea'), 'Surgery quotation exceeds the usual ceiling.');
+    button?.click();
+    await fixture.whenStable();
+    const reread = await firstValueFrom(
+      TestBed.inject(ASSISTANCE_REQUEST_REPOSITORY).getById(asId<AssistanceRequestId>(ENDORSED)),
+    );
+    expect(reread?.status).toBe('approved');
+    expect(reread?.approvedAmount?.centavos).toBe(1_200_000);
+  });
+});
+
 describe('a request with an open release is not ended (DL-183)', () => {
   it('names the release and does not offer cancelling or expiring to a reader of payouts', async () => {
     // req-0003 is scheduled, and its release RL-… is scheduled into a payout session.

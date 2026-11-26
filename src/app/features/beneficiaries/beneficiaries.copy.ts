@@ -61,6 +61,8 @@ export const BENEFICIARIES_COPY = {
     shown: (count: number) => `${count} shown.`,
     moreAvailable: 'More are available.',
     noMore: 'That is everyone matching these filters.',
+    // DL-270: a failed read is said above the table, with a retry, never shown as an empty list.
+    tryAgain: 'Try again',
     showMore: 'Show more',
     loadingMore: 'Loading more…',
     moreFailed:

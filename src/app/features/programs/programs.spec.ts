@@ -428,6 +428,22 @@ describe('where payouts are not the reader’s, utilization says so and shows no
   });
 });
 
+/** A catalogue whose list read fails, as it does while the API is down. */
+class FailingCatalogue extends MockProgramRepository {
+  override list(): ReturnType<MockProgramRepository['list']> {
+    return throwError(() => new Error('The server did not answer.'));
+  }
+}
+
+describe('a catalogue that could not be read says so, never that it is empty (DL-270)', () => {
+  it('shows the failure with a retry above the table, and no "No programmes yet"', async () => {
+    const element = html(await openList('mswdo-head', FailingCatalogue));
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('Try again');
+    expect(element.querySelector('app-empty-state')).toBeNull();
+    expect(element.textContent).not.toContain('No programmes yet');
+  });
+});
+
 /* ── The list is read a cursor page at a time ─────────────────────────────── */
 
 describe('the catalogue pages as the office record does', () => {

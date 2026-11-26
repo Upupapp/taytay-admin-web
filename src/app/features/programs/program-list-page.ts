@@ -163,6 +163,11 @@ export class ProgramListPage {
   );
 
   protected readonly isLoading = computed(() => this.state().kind === 'loading');
+  /** Why the list could not be read, said above the table; never an empty catalogue (`DL-270`). */
+  protected readonly failure = computed(() => {
+    const state = this.state();
+    return state.kind === 'error' ? state.message : null;
+  });
   private readonly reading = computed(() => valueOf(this.state()) ?? null);
   /** Why utilization was not read, or `null` when it was (or has not arrived yet). */
   protected readonly usageUnavailable = computed(() => {

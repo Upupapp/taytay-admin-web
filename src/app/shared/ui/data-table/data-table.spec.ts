@@ -89,6 +89,13 @@ describe('DataTable', () => {
     expect(eight.querySelector('table')?.classList.contains('table--dense')).toBe(true);
   });
 
+  it('shows no empty state when the read behind it failed, and does when it is truly empty (DL-270)', async () => {
+    const failed = (await render({ rows: [], failed: true })).nativeElement as HTMLElement;
+    expect(failed.querySelector('app-empty-state')).toBeNull();
+    const empty = (await render({ rows: [] })).nativeElement as HTMLElement;
+    expect(empty.querySelector('app-empty-state')).not.toBeNull();
+  });
+
   it('renders an accessible caption', async () => {
     const element = (await render()).nativeElement as HTMLElement;
     expect(element.querySelector('caption')?.textContent).toContain('Test table');

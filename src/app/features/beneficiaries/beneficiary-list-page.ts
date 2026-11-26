@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { map, switchMap, tap } from 'rxjs';
+import { catchError, map, of, switchMap, tap } from 'rxjs';
 
 import { HasPermissionDirective } from '@core/access/has-permission.directive';
 import { SessionStore } from '@core/auth/session.store';
@@ -163,12 +163,22 @@ export class BeneficiaryListPage {
     { initialValue: LOADING as ViewState<CursorPage<BeneficiarySummary>> },
   );
 
-  /** Only to populate the programme filter; the list itself never needs it. */
-  protected readonly programList = toSignal(this.programs.listActive(), {
-    initialValue: [] as readonly AssistanceProgram[],
-  });
+  /**
+   * Only to populate the programme filter; the list itself never needs it. A failed read leaves the
+   * filter at "All programmes" rather than throwing out of the template and blanking the page; the
+   * list's own read says when the API is failing (`DL-270`).
+   */
+  protected readonly programList = toSignal(
+    this.programs.listActive().pipe(catchError(() => of([] as readonly AssistanceProgram[]))),
+    { initialValue: [] as readonly AssistanceProgram[] },
+  );
 
   protected readonly isLoading = computed(() => this.state().kind === 'loading');
+  /** Why the list could not be read, said above the table; never an empty catalogue (`DL-270`). */
+  protected readonly failure = computed(() => {
+    const state = this.state();
+    return state.kind === 'error' ? state.message : null;
+  });
   protected readonly rows = computed<readonly BeneficiarySummary[]>(() => [
     ...(valueOf(this.state())?.items ?? []),
     ...this.further().flatMap((page) => page.items),

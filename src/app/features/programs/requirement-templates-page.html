@@ -23,6 +23,7 @@
         [rows]="templates()"
         [rowKey]="rowKey"
         [loading]="state().kind === 'loading'"
+        [failed]="loadFailed()"
         [emptyHeading]="copy.emptyHeading"
         [emptyMessage]="copy.emptyMessage"
       />

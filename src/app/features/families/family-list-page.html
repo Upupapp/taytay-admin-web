@@ -91,6 +91,7 @@
     [rows]="rows()"
     [rowKey]="rowKey"
     [loading]="isLoading()"
+    [failed]="failure() !== null"
     [emptyVariant]="hasFilters() ? 'no-results' : 'empty'"
     [emptyHeading]="hasFilters() ? copy.noResultsHeading : copy.emptyHeading"
     [emptyMessage]="hasFilters() ? copy.noResultsMessage : copy.emptyMessage"
