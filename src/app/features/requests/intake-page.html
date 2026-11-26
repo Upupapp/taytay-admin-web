@@ -135,14 +135,23 @@
             <label class="field field--narrow">
               <span class="field__label">{{ copy.requestedAmount }}</span>
               <input
-                type="number"
-                min="0"
-                step="1"
+                type="text"
+                inputmode="decimal"
                 class="field__input"
+                aria-describedby="requested-amount-hint"
+                [attr.aria-invalid]="amountUnreadable() ? 'true' : null"
                 [value]="amountInputValue()"
                 (input)="onAmount($event)"
               />
-              <span class="field__hint">{{ copy.requestedAmountHint }}</span>
+              @if (amountUnreadable()) {
+                <span class="field__error" id="requested-amount-hint" role="alert">
+                  {{ copy.requestedAmountUnreadable }}
+                </span>
+              } @else {
+                <span class="field__hint" id="requested-amount-hint">{{
+                  copy.requestedAmountHint
+                }}</span>
+              }
             </label>
           </section>
         }

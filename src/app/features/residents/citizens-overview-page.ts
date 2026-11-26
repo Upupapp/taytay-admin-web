@@ -6,6 +6,7 @@ import {
   LOCALE_ID,
   signal,
 } from '@angular/core';
+import { PermissionService } from '@core/access/permission.service';
 import { NgTemplateOutlet } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink, type ParamMap } from '@angular/router';
@@ -190,6 +191,12 @@ export class CitizensOverviewPage {
   protected readonly panels = REGISTRY_PANELS_COPY;
   protected readonly health = REGISTRY_HEALTH_COPY;
   protected readonly barangays = TAYTAY_BARANGAYS;
+  private readonly reach = inject(PermissionService);
+  /**
+   * The barangay filter is offered only to a reader who may choose one: an own-barangay reader's
+   * figures are already their barangay, and any other is refused (CLAUDE.md §5, data scope; DL-290).
+   */
+  protected readonly filtersByBarangay = computed(() => this.reach.boundBarangayId() === null);
   protected readonly ageGroups = RESIDENT_AGE_GROUPS;
   protected readonly sexes = SEXES;
   protected readonly periods = RESIDENT_SUMMARY_PERIODS;
@@ -531,8 +538,19 @@ export class CitizensOverviewPage {
     series: ReportSeries,
     narrow: (row: ReportRow) => Readonly<Record<string, string>> | null,
   ): readonly ReportRow[] {
+    const bound = this.reach.boundBarangayId();
+    // An own-barangay reader's figures are their barangay's, as if it were chosen (data scope).
+    const base: Readonly<Record<string, string>> =
+      bound === null ? this.base() : { ...this.base(), barangay: bound };
     return series.rows.map((row) => {
-      const params = row.isWithheld ? null : narrow(row);
+      const narrowed = row.isWithheld ? null : narrow(row);
+      // A row the page's own filter rules out counts nobody (Muzon under "Dolores", the men under
+      // "female"): its link would replace that filter and open somebody else's list (DL-290).
+      const params =
+        narrowed !== null &&
+        Object.entries(narrowed).some(([key, value]) => key in base && base[key] !== value)
+          ? null
+          : narrowed;
       return params === null
         ? row
         : { ...row, routerLink: '/residents', queryParams: { ...this.base(), ...params } };

@@ -9,6 +9,7 @@ import {
   linkedSignal,
   signal,
 } from '@angular/core';
+import { failureReason } from '@shared/state/failure-reason';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import type { Observable } from 'rxjs';
 import { RouterLink } from '@angular/router';
@@ -68,7 +69,7 @@ import {
   isValidFindings,
   nextStatuses,
   permissionForTransition,
-  pesos,
+  pesosForInput,
   documentRequestProblems,
   asIsoDate,
   DOCUMENT_REQUEST_CHANNELS,
@@ -774,7 +775,12 @@ export class AssessmentPage {
 
   protected readonly findings = signal('');
   protected readonly homeVisit = signal(false);
-  protected readonly recommended = signal<number | null>(null);
+  /** The recommended pesos as typed; read into centavos by `parsePesos`, never a float (DL-290). */
+  protected readonly recommendedText = signal('');
+  protected readonly recommendedUnreadable = computed(() => {
+    const text = this.recommendedText().trim();
+    return text !== '' && parsePesos(text) === null;
+  });
   protected readonly recommendation = signal<AssessmentRecommendation>('insufficient-information');
   protected readonly recommendationChoices = ASSESSMENT_RECOMMENDATIONS;
   protected readonly recommendationLabels = ASSESSMENT_RECOMMENDATION_LABELS;
@@ -919,8 +925,8 @@ export class AssessmentPage {
       const draft = toAssessmentDraft(request);
       this.findings.set(draft.findings);
       this.homeVisit.set(draft.homeVisitConducted);
-      this.recommended.set(
-        draft.recommendedAmount === null ? null : draft.recommendedAmount.centavos / 100,
+      this.recommendedText.set(
+        draft.recommendedAmount === null ? '' : pesosForInput(draft.recommendedAmount),
       );
       this.recommendation.set(draft.recommendation);
       this.reason.set(draft.reason ?? '');
@@ -981,7 +987,8 @@ export class AssessmentPage {
       !this.submitting() &&
       this.openAssessment() !== null &&
       this.unanswered().length === 0 &&
-      this.assessmentProblems().length === 0,
+      this.assessmentProblems().length === 0 &&
+      !this.recommendedUnreadable(),
   );
 
   protected onFindings(event: Event): void {
@@ -997,25 +1004,18 @@ export class AssessmentPage {
   }
 
   protected onRecommended(event: Event): void {
-    const raw = (event.target as HTMLInputElement).value.trim();
-    const amount = Number.parseFloat(raw);
-    this.recommended.set(raw === '' || !Number.isFinite(amount) || amount < 0 ? null : amount);
-  }
-
-  protected recommendedValue(): string {
-    const amount = this.recommended();
-    return amount === null ? '' : String(amount);
+    this.recommendedText.set((event.target as HTMLInputElement).value);
   }
 
   protected saveStudy(): void {
     if (!this.canSaveStudy()) {
       return;
     }
-    const amount = this.recommended();
+    const typed = this.recommendedText().trim();
     this.run(
       this.requests.recordAssessment(asId<AssistanceRequestId>(this.id()), {
         findings: this.findings().trim(),
-        recommendedAmount: amount === null ? null : pesos(amount),
+        recommendedAmount: typed === '' ? null : parsePesos(typed),
         homeVisitConducted: this.homeVisit(),
         recommendation: this.recommendation(),
         reason: this.reason().trim() === '' ? null : this.reason().trim(),
@@ -1301,9 +1301,7 @@ export class AssessmentPage {
        * believes it holds, and does not, is the failure this whole append-only model exists to
        * make impossible.
        */
-      this.notifications.error(
-        failure instanceof Error ? failure.message : this.documentCopy.notRecorded,
-      );
+      this.notifications.error(failureReason(failure) ?? this.documentCopy.notRecorded);
     } finally {
       this.uploading.set(false);
       this.uploadPercent.set(null);
@@ -1472,6 +1470,6 @@ export class AssessmentPage {
       }
       return;
     }
-    this.notifications.error(failure instanceof Error ? failure.message : fallback);
+    this.notifications.error(failureReason(failure) ?? fallback);
   }
 }

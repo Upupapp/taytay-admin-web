@@ -8,6 +8,7 @@ import {
   TemplateRef,
   viewChild,
 } from '@angular/core';
+import { PermissionService } from '@core/access/permission.service';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map, switchMap, tap } from 'rxjs';
@@ -72,6 +73,12 @@ export class FamilyListPage {
 
   protected readonly copy = FAMILIES_COPY.list;
   protected readonly barangays = TAYTAY_BARANGAYS;
+  private readonly reach = inject(PermissionService);
+  /**
+   * The barangay filter is offered only to a reader who may choose one: an own-barangay reader's
+   * figures are already their barangay, and any other is refused (CLAUDE.md §5, data scope; DL-290).
+   */
+  protected readonly filtersByBarangay = computed(() => this.reach.boundBarangayId() === null);
 
   private readonly referenceCell =
     viewChild.required<TemplateRef<{ $implicit: FamilySummary }>>('referenceCell');

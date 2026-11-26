@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { of, throwError, type Observable } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
@@ -131,6 +131,8 @@ const SUMMARY: ResidentSummary = {
 function configure(
   answer: Observable<ResidentSummary>,
   granted: readonly Permission[] = ['resident.view'],
+  /** The signed-in account, where its data scope matters; only `scope` and `barangayId` are read. */
+  user: unknown = null,
 ): ResidentSummaryFilter[] {
   const asked: ResidentSummaryFilter[] = [];
   TestBed.resetTestingModule();
@@ -148,7 +150,7 @@ function configure(
       },
       {
         provide: SessionStore,
-        useValue: { user: signal(null), permissions: signal(new Set<Permission>(granted)) },
+        useValue: { user: signal(user), permissions: signal(new Set<Permission>(granted)) },
       },
       { provide: UNSERVED_PORTS, useValue: [] },
       {
@@ -264,6 +266,74 @@ describe('CitizensOverviewPage (DL-213)', () => {
     expect(
       hrefs.some((href) => href.includes('ageGroup=senior') && href.includes('sex=female')),
     ).toBe(true);
+  });
+
+  it('links no row that the page’s own filter rules out (DL-290)', async () => {
+    const asked = configure(
+      of({
+        ...SUMMARY,
+        byBarangay: series(
+          'by-barangay',
+          [
+            { key: 'brgy-dolores', label: 'Dolores', value: 8 },
+            { key: 'brgy-muzon', label: 'Muzon', value: 0 },
+          ],
+          8,
+        ),
+        byAgeSex: series(
+          'by-age-sex',
+          [
+            { key: 'senior.female', label: 'Seniors, female', value: 3 },
+            { key: 'senior.male', label: 'Seniors, male', value: 0 },
+          ],
+          3,
+        ),
+      }),
+    );
+    await TestBed.inject(Router).navigateByUrl('/?barangay=brgy-dolores&sex=female');
+    const root = await render();
+
+    expect(asked.at(-1)).toEqual({ barangayId: 'brgy-dolores', sex: 'female' });
+    const hrefs = [...root.querySelectorAll('a')].map((link) => link.getAttribute('href') ?? '');
+    // Muzon and the men count nobody under this filter: a link would open somebody else's list.
+    expect(hrefs.some((href) => href.includes('barangay=brgy-muzon'))).toBe(false);
+    expect(hrefs.some((href) => href.includes('sex=male'))).toBe(false);
+    // The rows the filter keeps still open the registry, the filter carried.
+    expect(
+      hrefs.some(
+        (href) =>
+          href.includes('barangay=brgy-dolores') &&
+          href.includes('sex=female') &&
+          href.includes('ageGroup=senior'),
+      ),
+    ).toBe(true);
+  });
+
+  it('offers a barangay link no barangay filter, and links no other barangay (DL-290)', async () => {
+    configure(
+      of({
+        ...SUMMARY,
+        byBarangay: series(
+          'by-barangay',
+          [
+            { key: 'brgy-san-juan', label: 'San Juan', value: 8 },
+            { key: 'brgy-muzon', label: 'Muzon', value: 0 },
+          ],
+          8,
+        ),
+      }),
+      ['resident.view'],
+      { scope: 'own-barangay', barangayId: 'brgy-san-juan' },
+    );
+    const root = await render();
+
+    const options = [...root.querySelectorAll('.overview__filters option')].map((option) =>
+      option.textContent?.trim(),
+    );
+    expect(options).not.toContain('Muzon');
+    const hrefs = [...root.querySelectorAll('a')].map((link) => link.getAttribute('href') ?? '');
+    expect(hrefs.some((href) => href.includes('barangay=brgy-muzon'))).toBe(false);
+    expect(hrefs.some((href) => href.includes('barangay=brgy-san-juan'))).toBe(true);
   });
 
   it('counts records to tidy, never lists them, and says when no detection pass has run', async () => {

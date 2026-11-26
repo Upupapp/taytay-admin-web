@@ -54,17 +54,19 @@
         </span>
       </label>
 
-      <label class="field">
-        <span class="field__label visually-hidden">{{ listCopy.barangay }}</span>
-        <select class="field__input field__input--pill" (change)="onBarangay($event)">
-          <option value="" [selected]="!filter().barangayId">{{ listCopy.allBarangays }}</option>
-          @for (barangay of barangays; track barangay.id) {
-            <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
-              {{ barangay.name }}
-            </option>
-          }
-        </select>
-      </label>
+      @if (filtersByBarangay()) {
+        <label class="field">
+          <span class="field__label visually-hidden">{{ listCopy.barangay }}</span>
+          <select class="field__input field__input--pill" (change)="onBarangay($event)">
+            <option value="" [selected]="!filter().barangayId">{{ listCopy.allBarangays }}</option>
+            @for (barangay of barangays; track barangay.id) {
+              <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+                {{ barangay.name }}
+              </option>
+            }
+          </select>
+        </label>
+      }
 
       @if (hasFilters()) {
         <button type="button" class="btn residents__clear" (click)="clearFilters()">

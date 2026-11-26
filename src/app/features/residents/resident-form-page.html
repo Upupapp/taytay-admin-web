@@ -60,6 +60,7 @@
                       type="text"
                       autocomplete="given-name"
                       [value]="model().first"
+                      maxlength="100"
                       (input)="onText('first', $event)"
                     />
                   </label>
@@ -70,6 +71,7 @@
                       type="text"
                       autocomplete="additional-name"
                       [value]="model().middle"
+                      maxlength="100"
                       (input)="onText('middle', $event)"
                     />
                   </label>
@@ -80,6 +82,7 @@
                       type="text"
                       autocomplete="family-name"
                       [value]="model().last"
+                      maxlength="100"
                       (input)="onText('last', $event)"
                     />
                   </label>
@@ -90,6 +93,7 @@
                       type="text"
                       autocomplete="honorific-suffix"
                       [value]="model().suffix"
+                      maxlength="20"
                       (input)="onText('suffix', $event)"
                     />
                   </label>
@@ -169,9 +173,8 @@
                       <span class="field__label">{{ copy.monthlyIncome }}</span>
                       <input
                         class="field__input"
-                        type="number"
-                        min="0"
-                        step="1"
+                        type="text"
+                        inputmode="decimal"
                         [value]="model().monthlyIncome"
                         (input)="onText('monthlyIncome', $event)"
                       />
@@ -200,6 +203,7 @@
                       type="email"
                       autocomplete="email"
                       [value]="model().email"
+                      maxlength="200"
                       (input)="onText('email', $event)"
                     />
                   </label>
@@ -230,6 +234,7 @@
                       class="field__input"
                       type="text"
                       [value]="model().purokOrSitio"
+                      maxlength="80"
                       (input)="onText('purokOrSitio', $event)"
                     />
                   </label>
@@ -240,6 +245,7 @@
                       type="text"
                       autocomplete="street-address"
                       [value]="model().streetAddress"
+                      maxlength="200"
                       (input)="onText('streetAddress', $event)"
                     />
                   </label>
@@ -282,6 +288,7 @@
                       class="field__input"
                       type="text"
                       [value]="model().sectorBasis"
+                      maxlength="500"
                       (input)="onText('sectorBasis', $event)"
                       (blur)="basisTouched.set(true)"
                       [attr.aria-describedby]="

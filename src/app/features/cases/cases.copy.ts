@@ -4,6 +4,7 @@ export const CASES_COPY = {
     title: 'Cases',
     subtitle: 'The office’s continuing file on a person, and what is owed on it next.',
     caption: 'Social welfare cases',
+    tryAgain: 'Try again',
     /**
      * Said above the queues, because "case" and "assistance request" are the
      * two words most easily used for each other, and the distinction is the

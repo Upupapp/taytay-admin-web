@@ -41,7 +41,12 @@ const CODE_LOCKED = {
  */
 
 function errorResponse(body: unknown, status = 422, headers = new HttpHeaders()) {
-  return new HttpErrorResponse({ error: body, status, statusText: 'Unprocessable Content', headers });
+  return new HttpErrorResponse({
+    error: body,
+    status,
+    statusText: 'Unprocessable Content',
+    headers,
+  });
 }
 
 describe('readApiError', () => {
@@ -158,7 +163,9 @@ describe('readApiError', () => {
 
   it('ignores a details object that is not field -> messages', () => {
     const failure = readApiError(
-      errorResponse({ error: { code: 'INVALID_JSON', message: 'Malformed.', details: { email: 'not an array' } } }),
+      errorResponse({
+        error: { code: 'INVALID_JSON', message: 'Malformed.', details: { email: 'not an array' } },
+      }),
     );
 
     expect(failure.details).toBeNull();
@@ -233,5 +240,24 @@ describe('isNotFound', () => {
     expect(isNotFound(new HttpErrorResponse({ status: 0 }))).toBe(false);
     expect(isNotFound(new Error('not found'))).toBe(false);
     expect(isNotFound(null)).toBe(false);
+  });
+
+  // Flow audit 5: a link cut short showed "Could not load this section" and a Try again (DL-290).
+  it('reads a 422 that names only the id in the address as not there, and no other 422', () => {
+    const refused = (details: Record<string, string[]>) =>
+      readApiError(
+        new HttpErrorResponse({
+          status: 422,
+          error: { error: { code: 'VALIDATION_FAILED', message: 'Not validated.', details } },
+        }),
+      );
+    const malformed = [
+      'This does not name a record the API knows: the reference is not in the right form.',
+    ];
+    expect(isNotFound(refused({ id: malformed }))).toBe(true);
+    expect(isNotFound(refused({ resident_id: malformed }))).toBe(true);
+    expect(isNotFound(refused({ id: malformed, reason: ['Say why.'] }))).toBe(false);
+    expect(isNotFound(refused({ street_address: ['Use 200 characters or less.'] }))).toBe(false);
+    expect(isNotFound(new HttpErrorResponse({ status: 422 }))).toBe(false);
   });
 });

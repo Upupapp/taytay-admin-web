@@ -26,7 +26,8 @@ import {
   isValidAcknowledgement,
   needsAcknowledgement,
   nextStep,
-  pesos,
+  parsePesos,
+  pesosForInput,
   previousStep,
   problemsForStep,
   requirementEntriesFor,
@@ -203,8 +204,22 @@ export class IntakePage {
     intakeProblems(this.draft(), this.advisory(), this.acknowledgement()),
   );
 
-  protected readonly canFile = computed(() => this.problems().length === 0 && !this.submitting());
-  protected readonly canSave = computed(() => isSaveableDraft(this.draft()) && !this.submitting());
+  /**
+   * The amount as typed, or `null` while the box shows the draft's own. Kept as text so a figure
+   * nobody can read is said rather than sent as "no amount" or rounded (DL-290, rule 6).
+   */
+  private readonly amountText = signal<string | null>(null);
+  protected readonly amountUnreadable = computed(() => {
+    const text = this.amountText()?.trim() ?? '';
+    return text !== '' && parsePesos(text) === null;
+  });
+
+  protected readonly canFile = computed(
+    () => this.problems().length === 0 && !this.submitting() && !this.amountUnreadable(),
+  );
+  protected readonly canSave = computed(
+    () => isSaveableDraft(this.draft()) && !this.submitting() && !this.amountUnreadable(),
+  );
 
   protected problemsIn(step: IntakeStep): readonly IntakeProblem[] {
     return problemsForStep(this.problems(), step);
@@ -263,6 +278,7 @@ export class IntakePage {
           return;
         }
         this.draftId.set(request.id);
+        this.amountText.set(null);
         this.draft.set({
           residentId: request.residentId,
           // `''` is a draft that has not chosen a programme yet (`DL-63`).
@@ -361,11 +377,9 @@ export class IntakePage {
   }
 
   protected onAmount(event: Event): void {
-    const raw = (event.target as HTMLInputElement).value.trim();
-    const amount = Number.parseFloat(raw);
-    this.patch({
-      requestedAmount: raw === '' || !Number.isFinite(amount) || amount < 0 ? null : pesos(amount),
-    });
+    const raw = (event.target as HTMLInputElement).value;
+    this.amountText.set(raw);
+    this.patch({ requestedAmount: raw.trim() === '' ? null : parsePesos(raw) });
   }
 
   protected obligationLabel(entry: IntakeRequirementEntry): string {
@@ -492,10 +506,14 @@ export class IntakePage {
     return `/residents/${residentId}`;
   }
 
-  /** Pesos in the box, centavos in the model. The conversion lives in one place. */
+  /** Pesos in the box, centavos in the model: what was typed, or the draft's own, digit by digit. */
   protected amountInputValue(): string {
+    const typed = this.amountText();
+    if (typed !== null) {
+      return typed;
+    }
     const amount = this.draft().requestedAmount;
-    return amount === null ? '' : String(amount.centavos / 100);
+    return amount === null ? '' : pesosForInput(amount);
   }
 
   protected statusLabel(status: AssistanceRequestStatus): string {

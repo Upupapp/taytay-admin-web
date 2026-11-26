@@ -120,6 +120,13 @@ export class DashboardPage {
   /** The recent-activity panel reads the office's audit trail, which only some adapter sets serve. */
   protected readonly servesAudit = inject(ServedPorts).serves('governance');
   protected readonly barangays = TAYTAY_BARANGAYS;
+  /**
+   * The barangay filter is offered only to a reader who may choose one: an own-barangay reader's
+   * figures are already their barangay, and any other is refused (CLAUDE.md §5, data scope; DL-290).
+   */
+  protected readonly filtersByBarangay = computed(
+    () => this.permissions.boundBarangayId() === null,
+  );
   protected readonly recordRequest = RECORD_REQUEST;
   protected readonly schedulePayouts = SCHEDULE_PAYOUTS;
   protected readonly periods = DASHBOARD_PERIODS;

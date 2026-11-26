@@ -789,13 +789,19 @@
               <label class="field field--narrow">
                 <span class="field__label">{{ copy.recommendedAmount }}</span>
                 <input
-                  type="number"
-                  min="0"
-                  step="1"
+                  type="text"
+                  inputmode="decimal"
                   class="field__input"
-                  [value]="recommendedValue()"
+                  aria-describedby="recommended-amount-hint"
+                  [attr.aria-invalid]="recommendedUnreadable() ? 'true' : null"
+                  [value]="recommendedText()"
                   (input)="onRecommended($event)"
                 />
+                @if (recommendedUnreadable()) {
+                  <span class="field__error" id="recommended-amount-hint" role="alert">
+                    {{ copy.amountUnreadable }}
+                  </span>
+                }
               </label>
 
               <label class="field field--narrow">

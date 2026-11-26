@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { failureReason } from '@shared/state/failure-reason';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom, switchMap } from 'rxjs';
@@ -220,9 +221,7 @@ export class FamilyDetailPage {
       this.notifications.success(this.copy.headChanged);
       this.reloads.update((n) => n + 1);
     } catch (failure: unknown) {
-      this.notifications.error(
-        failure instanceof Error ? failure.message : this.copy.headNotChanged,
-      );
+      this.notifications.error(failureReason(failure) ?? this.copy.headNotChanged);
     } finally {
       this.settingHead.set(false);
     }
@@ -390,9 +389,7 @@ export class FamilyDetailPage {
         },
         error: (failure: unknown) => {
           this.submitting.set(false);
-          this.notifications.error(
-            failure instanceof Error ? failure.message : this.relationshipCopy.endFailed,
-          );
+          this.notifications.error(failureReason(failure) ?? this.relationshipCopy.endFailed);
         },
       });
   }

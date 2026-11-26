@@ -40,6 +40,12 @@ describe('MenuReach — a figure links only where the menu would (DL-273, rule 8
     expect(reach(['resident.view']).canOpen('/residents')).toBe(true);
   });
 
+  // Flow audit 5: a social worker was offered Beneficiaries and met the API's caseload refusal.
+  it('does not offer a caseload the beneficiary registry the API refuses it (DL-290)', () => {
+    expect(reach(['beneficiary.view'], [], 'assigned-cases').canOpen('/beneficiaries')).toBe(false);
+    expect(reach(['beneficiary.view']).canOpen('/beneficiaries')).toBe(true);
+  });
+
   it('never offers a route the menu does not list', () => {
     expect(reach(['user.view']).canOpen('/users/somebody')).toBe(false);
   });

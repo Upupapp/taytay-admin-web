@@ -50,6 +50,7 @@ export const ISSUANCE_COPY = {
     emptyHeading: 'Nothing here',
     emptyOpen: 'No request from a resident is waiting.',
     emptyOther: 'No request has this status.',
+    emptyNarrowed: 'No request still being worked is for this document or this resident.',
     emptyReference:
       'No request has that number in the offices you work for. Check it with the resident: another ' +
       'office’s request is not found here.',

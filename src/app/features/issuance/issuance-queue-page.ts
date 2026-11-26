@@ -269,11 +269,22 @@ export class IssuanceQueuePage {
     if (this.reference() !== null) {
       return this.copy.emptyReference;
     }
-    return this.filter().status === null ? this.copy.emptyOpen : this.copy.emptyOther;
+    if (this.filter().status !== null) {
+      return this.copy.emptyOther;
+    }
+    return this.narrowed() ? this.copy.emptyNarrowed : this.copy.emptyOpen;
   });
-  /** A reference or a status narrows the queue: nothing shown is "no results", not "empty". */
+
+  /** A document or a resident narrows the open queue as a status does (DL-290). */
+  private readonly narrowed = computed(
+    () => this.filter().typeId !== null || this.filter().residentAccountId !== undefined,
+  );
+
+  /** Anything that narrows the queue makes nothing shown "no results", not "empty". */
   protected readonly emptyVariant = computed<EmptyStateVariant>(() =>
-    this.reference() !== null || this.filter().status !== null ? 'no-results' : 'empty',
+    this.reference() !== null || this.filter().status !== null || this.narrowed()
+      ? 'no-results'
+      : 'empty',
   );
 
   protected readonly rowKey = (request: IssuanceRequestSummary): string => request.id;

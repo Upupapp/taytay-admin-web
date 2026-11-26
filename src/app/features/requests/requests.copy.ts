@@ -111,6 +111,8 @@ export const REQUESTS_COPY = {
       'e.g. Maintenance medicines and follow-up laboratory work after a hypertension confinement',
     requestedAmount: 'Amount requested (₱)',
     requestedAmountHint: 'Optional. Leave blank where the programme grants goods rather than cash.',
+    requestedAmountUnreadable:
+      'Type the amount in pesos, like 3200 or 3200.50. A centavo cannot be split.',
     maximumGrant: 'Programme maximum',
 
     checksHeading: 'Checks',
@@ -277,6 +279,7 @@ export const REQUESTS_COPY = {
       'e.g. Home visit on 12 August. Household of five in a rented room; sole earner out of work since June; two children in public school.',
     homeVisit: 'A home visit was conducted',
     recommendedAmount: 'Recommended amount (₱)',
+    amountUnreadable: 'Type the amount in pesos, like 3200 or 3200.50. A centavo cannot be split.',
     recommendation: 'What you recommend',
     completedHeading: 'The completed case study',
     studyForm: 'Form',

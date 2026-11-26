@@ -12439,3 +12439,67 @@ into any field or filter is refused as 422 naming the field ("This holds a hidde
 that cannot be saved. Type it again rather than pasting it."), where it used to come back as
 "Something went wrong." The cases, counts and results are in the audit's matrix (backend tests
 `tests/audit3-*.test.ts`).
+
+## DL-290 — flow audit 5: a figure never opens somebody else's list, money is read as typed, and a cut-short link is "not available"
+
+**Status:** Settled (27 November 2026), from a hands-on click-through of every page (the owner: "check
+all please … all buttons, and make sure the filters work properly, try them one by one"). Every
+filter value of every list was chosen on its own and the rows compared with an independent count of
+the registry, every menu page was opened as each office role, and each page was read at 1280 (light
+and dark), 768 and 390 wide; the cases and results are in the audit's matrix. Nine things were
+wrong.
+
+1. **A breakdown row the page's own filter rules out opens nothing.** On the Citizen overview under
+   "Dolores", the barangay donut listed Muzon with 0, and its link replaced the page's barangay with
+   Muzon, opening a list of 7; under "Female", every male cell of the age-and-sex table said 0 and
+   opened a list of men. A row whose narrowing contradicts the page's filter counts nobody, so it is
+   text, as a withheld row is (`DL-273`: a figure opens what it counts). The sector table already
+   did this; the barangay and age-and-sex rows now do the same, through the one `linked` helper.
+2. **Money is read as typed, never through a float** (rule 6). The resident form's monthly income,
+   the intake's requested amount and the assessment's recommended amount read the box with
+   `parseFloat` and multiplied by a hundred: "12.345" was saved as ₱12.35, and because the boxes were
+   `type="number"`, "3,200" was emptied by the browser and saved as no amount at all. All three are
+   now text boxes (`inputmode="decimal"`) read by `parsePesos`, as the household form and the approval
+   already were; a figure that cannot be read — a third decimal, a minus sign, a stray letter — is
+   said beside the box and nothing is sent. The domain refuses a negative or split-centavo income too
+   (`not-an-amount`).
+3. **The resident form holds each text field to the API's length** (`maxlength`: names 100, suffix 20,
+   purok 80, street 200, email 200, the sector basis 500). A longer street was sent and came back as
+   "The request could not be validated", which names no field. And wherever a screen says a refusal
+   in the server's words (`failureReason`, thirty screens), a validation refusal now names the field
+   and gives the API's own sentence for it ("Street address: Use 200 characters or less."), as
+   `describeFailure` was written to; the API's sentences name the rule, never the value sent.
+4. **The document request queue says "no results" when a document or a resident narrows it.** It said
+   "Nothing here — No request from a resident is waiting", a false statement about the whole queue,
+   whenever a document type was chosen and none of that type was open.
+5. **A cut-short link is "not available", not a failure.** An address whose record id is not in the
+   right form (a link cut short when pasted) was answered 422 naming only `id` ("This does not name a
+   record the API knows"), and all twelve detail pages showed "Could not load this section" with a
+   "Try again" that could never work. `isNotFound`, the one test every optional read asks, now reads a
+   422 whose only complaint is one id (`id`, or a named one such as `resident_id`) as the absence it
+   is, so each page says its own "not available". Only reads ask it, so a form is never told a
+   refused field means "not found".
+6. **The case list's failed read offers "Try again"**, as every other list does. It said the server
+   could not be reached and offered nothing, and reloading the page ends the session (ADR 0006).
+7. **A reader confined to one barangay is offered no barangay filter** (CLAUDE.md §5, data scope):
+   the registry, the Citizen overview, the sector pages, the household and family lists and the
+   dashboard offered all five, and any other than their own was answered "Your account sees only its
+   own barangay. Try again". The request list's rule (`filtersByBarangay`) now holds on all six, and
+   on the overview a row for another barangay is text, as in item 1.
+8. **Beneficiaries is closed to a caseload** (`closedTo: ['assigned-cases']` and the list route's
+   `scopeGuard`), as Residents, Households and Families already were (`DL-183`): the API refuses a
+   social worker the beneficiary registry (`DL-179`), so the menu offered a page that only said so.
+   A person's beneficiary record stays reachable from their case or request.
+9. **The case workspace holds its fields to the API's lengths** (a note 4,000 characters, a task title
+   200, every reason 1,000), and the eight screens that showed a generic sentence for any refusal that
+   was not an `Error` (opening a case, the case workspace, the family and household records, the
+   payout session, preparing a release, the request record, the resident record) now say it through
+   `failureReason`.
+
+**Held, and why.** The event composer, opening a case and the programme form do not yet cap every
+text field; where they say a refusal through `failureReason` it now names the field. The beneficiary
+registry still offers a programme filter and the "Programme
+member" standing and refuses both in words (`DL-187`, the owner's question there is open). Field
+visits, events and sector applications keep their filters on the page rather than in the address;
+their empty and no-results wording is right. A one-letter registry search is refused in words; the
+"Try again" beside it is redundant but harmless.

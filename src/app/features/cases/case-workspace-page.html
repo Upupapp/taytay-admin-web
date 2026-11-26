@@ -475,6 +475,7 @@
             rows="3"
             [placeholder]="shared.transition.reasonPlaceholder"
             [value]="assignReason()"
+            maxlength="1000"
             (input)="onAssignReason($event)"
           ></textarea>
           <span class="field__hint">{{ shared.transition.reasonHint }}</span>
@@ -547,6 +548,7 @@
             rows="3"
             [placeholder]="linkCopy.reasonPlaceholder"
             [value]="linkReason()"
+            maxlength="1000"
             (input)="onLinkReason($event)"
           ></textarea>
           <span class="field__hint">{{ shared.transition.reasonHint }}</span>
@@ -582,6 +584,7 @@
             rows="4"
             [placeholder]="noteCopy.bodyPlaceholder"
             [value]="noteBody()"
+            maxlength="4000"
             (input)="onNoteBody($event)"
           ></textarea>
         </label>
@@ -609,6 +612,7 @@
             class="field__input"
             [placeholder]="noteCopy.reasonPlaceholder"
             [value]="noteReason()"
+            maxlength="1000"
             (input)="onNoteReason($event)"
           />
           <span class="field__hint">{{ shared.transition.reasonHint }}</span>
@@ -644,6 +648,7 @@
             class="field__input"
             [placeholder]="taskCopy.titlePlaceholder"
             [value]="taskTitleText()"
+            maxlength="200"
             (input)="onTaskTitle($event)"
           />
         </label>
@@ -689,6 +694,7 @@
             class="field__input"
             [placeholder]="taskCopy.reasonPlaceholder"
             [value]="taskReason()"
+            maxlength="1000"
             (input)="onTaskReason($event)"
           />
         </label>
@@ -737,6 +743,7 @@
             rows="3"
             [placeholder]="handOverCopy.reasonPlaceholder"
             [value]="handOverReason()"
+            maxlength="1000"
             (input)="onHandOverReason($event)"
           ></textarea>
           <span class="field__hint">{{ shared.transition.reasonHint }}</span>
@@ -783,6 +790,7 @@
             rows="3"
             [placeholder]="rescheduleCopy.reasonPlaceholder"
             [value]="rescheduleReason()"
+            maxlength="1000"
             (input)="onRescheduleReason($event)"
           ></textarea>
           <span class="field__hint">{{ shared.transition.reasonHint }}</span>
@@ -819,6 +827,7 @@
             rows="3"
             [placeholder]="completeCopy.outcomePlaceholder"
             [value]="outcome()"
+            maxlength="1000"
             (input)="onOutcome($event)"
           ></textarea>
           <span class="field__hint">{{ shared.transition.reasonHint }}</span>
@@ -855,6 +864,7 @@
             rows="3"
             [placeholder]="cancelTaskCopy.reasonPlaceholder"
             [value]="cancelTaskReason()"
+            maxlength="1000"
             (input)="onCancelTaskReason($event)"
           ></textarea>
           <span class="field__hint">{{ shared.transition.reasonHint }}</span>
@@ -891,6 +901,7 @@
             rows="3"
             [placeholder]="endLinkCopy.reasonPlaceholder"
             [value]="endLinkReason()"
+            maxlength="1000"
             (input)="onEndLinkReason($event)"
           ></textarea>
           <span class="field__hint">{{ shared.transition.reasonHint }}</span>

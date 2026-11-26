@@ -58,6 +58,7 @@ import {
   type Resident,
   type ResidentRepository,
   type ResidentFilter,
+  type ResidentDraft,
   type CursorRequest,
   type StaffRepository,
   type StaffRole,
@@ -366,6 +367,22 @@ describe('the resident filter lives in the URL', () => {
 });
 
 describe('the resident list', () => {
+  // Flow audit 5: a barangay link was offered all five barangays, and any other than their own was
+  // refused with "Your account sees only its own barangay" (DL-290).
+  it('offers no barangay filter to a reader confined to one barangay', async () => {
+    const barangaySelectIn = (element: HTMLElement) =>
+      [...element.querySelectorAll('select')].find((select) =>
+        [...select.options].some((option) => option.textContent?.trim() === 'Dolores'),
+      );
+    await configure('barangay-link', SAN_JUAN);
+    await TestBed.inject(Router).navigateByUrl('/residents');
+    const confined = TestBed.createComponent(ResidentListPage);
+    await confined.whenStable();
+    expect(barangaySelectIn(html(confined))).toBeUndefined();
+
+    expect(barangaySelectIn(html(await openList('intake-officer')))).toBeDefined();
+  });
+
   it('renders a page of rows rather than the whole registry, and says more are available', async () => {
     const element = html(await openList());
     const rows = element.querySelectorAll('tbody tr');
@@ -893,6 +910,55 @@ describe('registering and correcting a record', () => {
     expect(problems?.getAttribute('role')).toBe('alert');
     expect(problems?.textContent).toContain('First name is required.');
     expect(problems?.textContent).toContain('Street address is required.');
+  });
+
+  // Flow audit 5: "12.345" was saved as ₱12.35 (a float times a hundred, rounded), and "-5" or a
+  // 400-letter street went to the API and came back as "could not be validated" (DL-290).
+  it('reads the income as pesos and centavos, and refuses one it cannot read in words', async () => {
+    const fixture = await openForm('mswdo-head');
+    const form = fixture.componentInstance as unknown as {
+      model: WritableSignal<{ monthlyIncome: string }>;
+      toDraft(): ResidentDraft;
+    };
+    const element = html(fixture);
+    const submit = async (income: string): Promise<string> => {
+      form.model.update((model) => ({
+        ...model,
+        first: 'Ana',
+        last: 'Halimbawa',
+        birthDate: '1990-01-01',
+        barangayId: 'brgy-dolores',
+        streetAddress: '1 Test Street',
+        monthlyIncome: income,
+      }));
+      await fixture.whenStable();
+      (element.querySelector('form') as HTMLFormElement).dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      );
+      await fixture.whenStable();
+      return element.querySelector('.form__problems')?.textContent ?? '';
+    };
+    const refusal = `${RESIDENTS_COPY.fieldLabel.monthlyIncome} ${RESIDENTS_COPY.rule['not-an-amount']}`;
+
+    for (const unreadable of ['12.345', '-5', '3,2,00x', '1e3']) {
+      expect(await submit(unreadable)).toContain(refusal);
+    }
+    form.model.update((model) => ({ ...model, monthlyIncome: '₱3,200.50' }));
+    expect(form.toDraft().monthlyIncome).toEqual({ centavos: 320050, currency: 'PHP' });
+    // Typed as text, so "3,200" is not emptied by the browser the way a number field empties it.
+    const income = [...element.querySelectorAll('label.field')]
+      .find((label) => label.textContent?.includes(RESIDENTS_COPY.form.monthlyIncome))
+      ?.querySelector('input');
+    expect(income?.getAttribute('type')).toBe('text');
+  });
+
+  it('holds each text field to the length the API accepts', async () => {
+    const element = html(await openForm('mswdo-head'));
+    const limit = (autocomplete: string) =>
+      element.querySelector(`input[autocomplete="${autocomplete}"]`)?.getAttribute('maxlength');
+    expect(limit('given-name')).toBe('100');
+    expect(limit('family-name')).toBe('100');
+    expect(limit('street-address')).toBe('200');
   });
 
   it('does not offer a protected sector to a role that may not see one', async () => {

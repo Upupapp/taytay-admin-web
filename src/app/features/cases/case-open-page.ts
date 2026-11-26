@@ -7,6 +7,7 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { failureReason } from '@shared/state/failure-reason';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { of, switchMap, tap } from 'rxjs';
@@ -233,7 +234,7 @@ export class CaseOpenPage {
         error: (failure: unknown) => {
           this.submitting.set(false);
           // The server's own sentence where it gave one: it names the rule that refused.
-          this.failure.set(failure instanceof Error ? failure.message : this.copy.failed);
+          this.failure.set(failureReason(failure) ?? this.copy.failed);
         },
       });
   }

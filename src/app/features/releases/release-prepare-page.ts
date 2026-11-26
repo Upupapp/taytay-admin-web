@@ -7,6 +7,7 @@ import {
   linkedSignal,
   signal,
 } from '@angular/core';
+import { failureReason } from '@shared/state/failure-reason';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { catchError, firstValueFrom, map, of, switchMap } from 'rxjs';
@@ -311,7 +312,7 @@ export class ReleasePreparePage {
       void this.router.navigate(['/releases', release.id]);
     } catch (failure: unknown) {
       // Reported, never swallowed: an officer who believes a release exists will not prepare it.
-      this.notifications.error(failure instanceof Error ? failure.message : this.copy.failed);
+      this.notifications.error(failureReason(failure) ?? this.copy.failed);
     } finally {
       this.saving.set(false);
     }

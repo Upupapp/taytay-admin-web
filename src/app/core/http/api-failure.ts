@@ -102,7 +102,23 @@ export function isNotFound(failure: unknown): boolean {
   if (failure instanceof HttpErrorResponse) {
     return failure.status === 404;
   }
-  return isApiFailure(failure) && (failure.status === 404 || failure.code === 'NOT_FOUND');
+  return (
+    isApiFailure(failure) &&
+    (failure.status === 404 || failure.code === 'NOT_FOUND' || namesNoRecord(failure))
+  );
+}
+
+/**
+ * A `422` whose only complaint is the record's id in the address: "This does not name a record the
+ * API knows: the reference is not in the right form." A link cut short when it was pasted names no
+ * record, so it is not there — said as every other absence is, never as a failure with a "Try again"
+ * that cannot work (flow audit 5, `DL-290`). Only the optional reads ask, so a form is never told a
+ * refused field means "not found".
+ */
+function namesNoRecord(failure: ApiFailure): boolean {
+  const fields = failure.details === null ? [] : Object.keys(failure.details);
+  // `id`, or a named one such as the beneficiary record's `resident_id`.
+  return failure.status === 422 && fields.length === 1 && /^(?:[a-z]+_)*id$/.test(fields[0] ?? '');
 }
 
 interface WireError {
@@ -271,7 +287,10 @@ export function describeFailure(failure: ApiFailure): string {
  * notices, because the label still reads fine.
  */
 function humaniseField(field: string): string {
-  const words = field.replace(/[._]/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+  const words = field
+    .replace(/[._]/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .toLowerCase();
 
   return words.charAt(0).toUpperCase() + words.slice(1);
 }

@@ -7,6 +7,7 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { failureReason } from '@shared/state/failure-reason';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { switchMap, type Observable } from 'rxjs';
@@ -815,7 +816,7 @@ export class CaseWorkspacePage {
       },
       error: (failure: unknown) => {
         this.submitting.set(false);
-        this.notifications.error(failure instanceof Error ? failure.message : CASES_COPY.failed);
+        this.notifications.error(failureReason(failure) ?? CASES_COPY.failed);
       },
     });
   }

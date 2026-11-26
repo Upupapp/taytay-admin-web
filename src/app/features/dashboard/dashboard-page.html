@@ -4,17 +4,19 @@
 
 <!-- Filter first: it governs every figure below, so it reads before them. -->
 <section class="filter-bar" [attr.aria-label]="copy.filterHeading">
-  <label class="filter-bar__field">
-    <span>{{ copy.filterBarangay }}</span>
-    <select class="field__input field__input--pill" (change)="onBarangay($event)">
-      <option value="" [selected]="!filter().barangayId">{{ copy.filterAll }}</option>
-      @for (barangay of barangays; track barangay.id) {
-        <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
-          {{ barangay.name }}
-        </option>
-      }
-    </select>
-  </label>
+  @if (filtersByBarangay()) {
+    <label class="filter-bar__field">
+      <span>{{ copy.filterBarangay }}</span>
+      <select class="field__input field__input--pill" (change)="onBarangay($event)">
+        <option value="" [selected]="!filter().barangayId">{{ copy.filterAll }}</option>
+        @for (barangay of barangays; track barangay.id) {
+          <option [value]="barangay.id" [selected]="filter().barangayId === barangay.id">
+            {{ barangay.name }}
+          </option>
+        }
+      </select>
+    </label>
+  }
 
   <label class="filter-bar__field filters__wide">
     <span>{{ copy.filterCategory }}</span>

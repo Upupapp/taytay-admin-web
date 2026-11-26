@@ -251,6 +251,18 @@ describe('validateResidentDraft', () => {
     expect(problems).toContainEqual({ field: 'birthDate', rule: 'implausibly-old' });
   });
 
+  it('refuses a negative or a fractional-centavo income, and accepts none (DL-290)', () => {
+    const income = (centavos: number) => draft({ monthlyIncome: { centavos, currency: 'PHP' } });
+    expect(validateResidentDraft(draft({ monthlyIncome: null }), on)).toHaveLength(0);
+    expect(validateResidentDraft(income(320050), on)).toHaveLength(0);
+    for (const wrong of [-500, 1234.5]) {
+      expect(validateResidentDraft(income(wrong), on)).toContainEqual({
+        field: 'monthlyIncome',
+        rule: 'not-an-amount',
+      });
+    }
+  });
+
   it('accepts an absent PhilSys reference but not a partial one', () => {
     expect(validateResidentDraft(draft({ philsysLastFour: null }), on)).toHaveLength(0);
     expect(validateResidentDraft(draft({ philsysLastFour: '12' }), on)).toContainEqual({

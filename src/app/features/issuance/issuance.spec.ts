@@ -141,8 +141,11 @@ class RecordingIssuance implements IssuanceRepository {
     this.retired.push(reason);
     return of({ ...TYPE, active: false });
   }
+  /** When set, the open queue answers nothing. */
+  nothingWaiting = false;
   waiting(filter: IssuanceQueueFilter): Observable<readonly IssuanceRequestSummary[]> {
     this.waited.push(filter);
+    if (this.nothingWaiting) return of([]);
     return of([
       row(1, 'submitted', '2026-11-05T00:00:00.000Z'),
       row(2, 'approved', '2026-10-28T00:00:00.000Z'),
@@ -320,6 +323,24 @@ describe('IssuanceQueuePage (DL-184)', () => {
     await settle(fixture);
     expect(repository.listed[1]?.page).toEqual({ limit: 20, cursor: 'cursor-2' });
     expect(element.textContent).toContain('Showing 3 requests. That is all of them.');
+  });
+
+  // Flow audit 5: a document chosen and nothing found said "No request from a resident is
+  // waiting", a false statement about the whole queue (DL-290).
+  it('says "no results" when a document narrows the open queue, and "empty" only when nothing does', async () => {
+    const repository = configure();
+    repository.nothingWaiting = true;
+    await TestBed.inject(Router).navigateByUrl('/?type=type-1');
+    const narrowed = await settle(TestBed.createComponent(IssuanceQueuePage));
+    expect(narrowed.querySelector('.empty--no-results')).not.toBeNull();
+    expect(narrowed.textContent).toContain(ISSUANCE_COPY.queue.emptyNarrowed);
+    expect(narrowed.textContent).not.toContain(ISSUANCE_COPY.queue.emptyOpen);
+
+    const plain = configure();
+    plain.nothingWaiting = true;
+    const whole = await settle(TestBed.createComponent(IssuanceQueuePage));
+    expect(whole.querySelector('.empty--empty')).not.toBeNull();
+    expect(whole.textContent).toContain(ISSUANCE_COPY.queue.emptyOpen);
   });
 
   it('keeps its filters in the address', async () => {

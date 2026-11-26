@@ -90,6 +90,9 @@ export const NAVIGATION: readonly NavSection[] = [
         reads: ['beneficiary', 'program', 'saved-view'],
         glyph: 'BN',
         permissions: ['beneficiary.view'],
+        // The API refuses a caseload the registry's lists (DL-179); a person's record stays
+        // reachable from their case or request (DL-290).
+        closedTo: ['assigned-cases'],
         description: 'Who the office has served, and what they have received.',
       },
       {

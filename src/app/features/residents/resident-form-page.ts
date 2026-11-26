@@ -20,12 +20,12 @@ import {
   CIVIL_STATUS_LABELS,
   CIVIL_STATUSES,
   isSensitiveSector,
-  pesos,
+  parsePesos,
+  pesosForInput,
   RESIDENT_REPOSITORY,
   SEX_LABELS,
   SEXES,
   TAYTAY_BARANGAYS,
-  toDecimal,
   toResidentDraft,
   changesIdentity,
   validateResidentDraft,
@@ -332,7 +332,7 @@ export class ResidentFormPage {
       mobile: draft.contact.mobile ?? '',
       email: draft.contact.email ?? '',
       philsysLastFour: draft.philsysLastFour ?? '',
-      monthlyIncome: draft.monthlyIncome === null ? '' : String(toDecimal(draft.monthlyIncome)),
+      monthlyIncome: draft.monthlyIncome === null ? '' : pesosForInput(draft.monthlyIncome),
       sectors: draft.sectors,
       sectorBasis: '',
       changeReason: '',
@@ -392,7 +392,12 @@ export class ResidentFormPage {
 
     this.saveAttempted.set(true);
     const draft = this.toDraft();
-    const problems = validateResidentDraft(draft);
+    // An amount nobody can read is said, never sent as "no income" or rounded (DL-290, rule 6).
+    const income = this.model().monthlyIncome.trim();
+    const problems: readonly ResidentDraftProblem[] =
+      income !== '' && parsePesos(income) === null
+        ? [...validateResidentDraft(draft), { field: 'monthlyIncome', rule: 'not-an-amount' }]
+        : validateResidentDraft(draft);
     this.problems.set(problems);
     if (problems.length > 0 || this.sectorBasisMissing() || this.changeReasonMissing()) {
       return;
@@ -490,7 +495,7 @@ export class ResidentFormPage {
 
   private toDraft(): ResidentDraft {
     const model = this.model();
-    const income = Number.parseFloat(model.monthlyIncome);
+    const income = model.monthlyIncome.trim();
 
     return {
       name: {
@@ -510,7 +515,7 @@ export class ResidentFormPage {
       contact: { mobile: blankToNull(model.mobile), email: blankToNull(model.email) },
       sectors: model.sectors,
       philsysLastFour: blankToNull(model.philsysLastFour),
-      monthlyIncome: Number.isFinite(income) ? pesos(income) : null,
+      monthlyIncome: income === '' ? null : parsePesos(income),
       // Household membership is edited from the household, not from a person:
       // moving someone between families is a household decision with two sides.
       householdId: valueOf(this.existing())?.resident.householdId ?? null,

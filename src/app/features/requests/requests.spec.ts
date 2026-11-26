@@ -320,6 +320,37 @@ describe('the intake flow', () => {
     expect(element.textContent).toContain('cannot be selected here');
   });
 
+  // Flow audit 5: "12.345" became ₱12.35 (a float times a hundred), and "3,200" in a number box
+  // was emptied by the browser and saved as no amount at all (DL-290).
+  it('reads the amount as pesos and centavos, and says so when it cannot', async () => {
+    const fixture = await openIntake('intake-officer', '/assistance-requests/new?step=request');
+    const element = html(fixture);
+    const input = [...element.querySelectorAll('label.field')]
+      .find((label) => label.textContent?.includes(REQUESTS_COPY.intake.requestedAmount))
+      ?.querySelector('input');
+    const draft = () =>
+      (
+        fixture.componentInstance as unknown as { draft: () => { requestedAmount: unknown } }
+      ).draft();
+    const type = async (value: string): Promise<void> => {
+      if (input === null || input === undefined) throw new Error('no amount box');
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+    };
+
+    expect(input?.getAttribute('type')).toBe('text');
+    await type('12.345');
+    expect(element.textContent).toContain(REQUESTS_COPY.intake.requestedAmountUnreadable);
+    expect(input?.getAttribute('aria-invalid')).toBe('true');
+    expect(draft().requestedAmount).toBeNull();
+    expect(input?.value).toBe('12.345');
+
+    await type('3,200.50');
+    expect(element.textContent).not.toContain(REQUESTS_COPY.intake.requestedAmountUnreadable);
+    expect(draft().requestedAmount).toEqual({ centavos: 320050, currency: 'PHP' });
+  });
+
   it('says the duplicate check decides nothing', async () => {
     const element = html(
       await openIntake('intake-officer', '/assistance-requests/new?step=checks'),

@@ -7,6 +7,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { failureReason } from '@shared/state/failure-reason';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
@@ -267,8 +268,6 @@ export class HouseholdDetailPage {
   private fail(failure: unknown): void {
     this.correcting.set(null);
     this.clearing.set(null);
-    this.notifications.error(
-      failure instanceof Error ? failure.message : 'That correction could not be saved.',
-    );
+    this.notifications.error(failureReason(failure) ?? 'That correction could not be saved.');
   }
 }

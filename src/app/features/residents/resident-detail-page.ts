@@ -369,9 +369,7 @@ export class ResidentDetailPage {
         this.reloads.update((value) => value + 1);
       },
       error: (failure: unknown) =>
-        this.notifications.error(
-          failure instanceof Error ? failure.message : 'That change could not be saved.',
-        ),
+        this.notifications.error(failureReason(failure) ?? 'That change could not be saved.'),
     });
   }
 }

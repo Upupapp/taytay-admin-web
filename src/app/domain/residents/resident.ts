@@ -289,7 +289,8 @@ export type ResidentDraftField =
   | 'streetAddress'
   | 'philsysLastFour'
   | 'mobile'
-  | 'email';
+  | 'email'
+  | 'monthlyIncome';
 
 export interface ResidentDraftProblem {
   readonly field: ResidentDraftField;
@@ -307,7 +308,8 @@ export type ResidentDraftRule =
   | 'implausibly-old'
   | 'must-be-four-digits'
   | 'not-a-mobile-number'
-  | 'not-an-email';
+  | 'not-an-email'
+  | 'not-an-amount';
 
 const MOBILE_PATTERN = /^(\+?63|0)9\d{2}[- ]?\d{3}[- ]?\d{4}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -363,6 +365,12 @@ export function validateResidentDraft(
   }
   if (draft.contact.email !== null && !EMAIL_PATTERN.test(draft.contact.email.trim())) {
     fail('email', 'not-an-email');
+  }
+  if (
+    draft.monthlyIncome !== null &&
+    (!Number.isSafeInteger(draft.monthlyIncome.centavos) || draft.monthlyIncome.centavos < 0)
+  ) {
+    fail('monthlyIncome', 'not-an-amount');
   }
 
   return problems;

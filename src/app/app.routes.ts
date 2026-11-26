@@ -247,6 +247,7 @@ export const routes: Routes = [
             canActivate: [
               servedGuard('beneficiary', 'program', 'saved-view'),
               permissionGuard('beneficiary.view'),
+              scopeGuard('assigned-cases'),
             ],
             loadComponent: () =>
               import('@features/beneficiaries/beneficiary-list-page').then(

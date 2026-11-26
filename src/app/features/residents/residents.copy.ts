@@ -370,6 +370,7 @@ export const RESIDENTS_COPY = {
     philsysLastFour: 'PhilSys last four digits',
     mobile: 'Mobile number',
     email: 'Email address',
+    monthlyIncome: 'Monthly income',
   } satisfies Record<ResidentDraftField, string>,
 
   rule: {
@@ -380,6 +381,7 @@ export const RESIDENTS_COPY = {
     'must-be-four-digits': 'must be exactly four digits, or left blank.',
     'not-a-mobile-number': 'does not look like a Philippine mobile number.',
     'not-an-email': 'does not look like an email address.',
+    'not-an-amount': 'must be an amount in pesos, like 3200 or 3200.50, or left blank.',
   } satisfies Record<ResidentDraftRule, string>,
   /** A record's identity history on its page (`DL-264`). */
   identityHistory: {

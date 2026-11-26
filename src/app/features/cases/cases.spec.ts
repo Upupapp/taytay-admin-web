@@ -488,6 +488,19 @@ describe('the workspace offers only what the office record accepts', () => {
     expect(buttonNamed(element, 'Add a note')).toBeDefined();
   });
 
+  // Flow audit 5: a note of 4,100 characters was sent and came back as "That change could not be
+  // recorded", which named nothing (DL-290).
+  it('holds a note and its reason to the lengths the API accepts', async () => {
+    const fixture = await openWorkspace(MERCADO, 'mswdo-head', 'staff-head');
+    const element = html(fixture);
+    buttonNamed(element, 'Add a note')?.click();
+    await fixture.whenStable();
+
+    const dialog = document.querySelector('[role="dialog"]') ?? element;
+    expect(dialog.querySelector('textarea')?.getAttribute('maxlength')).toBe('4000');
+    expect(dialog.querySelector('input[type="text"]')?.getAttribute('maxlength')).toBe('1000');
+  });
+
   it('says how many named requests are outside what the account reads', async () => {
     const element = html(await openWorkspace('case-0002', 'social-worker', 'staff-sw-1'));
     expect(element.textContent).toContain('1 more request is named in this case');
@@ -680,6 +693,35 @@ describe('opening a case', () => {
 });
 
 describe('"Try again" reads again (DL-185)', () => {
+  // Flow audit 5: the case list's failed read had no way back but reloading the page, which ends
+  // the session (DL-290).
+  it('offers "Try again" when the case list cannot be read, and reads again', async () => {
+    await configure('mswdo-head');
+    const repository = TestBed.inject(CASE_REPOSITORY);
+    const list = vi
+      .spyOn(repository, 'list')
+      .mockReturnValueOnce(throwError(() => new Error('The connection dropped.')));
+    await TestBed.inject(Router).navigateByUrl('/cases');
+    const fixture = TestBed.createComponent(CaseListPage);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain(
+      'The connection dropped.',
+    );
+    const again = [...element.querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Try again',
+    );
+    expect(again).toBeDefined();
+    again?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(element.textContent).not.toContain('The connection dropped.');
+  });
+
   it('re-runs the load after a failed read, and shows the record', async () => {
     await configure('social-worker');
     const repository = TestBed.inject(CASE_REPOSITORY);

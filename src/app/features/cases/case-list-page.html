@@ -123,7 +123,11 @@
   />
 
   @if (failure(); as message) {
-    <p class="callout callout--danger cases__problem" role="alert">{{ message }}</p>
+    <!-- A read that failed is asked again here: reloading the page would end the session (DL-290). -->
+    <div class="callout callout--danger cases__problem" role="alert">
+      <p>{{ message }}</p>
+      <button type="button" class="btn" (click)="reloadList()">{{ copy.tryAgain }}</button>
+    </div>
   }
 
   @if (rows().length > 0) {

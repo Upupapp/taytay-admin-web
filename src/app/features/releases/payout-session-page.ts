@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { failureReason } from '@shared/state/failure-reason';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom, switchMap } from 'rxjs';
@@ -238,7 +239,7 @@ export class PayoutSessionPage {
       this.intent = new WriteIntent();
       this.reloads.update((n) => n + 1);
     } catch (failure: unknown) {
-      this.notifications.error(failure instanceof Error ? failure.message : this.copy.notOpened);
+      this.notifications.error(failureReason(failure) ?? this.copy.notOpened);
     } finally {
       this.opening.set(false);
     }
