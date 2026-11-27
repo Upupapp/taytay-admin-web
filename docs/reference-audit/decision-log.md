@@ -12577,3 +12577,15 @@ their box, so 89 ended short of 155; both sides now end on one edge with tabular
 puts its figures level with their labels, as the tidy list does. On the notification centre, "Clear
 filters" clears the card's two selects and shows only when one is set — the All | Unread tabs are
 their own control.
+
+**DL-291 follow-up — the bell drawer filters too, and leads to the full page (2026-11-27).** The
+owner looked for the filters in the bell drawer, which is where most people read notifications, and
+found none, and no way to the full page. The drawer now carries the two filters a person reaches
+for at a glance — All | Unread (toggle buttons, `aria-pressed`) and Category (only categories the
+inbox holds, with counts) — held for the drawer rather than the address bar, because the drawer
+opens over whatever page is in the address bar. "When" stays on the page. A "More filters" link
+carries what was chosen to `/notifications`, and a primary "See all notifications" button sits in
+the drawer's footer beside "Mark all as read"; both, and a notice's own link (Open conversation),
+close the drawer, which a navigation does not do on its own. Every link is offered only where its
+destination's guard admits the reader (rule 8). An empty filtered drawer says which answer it is —
+nothing unread, or nothing in this category — never "nothing to catch up on" (`DL-291`).

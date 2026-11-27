@@ -42,6 +42,19 @@ export const LAYOUT_COPY = {
   notificationsEmptyBody: 'Events that concern you appear here as they happen.',
   markRead: 'Mark as read',
   markAllRead: 'Mark all as read',
+  // The drawer's quick filters; the Notifications page holds every filter (DL-291).
+  seeAllNotifications: 'See all notifications',
+  inboxShowLabel: 'Show',
+  inboxShowAll: 'All',
+  inboxShowUnread: 'Unread',
+  inboxCategory: 'Category',
+  inboxAllCategories: 'All categories',
+  inboxMoreFilters: 'More filters',
+  inboxShowing: (shown: number, total: number): string => `Showing ${shown} of ${total}.`,
+  inboxCaughtUpHeading: 'No unread notifications',
+  inboxCaughtUpBody: 'You have read everything here. Choose All to see them again.',
+  inboxNoMatchHeading: 'Nothing in this category',
+  inboxNoMatchBody: 'Choose another category, or all categories.',
   unreadCountLabel: (count: number): string =>
     count === 1 ? '1 unread notification' : `${count} unread notifications`,
 

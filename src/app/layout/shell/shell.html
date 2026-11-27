@@ -74,7 +74,20 @@
   [heading]="copy.notificationsHeading"
   [description]="copy.notificationsDescription"
 >
-  <app-notification-list drawer-body />
+  <app-notification-list drawer-body (followed)="inboxOpen.set(false)" />
+
+  <!-- The way to the full page, with every filter. Offered only where its guard lets the reader
+       in (rule 8). -->
+  @if (canOpenNotifications()) {
+    <a
+      drawer-actions
+      class="btn btn--primary"
+      routerLink="/notifications"
+      (click)="inboxOpen.set(false)"
+    >
+      {{ copy.seeAllNotifications }}
+    </a>
+  }
 
   <!-- Nothing to mark when the inbox is empty: no greyed button with no reason. -->
   @if (notifications.inbox().length > 0) {

@@ -10,9 +10,10 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
+import { PermissionService } from '@core/access/permission.service';
 import { SessionStore } from '@core/auth/session.store';
 import { ViewportService } from '@core/layout/viewport.service';
 import { NotificationStore } from '@core/notifications/notification.store';
@@ -45,6 +46,7 @@ import { initialsOf } from '@shared/pipes/initials.pipe';
   selector: 'app-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterLink,
     RouterOutlet,
     AppNav,
     AppTopbar,
@@ -65,6 +67,9 @@ export class Shell {
 
   protected readonly session = inject(SessionStore);
   protected readonly notifications = inject(NotificationStore);
+  private readonly permissions = inject(PermissionService);
+  /** The Notifications page's own guard, so the drawer never offers a link that bounces (rule 8). */
+  protected readonly canOpenNotifications = computed(() => this.permissions.has('dashboard.view'));
   protected readonly copy = LAYOUT_COPY;
 
   protected readonly navOpen = signal(false);

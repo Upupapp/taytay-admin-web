@@ -1,0 +1,142 @@
+import { Component } from '@angular/core';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { firstValueFrom, of, type Observable } from 'rxjs';
+
+import { SessionState } from '@core/auth/session-state';
+import { SessionStore } from '@core/auth/session.store';
+import { APP_ENVIRONMENT } from '@core/config/app-environment.token';
+import { NotificationStore } from '@core/notifications/notification.store';
+import { MockNotificationRepository } from '@data/mock/mock-notification.repository';
+import {
+  ACCESS_CONTEXT,
+  NOTIFICATION_REPOSITORY,
+  STAFF_REPOSITORY,
+  asId,
+  emptyPage,
+  toAuthenticatedUser,
+  type AuthenticatedUser,
+  type Page,
+  type SignInOutcome,
+  type StaffRepository,
+  type StaffRole,
+  type StaffUser,
+  type StaffUserId,
+} from '@domain/index';
+import type { AppEnvironment } from '@env/environment.model';
+
+import { NotificationList } from './notification-list';
+
+const TEST_ENVIRONMENT: AppEnvironment = {
+  name: 'local-mock',
+  production: false,
+  appName: 'Test',
+  apiBaseUrl: '/api',
+  dataSource: 'mock',
+  firebaseWebApiKey: null,
+  mockLatencyMs: 0,
+  enableDevTools: false,
+};
+
+function staffRepository(role: StaffRole): StaffRepository {
+  const user: StaffUser = {
+    id: asId<StaffUserId>('staff-head'),
+    name: { first: 'Test', middle: null, last: 'User', suffix: null },
+    email: 'test@example.gov.ph',
+    role,
+    position: 'Tester',
+    barangayId: null,
+    additionalPermissions: [],
+    isActive: true,
+    lastSignInAt: null,
+    audit: {
+      createdAt: '2026-01-01T00:00:00.000Z' as StaffUser['audit']['createdAt'],
+      createdBy: null,
+      updatedAt: '2026-01-01T00:00:00.000Z' as StaffUser['audit']['updatedAt'],
+      updatedBy: null,
+    },
+  };
+  const authenticated = toAuthenticatedUser(user);
+  return {
+    list: (): Observable<Page<StaffUser>> => of(emptyPage<StaffUser>()),
+    getById: (): Observable<StaffUser | null> => of(user),
+    currentUser: (): Observable<AuthenticatedUser | null> => of(authenticated),
+    signIn: (): Observable<SignInOutcome> => of({ kind: 'authenticated', user: authenticated }),
+    completeMfa: (): Observable<AuthenticatedUser> => of(authenticated),
+    signOut: (): Observable<void> => of(undefined),
+  };
+}
+
+@Component({ template: 'stub' })
+class StubPage {}
+
+async function openDrawerList(
+  role: StaffRole = 'mswdo-head',
+): Promise<ComponentFixture<NotificationList>> {
+  TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      provideRouter([{ path: '**', component: StubPage }]),
+      { provide: APP_ENVIRONMENT, useValue: TEST_ENVIRONMENT },
+      { provide: ACCESS_CONTEXT, useExisting: SessionState },
+      { provide: STAFF_REPOSITORY, useValue: staffRepository(role) },
+      { provide: NOTIFICATION_REPOSITORY, useClass: MockNotificationRepository },
+    ],
+  });
+  await firstValueFrom(TestBed.inject(SessionStore).load());
+  TestBed.inject(NotificationStore).refresh();
+  const fixture = TestBed.createComponent(NotificationList);
+  await fixture.whenStable();
+  return fixture;
+}
+
+const html = (fixture: ComponentFixture<unknown>) => fixture.nativeElement as HTMLElement;
+const items = (fixture: ComponentFixture<unknown>) =>
+  html(fixture).querySelectorAll('.inbox__item').length;
+
+describe('the notification drawer’s quick filters (DL-291)', () => {
+  it('narrows to unread notices with the Unread tab, and says how many are shown', async () => {
+    const fixture = await openDrawerList();
+    const store = TestBed.inject(NotificationStore);
+    const total = store.inbox().length;
+    expect(total).toBeGreaterThan(0);
+    expect(items(fixture)).toBe(total);
+
+    const unread = [...html(fixture).querySelectorAll<HTMLButtonElement>('.inbox__tabs .tab')][1];
+    unread?.click();
+    await fixture.whenStable();
+
+    expect(items(fixture)).toBe(store.unreadCount());
+    expect(unread?.getAttribute('aria-pressed')).toBe('true');
+    expect(html(fixture).textContent).toContain(`Showing ${store.unreadCount()} of ${total}.`);
+  });
+
+  it('narrows to one category, offering only the categories the inbox holds', async () => {
+    const fixture = await openDrawerList();
+    const select = html(fixture).querySelector<HTMLSelectElement>('.inbox__category select');
+    const first = select?.options[1];
+    expect(first).toBeDefined();
+    if (!select || !first) return;
+
+    select.value = first.value;
+    select.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+
+    const count = Number(/\((\d+)\)/.exec(first.textContent ?? '')?.[1]);
+    expect(items(fixture)).toBe(count);
+  });
+
+  it('links to the full page with what was chosen, and tells the shell to close', async () => {
+    const fixture = await openDrawerList();
+    let followed = 0;
+    fixture.componentInstance.followed.subscribe(() => followed++);
+
+    html(fixture).querySelectorAll<HTMLButtonElement>('.inbox__tabs .tab')[1]?.click();
+    await fixture.whenStable();
+    const link = html(fixture).querySelector<HTMLAnchorElement>('.inbox__summary a');
+    expect(link?.getAttribute('href')).toBe('/notifications?show=unread');
+
+    link?.click();
+    expect(followed).toBe(1);
+  });
+});
