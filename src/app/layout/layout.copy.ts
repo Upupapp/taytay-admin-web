@@ -52,7 +52,6 @@ export const LAYOUT_COPY = {
   inboxShowUnread: 'Unread',
   inboxCategory: 'Category',
   inboxAllCategories: 'All categories',
-  inboxMoreFilters: 'More filters',
   inboxShowing: (shown: number, total: number): string => `Showing ${shown} of ${total}.`,
   inboxCaughtUpHeading: 'No unread notifications',
   inboxCaughtUpBody: 'You have read everything here. Choose All to see them again.',

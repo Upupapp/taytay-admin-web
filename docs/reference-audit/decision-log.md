@@ -12628,3 +12628,24 @@ their dividing rules and become soft rounded rows, so the tint reads as a row ra
 Unread is still never told by colour alone (`DL-102`'s rule, applied here): it is a tint, a weight and
 a dot's shape, and a screen reader hears "Unread:" before the title. The "Unread" word chip of the
 first centre is superseded; "Mark all as read" stays in the page actions and the panel's header.
+
+### DL-295 — A stacked breakdown's figure sits on its label's line, ending where the bar ends (2026-11-27)
+
+**Decision.** The owner still read the sector counts as misaligned after `DL-292`: the figure was a
+second table column beside the bar, vertically between the label and the bar and set off from both,
+so it lined up with neither. In the stacked layout (`chart-table--stacked`, the dashboard's and the
+Citizen overview's breakdowns) the figure is now drawn on the label's own line, right-aligned to the
+end of the full-width bar under it, with tabular digits — so every figure ends on one edge, level
+with its label. The value cell stays in the table for a screen reader's table navigation, visually
+hidden in that layout; the drawn figure is `aria-hidden`, so nothing is read twice. Other layouts
+are unchanged and do not render the drawn figure.
+
+### DL-296 — The bell panel's filters are one compact row (2026-11-27)
+
+**Decision.** The owner found the panel's filter block messy: a labelled Category field, a count line
+and a second "More filters" link took a third of the panel, and the tinted unread rows showed at its
+sides as they scrolled under it. The filters are now one row — All | Unread on the left, a small
+Category select (label visually hidden) on the right — on a solid band the full width of the panel's
+body. The "Showing n of m" count is said to a screen reader only, since the tabs' counts show it;
+"More filters" is gone, the footer's "See all notifications" being the way to the page's search and
+date filters.

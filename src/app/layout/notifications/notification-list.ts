@@ -33,10 +33,10 @@ import { LAYOUT_COPY } from '../layout.copy';
  * stylesheet would otherwise run over the component-style budget. The shell
  * still owns the drawer, when it opens and "mark all as read".
  *
- * The drawer is a quick look, so it carries the two filters a person reaches for at a glance —
- * read or not, and what it is about — and hands the rest (when) to the Notifications page, with
- * what was chosen here carried over (DL-291). They are held for the drawer, not the address bar:
- * the drawer opens over whatever page is in the address bar.
+ * The panel is a quick look, so it carries the two filters a person reaches for at a glance —
+ * read or not, and what it is about — on one compact row (DL-291, DL-296), and leaves the rest
+ * (search, when) to the Notifications page its footer opens. They are held for the panel, not the
+ * address bar: the panel opens over whatever page is in the address bar.
  */
 @Component({
   selector: 'app-notification-list',
@@ -68,9 +68,12 @@ import { LAYOUT_COPY } from '../layout.copy';
           </button>
         </div>
 
-        <label class="field inbox__category">
-          <span class="field__label">{{ copy.inboxCategory }}</span>
-          <select class="field__input field__input--pill" (change)="onCategory($event)">
+        <label class="inbox__category">
+          <span class="visually-hidden">{{ copy.inboxCategory }}</span>
+          <select
+            class="field__input field__input--pill inbox__select"
+            (change)="onCategory($event)"
+          >
             <option value="" [selected]="kind() === null">{{ copy.inboxAllCategories }}</option>
             @for (category of categories(); track category.kind) {
               <option [value]="category.kind" [selected]="kind() === category.kind">
@@ -80,20 +83,10 @@ import { LAYOUT_COPY } from '../layout.copy';
           </select>
         </label>
 
-        <p class="inbox__summary">
-          <span role="status">{{
-            copy.inboxShowing(shown().length, notifications.inbox().length)
-          }}</span>
-          @if (canOpenPage()) {
-            <a
-              class="record-link"
-              routerLink="/notifications"
-              [queryParams]="pageQuery()"
-              (click)="followed.emit()"
-            >
-              {{ copy.inboxMoreFilters }}
-            </a>
-          }
+        <!-- The tabs' counts say how many there are; this says what the filters left, to a
+             screen reader, without a line of small print under them (DL-296). -->
+        <p class="visually-hidden" role="status">
+          {{ copy.inboxShowing(shown().length, notifications.inbox().length) }}
         </p>
       </div>
     }
@@ -190,13 +183,6 @@ export class NotificationList {
       new Date(),
     ),
   );
-
-  /** The page's own guard, so the link is never one that bounces (rule 8). */
-  protected readonly canOpenPage = computed(() => this.permissions.has('dashboard.view'));
-  protected readonly pageQuery = computed(() => ({
-    show: this.show() === 'unread' ? 'unread' : null,
-    category: this.kind(),
-  }));
 
   protected canFollow(action: NotificationAction): boolean {
     return action.permission === undefined || this.permissions.has(action.permission);

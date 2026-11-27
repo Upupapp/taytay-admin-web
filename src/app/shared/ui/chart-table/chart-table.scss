@@ -178,9 +178,41 @@
     font-weight: var(--fw-medium);
   }
 
+  /* The label and its figure on one line, the bar under both: the figure ends where the bar ends,
+     so every figure lines up on one edge and sits level with its own label (DL-295). It used to
+     be a second column, beside the bar and between two lines, and read as floating. */
   .chart__label-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 6px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px var(--space-3);
+  }
+
+  .chart__track {
+    grid-column: 1 / -1;
+  }
+
+  .chart__figure {
+    display: block;
+    color: var(--ink);
+    font-weight: var(--fw-semibold);
+    font-variant-numeric: tabular-nums;
+    line-height: 24px;
+    text-align: end;
+    white-space: nowrap;
+  }
+
+  /* The cell stays for a screen reader's table navigation; the figure above is its drawing. */
+  .chart td.chart__value {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .chart__label-cell {
+    padding-inline-end: 0;
   }
 
   .chart__label,
@@ -198,11 +230,6 @@
 
   .chart__link:hover {
     text-decoration: underline;
-  }
-
-  .chart td.chart__value {
-    vertical-align: top;
-    line-height: 24px;
   }
 
   .chart__track {
@@ -250,5 +277,5 @@
 
 /* Quiet and stacked together: the quiet caption, each label on its own line above a thin bar. */
 :host(.chart-table--quiet.chart-table--stacked) .chart__label-row {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
 }

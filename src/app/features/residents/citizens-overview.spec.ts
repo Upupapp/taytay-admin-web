@@ -187,6 +187,13 @@ async function render(): Promise<HTMLElement> {
 
 const text = (root: HTMLElement): string => root.textContent?.replace(/\s+/g, ' ') ?? '';
 
+/** A cell's text as a screen reader reads it: the figure drawn beside a label is aria-hidden (DL-295). */
+function spokenText(cell: Element): string | undefined {
+  const copy = cell.cloneNode(true) as Element;
+  copy.querySelectorAll('[aria-hidden="true"]').forEach((node) => node.remove());
+  return copy.textContent?.trim();
+}
+
 describe('CitizensOverviewPage (DL-213)', () => {
   it('draws the server’s figures, each linked to the registry filtered the same way', async () => {
     const asked = configure(of(SUMMARY));
@@ -396,7 +403,7 @@ describe('CitizensOverviewPage — how the registry grew and the review queue (D
     const root = await render();
     const panel = root.querySelector('app-registry-additions');
     const rows = [...(panel?.querySelectorAll('tbody tr') ?? [])].map((row) =>
-      [...row.children].map((cell) => cell.textContent?.trim()).join(' | '),
+      [...row.children].map(spokenText).join(' | '),
     );
 
     expect(rows).toEqual(['October 2026 | 12 | Withheld', 'November 2026 | 8 | 31']);
@@ -447,7 +454,7 @@ describe('CitizensOverviewPage — the sector list and the cards beside it (DL-2
     const root = await render();
     const panel = root.querySelector('.overview-trio__sector');
     const rows = [...(panel?.querySelectorAll('tbody tr') ?? [])].map((row) =>
-      [...row.children].map((cell) => cell.textContent?.trim()).join(' | '),
+      [...row.children].map(spokenText).join(' | '),
     );
 
     expect(rows).toEqual([

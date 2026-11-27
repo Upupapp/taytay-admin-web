@@ -1,45 +1,33 @@
 /* Notification inbox items, in the shell's drawer. */
 
-/* The quick filters stay in view while the list scrolls under them. */
+/* The quick filters, one row, held in view while the list scrolls under them. The block runs the
+   panel body's full width, past its padding, so a tinted row never shows at its sides (DL-296). */
 .inbox__filters {
   position: sticky;
   z-index: 1;
   inset-block-start: 0;
-  display: grid;
-  gap: var(--space-3);
-  margin-block-end: var(--space-4);
-  padding-block: var(--space-2) var(--space-3);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0 calc(-1 * var(--space-5)) var(--space-3);
+  padding: var(--space-1) var(--space-5) var(--space-3);
   border-block-end: 1px solid var(--soft);
   background: var(--card-solid);
 }
 
-.inbox__tabs {
-  align-self: start;
-  justify-self: start;
+.inbox__category {
+  flex: 0 1 190px;
+  min-inline-size: 0;
 }
 
-.inbox__summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2);
-  color: var(--muted2);
-  font-size: var(--fs-xs);
+.field__input.field__input--pill.inbox__select {
+  inline-size: 100%;
+  min-block-size: var(--h-btn-sm);
+  font-size: var(--fs-sm);
 }
 
-.inbox__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-4);
-  margin-block-start: var(--space-2);
-  font-size: var(--fs-xs);
-}
-
-.inbox__actions:empty {
-  display: none;
-}
 /* No rules between notices: each is its own soft row, and an unread one is tinted (DL-294). */
 .inbox__item {
   display: flex;

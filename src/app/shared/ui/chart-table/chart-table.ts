@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  input,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 export interface ChartRow {
@@ -84,6 +91,13 @@ export function summaryAfterCaption(caption: string, summary: string): string {
                 } @else {
                   <span class="chart__label">{{ row.label }}</span>
                 }
+                <!-- The stacked layout draws the figure here, on the label's line and ending where
+                     the bar ends (DL-295); the cell beside it still carries it for the table. -->
+                @if (stacked) {
+                  <span class="chart__figure" aria-hidden="true">{{
+                    row.display ?? row.value
+                  }}</span>
+                }
                 <!-- Decoration only. The value beside it carries the meaning. -->
                 @if (!row.isWithheld) {
                   <span class="chart__track" aria-hidden="true">
@@ -110,6 +124,12 @@ export function summaryAfterCaption(caption: string, summary: string): string {
   styleUrl: './chart-table.scss',
 })
 export class ChartTable {
+  /** The stacked layout is the host's class, set once where the table is placed. */
+  protected readonly stacked =
+    inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.classList.contains(
+      'chart-table--stacked',
+    );
+
   readonly caption = input.required<string>();
   readonly rows = input.required<readonly ChartRow[]>();
 

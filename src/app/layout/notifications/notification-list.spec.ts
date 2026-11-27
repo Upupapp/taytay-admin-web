@@ -127,18 +127,14 @@ describe('the notification drawer’s quick filters (DL-291)', () => {
     expect(items(fixture)).toBe(count);
   });
 
-  it('links to the full page with what was chosen, and tells the shell to close', async () => {
+  it('keeps its filters on one row, saying the count to a screen reader only (DL-296)', async () => {
     const fixture = await openDrawerList();
-    let followed = 0;
-    fixture.componentInstance.followed.subscribe(() => followed++);
-
-    html(fixture).querySelectorAll<HTMLButtonElement>('.inbox__tabs .tab')[1]?.click();
-    await fixture.whenStable();
-    const link = html(fixture).querySelector<HTMLAnchorElement>('.inbox__summary a');
-    expect(link?.getAttribute('href')).toBe('/notifications?show=unread');
-
-    link?.click();
-    expect(followed).toBe(1);
+    const filters = html(fixture).querySelector('.inbox__filters');
+    expect(filters?.querySelector('.inbox__category .visually-hidden')?.textContent).toContain(
+      'Category',
+    );
+    expect(filters?.querySelector('[role="status"]')?.classList).toContain('visually-hidden');
+    expect(filters?.querySelector('a')).toBeNull();
   });
 });
 
