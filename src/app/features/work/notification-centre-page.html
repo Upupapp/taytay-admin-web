@@ -82,7 +82,7 @@
           </select>
         </label>
 
-        @if (filtered()) {
+        @if (narrowed()) {
           <div class="toolbar__actions">
             <button type="button" class="btn btn--subtle" (click)="clearFilters()">
               {{ copy.clearFilters }}

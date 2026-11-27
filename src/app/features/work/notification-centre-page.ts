@@ -104,7 +104,6 @@ export class NotificationCentrePage {
     const filter = this.filter();
     return filter.kind !== null || filter.period !== 'any';
   });
-  protected readonly filtered = computed(() => this.narrowed() || this.filter().show !== 'all');
 
   constructor() {
     this.notifications.refresh();
@@ -127,7 +126,8 @@ export class NotificationCentrePage {
   protected clearFilters(): void {
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { show: null, category: null, when: null },
+      // The card's own filters only: the All | Unread tabs above are their own control.
+      queryParams: { category: null, when: null },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });

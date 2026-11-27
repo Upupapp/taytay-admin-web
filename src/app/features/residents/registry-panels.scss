@@ -121,9 +121,11 @@
   gap: 14px;
 }
 
+/* The figure level with the top of its label, as the tidy list's is (DL-292): a label that wraps
+   to three lines no longer pulls its figure down the tile. */
 .registry-month__item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-3);
   padding: 10px 14px;
   border-radius: var(--r-tile);

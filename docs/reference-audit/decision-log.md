@@ -12571,3 +12571,9 @@ of their card, so a "2" beside three lines of words dropped below its own label.
 so every chart in the console drew its figures flush left. `.chart td.chart__value` and its header
 now say `end` themselves. The tidy list's figure is top-aligned with its label and right-aligned in
 its column (`align-self: start`, `text-align: end`), with tabular digits as before.
+
+**Follow-up, from the browser check.** The age-and-sex pyramid's male figures were left-aligned in
+their box, so 89 ended short of 155; both sides now end on one edge with tabular digits. "This month"
+puts its figures level with their labels, as the tidy list does. On the notification centre, "Clear
+filters" clears the card's two selects and shows only when one is set — the All | Unread tabs are
+their own control.
