@@ -18,6 +18,12 @@ export interface Crumb {
 /** The root of every trail, when the dashboard is served. */
 export const HOME_CRUMB: Crumb = { label: LAYOUT_COPY.breadcrumbHome, route: '/dashboard' };
 
+/** Pages reached from the topbar (the bell, the search pill) rather than the menu. */
+const TOPBAR_PAGES: readonly Crumb[] = [
+  { label: LAYOUT_COPY.notificationsHeading, route: '/notifications' },
+  { label: LAYOUT_COPY.breadcrumbSearch, route: '/search' },
+];
+
 /**
  * Route-derived breadcrumb.
  *
@@ -125,6 +131,11 @@ export function buildCrumbs(url: string, home: Crumb | null = HOME_CRUMB): reado
   }
 
   if (bestItem === null) {
+    // The pages the topbar opens are not in the menu, but each is still a place with a name.
+    const topbarPage = TOPBAR_PAGES.find((page) => page.route === path);
+    if (topbarPage !== undefined) {
+      return home === null ? [topbarPage] : [home, topbarPage];
+    }
     return home === null ? [] : [home];
   }
   if (home !== null && bestItem.route === home.route) {

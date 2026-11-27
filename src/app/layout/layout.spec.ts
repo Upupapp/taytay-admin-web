@@ -409,6 +409,17 @@ describe('buildCrumbs', () => {
     expect(buildCrumbs('/dashboard').map((c) => c.label)).toEqual([LAYOUT_COPY.breadcrumbHome]);
   });
 
+  it('names the pages the topbar opens, which the menu does not list', () => {
+    expect(buildCrumbs('/notifications?show=unread').map((c) => c.label)).toEqual([
+      LAYOUT_COPY.breadcrumbHome,
+      'Notifications',
+    ]);
+    expect(buildCrumbs('/search').map((c) => c.label)).toEqual([
+      LAYOUT_COPY.breadcrumbHome,
+      'Search',
+    ]);
+  });
+
   it('builds home, section and page', () => {
     expect(buildCrumbs('/residents').map((c) => c.label)).toEqual([
       LAYOUT_COPY.breadcrumbHome,

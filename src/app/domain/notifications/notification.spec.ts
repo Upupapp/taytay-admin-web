@@ -4,6 +4,7 @@ import { asId, type IsoDateTime, type NotificationId } from '../shared/ids';
 import {
   filterNotifications,
   kindsPresent,
+  localDayOf,
   NO_NOTIFICATION_FILTER,
   periodStart,
   type AppNotification,
@@ -77,6 +78,36 @@ describe('filtering the notification centre (DL-291)', () => {
       NOW,
     );
     expect(ids(shown)).toEqual(['message-today']);
+  });
+
+  it('finds words in the title or body, in any case (DL-293)', () => {
+    const inbox = [
+      { ...notice('a', 'message', 0), title: 'New office message', body: 'About medical help' },
+      { ...notice('b', 'decision', 1), title: 'ID verification approved' },
+    ];
+    expect(
+      ids(filterNotifications(inbox, { ...NO_NOTIFICATION_FILTER, term: ' MEDICAL ' }, NOW)),
+    ).toEqual(['a']);
+    expect(
+      ids(filterNotifications(inbox, { ...NO_NOTIFICATION_FILTER, term: 'verification' }, NOW)),
+    ).toEqual(['b']);
+    expect(filterNotifications(inbox, { ...NO_NOTIFICATION_FILTER, term: '  ' }, NOW)).toHaveLength(
+      2,
+    );
+  });
+
+  it('narrows to one picked day, in local time (DL-293)', () => {
+    const picked = localDayOf(INBOX[2]?.createdAt ?? '');
+    const shown = filterNotifications(
+      INBOX,
+      { ...NO_NOTIFICATION_FILTER, period: 'day', day: picked },
+      NOW,
+    );
+    expect(ids(shown)).toEqual(['decision-week']);
+    // "On a date" with no date chosen yet narrows nothing.
+    expect(
+      filterNotifications(INBOX, { ...NO_NOTIFICATION_FILTER, period: 'day' }, NOW),
+    ).toHaveLength(4);
   });
 
   it('offers only the categories the inbox holds, in the centre order, with counts', () => {

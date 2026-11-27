@@ -444,6 +444,31 @@ describe('filtering the notification centre', () => {
     expect(options.some((option) => option.startsWith('Assigned to you'))).toBe(false);
   });
 
+  it('finds words in a notification from the address bar, and shows them in the box (DL-293)', async () => {
+    const element = html(await openCentre('mswdo-head', 'staff-head', '/notifications?q=PAYOUT'));
+    expect(element.querySelector<HTMLInputElement>('input[type="search"]')?.value).toBe('PAYOUT');
+    expect(element.textContent).toContain('August payout session prepared');
+    const shown = [...element.querySelectorAll('.group__item')];
+    expect(shown.length).toBeGreaterThan(0);
+    for (const item of shown) expect(item.textContent?.toLowerCase()).toContain('payout');
+    expect(element.querySelector('[role="status"]')?.textContent).toContain(
+      `Showing ${shown.length} of 4`,
+    );
+    expect(element.textContent).toContain('Clear filters');
+  });
+
+  it('offers a date field only for "On a date", stopping at today (DL-293)', async () => {
+    expect(html(await openCentre()).querySelector('input[type="date"]')).toBeNull();
+
+    const element = html(
+      await openCentre('mswdo-head', 'staff-head', '/notifications?when=day&on=1999-01-01'),
+    );
+    const date = element.querySelector<HTMLInputElement>('input[type="date"]');
+    expect(date?.value).toBe('1999-01-01');
+    expect(date?.max).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(element.textContent).toContain('No notifications match these filters');
+  });
+
   it('narrows to one category from the address bar', async () => {
     const element = html(
       await openCentre('mswdo-head', 'staff-head', '/notifications?category=release'),

@@ -59,6 +59,20 @@
   } @else {
     <section class="card card--padded stack" [attr.aria-label]="copy.filtersLabel">
       <div class="toolbar">
+        <label class="field centre__search">
+          <span class="field__label">{{ copy.search }}</span>
+          <span class="search-field">
+            <app-icon name="search" class="search-field__icon" [size]="16" [stroke]="2" />
+            <input
+              type="search"
+              class="field__input field__input--pill"
+              [placeholder]="copy.searchPlaceholder"
+              [value]="searchText()"
+              (input)="onSearch($event)"
+            />
+          </span>
+        </label>
+
         <label class="field">
           <span class="field__label">{{ copy.category }}</span>
           <select class="field__input field__input--pill" (change)="onCategory($event)">
@@ -81,6 +95,19 @@
             }
           </select>
         </label>
+
+        @if (filter().period === 'day') {
+          <label class="field">
+            <span class="field__label">{{ copy.date }}</span>
+            <input
+              type="date"
+              class="field__input field__input--pill"
+              [max]="today"
+              [value]="filter().day ?? ''"
+              (input)="onDay($event)"
+            />
+          </label>
+        }
 
         @if (narrowed()) {
           <div class="toolbar__actions">

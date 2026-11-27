@@ -23,6 +23,7 @@ export const LAYOUT_COPY = {
   // Breadcrumb
   breadcrumbLandmark: 'Breadcrumb',
   breadcrumbHome: 'Dashboard',
+  breadcrumbSearch: 'Search',
 
   // Global search. The trigger navigates; the search screen owns the rest. The button's name
   // holds every word it shows, the shortcut included, so a speech user can say what they see
@@ -36,7 +37,7 @@ export const LAYOUT_COPY = {
   // Notifications
   notificationsLabel: 'Notifications',
   notificationsHeading: 'Notifications',
-  notificationsDescription: 'Case and payout activity for your account.',
+  closeNotifications: 'Close notifications',
   // The same words as the Notifications page for the same empty inbox.
   notificationsEmptyHeading: 'Nothing to catch up on',
   notificationsEmptyBody: 'Events that concern you appear here as they happen.',

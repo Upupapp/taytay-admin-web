@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink, type ParamMap } from '@angular/router';
 import { map } from 'rxjs';
@@ -7,6 +14,7 @@ import { PermissionService } from '@core/access/permission.service';
 import { NotificationStore } from '@core/notifications/notification.store';
 import {
   filterNotifications,
+  localDayOf,
   groupNotifications,
   kindsPresent,
   NOTIFICATION_KIND_LABELS,
@@ -21,6 +29,7 @@ import {
   type NotificationPeriod,
 } from '@domain/index';
 import { RelativeTimePipe } from '@shared/pipes/relative-time.pipe';
+import { debouncedTerm } from '@shared/state/debounced';
 import { EmptyState } from '@shared/ui/empty-state/empty-state';
 import { Icon } from '@shared/ui/icon/icon';
 import { SEVERITY_ICONS } from '@shared/ui/icon/severity-icons';
@@ -33,12 +42,15 @@ function readFilter(params: ParamMap): NotificationFilter {
   const show = params.get('show') === 'unread' ? 'unread' : 'all';
   const kind = params.get('category');
   const period = params.get('when');
+  const day = params.get('on');
   return {
     show,
     kind: NOTIFICATION_KINDS.includes(kind as NotificationKind) ? (kind as NotificationKind) : null,
     period: NOTIFICATION_PERIODS.includes(period as NotificationPeriod)
       ? (period as NotificationPeriod)
       : 'any',
+    day: day !== null && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null,
+    term: (params.get('q') ?? '').trim(),
   };
 }
 
@@ -55,8 +67,8 @@ function readFilter(params: ParamMap): NotificationFilter {
  * Grouped by what happened rather than shown as one stream, with assignments
  * first — the only group that might mean somebody now owes something.
  *
- * Three filters, held in the address bar like every other list's (DL-291): read or not, what it is
- * about, and when. The whole inbox is already in hand (the store reads every page, `DL-161`), so
+ * Three filters and a search, held in the address bar like every other list's (DL-291, DL-293):
+ * read or not, what it is about, when (a span, or one picked day), and the words it says. The whole inbox is already in hand (the store reads every page, `DL-161`), so
  * filtering is a view over it and sends nothing.
  */
 @Component({
@@ -102,11 +114,32 @@ export class NotificationCentrePage {
 
   protected readonly narrowed = computed(() => {
     const filter = this.filter();
-    return filter.kind !== null || filter.period !== 'any';
+    return filter.kind !== null || filter.period !== 'any' || (filter.term ?? '') !== '';
   });
+
+  /** What is typed, shown at once; the address bar takes it once typing settles (DL-119). */
+  protected readonly searchText = signal(this.filter().term ?? '');
+  private readonly settledTerm = debouncedTerm(this.searchText);
+
+  /** A day after today can hold no notice, so the calendar stops there. */
+  protected readonly today = localDayOf(new Date().toISOString());
 
   constructor() {
     this.notifications.refresh();
+    effect(() => {
+      const term = this.settledTerm();
+      if (term !== (this.filter().term ?? '')) {
+        this.patch({ q: term === '' ? null : term });
+      }
+    });
+  }
+
+  protected onSearch(event: Event): void {
+    this.searchText.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onDay(event: Event): void {
+    this.patch({ on: (event.target as HTMLInputElement).value || null });
   }
 
   /** A link is offered only while the reader still holds what its destination asks for (rule 8). */
@@ -120,14 +153,18 @@ export class NotificationCentrePage {
 
   protected onPeriod(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
-    this.patch({ when: value === 'any' ? null : value });
+    // A picked day belongs to "On a date"; any other choice lets it go.
+    this.patch(
+      value === 'day' ? { when: value } : { when: value === 'any' ? null : value, on: null },
+    );
   }
 
   protected clearFilters(): void {
+    this.searchText.set('');
     void this.router.navigate([], {
       relativeTo: this.route,
       // The card's own filters only: the All | Unread tabs above are their own control.
-      queryParams: { category: null, when: null },
+      queryParams: { category: null, when: null, on: null, q: null },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });

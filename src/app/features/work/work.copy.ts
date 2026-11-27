@@ -97,6 +97,9 @@ export const WORK_COPY = {
     showLabel: 'Show',
     showAll: 'All',
     showUnread: 'Unread',
+    search: 'Search',
+    searchPlaceholder: 'Words in a notification',
+    date: 'Date',
     category: 'Category',
     allCategories: 'All categories',
     when: 'When',
@@ -106,6 +109,6 @@ export const WORK_COPY = {
     caughtUpHeading: 'No unread notifications',
     caughtUpMessage: 'You have read everything here. Choose All to see them again.',
     noMatchHeading: 'No notifications match these filters',
-    noMatchMessage: 'Try another category or a longer time, or clear the filters.',
+    noMatchMessage: 'Try other words, another category or a longer time, or clear the filters.',
   },
 } as const;

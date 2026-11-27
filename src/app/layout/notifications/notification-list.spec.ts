@@ -26,6 +26,7 @@ import {
 import type { AppEnvironment } from '@env/environment.model';
 
 import { NotificationList } from './notification-list';
+import { NotificationPopover } from './notification-popover';
 
 const TEST_ENVIRONMENT: AppEnvironment = {
   name: 'local-mock',
@@ -138,5 +139,53 @@ describe('the notification drawer’s quick filters (DL-291)', () => {
 
     link?.click();
     expect(followed).toBe(1);
+  });
+});
+
+describe('the bell’s notifications drop from the bell (DL-293)', () => {
+  async function openPopover(): Promise<{
+    fixture: ComponentFixture<NotificationPopover>;
+    bell: HTMLButtonElement;
+    closes: () => number;
+  }> {
+    await openDrawerList();
+    const bell = document.createElement('button');
+    document.body.append(bell);
+    const fixture = TestBed.createComponent(NotificationPopover);
+    fixture.componentRef.setInput('anchor', bell);
+    let closed = 0;
+    fixture.componentInstance.closed.subscribe(() => closed++);
+    document.body.append(fixture.nativeElement as HTMLElement);
+    await fixture.whenStable();
+    return { fixture, bell, closes: () => closed };
+  }
+
+  it('is a labelled dialog with the full page one press away', async () => {
+    const { fixture } = await openPopover();
+    const panel = html(fixture).querySelector('[role="dialog"]');
+    expect(panel?.getAttribute('aria-labelledby')).toBe('notification-popover-heading');
+    expect(html(fixture).querySelector('.popover__all')?.getAttribute('href')).toBe(
+      '/notifications',
+    );
+    expect(html(fixture).querySelector('app-notification-list')).not.toBeNull();
+  });
+
+  it('closes on a press outside, but not on a press inside or on the bell', async () => {
+    const { fixture, bell, closes } = await openPopover();
+    html(fixture)
+      .querySelector('.popover__heading')
+      ?.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    bell.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(closes()).toBe(0);
+
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(closes()).toBe(1);
+  });
+
+  it('closes on Escape and hands focus back to the bell', async () => {
+    const { bell, closes } = await openPopover();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(closes()).toBe(1);
+    expect(document.activeElement).toBe(bell);
   });
 });

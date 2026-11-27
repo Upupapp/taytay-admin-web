@@ -58,6 +58,8 @@
 
 /* The live toggle, the theme and the bell wrap as one, to the end of the row (DL-258). */
 .topbar__tools {
+  /* The bell's notifications drop from here (DL-293). */
+  position: relative;
   display: flex;
   flex: none;
   align-items: center;

@@ -12589,3 +12589,28 @@ the drawer's footer beside "Mark all as read"; both, and a notice's own link (Op
 close the drawer, which a navigation does not do on its own. Every link is offered only where its
 destination's guard admits the reader (rule 8). An empty filtered drawer says which answer it is —
 nothing unread, or nothing in this category — never "nothing to catch up on" (`DL-291`).
+
+### DL-293 — The bell's notifications drop from the bell; the page names itself and searches (2026-11-27)
+
+**Decision.** The owner asked for the bell's notifications as a pop-up like a social network's, not
+a side drawer. They now drop from the bell (`NotificationPopover`): a non-modal dialog labelled by
+its heading, the bell `aria-expanded` and `aria-controls` it, focus moves into it on open, Escape
+and its close button return focus to the bell, a press outside the panel and the bell closes it, and
+any navigation closes it. It holds the drawer's quick filters (All | Unread, Category), "Mark all as
+read" in its header and a full-width "See all notifications" at its foot (rule 8: only where
+`/notifications`' guard admits the reader). On a phone it spans the screen below the topbar, because
+the bell sits mid-row there. It has no shadow (`DL-203`); its solid card and edge separate it.
+
+The Notifications page (and Search) had an empty breadcrumb, because the trail is built from the
+menu and neither is in it: both now read "Dashboard / Notifications" ("/ Search").
+
+The page gains a search over the reader's own notices — title and body, any case, debounced
+(`DL-119`), held in the address bar as `q` like the residents list's search — and "On a date…" in
+When, which shows a date field (stopping at today) and narrows to that local day (`on=YYYY-MM-DD`).
+The date field is the native one every other date filter in the console uses (events, beneficiaries,
+cases), styled by the same `.field__input--pill`; its calendar is the browser's own, which follows
+light and dark mode and is the most dependable for keyboard and screen-reader users. A bespoke
+calendar would make this one date field unlike the console's others.
+
+The search reads only notices already in the reader's own inbox and sends nothing, so `DL-109`'s
+closed searchable set — about the record search across residents — is not widened.

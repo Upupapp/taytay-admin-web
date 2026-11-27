@@ -8,6 +8,7 @@ import { ThemeToggle } from '@shared/ui/theme-toggle/theme-toggle';
 import { AppBreadcrumb } from '../breadcrumb/app-breadcrumb';
 import { GlobalSearchTrigger } from '../search/global-search-trigger';
 import { LAYOUT_COPY } from '../layout.copy';
+import { NotificationPopover } from '../notifications/notification-popover';
 import { LiveIndicator } from './live-indicator';
 
 /**
@@ -20,12 +21,19 @@ import { LiveIndicator } from './live-indicator';
  * a mobile user with no way to sign out.
  *
  * It is presentational — it emits intent and holds no state of its own, so the
- * shell stays the single owner of "is the drawer open".
+ * shell stays the single owner of "is the inbox open".
  */
 @Component({
   selector: 'app-topbar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AppBreadcrumb, GlobalSearchTrigger, Icon, LiveIndicator, ThemeToggle],
+  imports: [
+    AppBreadcrumb,
+    GlobalSearchTrigger,
+    Icon,
+    LiveIndicator,
+    NotificationPopover,
+    ThemeToggle,
+  ],
   template: `
     <header class="topbar">
       <button
@@ -53,16 +61,23 @@ import { LiveIndicator } from './live-indicator';
         <app-theme-toggle class="topbar__theme" />
 
         <button
+          #bell
           type="button"
           class="icon-button topbar__inbox"
           [attr.aria-label]="inboxLabel()"
-          (click)="inboxOpened.emit()"
+          [attr.aria-expanded]="inboxOpen()"
+          aria-controls="notification-popover"
+          (click)="inboxOpen() ? inboxClosed.emit() : inboxOpened.emit()"
         >
           <app-icon name="bell" [size]="20" />
           @if (notifications.unreadCount(); as unread) {
             <span class="topbar__badge" aria-hidden="true">{{ unread }}</span>
           }
         </button>
+
+        @if (inboxOpen()) {
+          <app-notification-popover [anchor]="bell" (closed)="inboxClosed.emit()" />
+        }
       </div>
     </header>
   `,
@@ -78,10 +93,12 @@ export class AppTopbar {
   protected readonly searchServed = inject(ServedPorts).servesAll(['search']);
 
   readonly navOpen = input(false);
+  readonly inboxOpen = input(false);
 
   readonly navToggled = output<void>();
   readonly searchActivated = output<void>();
   readonly inboxOpened = output<void>();
+  readonly inboxClosed = output<void>();
 
   protected readonly copy = LAYOUT_COPY;
 

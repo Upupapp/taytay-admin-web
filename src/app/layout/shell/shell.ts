@@ -10,22 +10,19 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 
-import { PermissionService } from '@core/access/permission.service';
 import { SessionStore } from '@core/auth/session.store';
 import { ViewportService } from '@core/layout/viewport.service';
 import { NotificationStore } from '@core/notifications/notification.store';
 import { barangayName } from '@domain/index';
 import { BrandMark } from '@shared/brand/brand-mark';
 import { ConnectionBanner } from '@shared/ui/connection-banner/connection-banner';
-import { Drawer } from '@shared/ui/drawer/drawer';
 import { Icon } from '@shared/ui/icon/icon';
 import { RouteProgress } from '@shared/ui/route-progress/route-progress';
 
 import { AppNav } from '../navigation/app-nav';
-import { NotificationList } from '../notifications/notification-list';
 import { AppTopbar } from '../topbar/app-topbar';
 import { LAYOUT_COPY } from '../layout.copy';
 import { initialsOf } from '@shared/pipes/initials.pipe';
@@ -45,18 +42,7 @@ import { initialsOf } from '@shared/pipes/initials.pipe';
 @Component({
   selector: 'app-shell',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterLink,
-    RouterOutlet,
-    AppNav,
-    AppTopbar,
-    BrandMark,
-    ConnectionBanner,
-    Drawer,
-    Icon,
-    NotificationList,
-    RouteProgress,
-  ],
+  imports: [RouterOutlet, AppNav, AppTopbar, BrandMark, ConnectionBanner, Icon, RouteProgress],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',
 })
@@ -67,9 +53,6 @@ export class Shell {
 
   protected readonly session = inject(SessionStore);
   protected readonly notifications = inject(NotificationStore);
-  private readonly permissions = inject(PermissionService);
-  /** The Notifications page's own guard, so the drawer never offers a link that bounces (rule 8). */
-  protected readonly canOpenNotifications = computed(() => this.permissions.has('dashboard.view'));
   protected readonly copy = LAYOUT_COPY;
 
   protected readonly navOpen = signal(false);
@@ -111,7 +94,11 @@ export class Shell {
     // destination is behind the overlay, so leaving it open hides the result.
     const navigation = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe(() => this.navOpen.set(false));
+      .subscribe(() => {
+        this.navOpen.set(false);
+        // The bell's panel too: Back or a link elsewhere leaves the list it was about.
+        this.inboxOpen.set(false);
+      });
     this.destroyRef.onDestroy(() => navigation.unsubscribe());
 
     // Escape closes the compact drawer. The wide sidebar is not dismissible, so

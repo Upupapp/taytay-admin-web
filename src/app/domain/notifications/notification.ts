@@ -161,12 +161,14 @@ export function groupNotifications(
 /* ── Filtering the notification centre (DL-291) ───────────────────────────── */
 
 /**
- * Three questions, and only three: have I read it, what is it about, when was it. A notice has no
- * owner, date owed or status to filter on — those belong to work (DL-96) — so a fourth filter
- * would be filtering on something a notification does not carry.
+ * Three questions: have I read it, what is it about, when was it — plus the words it says, searched
+ * in the reader's own notices only (DL-293). A notice has no owner, date owed or status to filter
+ * on — those belong to work (DL-96) — so another filter would be filtering on something a
+ * notification does not carry.
  */
 export type NotificationShow = 'all' | 'unread';
-export type NotificationPeriod = 'any' | 'today' | 'week' | 'month';
+/** `day` is one calendar day the reader picks, read in local time as today is. */
+export type NotificationPeriod = 'any' | 'today' | 'week' | 'month' | 'day';
 
 export const NOTIFICATION_SHOWS: readonly NotificationShow[] = ['all', 'unread'];
 export const NOTIFICATION_PERIODS: readonly NotificationPeriod[] = [
@@ -174,6 +176,7 @@ export const NOTIFICATION_PERIODS: readonly NotificationPeriod[] = [
   'today',
   'week',
   'month',
+  'day',
 ];
 export const NOTIFICATION_KINDS: readonly NotificationKind[] = KIND_ORDER;
 
@@ -182,12 +185,17 @@ export const NOTIFICATION_PERIOD_LABELS: Readonly<Record<NotificationPeriod, str
   today: 'Today',
   week: 'Last 7 days',
   month: 'Last 30 days',
+  day: 'On a date…',
 };
 
 export interface NotificationFilter {
   readonly show: NotificationShow;
   readonly kind: NotificationKind | null;
   readonly period: NotificationPeriod;
+  /** The chosen day as `YYYY-MM-DD`, read only when the period is `day`. */
+  readonly day?: string | null;
+  /** Words to find in a notice's title or body, any case. Blank finds everything. */
+  readonly term?: string;
 }
 
 export const NO_NOTIFICATION_FILTER: NotificationFilter = {
@@ -209,7 +217,24 @@ export function periodStart(period: NotificationPeriod, now: Date): Date | null 
       return new Date(now.getTime() - 7 * DAY_MS);
     case 'month':
       return new Date(now.getTime() - 30 * DAY_MS);
+    case 'day':
+      // A single day is a window with an end as well, so it is matched on its own below.
+      return null;
   }
+}
+
+/** The local calendar day of a moment, as `YYYY-MM-DD` — the shape a date field gives. */
+export function localDayOf(moment: string): string {
+  const date = new Date(moment);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function mentions(notification: AppNotification, term: string): boolean {
+  if (term === '') return true;
+  const words = `${notification.title} ${notification.body ?? ''}`.toLocaleLowerCase();
+  return words.includes(term);
 }
 
 export function filterNotifications(
@@ -218,11 +243,15 @@ export function filterNotifications(
   now: Date,
 ): readonly AppNotification[] {
   const since = periodStart(filter.period, now);
+  const day = filter.period === 'day' ? (filter.day ?? null) : null;
+  const term = (filter.term ?? '').trim().toLocaleLowerCase();
   return notifications.filter(
     (notification) =>
       (filter.show === 'all' || isUnread(notification)) &&
       (filter.kind === null || notification.kind === filter.kind) &&
-      (since === null || new Date(notification.createdAt).getTime() >= since.getTime()),
+      (since === null || new Date(notification.createdAt).getTime() >= since.getTime()) &&
+      (day === null || localDayOf(notification.createdAt) === day) &&
+      mentions(notification, term),
   );
 }
 

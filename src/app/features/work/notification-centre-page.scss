@@ -153,3 +153,8 @@
   color: var(--link);
   font-size: var(--fs-xs);
 }
+
+/* The search takes the room the selects leave, as on the other lists (DL-293). */
+.centre__search {
+  flex: 1 1 260px;
+}
