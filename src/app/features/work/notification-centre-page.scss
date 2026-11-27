@@ -46,20 +46,26 @@
   list-style: none;
 }
 
+/* No rules between notices: each is its own soft row, and an unread one is tinted (DL-294). */
 .group__item {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
-  padding-block: 14px;
-  border-block-start: 1px solid var(--soft);
+  margin-inline: calc(-1 * var(--space-3));
+  padding: var(--space-3);
+  border-radius: var(--r-lg);
 }
 
-.group__item:first-child {
-  border-block-start: none;
+.group__item + .group__item {
+  margin-block-start: var(--space-1);
 }
 
-.group__item:last-child {
-  padding-block-end: 0;
+.group__item--unread {
+  background: var(--blue-tint);
+}
+
+.group__dot {
+  align-self: center;
 }
 
 /* Shape as well as colour: the icon differs per severity, the tone repeats it. */
@@ -144,13 +150,6 @@
 }
 
 .group__link {
-  font-size: var(--fs-xs);
-}
-
-.btn.group__mark {
-  min-block-size: var(--target-min);
-  padding-inline: 0;
-  color: var(--link);
   font-size: var(--fs-xs);
 }
 

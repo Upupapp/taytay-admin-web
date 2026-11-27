@@ -99,35 +99,49 @@ import { LAYOUT_COPY } from '../layout.copy';
     }
 
     @for (item of shown(); track item.id) {
+      <!-- Unread is a tint, a weight and a dot, as in a social network's list, and said in words to
+           a screen reader (DL-294). The dot is the mark-as-read control; following the notice's
+           link marks it read as well. -->
       <article class="inbox__item" [class.inbox__item--unread]="item.readAt === null">
-        <div class="inbox__meta">
-          <span
-            class="inbox__severity"
-            [class]="'inbox__severity--' + item.severity"
-            aria-hidden="true"
-          >
-            <app-icon [name]="severityIcons[item.severity]" [size]="14" [stroke]="2" />
-          </span>
-          <time [attr.datetime]="item.createdAt">{{ item.createdAt | relativeTime }}</time>
-        </div>
-        <h3 class="inbox__title">{{ item.title }}</h3>
-        @if (item.body; as body) {
-          <p class="inbox__body">{{ body }}</p>
-        }
-        <p class="inbox__actions">
+        <div class="inbox__main">
+          <div class="inbox__meta">
+            <span
+              class="inbox__severity"
+              [class]="'inbox__severity--' + item.severity"
+              aria-hidden="true"
+            >
+              <app-icon [name]="severityIcons[item.severity]" [size]="14" [stroke]="2" />
+            </span>
+            <time [attr.datetime]="item.createdAt">{{ item.createdAt | relativeTime }}</time>
+          </div>
+          <h3 class="inbox__title">
+            @if (item.readAt === null) {
+              <span class="visually-hidden">{{ copy.unreadPrefix }}</span>
+            }
+            {{ item.title }}
+          </h3>
+          @if (item.body; as body) {
+            <p class="inbox__body">{{ body }}</p>
+          }
           @if (item.action; as action) {
             @if (canFollow(action)) {
-              <a class="record-link" [routerLink]="action.routerLink" (click)="follow(item)">
-                {{ action.label }}
-              </a>
+              <p class="inbox__actions">
+                <a class="record-link" [routerLink]="action.routerLink" (click)="follow(item)">
+                  {{ action.label }}
+                </a>
+              </p>
             }
           }
-          @if (item.readAt === null) {
-            <button type="button" class="btn btn--subtle inbox__read" (click)="markRead(item)">
-              {{ copy.markRead }}
-            </button>
-          }
-        </p>
+        </div>
+        @if (item.readAt === null) {
+          <button
+            type="button"
+            class="unread-dot"
+            [attr.aria-label]="copy.markReadNamed(item.title)"
+            [title]="copy.markRead"
+            (click)="markRead(item)"
+          ></button>
+        }
       </article>
     } @empty {
       @if (notifications.inbox().length === 0) {

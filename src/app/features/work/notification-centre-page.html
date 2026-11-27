@@ -165,11 +165,13 @@
               </span>
               <div class="group__main">
                 <p class="group__item-head">
-                  <span class="group__title">{{ item.title }}</span>
-                  @if (item.readAt === null) {
-                    <!-- Unread said in words as well as by weight and marker. -->
-                    <span class="chip chip--warning group__badge">{{ copy.unreadBadge }}</span>
-                  }
+                  <span class="group__title">
+                    @if (item.readAt === null) {
+                      <!-- Unread said in words as well as by tint, weight and dot (DL-294). -->
+                      <span class="visually-hidden">{{ copy.unreadPrefix }}</span>
+                    }
+                    {{ item.title }}
+                  </span>
                   <time class="group__time" [attr.datetime]="item.createdAt">{{
                     item.createdAt | relativeTime
                   }}</time>
@@ -179,9 +181,9 @@
                   <p class="group__body">{{ item.body }}</p>
                 }
 
-                <p class="group__actions">
-                  @if (item.action; as action) {
-                    @if (canFollow(action)) {
+                @if (item.action; as action) {
+                  @if (canFollow(action)) {
+                    <p class="group__actions">
                       <a
                         class="record-link group__link"
                         [routerLink]="action.routerLink"
@@ -189,19 +191,19 @@
                       >
                         {{ action.label }}
                       </a>
-                    }
+                    </p>
                   }
-                  @if (item.readAt === null) {
-                    <button
-                      type="button"
-                      class="btn btn--subtle group__mark"
-                      (click)="markRead(item)"
-                    >
-                      {{ copy.markRead }}
-                    </button>
-                  }
-                </p>
+                }
               </div>
+              @if (item.readAt === null) {
+                <button
+                  type="button"
+                  class="unread-dot group__dot"
+                  [attr.aria-label]="copy.markReadNamed(item.title)"
+                  [title]="copy.markRead"
+                  (click)="markRead(item)"
+                ></button>
+              }
             </li>
           }
         </ul>

@@ -236,11 +236,16 @@ describe('the three surfaces read differently', () => {
     expect(headings[0]).toBe('Assigned to you');
   });
 
-  it('marks unread with a word as well as a weight', async () => {
+  it('marks unread with a tint and a dot, and in words to a screen reader (DL-294)', async () => {
     const element = html(await openCentre());
-    const badge = element.querySelector('.group__badge');
+    const unread = element.querySelector('.group__item--unread');
 
-    expect(badge?.textContent?.trim()).toBe('Unread');
+    expect(unread?.querySelector('.visually-hidden')?.textContent).toBe('Unread: ');
+    expect(unread?.querySelector('.unread-dot')?.getAttribute('aria-label')).toMatch(
+      /^Mark as read: /,
+    );
+    expect(element.querySelector('.group__badge')).toBeNull();
+    expect(element.textContent).not.toContain('Mark as read');
   });
 
   it('labels an alert with its basis, so it can be checked rather than dismissed', async () => {

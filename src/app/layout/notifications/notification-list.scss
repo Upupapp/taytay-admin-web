@@ -40,17 +40,31 @@
 .inbox__actions:empty {
   display: none;
 }
+/* No rules between notices: each is its own soft row, and an unread one is tinted (DL-294). */
 .inbox__item {
-  padding: 14px 0;
-  border-block-end: 1px solid var(--soft);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline: calc(-1 * var(--space-3));
+  padding: var(--space-3);
+  border-radius: var(--r-lg);
 }
 
-.inbox__item:first-child {
-  padding-block-start: 0;
+.inbox__item + .inbox__item {
+  margin-block-start: var(--space-1);
+}
+
+.inbox__item--unread {
+  background: var(--blue-tint);
 }
 
 .inbox__item--unread .inbox__title {
   font-weight: var(--fw-bold);
+}
+
+.inbox__main {
+  flex: 1 1 auto;
+  min-inline-size: 0;
 }
 
 .inbox__meta {
@@ -104,10 +118,4 @@
   margin-block-start: var(--space-1);
   color: var(--text2);
   font-size: var(--fs-label);
-}
-
-.inbox__read {
-  padding-inline: 0;
-  color: var(--link);
-  font-size: var(--fs-xs);
 }

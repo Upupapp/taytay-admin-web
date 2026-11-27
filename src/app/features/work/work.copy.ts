@@ -85,7 +85,8 @@ export const WORK_COPY = {
     work: 'My work',
     markAllRead: 'Mark all as read',
     unread: 'unread',
-    unreadBadge: 'Unread',
+    unreadPrefix: 'Unread: ',
+    markReadNamed: (title: string) => `Mark as read: ${title}`,
     fyiNotice:
       'These are records of events. If something needs doing it appears on your work list, with a date and your name against it.',
 

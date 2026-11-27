@@ -12614,3 +12614,17 @@ calendar would make this one date field unlike the console's others.
 
 The search reads only notices already in the reader's own inbox and sends nothing, so `DL-109`'s
 closed searchable set — about the record search across residents — is not widened.
+
+### DL-294 — Unread is a tint and a dot, not a chip and a button (2026-11-27)
+
+**Decision.** The owner asked for unread notices to look as a social network's list draws them:
+darker, rather than an "Unread" chip and a "Mark as read" button on every row. In the bell's panel
+and on the Notifications page an unread notice is now a row tinted `--blue-tint` (both themes), its
+title bold, with a filled `--primary` dot at its end. The dot is the mark-as-read control: a
+`.unread-dot` button (new pattern class in `_patterns.scss`) the size WCAG 2.5.8 asks for, named
+"Mark as read: {title}", with a tooltip. Following a notice's own link marks it read too. Rows lose
+their dividing rules and become soft rounded rows, so the tint reads as a row rather than a stripe.
+
+Unread is still never told by colour alone (`DL-102`'s rule, applied here): it is a tint, a weight and
+a dot's shape, and a screen reader hears "Unread:" before the title. The "Unread" word chip of the
+first centre is superseded; "Mark all as read" stays in the page actions and the panel's header.

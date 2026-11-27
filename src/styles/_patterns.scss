@@ -1917,3 +1917,32 @@ a.tally--primary:is(:hover, :focus-visible) .tally__hint {
   padding-inline: 0;
   background: none;
 }
+
+/* ── Unread dot ───────────────────────────────────────────────────────────
+   An unread notice's mark-as-read control, as a social network's list draws it (DL-294): a
+   filled dot in a target the size WCAG 2.5.8 asks for. Its name says what it does; the row
+   beside it says "Unread" to a screen reader in words. */
+.unread-dot {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--target-min);
+  block-size: var(--target-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  cursor: pointer;
+}
+
+.unread-dot::before {
+  content: '';
+  inline-size: 10px;
+  block-size: 10px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+}
+
+.unread-dot:hover {
+  background: var(--hover);
+}

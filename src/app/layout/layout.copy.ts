@@ -42,6 +42,8 @@ export const LAYOUT_COPY = {
   notificationsEmptyHeading: 'Nothing to catch up on',
   notificationsEmptyBody: 'Events that concern you appear here as they happen.',
   markRead: 'Mark as read',
+  markReadNamed: (title: string): string => `Mark as read: ${title}`,
+  unreadPrefix: 'Unread: ',
   markAllRead: 'Mark all as read',
   // The drawer's quick filters; the Notifications page holds every filter (DL-291).
   seeAllNotifications: 'See all notifications',
