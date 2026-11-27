@@ -158,7 +158,10 @@ const BASE = 'https://api.example.gov.ph/api/v1';
 const SIGN_IN = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword';
 const FINALIZE = 'https://identitytoolkit.googleapis.com/v2/accounts/mfaSignIn:finalize';
 const REFRESH = 'https://securetoken.googleapis.com/v1/token';
-const CREDENTIALS = { email: 'staff.member@example.invalid', password: 'a-password-of-sufficient-length' };
+const CREDENTIALS = {
+  email: 'staff.member@example.invalid',
+  password: 'a-password-of-sufficient-length',
+};
 const UNIFORM_REFUSAL =
   'Those sign-in details were not recognised. Check the email address and password, then try again.';
 
@@ -210,8 +213,8 @@ describe('the Node adapters', () => {
         HttpBalitaRepository,
         HttpPlatformAuditRepository,
         HttpResidentImportRepository,
-  HttpResidentRepository,
-  HttpSectorApplicationRepository,
+        HttpResidentRepository,
+        HttpSectorApplicationRepository,
         HttpHouseholdRepository,
         HttpFamilyRepository,
         HttpProgramRepository,
@@ -340,7 +343,12 @@ describe('the Node adapters', () => {
       function passwordAccepted(): void {
         http
           .expectOne((req) => req.url === SIGN_IN)
-          .flush({ idToken: 'id-token-1', refreshToken: 'refresh-1', expiresIn: '3600', localId: 'uid-1' });
+          .flush({
+            idToken: 'id-token-1',
+            refreshToken: 'refresh-1',
+            expiresIn: '3600',
+            localId: 'uid-1',
+          });
       }
 
       async function refusal(source: Promise<unknown>): Promise<SignInError> {
@@ -404,7 +412,9 @@ describe('the Node adapters', () => {
         const outcome = firstValueFrom(staff.signIn(CREDENTIALS));
 
         passwordAccepted();
-        http.expectOne(`${BASE}/me`).flush({ ...ME_STAFF, data: { ...ME_STAFF.data, closed: true } });
+        http
+          .expectOne(`${BASE}/me`)
+          .flush({ ...ME_STAFF, data: { ...ME_STAFF.data, closed: true } });
 
         expect((await refusal(outcome)).message).toBe(UNIFORM_REFUSAL);
         expect(tokens.hasToken()).toBe(false);
@@ -415,7 +425,9 @@ describe('the Node adapters', () => {
         const outcome = firstValueFrom(staff.signIn(CREDENTIALS));
 
         passwordAccepted();
-        http.expectOne(`${BASE}/me`).flush(null, { status: 503, statusText: 'Service Unavailable' });
+        http
+          .expectOne(`${BASE}/me`)
+          .flush(null, { status: 503, statusText: 'Service Unavailable' });
 
         expect((await refusal(outcome)).reason).toBe('unavailable');
         expect(tokens.hasToken()).toBe(false);
@@ -426,7 +438,10 @@ describe('the Node adapters', () => {
 
         http
           .expectOne((req) => req.url === SIGN_IN)
-          .flush({ error: { code: 400, message: 'INVALID_LOGIN_CREDENTIALS' } }, { status: 400, statusText: 'Bad Request' });
+          .flush(
+            { error: { code: 400, message: 'INVALID_LOGIN_CREDENTIALS' } },
+            { status: 400, statusText: 'Bad Request' },
+          );
 
         expect((await refusal(outcome)).message).toBe(UNIFORM_REFUSAL);
         http.expectNone(`${BASE}/me`);
@@ -436,7 +451,10 @@ describe('the Node adapters', () => {
         const outcome = firstValueFrom(staff.signIn(CREDENTIALS));
         http
           .expectOne((req) => req.url === SIGN_IN)
-          .flush({ mfaPendingCredential: 'pending-1', mfaInfo: [{ mfaEnrollmentId: 'totp-1', totpInfo: {} }] });
+          .flush({
+            mfaPendingCredential: 'pending-1',
+            mfaInfo: [{ mfaEnrollmentId: 'totp-1', totpInfo: {} }],
+          });
 
         const first = await outcome;
         if (first.kind !== 'mfa-required') {
@@ -444,8 +462,12 @@ describe('the Node adapters', () => {
         }
         expect(tokens.hasToken()).toBe(false);
 
-        const user = firstValueFrom(staff.completeMfa({ challenge: first.challenge.challenge, code: '123456' }));
-        http.expectOne((req) => req.url === FINALIZE).flush({ idToken: 'id-token-mfa', refreshToken: 'refresh-mfa' });
+        const user = firstValueFrom(
+          staff.completeMfa({ challenge: first.challenge.challenge, code: '123456' }),
+        );
+        http
+          .expectOne((req) => req.url === FINALIZE)
+          .flush({ idToken: 'id-token-mfa', refreshToken: 'refresh-mfa' });
         const me = http.expectOne(`${BASE}/me`);
         expect(me.request.headers.get('Authorization')).toBe('Bearer id-token-mfa');
         me.flush(ME_ADMIN);
@@ -484,19 +506,17 @@ describe('the Node adapters', () => {
       tokens.hold('fixture-token', null);
       const done = firstValueFrom(staff.signOut());
 
-      http
-        .expectOne(`${BASE}/auth/sign-out`)
-        .flush(
-          {
-            error: {
-              code: 'SERVICE_UNAVAILABLE',
-              message: 'Try again.',
-              details: {},
-              request_id: 'r',
-            },
+      http.expectOne(`${BASE}/auth/sign-out`).flush(
+        {
+          error: {
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Try again.',
+            details: {},
+            request_id: 'r',
           },
-          { status: 503, statusText: 'Service Unavailable' },
-        );
+        },
+        { status: 503, statusText: 'Service Unavailable' },
+      );
 
       await expect(done).rejects.toBeTruthy();
       expect(tokens.hasToken()).toBe(false);
@@ -528,8 +548,11 @@ describe('the Node adapters', () => {
       second.flush(NOTIFICATIONS_PAGE_2);
 
       const rows = await inbox;
-      expect(rows.map((row) => row.kind)).toEqual(['general', 'decision', 'general']);
-      expect(rows.every((row) => row.severity === 'info' && row.action === null)).toBe(true);
+      expect(rows.map((row) => row.kind)).toEqual(['message', 'decision', 'message']);
+      expect(rows.every((row) => row.severity === 'info')).toBe(true);
+      // Only a resident's message links anywhere — its conversation — and only when it names one
+      // (DL-291): page 2's message carries no thread.
+      expect(rows.map((row) => row.action?.routerLink[0] ?? null)).toEqual(['/inbox', null, null]);
       expect(rows[1]?.readAt).toBe('2026-11-03T05:00:00.000Z');
     });
 
@@ -585,7 +608,9 @@ describe('the Node adapters', () => {
     });
 
     it('sends no status at all for every status, and the cursor it was given', async () => {
-      const page = firstValueFrom(verification.list({ status: null }, { limit: 20, cursor: 'c-2' }));
+      const page = firstValueFrom(
+        verification.list({ status: null }, { limit: 20, cursor: 'c-2' }),
+      );
 
       const request = http.expectOne((r) => r.url === `${BASE}/admin/verification-requests`);
       expect(request.request.params.keys().sort()).toEqual(['cursor', 'limit']);
@@ -1086,7 +1111,10 @@ describe('the Node adapters', () => {
     it('changes a role with the body the API reads, and nothing else', async () => {
       const changed = firstValueFrom(accounts.changeRole(accountId, 'staff'));
 
-      const request = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/users/${accountId}/role` });
+      const request = http.expectOne({
+        method: 'PATCH',
+        url: `${BASE}/admin/users/${accountId}/role`,
+      });
       expect(request.request.body).toEqual({ role: 'staff' });
       request.flush(USER_ROLE_CHANGED);
 
@@ -1165,7 +1193,9 @@ describe('the Node adapters', () => {
         data: [{ id: '7d1e0c55-2f6a-4b8e-9c3d-5a6b7c8d9e01', code: 'SJ', name: 'San Juan' }],
         meta: {},
       });
-      expect(await listed).toEqual([{ id: '7d1e0c55-2f6a-4b8e-9c3d-5a6b7c8d9e01', name: 'San Juan' }]);
+      expect(await listed).toEqual([
+        { id: '7d1e0c55-2f6a-4b8e-9c3d-5a6b7c8d9e01', name: 'San Juan' },
+      ]);
 
       const broken = firstValueFrom(accounts.barangays());
       http
@@ -1344,7 +1374,9 @@ describe('the Node adapters', () => {
     it('reads one record, and a 404 as nobody it may see', async () => {
       const found = firstValueFrom(residents.getById(savedId));
       barangays();
-      http.expectOne({ method: 'GET', url: `${BASE}/office/residents/${savedId}` }).flush(OFFICE_RESIDENT);
+      http
+        .expectOne({ method: 'GET', url: `${BASE}/office/residents/${savedId}` })
+        .flush(OFFICE_RESIDENT);
       expect((await found)?.resident.philsysLastFour).toBe('1290');
 
       const missing = firstValueFrom(residents.getById(asId<ResidentId>('nobody')));
@@ -1387,7 +1419,10 @@ describe('the Node adapters', () => {
     it('updates with the same body, at the record', async () => {
       const updated = firstValueFrom(residents.update(savedId, draft()));
       barangays();
-      const request = http.expectOne({ method: 'PATCH', url: `${BASE}/office/residents/${savedId}` });
+      const request = http.expectOne({
+        method: 'PATCH',
+        url: `${BASE}/office/residents/${savedId}`,
+      });
       expect(Object.keys(request.request.body as object)).not.toContain('sectors');
       request.flush(OFFICE_RESIDENT);
       expect((await updated).name.last).toBe('Dela Cruz');
@@ -1606,7 +1641,10 @@ describe('the Node adapters', () => {
       const snapshot = OFFICE_HOUSEHOLD.data.snapshot;
       const broken = [
         // A threshold other than the one this console cites beside the figures.
-        { ...snapshot, poverty_threshold: { ...snapshot.poverty_threshold, annual_per_capita_centavos: 1 } },
+        {
+          ...snapshot,
+          poverty_threshold: { ...snapshot.poverty_threshold, annual_per_capita_centavos: 1 },
+        },
         // An indicator missing reads as one that does not apply.
         { ...snapshot, factors: snapshot.factors.slice(1) },
       ];
@@ -1711,15 +1749,15 @@ describe('the Node adapters', () => {
 
     it('never sends "withheld" as a correction: it is a reading, not a state', async () => {
       await expect(
-        firstValueFrom(households.correctFactor(householdId, 'pwd-member', 'withheld', 'A reason here.')),
+        firstValueFrom(
+          households.correctFactor(householdId, 'pwd-member', 'withheld', 'A reason here.'),
+        ),
       ).rejects.toThrow(/present, absent or unknown/);
     });
 
     it('reads a refused composition as the domain’s problems, and anything else in the server’s words', () => {
       const failure = (body: unknown) =>
-        readApiError(
-          new HttpErrorResponse({ error: body, status: 409, statusText: 'Conflict' }),
-        );
+        readApiError(new HttpErrorResponse({ error: body, status: 409, statusText: 'Conflict' }));
 
       const refused = toHouseholdRefusal(failure(OFFICE_HOUSEHOLD_CONFLICT));
       expect(isHouseholdCompositionError(refused)).toBe(true);
@@ -1834,7 +1872,15 @@ describe('the Node adapters', () => {
       const request = http.expectOne((r) => r.url === `${BASE}/office/families`);
       const params = request.request.params;
       expect(params.keys().sort()).toEqual(
-        ['barangay_id', 'cursor', 'household_id', 'include_dissolved', 'limit', 'q', 'unhoused'].sort(),
+        [
+          'barangay_id',
+          'cursor',
+          'household_id',
+          'include_dissolved',
+          'limit',
+          'q',
+          'unhoused',
+        ].sort(),
       );
       expect(params.get('q')).toBe('cruz');
       expect(params.get('barangay_id')).toBe(SAN_JUAN_API);
@@ -2067,7 +2113,9 @@ describe('the Node adapters', () => {
       transfer.flush(OFFICE_FAMILY);
       expect((await moved).family.id).toBe(familyId);
 
-      const role = firstValueFrom(families.changeMemberRole(familyId, MARIA, 'head', 'She heads it.'));
+      const role = firstValueFrom(
+        families.changeMemberRole(familyId, MARIA, 'head', 'She heads it.'),
+      );
       const change = http.expectOne({
         method: 'POST',
         url: `${BASE}/office/families/${familyId}/members/${MARIA}/role`,
@@ -2146,7 +2194,9 @@ describe('the Node adapters', () => {
       expect(ended?.message).toBe('That relationship has already ended.');
 
       // Not a conflict: passed on untouched, for the screen's own handling.
-      expect(toFamilyRefusal(readApiError(new HttpErrorResponse({ status: 403 })), 'transfer')).toBeNull();
+      expect(
+        toFamilyRefusal(readApiError(new HttpErrorResponse({ status: 403 })), 'transfer'),
+      ).toBeNull();
     });
   });
 
@@ -2286,10 +2336,12 @@ describe('the Node adapters', () => {
     it('refuses a programme whose responsibility it cannot read, rather than default it', async () => {
       const page = firstValueFrom(programs.list({}, { limit: 20, cursor: null }));
       const [first] = OFFICE_PROGRAMS_PAGE.data;
-      http.expectOne((r) => r.url === `${BASE}/office/programs`).flush({
-        ...OFFICE_PROGRAMS_PAGE,
-        data: [{ ...first, responsibility: { ...first?.responsibility, lgu_role: 'decider' } }],
-      });
+      http
+        .expectOne((r) => r.url === `${BASE}/office/programs`)
+        .flush({
+          ...OFFICE_PROGRAMS_PAGE,
+          data: [{ ...first, responsibility: { ...first?.responsibility, lgu_role: 'decider' } }],
+        });
       await expect(page).rejects.toThrow(/could not be read/);
     });
 
@@ -2336,8 +2388,12 @@ describe('the Node adapters', () => {
         category: 'transportation-assistance',
       });
       expect(program?.category).toBe('transportation-assistance');
-      expect(PROGRAM_CATEGORY_LABELS['transportation-assistance']).toBe('Transportation assistance');
-      expect(toAssistanceProgram({ ...OFFICE_PROGRAM.data, category: 'transportation' })).toBeNull();
+      expect(PROGRAM_CATEGORY_LABELS['transportation-assistance']).toBe(
+        'Transportation assistance',
+      );
+      expect(
+        toAssistanceProgram({ ...OFFICE_PROGRAM.data, category: 'transportation' }),
+      ).toBeNull();
     });
 
     it('saves the whole draft in the API’s words, creating with POST and changing with PATCH', async () => {
@@ -2525,7 +2581,10 @@ describe('the Node adapters', () => {
       const all = firstValueFrom(programs.utilizationSummary());
       http
         .expectOne(`${BASE}/office/program-utilization`)
-        .flush({ data: { readable: true, rows: [{ program_id: 'x', withheld: false }] }, meta: {} });
+        .flush({
+          data: { readable: true, rows: [{ program_id: 'x', withheld: false }] },
+          meta: {},
+        });
       await expect(all).rejects.toThrow(/a programme missing from the figures/);
     });
   });
@@ -2920,7 +2979,9 @@ describe('the Node adapters', () => {
 
     it('sends a Tulong change as JSON with only what changed, and the picture as a form', async () => {
       const services = TestBed.inject(HttpTulongServiceRepository);
-      const changed = firstValueFrom(services.update(serviceId, { hiddenFromList: false, badge: null }));
+      const changed = firstValueFrom(
+        services.update(serviceId, { hiddenFromList: false, badge: null }),
+      );
       const patch = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/services/${serviceId}` });
       expect(JSON.parse(JSON.stringify(patch.request.body))).toEqual({
         hidden_from_list: false,
@@ -3216,9 +3277,9 @@ describe('the Node adapters', () => {
 
     it('sends a change of kind, and hands a second command center back as the domain’s refusal', async () => {
       const hotlines = TestBed.inject(HttpHotlineRepository);
-      const changed = firstValueFrom(
-        hotlines.update(hotlineId, { kind: 'command-center' }),
-      ).catch((failure: unknown) => failure);
+      const changed = firstValueFrom(hotlines.update(hotlineId, { kind: 'command-center' })).catch(
+        (failure: unknown) => failure,
+      );
       const patch = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/hotlines/${hotlineId}` });
       expect(JSON.parse(JSON.stringify(patch.request.body))).toEqual({ kind: 'command-center' });
       patch.flush(
@@ -3334,7 +3395,12 @@ describe('the Node adapters', () => {
 
   describe('the home screen (DL-170)', () => {
     const png = () => new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: 'image/png' });
-    const DRAFT = { title: 'Supplementary feeding resumes', href: null, sortOrder: 2, active: true };
+    const DRAFT = {
+      title: 'Supplementary feeding resumes',
+      href: null,
+      sortOrder: 2,
+      active: true,
+    };
 
     beforeEach(() => tokens.hold('fixture-token', null));
 
@@ -3388,9 +3454,9 @@ describe('the Node adapters', () => {
 
       const upload = http.expectOne({ method: 'POST', url: `${BASE}/media` });
       expect(upload.request.body).toBeInstanceOf(FormData);
-      expect(upload.request.body instanceof FormData ? upload.request.body.has('file') : false).toBe(
-        true,
-      );
+      expect(
+        upload.request.body instanceof FormData ? upload.request.body.has('file') : false,
+      ).toBe(true);
       upload.flush(MEDIA, { status: 201, statusText: 'Created' });
 
       const post = http.expectOne({ method: 'POST', url: `${BASE}/admin/home/banners` });
@@ -3410,7 +3476,10 @@ describe('the Node adapters', () => {
       const bannerId = asId<HomeBannerId>(BANNER.data.id);
 
       const kept = firstValueFrom(home.updateBanner(bannerId, DRAFT, { kind: 'keep' }));
-      const keep = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/home/banners/${bannerId}` });
+      const keep = http.expectOne({
+        method: 'PATCH',
+        url: `${BASE}/admin/home/banners/${bannerId}`,
+      });
       // `undefined` is left out by the serialiser, so a kept image is not named at all.
       expect(JSON.parse(JSON.stringify(keep.request.body))).toEqual({
         title: 'Supplementary feeding resumes',
@@ -3422,7 +3491,10 @@ describe('the Node adapters', () => {
       await kept;
 
       const removed = firstValueFrom(home.updateBanner(bannerId, DRAFT, { kind: 'remove' }));
-      const remove = http.expectOne({ method: 'PATCH', url: `${BASE}/admin/home/banners/${bannerId}` });
+      const remove = http.expectOne({
+        method: 'PATCH',
+        url: `${BASE}/admin/home/banners/${bannerId}`,
+      });
       expect(remove.request.body).toMatchObject({ title: DRAFT.title, media_id: null });
       remove.flush(BANNER);
       await removed;
@@ -3541,7 +3613,11 @@ describe('the Node adapters', () => {
       const linkId = asId<QuickLinkId>(LINK.data.id);
 
       const created = firstValueFrom(
-        home.createLink({ label: 'Hotlines', href: 'https://home.example.test/hotlines', sortOrder: 2 }),
+        home.createLink({
+          label: 'Hotlines',
+          href: 'https://home.example.test/hotlines',
+          sortOrder: 2,
+        }),
       );
       const post = http.expectOne({ method: 'POST', url: `${BASE}/admin/home/links` });
       expect(post.request.body).toEqual({
@@ -3553,7 +3629,11 @@ describe('the Node adapters', () => {
       await created;
 
       const changed = firstValueFrom(
-        home.updateLink(linkId, { label: 'Hotlines', href: 'https://home.example.test/x', sortOrder: 3 }),
+        home.updateLink(linkId, {
+          label: 'Hotlines',
+          href: 'https://home.example.test/x',
+          sortOrder: 3,
+        }),
       );
       http.expectOne({ method: 'PATCH', url: `${BASE}/admin/home/links/${linkId}` }).flush(LINK);
       await changed;
@@ -3759,22 +3839,20 @@ describe('the Node adapters', () => {
       const cards = TestBed.inject(HttpDigitalIdRepository);
       const account = asId<AppAccountId>('0f1e2d3c-4b5a-4968-8776-655443322102');
       const held = firstValueFrom(cards.cardOf(account));
-      http
-        .expectOne({ method: 'GET', url: `${BASE}/admin/users/${account}/digital-id` })
-        .flush({
-          ...DIGITAL_ID_CARD,
-          // The record read's facts beside the card (DL-232).
-          data: {
-            ...DIGITAL_ID_CARD.data,
-            photo_source: 'selfie',
-            checks_count: 2,
-            holder: {
-              purok_or_sitio: 'Purok 3',
-              verified_at: '2026-10-28T03:00:00.000Z',
-              id_type: 'umid',
-            },
+      http.expectOne({ method: 'GET', url: `${BASE}/admin/users/${account}/digital-id` }).flush({
+        ...DIGITAL_ID_CARD,
+        // The record read's facts beside the card (DL-232).
+        data: {
+          ...DIGITAL_ID_CARD.data,
+          photo_source: 'selfie',
+          checks_count: 2,
+          holder: {
+            purok_or_sitio: 'Purok 3',
+            verified_at: '2026-10-28T03:00:00.000Z',
+            id_type: 'umid',
           },
-        });
+        },
+      });
       const card = await held;
       expect(card?.number).toBe('TAY-2026-000123');
       expect(card?.record).toEqual({
@@ -3834,12 +3912,20 @@ describe('the Node adapters', () => {
       const request = http.expectOne((candidate) => candidate.url === `${BASE}/admin/digital-ids`);
       expect(request.request.params.get('status')).toBe('expiring');
       expect(request.request.params.get('q')).toBe('Reyes');
-      expect(request.request.params.get('barangay_id')).toBe('6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04');
+      expect(request.request.params.get('barangay_id')).toBe(
+        '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04',
+      );
       expect(request.request.params.get('limit')).toBe('20');
       request.flush(DIGITAL_ID_LIST_PAGE);
 
       const answer = await page;
-      expect(answer.counts).toEqual({ active: 12, expiring: 4, expired: 2, suspended: 1, revoked: 3 });
+      expect(answer.counts).toEqual({
+        active: 12,
+        expiring: 4,
+        expired: 2,
+        suspended: 1,
+        revoked: 3,
+      });
       expect(answer.hasMore).toBe(true);
       expect(answer.nextCursor).toBe('fixture-cursor');
       expect(answer.items.map((item) => item.holder.name)).toEqual(['Fixture Resident', null]);
@@ -3922,7 +4008,9 @@ describe('the Node adapters', () => {
       const request = http.expectOne(
         (candidate) => candidate.url === `${BASE}/office/residents/summary`,
       );
-      expect(request.request.params.get('barangay_id')).toBe('6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04');
+      expect(request.request.params.get('barangay_id')).toBe(
+        '6a7b8c9d-0e1f-4a2b-8c3d-4e5f6a7b8c04',
+      );
       expect(request.request.params.get('sector')).toBe('senior-citizen');
       expect(request.request.params.get('age_group')).toBe('senior');
       expect(request.request.params.get('sex')).toBe('female');
@@ -4023,10 +4111,14 @@ describe('the Node adapters', () => {
       SECTOR_APPLICATION_DETAIL.data;
 
     it('lists by status, and reads a proof as bytes with the token in a header', async () => {
-      expect([proofs, proof_warning, linked_resident, candidates, details_writable]).toHaveLength(5);
+      expect([proofs, proof_warning, linked_resident, candidates, details_writable]).toHaveLength(
+        5,
+      );
       const applications = TestBed.inject(HttpSectorApplicationRepository);
       const page = firstValueFrom(applications.list({ limit: 20, cursor: null }, 'pending'));
-      const list = http.expectOne((candidate) => candidate.url === `${BASE}/office/sector-applications`);
+      const list = http.expectOne(
+        (candidate) => candidate.url === `${BASE}/office/sector-applications`,
+      );
       expect(list.request.params.get('status')).toBe('pending');
       list.flush({ data: [ROW], meta: { pagination: { has_more: false, next_cursor: null } } });
       expect((await page).items[0]?.sector).toBe('senior-citizen');

@@ -12531,3 +12531,43 @@ member" standing and refuses both in words (`DL-187`, the owner's question there
 visits, events and sector applications keep their filters on the page rather than in the address;
 their empty and no-results wording is right. A one-letter registry search is refused in words; the
 "Try again" beside it is redundant but harmless.
+
+## DL-291 — the notification centre filters by read, category and when
+
+**Decision.** The notification centre (`/notifications`) gains three filters, all in the address bar
+like every other list's, and no fourth:
+
+1. **Show: All | Unread** — the page's tabs, beside its actions (`DL-253`), each with its count. Read
+   or not is the first question anybody brings to a notification list.
+2. **Category** — only the kinds the inbox holds, each with its count (`kindsPresent`). A category
+   with nothing in it is not offered: choosing it could only show an empty page. A category named
+   in the address that the inbox no longer holds stays in the select, so it never misstates the URL.
+3. **When** — any time, today (from local midnight), the last 7 days, the last 30 days.
+
+A notice has no owner, date owed or status, so there is nothing else to filter on: those belong to
+work (`DL-96`). The whole inbox is already in hand (`everyPage`, `DL-161`), so filtering is a view
+over it and sends nothing. "No notifications match these filters" (with Clear filters) and "No
+unread notifications" (with All) are different answers and never merged with the empty inbox.
+
+**A resident's message is its own kind.** `message_received` is the one notice the API sends staff
+(backend `messaging/routes.ts`), and it was filed under "Other" with no link. It is now "Messages
+from residents", second after "Assigned to you", with **Open conversation** to `/inbox/:threadId`
+(`DL-168`). The link carries `office-inbox.manage` and is offered only while the reader holds it,
+because a notice outlives the grant it was sent under (rule 8). The mapper's old reason for no
+link — "office threads have no screen yet" — stopped being true with `DL-168`.
+
+**Fixed with it.** `NotificationStore.refresh` replaced the whole inbox with the server's rows, so an
+error this console raised — kept until read, by design — vanished at the next live re-read. A
+refresh now replaces only the server's rows. "Mark as read" moved into the copy file.
+
+## DL-292 — a column of figures ends on one edge
+
+**Found by the owner** on Citizen overview: the sector bars' counts (195, 151 … 3, 2) sat flush left,
+so they did not line up by their last digit, and the "Records to tidy up" figures sat in the middle
+of their card, so a "2" beside three lines of words dropped below its own label.
+
+**Cause and fix.** `ChartTable`'s `.chart td { text-align: start }` outranks the lone
+`.chart__value { text-align: end }` — the same specificity trap the cell's padding fell into before —
+so every chart in the console drew its figures flush left. `.chart td.chart__value` and its header
+now say `end` themselves. The tidy list's figure is top-aligned with its label and right-aligned in
+its column (`align-self: start`, `text-align: end`), with tabular digits as before.

@@ -144,6 +144,17 @@ describe('NotificationStore', () => {
     expect(store.unreadCount()).toBe(1);
   });
 
+  it('keeps a notice this console raised when the server list is re-read (DL-291)', () => {
+    const { store } = setUp();
+    store.error('Could not save', 'Nothing was kept.');
+
+    store.refresh();
+    store.refresh();
+
+    expect(store.inbox().map((item) => item.title)).toEqual(['Could not save']);
+    expect(store.unreadCount()).toBe(1);
+  });
+
   it('gives non-error toasts a default dismissal delay', () => {
     const { store } = setUp();
     store.info('Saved');
@@ -211,5 +222,4 @@ describe('NotificationStore', () => {
 
     setInterval.mockRestore();
   });
-
 });

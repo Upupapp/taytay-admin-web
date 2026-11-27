@@ -1,3 +1,4 @@
+import type { Permission } from '../access/permission';
 import type { IsoDateTime, NotificationId, StaffUserId } from '../shared/ids';
 
 /** Severity drives both the toast styling and the inbox grouping. */
@@ -33,6 +34,7 @@ export type NotificationChannel = 'toast' | 'inbox' | 'both';
  */
 export type NotificationKind =
   | 'assignment'
+  | 'message'
   | 'status-change'
   | 'decision'
   | 'release'
@@ -42,6 +44,7 @@ export type NotificationKind =
 
 export const NOTIFICATION_KIND_LABELS: Readonly<Record<NotificationKind, string>> = {
   assignment: 'Assigned to you',
+  message: 'Messages from residents',
   'status-change': 'Progress',
   decision: 'Decisions',
   release: 'Releases',
@@ -54,6 +57,12 @@ export interface NotificationAction {
   readonly label: string;
   /** Router link segments; the shell navigates, the notifier never does. */
   readonly routerLink: readonly string[];
+  /**
+   * The key the destination's route guard asks for. A notice outlives the grant it was sent
+   * under — a worker moved off an office keeps the office's old message notices — so the link is
+   * offered only while the reader still holds this, and never bounces them (rule 8).
+   */
+  readonly permission?: Permission;
 }
 
 /**
@@ -109,6 +118,7 @@ export interface NotificationGroup {
 
 const KIND_ORDER: readonly NotificationKind[] = [
   'assignment',
+  'message',
   'decision',
   'status-change',
   'release',
@@ -148,6 +158,94 @@ export function groupNotifications(
   return groups;
 }
 
+/* ── Filtering the notification centre (DL-291) ───────────────────────────── */
+
+/**
+ * Three questions, and only three: have I read it, what is it about, when was it. A notice has no
+ * owner, date owed or status to filter on — those belong to work (DL-96) — so a fourth filter
+ * would be filtering on something a notification does not carry.
+ */
+export type NotificationShow = 'all' | 'unread';
+export type NotificationPeriod = 'any' | 'today' | 'week' | 'month';
+
+export const NOTIFICATION_SHOWS: readonly NotificationShow[] = ['all', 'unread'];
+export const NOTIFICATION_PERIODS: readonly NotificationPeriod[] = [
+  'any',
+  'today',
+  'week',
+  'month',
+];
+export const NOTIFICATION_KINDS: readonly NotificationKind[] = KIND_ORDER;
+
+export const NOTIFICATION_PERIOD_LABELS: Readonly<Record<NotificationPeriod, string>> = {
+  any: 'Any time',
+  today: 'Today',
+  week: 'Last 7 days',
+  month: 'Last 30 days',
+};
+
+export interface NotificationFilter {
+  readonly show: NotificationShow;
+  readonly kind: NotificationKind | null;
+  readonly period: NotificationPeriod;
+}
+
+export const NO_NOTIFICATION_FILTER: NotificationFilter = {
+  show: 'all',
+  kind: null,
+  period: 'any',
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The earliest moment a period admits; `null` admits everything. "Today" starts at local midnight. */
+export function periodStart(period: NotificationPeriod, now: Date): Date | null {
+  switch (period) {
+    case 'any':
+      return null;
+    case 'today':
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    case 'week':
+      return new Date(now.getTime() - 7 * DAY_MS);
+    case 'month':
+      return new Date(now.getTime() - 30 * DAY_MS);
+  }
+}
+
+export function filterNotifications(
+  notifications: readonly AppNotification[],
+  filter: NotificationFilter,
+  now: Date,
+): readonly AppNotification[] {
+  const since = periodStart(filter.period, now);
+  return notifications.filter(
+    (notification) =>
+      (filter.show === 'all' || isUnread(notification)) &&
+      (filter.kind === null || notification.kind === filter.kind) &&
+      (since === null || new Date(notification.createdAt).getTime() >= since.getTime()),
+  );
+}
+
+export interface NotificationKindCount {
+  readonly kind: NotificationKind;
+  readonly label: string;
+  readonly count: number;
+}
+
+/**
+ * The categories worth offering: those the inbox actually holds, in the centre's order. A category
+ * with nothing in it is not offered — choosing it could only ever show an empty page.
+ */
+export function kindsPresent(
+  notifications: readonly AppNotification[],
+): readonly NotificationKindCount[] {
+  return KIND_ORDER.map((kind) => ({
+    kind,
+    label: NOTIFICATION_KIND_LABELS[kind],
+    count: notifications.filter((notification) => notification.kind === kind).length,
+  })).filter((entry) => entry.count > 0);
+}
+
 /**
  * Whether a user should see this notification.
  *
@@ -156,10 +254,7 @@ export function groupNotifications(
  * recipient is an office-wide announcement — which is not the same thing as
  * "everybody may read everybody's".
  */
-export function isForRecipient(
-  notification: AppNotification,
-  userId: StaffUserId | null,
-): boolean {
+export function isForRecipient(notification: AppNotification, userId: StaffUserId | null): boolean {
   return notification.recipientId === null || notification.recipientId === userId;
 }
 

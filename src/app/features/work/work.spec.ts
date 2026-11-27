@@ -148,9 +148,10 @@ async function openTeam(
 async function openCentre(
   role: StaffRole = 'mswdo-head',
   id = 'staff-head',
+  url = '/notifications',
 ): Promise<ComponentFixture<NotificationCentrePage>> {
   await configure(staffUser(role, id));
-  await TestBed.inject(Router).navigateByUrl('/notifications');
+  await TestBed.inject(Router).navigateByUrl(url);
   const fixture = TestBed.createComponent(NotificationCentrePage);
   await fixture.whenStable();
   return fixture;
@@ -413,5 +414,65 @@ describe('whose notifications a user sees', () => {
   it('shows an office-wide announcement to everybody', async () => {
     const element = html(await openCentre('social-worker', 'staff-sw-1'));
     expect(element.textContent).toContain('Office closed 21 August');
+  });
+});
+
+/* ── DL-291: the centre's three filters ──────────────────────────────────── */
+
+describe('filtering the notification centre', () => {
+  const headings = (element: HTMLElement) =>
+    [...element.querySelectorAll('.group__heading')].map((node) => (node.textContent ?? '').trim());
+
+  it('shows unread only on the Unread tab, and says how many of how many', async () => {
+    const element = html(
+      await openCentre('mswdo-head', 'staff-head', '/notifications?show=unread'),
+    );
+
+    expect(headings(element)).not.toContain('Releases');
+    expect(element.querySelector('.tab--active')?.textContent).toContain('Unread');
+    expect(element.querySelector('[role="status"]')?.textContent).toContain('Showing 3 of 4');
+  });
+
+  it('offers only the categories the inbox holds, with their counts', async () => {
+    const element = html(await openCentre());
+    const options = [
+      ...(element.querySelectorAll('select')[0]?.querySelectorAll('option') ?? []),
+    ].map((option) => (option.textContent ?? '').trim());
+
+    expect(options[0]).toBe('All categories');
+    expect(options).toContain('Releases (1)');
+    expect(options.some((option) => option.startsWith('Assigned to you'))).toBe(false);
+  });
+
+  it('narrows to one category from the address bar', async () => {
+    const element = html(
+      await openCentre('mswdo-head', 'staff-head', '/notifications?category=release'),
+    );
+    expect(headings(element)).toEqual(['Releases']);
+  });
+
+  it('says nothing matches, with a way out, rather than looking empty', async () => {
+    const element = html(
+      await openCentre('mswdo-head', 'staff-head', '/notifications?category=assignment'),
+    );
+
+    expect(element.textContent).toContain('No notifications match these filters');
+    expect(element.textContent).toContain('Clear filters');
+    expect(headings(element)).toEqual([]);
+  });
+
+  it('offers a message link only to somebody who can open the office inbox', async () => {
+    const link = {
+      label: 'Open conversation',
+      routerLink: ['/inbox', 't-1'],
+      permission: 'office-inbox.manage',
+    } as const;
+    const can = (fixture: ComponentFixture<NotificationCentrePage>) =>
+      (
+        fixture.componentInstance as unknown as { canFollow: (a: typeof link) => boolean }
+      ).canFollow(link);
+
+    expect(can(await openCentre('mswdo-head', 'staff-head'))).toBe(true);
+    expect(can(await openCentre('auditor', 'staff-auditor'))).toBe(false);
   });
 });

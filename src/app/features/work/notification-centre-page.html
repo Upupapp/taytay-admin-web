@@ -1,4 +1,37 @@
 <app-page-header [title]="copy.title" [subtitle]="copy.subtitle">
+  <!-- Read or not is the first question, so it is the page's tabs, beside the actions (DL-253). -->
+  <nav page-start [attr.aria-label]="copy.showLabel">
+    <ul class="tabs">
+      <li>
+        <a
+          class="tab"
+          [routerLink]="[]"
+          [queryParams]="{ show: null }"
+          queryParamsHandling="merge"
+          [replaceUrl]="true"
+          [class.tab--active]="filter().show === 'all'"
+          [attr.aria-current]="filter().show === 'all' ? 'true' : null"
+        >
+          {{ copy.showAll }}
+          <span class="tab__count">{{ total() }}</span>
+        </a>
+      </li>
+      <li>
+        <a
+          class="tab"
+          [routerLink]="[]"
+          [queryParams]="{ show: 'unread' }"
+          queryParamsHandling="merge"
+          [replaceUrl]="true"
+          [class.tab--active]="filter().show === 'unread'"
+          [attr.aria-current]="filter().show === 'unread' ? 'true' : null"
+        >
+          {{ copy.showUnread }}
+          <span class="tab__count">{{ unreadCount() }}</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
   <a page-actions class="btn" routerLink="/work">{{ copy.work }}</a>
   @if (unreadCount() > 0) {
     <button page-actions type="button" class="btn" (click)="markAllRead()">
@@ -24,6 +57,65 @@
       <p class="status-line centre__empty-message">{{ copy.emptyMessage }}</p>
     </div>
   } @else {
+    <section class="card card--padded stack" [attr.aria-label]="copy.filtersLabel">
+      <div class="toolbar">
+        <label class="field">
+          <span class="field__label">{{ copy.category }}</span>
+          <select class="field__input field__input--pill" (change)="onCategory($event)">
+            <option value="" [selected]="filter().kind === null">{{ copy.allCategories }}</option>
+            @for (category of categories(); track category.kind) {
+              <option [value]="category.kind" [selected]="filter().kind === category.kind">
+                {{ category.label }} ({{ category.count }})
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field__label">{{ copy.when }}</span>
+          <select class="field__input field__input--pill" (change)="onPeriod($event)">
+            @for (period of periods; track period) {
+              <option [value]="period" [selected]="filter().period === period">
+                {{ periodLabels[period] }}
+              </option>
+            }
+          </select>
+        </label>
+
+        @if (filtered()) {
+          <div class="toolbar__actions">
+            <button type="button" class="btn btn--subtle" (click)="clearFilters()">
+              {{ copy.clearFilters }}
+            </button>
+          </div>
+        }
+      </div>
+      <p class="status-line" role="status">{{ copy.showing(shown().length, total()) }}</p>
+    </section>
+
+    @if (shown().length === 0) {
+      <!-- "Nothing here" and "nothing matches" are different answers, never merged. -->
+      @if (narrowed()) {
+        <app-empty-state
+          variant="no-results"
+          [headingLevel]="2"
+          [heading]="copy.noMatchHeading"
+          [message]="copy.noMatchMessage"
+          [actionLabel]="copy.clearFilters"
+          (actionSelected)="clearFilters()"
+        />
+      } @else {
+        <app-empty-state
+          variant="empty"
+          [headingLevel]="2"
+          [heading]="copy.caughtUpHeading"
+          [message]="copy.caughtUpMessage"
+          [actionLabel]="copy.showAll"
+          (actionSelected)="showAll()"
+        />
+      }
+    }
+
     @for (group of groups(); track group.kind) {
       <section class="card card--padded group" [attr.aria-label]="group.label">
         <div class="group__head">
@@ -51,7 +143,9 @@
                     <!-- Unread said in words as well as by weight and marker. -->
                     <span class="chip chip--warning group__badge">{{ copy.unreadBadge }}</span>
                   }
-                  <time class="group__time">{{ item.createdAt | relativeTime }}</time>
+                  <time class="group__time" [attr.datetime]="item.createdAt">{{
+                    item.createdAt | relativeTime
+                  }}</time>
                 </p>
 
                 @if (item.body) {
@@ -59,14 +153,16 @@
                 }
 
                 <p class="group__actions">
-                  @if (item.action) {
-                    <a
-                      class="record-link group__link"
-                      [routerLink]="item.action.routerLink"
-                      (click)="markRead(item)"
-                    >
-                      {{ item.action.label }}
-                    </a>
+                  @if (item.action; as action) {
+                    @if (canFollow(action)) {
+                      <a
+                        class="record-link group__link"
+                        [routerLink]="action.routerLink"
+                        (click)="markRead(item)"
+                      >
+                        {{ action.label }}
+                      </a>
+                    }
                   }
                   @if (item.readAt === null) {
                     <button
@@ -74,7 +170,7 @@
                       class="btn btn--subtle group__mark"
                       (click)="markRead(item)"
                     >
-                      Mark as read
+                      {{ copy.markRead }}
                     </button>
                   }
                 </p>

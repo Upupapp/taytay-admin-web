@@ -91,5 +91,21 @@ export const WORK_COPY = {
 
     emptyHeading: 'Nothing to catch up on',
     emptyMessage: 'Events that concern you appear here as they happen.',
+
+    markRead: 'Mark as read',
+    filtersLabel: 'Filter notifications',
+    showLabel: 'Show',
+    showAll: 'All',
+    showUnread: 'Unread',
+    category: 'Category',
+    allCategories: 'All categories',
+    when: 'When',
+    clearFilters: 'Clear filters',
+    showing: (shown: number, total: number) =>
+      `Showing ${shown} of ${total} notification${total === 1 ? '' : 's'}.`,
+    caughtUpHeading: 'No unread notifications',
+    caughtUpMessage: 'You have read everything here. Choose All to see them again.',
+    noMatchHeading: 'No notifications match these filters',
+    noMatchMessage: 'Try another category or a longer time, or clear the filters.',
   },
 } as const;

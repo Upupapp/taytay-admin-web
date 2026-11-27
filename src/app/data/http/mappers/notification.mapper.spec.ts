@@ -25,14 +25,24 @@ describe('toNotification', () => {
   });
 
   it('says the least it honestly can about kind, severity and action', () => {
-    expect(toNotification(MESSAGE)?.kind).toBe('general');
+    expect(toNotification(MESSAGE)?.kind).toBe('message');
     expect(toNotification(DECISION)?.kind).toBe('decision');
 
     for (const row of [MESSAGE, DECISION]) {
-      // No priority is sent, so nothing is promoted to an alarm; no screen exists to link to.
+      // No priority is sent, so nothing is promoted to an alarm.
       expect(toNotification(row)?.severity).toBe('info');
-      expect(toNotification(row)?.action).toBeNull();
     }
+    // A verification request has no address in this console (DL-167), so no link.
+    expect(toNotification(DECISION)?.action).toBeNull();
+  });
+
+  it('links a resident message to its conversation, under the inbox key (DL-291)', () => {
+    expect(toNotification(MESSAGE)?.action).toEqual({
+      label: 'Open conversation',
+      routerLink: ['/inbox', MESSAGE?.subject_id],
+      permission: 'office-inbox.manage',
+    });
+    expect(toNotification({ ...MESSAGE, subject_id: null })?.action).toBeNull();
   });
 
   it('keeps a type it does not recognise, as general, rather than dropping the message', () => {

@@ -1438,6 +1438,7 @@
       "optional": [
         "body",
         "read_at",
+        "subject_id",
         "title",
         "type"
       ]
@@ -1453,6 +1454,7 @@
       "optional": [
         "body",
         "read_at",
+        "subject_id",
         "title",
         "type"
       ]

@@ -147,8 +147,13 @@
   grid-row: span 2;
 }
 
+/* The figure sits level with its label, not centred down a card whose words run to three lines, and
+   right-aligned in its column so 512 and 2 end on the same edge (DL-292). */
 .tidy-list__count {
+  align-self: start;
   min-inline-size: 56px;
+  line-height: 1.1;
+  text-align: end;
   color: var(--ink);
   font-family: var(--font-display);
   font-size: var(--fs-title-md);

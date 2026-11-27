@@ -63,7 +63,11 @@ export class NotificationStore {
 
   refresh(): void {
     this.repository.listForCurrentUser().subscribe({
-      next: (notifications) => this.inboxItems.set(notifications),
+      // The server's list replaces the server's rows only. A notice this console raised — an error
+      // that must persist until read — lives nowhere else, and a live re-read used to wipe it
+      // seconds after it reached the inbox (DL-291).
+      next: (notifications) =>
+        this.inboxItems.update((items) => [...items.filter(isLocalNotification), ...notifications]),
     });
   }
 
@@ -78,7 +82,12 @@ export class NotificationStore {
   notify(request: NotificationRequest): void {
     this.sequence += 1;
     this.receive(
-      toLocalNotification(request, this.session.currentUser()?.id ?? null, this.sequence, new Date()),
+      toLocalNotification(
+        request,
+        this.session.currentUser()?.id ?? null,
+        this.sequence,
+        new Date(),
+      ),
     );
   }
 
@@ -126,7 +135,9 @@ export class NotificationStore {
 
     this.repository.markRead(id).subscribe({
       next: (updated) =>
-        this.inboxItems.update((items) => items.map((entry) => (entry.id === id ? updated : entry))),
+        this.inboxItems.update((items) =>
+          items.map((entry) => (entry.id === id ? updated : entry)),
+        ),
     });
   }
 
